@@ -2,6 +2,7 @@
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew tap homebrew/cask-fonts
+brew install mas
 
 brew install gibo
 brew install alt-tab
@@ -18,6 +19,9 @@ brew install --cask teensy
 brew install --cask appcleaner
 brew install --cask vlc
 brew install --cask karabiner-elements
+
+# EdgeView 2
+mas install 1206246482
 
 # asdf
 brew install asdf
