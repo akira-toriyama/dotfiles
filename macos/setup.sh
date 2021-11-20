@@ -3,9 +3,8 @@
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew tap homebrew/cask-fonts
 
-# brew
 brew install gibo
-brew install alt-tab	
+brew install alt-tab
 
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
@@ -20,6 +19,10 @@ brew install --cask appcleaner
 brew install --cask vlc
 brew install --cask karabiner-elements
 
+# asdf
+brew install asdf
+brew install gpg
+asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
 
 # defaults
 # 隠しファイル表示
