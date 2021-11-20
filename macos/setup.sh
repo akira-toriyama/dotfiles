@@ -34,6 +34,9 @@ mas install 918207447
 # Translate Tab
 mas install 458887729
 
+# Presentify
+mas install 1507246666
+
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
 
