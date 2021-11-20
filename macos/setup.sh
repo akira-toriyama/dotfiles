@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew tap homebrew/cask-fonts
-brew install mas
 
+brew tap homebrew/cask-fonts
+
+brew install mas
 brew install gibo
 brew install alt-tab
-
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
 brew install --cask hammerspoon
@@ -20,15 +20,20 @@ brew install --cask appcleaner
 brew install --cask vlc
 brew install --cask karabiner-elements
 
-# EdgeView 2
-mas install 1206246482
-
 # asdf
 brew install asdf
 brew install gpg
 asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
 
-# defaults
+# EdgeView 2
+mas install 1206246482
+
+# Annotate - Capture and Share
+mas install 918207447
+
+# Translate Tab
+mas install 458887729
+
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
 
