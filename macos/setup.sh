@@ -7,6 +7,8 @@ brew tap homebrew/cask-fonts
 brew install mas
 brew install gibo
 brew install alt-tab
+brew install trash
+
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
 brew install --cask hammerspoon
@@ -96,3 +98,4 @@ defaults write com.apple.finder ShowMountedServersOnDesktop -bool false
 
 # デスクトップに表示する項目 接続しているサーバ
 defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
+
