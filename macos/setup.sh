@@ -10,7 +10,6 @@ brew install alt-tab
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
 brew install --cask hammerspoon
-brew install --cask popclip
 brew install --cask google-chrome
 brew install --cask the-unarchiver
 brew install --cask transmission
@@ -28,14 +27,14 @@ asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
 # EdgeView 2
 mas install 1206246482
 
-# Annotate - Capture and Share
-mas install 918207447
-
 # Translate Tab
 mas install 458887729
 
 # Presentify
 mas install 1507246666
+
+# PopClip
+mas install 445189367
 
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
