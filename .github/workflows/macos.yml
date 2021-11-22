@@ -12,5 +12,5 @@ jobs:
     
     - name: setup
       run: |
-        ./macos/setup.sh
+        ./script/macos/setup.sh
     
