@@ -17,5 +17,5 @@
 ```bash
 git clone git@github.com:akira-toriyama/dotfiles.git
 
-macos/setup.sh
+macos/script/setup.sh
 ```
