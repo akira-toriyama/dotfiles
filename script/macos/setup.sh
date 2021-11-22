@@ -8,6 +8,7 @@ brew install mas
 brew install gibo
 brew install alt-tab
 brew install trash
+brew install yarn
 
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
