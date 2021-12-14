@@ -33,9 +33,6 @@ mas install 1206246482
 # Translate Tab
 mas install 458887729
 
-# Presentify
-mas install 1507246666
-
 # PopClip
 mas install 445189367
 
