@@ -36,6 +36,9 @@ mas install 458887729
 # PopClip
 mas install 445189367
 
+# Annotate - Capture and Share
+mas install 918207447
+
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
 
