@@ -39,6 +39,9 @@ mas install 445189367
 # ScreenBrush
 mas install 1233965871
 
+# Loud Typer
+mas install 1493508558
+
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
 
