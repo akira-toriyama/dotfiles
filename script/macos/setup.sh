@@ -9,7 +9,6 @@ brew install gibo
 brew install alt-tab
 brew install trash
 brew install yarn
-brew install tickeys
 
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
