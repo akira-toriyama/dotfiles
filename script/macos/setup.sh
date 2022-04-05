@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # zsh
+pwd
 # ln -s zsh/.zshrc ~/.
 cp zsh/.zshrc ~/.
 # source ~/.zshrc
