@@ -25,12 +25,6 @@ brew install --cask vlc
 brew install --cask karabiner-elements
 brew install --cask font-hack-nerd-font
 
-# asdf
-asdf plugin add nodejs
-asdf plugin add golang
-asdf install golang latest
-asdf global golang latest
-
 # EdgeView 2
 mas install 1206246482
 
@@ -107,9 +101,16 @@ defaults write com.apple.finder ShowMountedServersOnDesktop -bool false
 # デスクトップに表示する項目 接続しているサーバ
 defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 
+# asdf
+asdf plugin add nodejs
+asdf plugin add golang
+asdf install golang latest
+asdf global golang latest
+
 # zsh
 ln -s ~/dotfiles/zsh/.zshrc ~/
 
+go env | grep -E 'BIN|PATH|ROOT'
+
 # powerline-go
-go env -w GO111MODULE=off
 go install github.com/justjanne/powerline-go@latest
