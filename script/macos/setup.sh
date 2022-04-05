@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # zsh
-ln -s zsh/.zshrc ~/
+ln -s zsh/.zshrc ~/.
 # source ~/.zshrc
 cat ~/.zshrc
 
