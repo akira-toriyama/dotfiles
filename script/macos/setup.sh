@@ -27,9 +27,7 @@ brew install --cask font-hack-nerd-font
 
 # asdf
 asdf plugin add nodejs
-asdf plugin add golang 
-asdf install golang latest
-asdf global golang latest
+asdf plugin add golang
 
 # EdgeView 2
 mas install 1206246482
