@@ -104,3 +104,5 @@ defaults write com.apple.finder ShowMountedServersOnDesktop -bool false
 # デスクトップに表示する項目 接続しているサーバ
 defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 
+# zsh
+ln -s ~/dotfiles/zsh/.zshrc ~/
