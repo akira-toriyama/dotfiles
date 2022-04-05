@@ -27,7 +27,7 @@ brew install --cask font-hack-nerd-font
 
 # asdf
 asdf plugin add nodejs
-asdf plugin-add golang 
+asdf plugin add golang 
 asdf install golang latest
 asdf global golang latest
 
