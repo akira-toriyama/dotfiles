@@ -27,12 +27,9 @@ brew install --cask font-hack-nerd-font
 
 # asdf
 asdf plugin add nodejs
-
 asdf plugin add golang
-asdf reshim golang
 asdf install golang latest
 asdf global golang latest
-asdf reshim golang
 
 # EdgeView 2
 mas install 1206246482
@@ -114,4 +111,5 @@ defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 ln -s ~/dotfiles/zsh/.zshrc ~/
 
 # powerline-go
+go env -w GO111MODULE=off
 go install github.com/justjanne/powerline-go@latest
