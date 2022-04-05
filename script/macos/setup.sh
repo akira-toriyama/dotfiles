@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
 
+# zsh
+ln -s zsh/.zshrc ~/
+source ~/.zshrc
+cat ~/.zshrc
 
-ls -la
-cat zsh/.zshrc
-
-# # zsh
-# # ln -s ~/dotfiles/zsh/.zshrc ~/
-# # ln -s zsh/.zshrc ~/
-
-# source ~/.zshrc
 # go env | grep -E 'BIN|PATH|ROOT'
 # source ~/.zshrc
 
