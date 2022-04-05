@@ -2,9 +2,8 @@
 
 # zsh
 ln -s zsh/.zshrc ~/
-ls -l ~/
 # source ~/.zshrc
-# cat ~/.zshrc
+cat ~/.zshrc
 
 # go env | grep -E 'BIN|PATH|ROOT'
 # source ~/.zshrc
