@@ -8,8 +8,9 @@ brew install mas
 brew install gibo
 brew install alt-tab
 brew install trash
-brew install yarn
 brew install starship
+brew install asdf
+brew install gpg
 
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
@@ -22,11 +23,13 @@ brew install --cask teensy
 brew install --cask appcleaner
 brew install --cask vlc
 brew install --cask karabiner-elements
+brew install --cask font-hack-nerd-font
 
 # asdf
-brew install asdf
-brew install gpg
-asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
+asdf plugin add nodejs
+asdf plugin-add golang 
+asdf install golang latest
+asdf global golang latest
 
 # EdgeView 2
 mas install 1206246482
@@ -106,3 +109,6 @@ defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 
 # zsh
 ln -s ~/dotfiles/zsh/.zshrc ~/
+
+# powerline-go
+go install github.com/justjanne/powerline-go@latest

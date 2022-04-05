@@ -15,7 +15,18 @@
 ## 使い方
 
 ```bash
-git clone git@github.com:akira-toriyama/dotfiles.git
+# clone
+git clone https://github.com/powerline/fonts.git --depth=1
+# install
+cd fonts
+./install.sh
+# clean-up a bit
+cd ..
+rm -rf fonts
+```
 
+
+```bash
+git clone git@github.com:akira-toriyama/dotfiles.git
 script/macos/setup.sh
 ```
