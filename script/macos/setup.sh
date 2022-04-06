@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-echo "---"
-echo $HOME
-echo "---"
-
 # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # brew tap homebrew/cask-fonts
@@ -112,8 +108,11 @@ echo "---"
 # asdf global golang latest
 
 # # zsh
-# ln -s /Users/runner/work/dotfiles/dotfiles/zsh/.zshrc ~/.
-# ln -s ~/dotfiles/zsh/.zshrc ~/.
+# ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
 
 # # powerline-go
 # go install github.com/justjanne/powerline-go@latest
+
+echo $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc
+ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
+cat ~/.zshrc
