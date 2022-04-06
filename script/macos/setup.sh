@@ -13,6 +13,7 @@ brew install asdf
 brew install gpg
 brew install zsh-syntax-highlighting
 brew install zsh-autosuggestions
+brew install zsh-completions
 
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
@@ -115,3 +116,6 @@ source ~/.zshrc
 
 # powerline-go
 go install github.com/justjanne/powerline-go@latest
+
+# zsh-completions
+chmod -R go-w '/usr/local/share/zsh' 
