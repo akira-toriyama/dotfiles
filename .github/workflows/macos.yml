@@ -13,5 +13,5 @@ jobs:
     - name: setup
       run: |
         ./script/macos/setup.sh
-      env: 
+      env:
         DOT_FILE_ROOT_PATH: /Users/runner/work/dotfiles
