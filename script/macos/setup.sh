@@ -109,6 +109,7 @@ asdf global golang latest
 
 # zsh
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
+source ~/.zshrc                                                                                                                                      
 
 # powerline-go
 go install github.com/justjanne/powerline-go@latest
