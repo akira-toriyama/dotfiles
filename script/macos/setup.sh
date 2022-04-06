@@ -12,6 +12,7 @@ brew install starship
 brew install asdf
 brew install gpg
 brew install zsh-syntax-highlighting
+brew install zsh-autosuggestions
 
 brew install --cask font-jetbrains-mono
 brew install --cask kindle
