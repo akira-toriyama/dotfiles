@@ -14,8 +14,10 @@ brew install gpg
 brew install zsh-syntax-highlighting
 brew install zsh-autosuggestions
 brew install zsh-completions
+brew install exa
 
-brew install --cask font-jetbrains-mono
+# brew install --cask font-jetbrains-mono
+brew install font-jetbrains-mono-nerd-font
 brew install --cask kindle
 brew install --cask hammerspoon
 brew install --cask google-chrome
@@ -112,6 +114,11 @@ asdf global golang latest
 
 # zsh
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
+
+# compinit
+# https://zenn.dev/tomo_saku/articles/d48a158a2c4526
+chmod 755 /usr/local/share                   
+
 source ~/.zshrc                                                                                                                                      
 
 # powerline-go
