@@ -58,3 +58,8 @@ if [[ $(command -v exa) ]]; then
   alias lta=eta
   alias l='clear && ls'
 fi
+
+# bat
+if [[ $(command -v bat) ]]; then
+  alias cat='bat --paging=never'
+fi
