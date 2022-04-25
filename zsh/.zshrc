@@ -1,3 +1,5 @@
+# Fig pre block. Keep at the top of this file.
+. "$HOME/.fig/shell/zshrc.pre.zsh"
 # asdf
 . /usr/local/opt/asdf/libexec/asdf.sh
 
@@ -66,3 +68,6 @@ fi
 if [[ $(command -v bat) ]]; then
   alias cat='bat --paging=never'
 fi
+
+# Fig post block. Keep at the bottom of this file.
+. "$HOME/.fig/shell/zshrc.post.zsh"

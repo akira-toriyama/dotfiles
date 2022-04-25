@@ -29,6 +29,7 @@ brew install --cask appcleaner
 brew install --cask vlc
 brew install --cask karabiner-elements
 brew install --cask font-hack-nerd-font
+brew install --cask fig
 
 # EdgeView 2
 mas install 1206246482
