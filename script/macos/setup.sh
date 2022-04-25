@@ -15,9 +15,9 @@ brew install zsh-syntax-highlighting
 brew install zsh-autosuggestions
 brew install zsh-completions
 brew install exa
-
-# brew install --cask font-jetbrains-mono
 brew install font-jetbrains-mono-nerd-font
+brew install zsh-history-substring-search
+
 brew install --cask kindle
 brew install --cask hammerspoon
 brew install --cask google-chrome
