@@ -42,5 +42,3 @@ fig
 ~/dotfiles/setting/ime/romantable.txt
 ~/dotfiles/setting/ime/keymap.txt
 ```
-
-totalspaces の設定
