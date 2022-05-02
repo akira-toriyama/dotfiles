@@ -30,6 +30,7 @@ brew install --cask vlc
 brew install --cask karabiner-elements
 brew install --cask font-hack-nerd-font
 brew install --cask fig
+brew install --cask google-japanese-ime
 
 # EdgeView 2
 mas install 1206246482
@@ -127,3 +128,5 @@ go install github.com/justjanne/powerline-go@latest
 
 # zsh-completions
 chmod -R go-w '/usr/local/share/zsh' 
+
+sudo shutdown -r now

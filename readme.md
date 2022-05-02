@@ -32,3 +32,13 @@ cd dotfiles
 export DOT_FILE_ROOT_PATH=$HOME
 script/macos/setup.sh
 ```
+
+```bash
+# fig
+fig
+
+# ime
+# インポートする
+~/dotfiles/setting/ime/romantable.txt
+~/dotfiles/setting/ime/keymap.txt
+```
