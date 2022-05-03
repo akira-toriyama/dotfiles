@@ -129,4 +129,3 @@ go install github.com/justjanne/powerline-go@latest
 
 # zsh-completions
 chmod -R go-w '/usr/local/share/zsh' 
-

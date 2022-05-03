@@ -50,3 +50,9 @@ fig
 ## yabai
 
 https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
+
+## workspace
+
+```bash
+hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
+```
