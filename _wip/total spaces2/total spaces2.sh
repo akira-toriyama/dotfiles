@@ -1,4 +1,3 @@
 
-# TODO total spaces2 
-# CLI操作頑張る 
+# TODO total spaces3 に以降
 
