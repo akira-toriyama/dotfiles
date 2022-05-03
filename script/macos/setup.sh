@@ -130,5 +130,3 @@ go install github.com/justjanne/powerline-go@latest
 # zsh-completions
 chmod -R go-w '/usr/local/share/zsh' 
 
-# 再起動
-# sudo shutdown -r now
