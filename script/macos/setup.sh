@@ -3,6 +3,7 @@
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 brew tap homebrew/cask-fonts
+brew tap homebrew/cask-drivers
 
 brew install mas
 brew install gibo
@@ -18,6 +19,7 @@ brew install exa
 brew install font-jetbrains-mono-nerd-font
 brew install zsh-history-substring-search
 brew install koekeishiya/formulae/yabai
+brew install qmk/qmk/qmk
 
 brew install --cask kindle
 brew install --cask hammerspoon
@@ -32,6 +34,7 @@ brew install --cask karabiner-elements
 brew install --cask font-hack-nerd-font
 brew install --cask fig
 brew install --cask google-japanese-ime
+brew install --cask qmk-toolbox
 
 # EdgeView 2
 mas install 1206246482
@@ -129,3 +132,6 @@ go install github.com/justjanne/powerline-go@latest
 
 # zsh-completions
 chmod -R go-w '/usr/local/share/zsh' 
+
+# qmk
+qmk setup -y
