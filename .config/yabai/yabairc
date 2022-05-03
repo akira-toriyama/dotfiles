@@ -7,11 +7,12 @@
 sudo yabai --load-sa
 yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 
+# 枠線
+yabai -m config window_border on
+~/dotfiles/script/yabairc &
+
 # ウィンドウをタイル形式に配置
 yabai -m config layout bsp
-
-# ウィンドウの上にマウスカーソルを移動させると、アクティブになる
-# yabai -m config focus_follows_mouse autofocus
 
 # ウィンドウのシャドウ
 yabai -m config window_shadow off
@@ -20,8 +21,3 @@ yabai -m config window_shadow off
 yabai -m config window_opacity on
 yabai -m config active_window_opacity 1.0
 yabai -m config normal_window_opacity 0.8
-
-# 枠線
-yabai -m config window_border on
-# yabai -m config active_window_border_color  0xFFFFFF00
-yabai -m config active_window_border_color  0xFFFF00FF
