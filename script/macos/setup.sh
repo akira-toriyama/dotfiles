@@ -115,8 +115,10 @@ defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 # asdf
 asdf plugin add nodejs
 asdf plugin add golang
+asdf plugin add yarn
 asdf install golang latest
 asdf global golang latest
+asdf install yarn latest
 
 # zsh
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
