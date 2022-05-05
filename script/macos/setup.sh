@@ -38,19 +38,17 @@ brew install --cask qmk-toolbox
 
 # EdgeView 2
 mas install 1206246482
-
 # Translate Tab
 mas install 458887729
-
 # PopClip
 mas install 445189367
-
 # ScreenBrush
 mas install 1233965871
-
 # Loud Typer
 mas install 1493508558
-
+# OneDrive
+mas install 823766827
+  
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
 
