@@ -1,5 +1,8 @@
 # TODO karabiner-elements
 # TODO ランチャー
-# TODO メモアプリ Nvalt, Obsidian, xwmx/nb alok/notational-fzf-vim
 # TODO total spaces3 に以降
 # TODO vscode
+# TODO メモアプリ 
+- https://zettelkasten.de/the-archive/
+- Obsidian
+- xwmx/nb
