@@ -11,9 +11,6 @@ yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 yabai -m config window_border on
 ~/dotfiles/script/yabairc &
 
-# ウィンドウをタイル形式に配置
-yabai -m config layout bsp
-
 # ウィンドウのシャドウ
 yabai -m config window_shadow off
 

@@ -1,6 +1,5 @@
-# TODO karabiner-elements
 # TODO ランチャー
-# TODO total spaces3 に以降
+# TODO total spaces3 に移行
 # TODO vscode
 # TODO メモアプリ 
 - https://zettelkasten.de/the-archive/
