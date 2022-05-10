@@ -9,12 +9,8 @@ yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 
 # 枠線
 yabai -m config window_border on
-~/dotfiles/script/yabairc &
+yabai -m config window_border_width 4
+~/dotfiles/script/yabai/border_color &
 
 # ウィンドウのシャドウ
 yabai -m config window_shadow off
-
-# ウィンドウの透過度
-yabai -m config window_opacity on
-yabai -m config active_window_opacity 1.0
-yabai -m config normal_window_opacity 0.8

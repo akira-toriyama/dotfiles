@@ -18,94 +18,289 @@
           {
             "description": "yabai",
             "manipulators": [
+              // 上 ----------------------------------------------------------------------------------
               {
                 "from": {
-                  "key_code": "keypad_9"
+                  "key_code": "non_us_backslash" // qの左
                 },
-                "to": [
-                  {
-                    "shell_command": "/usr/local/bin/yabai -m window --focus east"
-                  }
-                ],
                 "type": "basic"
               },
               {
                 "from": {
-                  "key_code": "keypad_6"
+                  "key_code": "keypad_1" // q
                 },
-                "to": [
-                  {
-                    "shell_command": "/usr/local/bin/yabai -m window --focus west"
-                  }
-                ],
                 "type": "basic"
               },
               {
                 "from": {
-                  "key_code": "keypad_7"
+                  "key_code": "keypad_2" // w
                 },
-                "to": [
-                  {
-                    "shell_command": "/usr/local/bin/yabai -m window --focus south"
-                  }
-                ],
                 "type": "basic"
               },
               {
                 "from": {
-                  "key_code": "keypad_8"
+                  "key_code": "keypad_3" // e
                 },
+                "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/usr/local/bin/yabai -m window --focus north"
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 2:1:0:0:2:1"
                   }
-                ],
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_3", // e
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 3:1:0:0:3:1"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_3", // e
+                  "modifiers": {
+                    "mandatory": ["command"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 3:2:0:0:3:2"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_4" // r
+                },
                 "type": "basic"
               },
               {
                 "from": {
-                  "key_code": "keypad_equal_sign"
+                  "key_code": "keypad_5" // t
                 },
-                "to": [
-                  {
-                    "shell_command": "/usr/local/bin/yabai -m window --swap west"
-                  }
-                ],
+                "type": "basic"
+              },
+              // ------------------------------------------------------------------------------------
+              // 中 ----------------------------------------------------------------------------------
+              {
+                "from": {
+                  "key_code": "keypad_num_lock" // aの左
+                },
                 "type": "basic"
               },
               {
                 "from": {
-                  "key_code": "keypad_period"
+                  "key_code": "keypad_6" // a
                 },
+                "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/usr/local/bin/yabai -m window --swap south"
+                    "shell_command": "/bin/sh ~/dotfiles/script/yabai/focus_next_window"
                   }
-                ],
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_6", // a
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/bin/sh ~/dotfiles/script/yabai/focus_previous_window"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_7" // s
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:2:0:0:1:2"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_7", // s
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:3:0:0:1:3"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_7", // s
+                  "modifiers": {
+                    "mandatory": ["command"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:3:0:0:2:3"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_8" // d
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 2:1:0:1:2:1"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_8", // d
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 3:1:0:2:3:1"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_8", // d
+                  "modifiers": {
+                    "mandatory": ["command"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 3:1:0:1:3:2"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_9" // f
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:2:1:0:1:2"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_9", // f
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:3:2:0:1:3"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_9", // f
+                  "modifiers": {
+                    "mandatory": ["command"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:3:1:0:2:3"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_plus" // g
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:1:0:0:1:1"
+                  }
+                ]
+              },
+              {
+                "from": {
+                  "key_code": "keypad_plus", // g
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m config layout bsp && /usr/local/bin/yabai -m config layout float"
+                  }
+                ]
+              },
+              // ------------------------------------------------------------------------------------
+              // 下 ----------------------------------------------------------------------------------
+              {
+                "from": {
+                  "key_code": "keypad_enter" // zの左
+                },
                 "type": "basic"
               },
               {
                 "from": {
-                  "key_code": "keypad_hyphen"
+                  "key_code": "keypad_equal_sign" // z
                 },
-                "to": [
-                  {
-                    "shell_command": "/usr/local/bin/yabai -m window --swap north"
-                  }
-                ],
                 "type": "basic"
               },
               {
                 "from": {
-                  "key_code": "keypad_slash"
+                  "key_code": "keypad_period" // x
                 },
-                "to": [
-                  {
-                    "shell_command": "/usr/local/bin/yabai -m window --swap east"
-                  }
-                ],
+                "type": "basic"
+              },
+              {
+                "from": {
+                  "key_code": "keypad_hyphen" // c
+                },
+                "type": "basic"
+              },
+              {
+                "from": {
+                  "key_code": "keypad_slash" // v
+                }
+              },
+              {
+                "from": {
+                  "key_code": "keypad_asterisk" // b
+                },
                 "type": "basic"
               }
+              // ------------------------------------------------------------------------------------
             ]
           }
         ]

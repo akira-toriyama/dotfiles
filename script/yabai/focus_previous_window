@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# ダブルクォートが多く、jsonのvalueには不向きなのでsh化
+/usr/local/bin/yabai -m window --focus "$(/usr/local/bin/yabai -m query --windows | /usr/local/bin/jq -re "sort_by(.display, .space, .frame.x, .frame.y, .id) | map(select(.\"is-visible\" == true and .role != \"AXUnknown\")) | nth(index(map(select(.\"has-focus\" == true))) - 1).id")"

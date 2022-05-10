@@ -20,6 +20,7 @@ brew install font-jetbrains-mono-nerd-font
 brew install zsh-history-substring-search
 brew install koekeishiya/formulae/yabai
 brew install qmk/qmk/qmk
+brew install jq            
 
 brew install --cask kindle
 brew install --cask hammerspoon
