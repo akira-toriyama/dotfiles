@@ -21,7 +21,7 @@ export DOT_FILE_ROOT_PATH=$HOME
 script/macos/setup.sh
 ```
 
-##　手動
+## 手動
 
 ```bash
 git clone https://github.com/powerline/fonts.git --depth=1
