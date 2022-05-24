@@ -3,6 +3,8 @@
 # asdf
 . /usr/local/opt/asdf/libexec/asdf.sh
 
+export RUST_WITHOUT=rust-docs
+
 # starship
 eval "$(starship init zsh)"
 
