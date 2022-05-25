@@ -1,7 +1,40 @@
-# TODO ランチャー
-# TODO total spaces3 に移行
-# TODO vscode
-# TODO メモアプリ 
+# TODO 
+
+## ランチャー
+
+- alfred
+- raycast
+
+## デスクトップ
+- total spaces3
+
+## vscode
+
+- 拡張を共有
+
+## chrome
+- 設定を共有
+
+## メモアプリ
 - https://zettelkasten.de/the-archive/
 - Obsidian
 - xwmx/nb
+- nvUltra
+
+## クリップボード
+
+## マウス
+
+- サークル表示
+
+## DnD
+- Yoink
+- dropzone
+
+## スクショ
+
+- https://cleanshot.com/
+
+## 学習
+
+- quizlet
