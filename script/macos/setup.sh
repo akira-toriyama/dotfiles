@@ -117,12 +117,17 @@ defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 asdf plugin add nodejs
 asdf plugin add golang
 asdf plugin add yarn
-asdf global golang latest
-asdf plugin-add rust https://github.com/asdf-community/asdf-rust.git
+asdf plugin add rust https://github.com/asdf-community/asdf-rust.git
 
 asdf install golang latest
 asdf install yarn latest
 asdf install rust latest
+asdf install nodejs latest
+
+asdf global golang latest
+asdf global nodejs latest
+asdf global yarn latest
+
 
 # zsh
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
