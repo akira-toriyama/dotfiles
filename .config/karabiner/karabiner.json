@@ -297,25 +297,10 @@
                 "from": {
                   "key_code": "keypad_equal_sign"
                 },
-                "type": "basic"
-              },
-              // ----------------------------------------------------------------------------------------------------
-              // x --------------------------------------------------------------------------------------------------
-              {
-                "from": {
-                  "key_code": "keypad_period"
-                },
                 "type": "basic",
                 "to": [
                   {
-                    "key_code": "tab",
-                    "modifiers": ["control", "shift"]
-                  }
-                ],
-                "conditions": [
-                  {
-                    "type": "frontmost_application_if",
-                    "bundle_identifiers": ["^com\\.google\\.Chrome$"]
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/left.js"
                   }
                 ]
               },
@@ -328,14 +313,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "key_code": "open_bracket",
-                    "modifiers": ["command", "shift"]
-                  }
-                ],
-                "conditions": [
-                  {
-                    "type": "frontmost_application_if",
-                    "bundle_identifiers": ["^com\\.microsoft\\.VSCode$"]
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/down.js"
                   }
                 ]
               },
@@ -345,25 +323,10 @@
                 "from": {
                   "key_code": "keypad_hyphen"
                 },
-                "type": "basic"
-              },
-              // ----------------------------------------------------------------------------------------------------
-              // v --------------------------------------------------------------------------------------------------
-              {
-                "from": {
-                  "key_code": "keypad_slash"
-                },
                 "type": "basic",
                 "to": [
                   {
-                    "key_code": "tab",
-                    "modifiers": ["control"]
-                  }
-                ],
-                "conditions": [
-                  {
-                    "type": "frontmost_application_if",
-                    "bundle_identifiers": ["^com\\.google\\.Chrome$"]
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/up.js"
                   }
                 ]
               },
@@ -376,14 +339,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "key_code": "close_bracket",
-                    "modifiers": ["command", "shift"]
-                  }
-                ],
-                "conditions": [
-                  {
-                    "type": "frontmost_application_if",
-                    "bundle_identifiers": ["^com\\.microsoft\\.VSCode$"]
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/right.js"
                   }
                 ]
               },

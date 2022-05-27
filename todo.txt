@@ -1,5 +1,10 @@
 # TODO 
 
+## windwマネージャ
+
+alt tab
+
+
 ## ランチャー
 
 - alfred
