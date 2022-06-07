@@ -1,6 +1,6 @@
 # TODO
 
-## windw マネージャ
+## window マネージャ
 
 alt tab
 
