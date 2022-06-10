@@ -8,9 +8,9 @@ sudo yabai --load-sa
 yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 
 # 枠線
+yabai -m config normal_window_border_color 0x01000000
 yabai -m config window_border on
-yabai -m config window_border_width 4
 ~/dotfiles/script/yabai/border_color.sh &
 
-# 画面振動
-yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/vibration.sh"
+yabai -m signal --add event=space_changed action="~/dotfiles/script/yabai/space_changed.sh"
+yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/window_focused.sh"
