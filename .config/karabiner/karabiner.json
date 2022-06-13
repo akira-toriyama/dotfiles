@@ -170,7 +170,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/usr/local/bin/yabai -m window --grid 2:1:0:0:2:1"
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/up.js"
                   }
                 ]
               },
@@ -183,7 +183,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/usr/local/bin/yabai -m window --grid 2:1:0:1:2:1"
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/down.js"
                   }
                 ]
               },
@@ -196,7 +196,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:2:0:0:1:2"
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/left.js"
                   }
                 ]
               },
@@ -257,7 +257,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:2:1:0:1:2"
+                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/right.js"
                   }
                 ]
               },
@@ -316,27 +316,12 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:1:0:0:1:1"
+                    "type": "basic"
                   }
                 ]
               },
               // ----------------------------------------------------------------------------------------------------
-              // g --------------------------------------------------------------------------------------------------
-              {
-                "from": {
-                  "key_code": "keypad_plus",
-                  "modifiers": {
-                    "mandatory": ["shift"]
-                  }
-                },
-                "type": "basic",
-                "to": [
-                  {
-                    "shell_command": "/usr/local/bin/yabai -m config layout bsp && /usr/local/bin/yabai -m config layout float"
-                  }
-                ]
-              },
-              // ----------------------------------------------------------------------------------------------------
+
               // zの左 -----------------------------------------------------------------------------------------------
               {
                 "from": {
@@ -353,7 +338,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/up.js"
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 2:1:0:0:2:1"
                   }
                 ]
               },
@@ -367,7 +352,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/down.js"
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 2:1:0:1:2:1"
                   }
                 ]
               },
@@ -380,7 +365,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/left.js"
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:2:0:0:1:2"
                   }
                 ]
               },
@@ -393,7 +378,7 @@
                 "type": "basic",
                 "to": [
                   {
-                    "shell_command": "/Users/tommy/.asdf/shims/node /Users/tommy/dotfiles/script/yabai/focus/right.js"
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:2:1:0:1:2"
                   }
                 ]
               },
@@ -403,8 +388,30 @@
                 "from": {
                   "key_code": "keypad_asterisk"
                 },
-                "type": "basic"
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m window --grid 1:1:0:0:1:1"
+                  }
+                ]
+              },
+              // ----------------------------------------------------------------------------------------------------
+              // b --------------------------------------------------------------------------------------------------
+              {
+                "from": {
+                  "key_code": "keypad_asterisk",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "type": "basic",
+                "to": [
+                  {
+                    "shell_command": "/usr/local/bin/yabai -m config layout bsp && /usr/local/bin/yabai -m config layout float"
+                  }
+                ]
               }
+              // ----------------------------------------------------------------------------------------------------
             ]
           }
         ]
