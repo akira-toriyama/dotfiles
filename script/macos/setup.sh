@@ -23,9 +23,7 @@ brew install qmk/qmk/qmk
 brew install bat
 brew install youtube-dl
 brew install --cask fsnotes
-
 brew install --cask kindle
-brew install --cask hammerspoon
 brew install --cask google-chrome
 brew install --cask the-unarchiver
 brew install --cask transmission
@@ -38,6 +36,7 @@ brew install --cask font-hack-nerd-font
 brew install --cask fig
 brew install --cask google-japanese-ime
 brew install --cask qmk-toolbox
+brew install --cask onedrive
 
 # EdgeView 2
 mas install 1206246482
@@ -146,3 +145,6 @@ chmod -R go-w '/usr/local/share/zsh'
 
 # qmk
 qmk setup -y
+
+# alt-tab
+ln -s /Users/tommy/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab.macos.plist /Users//tommy/Library/Preferences/com.lwouis.alt-tab-macos.plist
