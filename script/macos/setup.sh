@@ -145,6 +145,3 @@ chmod -R go-w '/usr/local/share/zsh'
 
 # qmk
 qmk setup -y
-
-# alt-tab
-# ln -s /Users/tommy/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab.macos.plist /Users//tommy/Library/Preferences/com.lwouis.alt-tab-macos.plist
