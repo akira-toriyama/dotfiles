@@ -24,6 +24,7 @@ script/macos/setup.sh
 ## 手動
 
 ```bash
+# fonts
 git clone https://github.com/powerline/fonts.git --depth=1
 cd fonts
 ./install.sh
@@ -40,6 +41,11 @@ ln -s /Users/`whoami`/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.a
 fig
 ```
 
+```bash
+# workspace
+hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
+```
+
 ## ime
 
 インポートする
@@ -49,10 +55,14 @@ fig
 
 ## yabai
 
-https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
+- https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
 
-## workspace
+## よく使う sh
 
 ```bash
-hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
+# karabiner生成
+node ./script/karabiner.js > .config/karabiner/karabiner.json
+
+# yabai 再起動
+brew services restart yabai
 ```
