@@ -49,3 +49,8 @@
 ## その他
 
 todo2issue.yml を使う
+
+## karabiner
+
+js で生成したほうが良い
+`shell_command`のパスなどはつらい
