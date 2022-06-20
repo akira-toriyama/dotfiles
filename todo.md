@@ -46,6 +46,12 @@
 - マインドマップ
 - TODO アプリ
 
+## ターミナル
+
+- zsh
+- tmux
+- fig
+
 ## その他
 
 todo2issue.yml を使う
