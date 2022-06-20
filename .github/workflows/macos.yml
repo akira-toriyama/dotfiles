@@ -1,17 +1,17 @@
-on: 
+on:
   push:
   schedule:
-    - cron: '* 10 * * *'
+    - cron: "* 10 * * *"
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: setup
-      run: |
-        ./script/macos/setup.sh
-      env:
-        DOT_FILE_ROOT_PATH: /Users/runner/work/dotfiles
+      - uses: actions/checkout@v2
+
+      - name: setup
+        run: |
+          ./script/setup.sh
+        env:
+          DOT_FILE_ROOT_PATH: /Users/runner/work/dotfiles

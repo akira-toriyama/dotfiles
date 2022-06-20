@@ -18,7 +18,7 @@
 git clone git@github.com:akira-toriyama/dotfiles.git
 cd dotfiles
 export DOT_FILE_ROOT_PATH=$HOME
-script/macos/setup.sh
+script/setup.sh
 ```
 
 ## 手動
