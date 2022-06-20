@@ -127,9 +127,9 @@ asdf global golang latest
 asdf global nodejs latest
 asdf global yarn latest
 
-
 # zsh
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
+ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zprofile ~/.
 
 # compinit
 # https://zenn.dev/tomo_saku/articles/d48a158a2c4526

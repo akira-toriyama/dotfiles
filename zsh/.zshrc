@@ -1,5 +1,6 @@
 # Fig pre block. Keep at the top of this file.
 . "$HOME/.fig/shell/zshrc.pre.zsh"
+
 # asdf
 . /usr/local/opt/asdf/libexec/asdf.sh
 
