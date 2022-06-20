@@ -20,8 +20,9 @@
 ## メモアプリ
 
 - https://zettelkasten.de/the-archive/
-- Obsidian
-- xwmx/nb
+- https://github.com/glushchenko/fsnotes
+- Obsidian -> 併用
+- xwmx/nb -> ない
 - nvUltra
 
 ## クリップボード
