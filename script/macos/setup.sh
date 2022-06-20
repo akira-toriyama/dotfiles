@@ -128,14 +128,15 @@ asdf global nodejs latest
 asdf global yarn latest
 
 # zsh
-ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zprofile ~/.
+ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
 
 # compinit
 # https://zenn.dev/tomo_saku/articles/d48a158a2c4526
 chmod 755 /usr/local/share                   
 
-source ~/.zshrc                                                                                                                                      
+source ~/.zprofile
+source ~/.zshrc
 
 # powerline-go
 go install github.com/justjanne/powerline-go@latest
