@@ -1,3 +1,4 @@
+const { pathMap } = require("../../karabiner/config");
 const exec = require("util").promisify(require("child_process").exec);
 
 const direction = {
@@ -13,7 +14,7 @@ const direction = {
 
 module.exports = {
   focusMove: (p) => {
-    exec("/usr/local/bin/yabai -m query --windows --space")
+    exec(`${pathMap.yabai} -m query --windows --space`)
       .then((v) => JSON.parse(v.stdout))
       // fig除外
       .then((v) =>
@@ -24,8 +25,7 @@ module.exports = {
       .then(direction[p.direction])
       .then(
         (v) =>
-          v !== undefined &&
-          exec(`/usr/local/bin/yabai -m window --focus ${v.id}`)
+          v !== undefined && exec(`${pathMap.yabai} -m window --focus ${v.id}`)
       )
       .catch(console.log);
   },

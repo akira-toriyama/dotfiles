@@ -61,7 +61,7 @@ hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -voln
 
 ```bash
 # karabiner生成
-node ./script/karabiner.js > .config/karabiner/karabiner.json
+node ./script/karabiner/karabinerJson.js > .config/karabiner/karabiner.json
 
 # yabai 再起動
 brew services restart yabai

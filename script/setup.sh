@@ -37,6 +37,7 @@ brew install --cask fig
 brew install --cask google-japanese-ime
 brew install --cask qmk-toolbox
 brew install --cask onedrive
+brew install --cask raycast
 
 # EdgeView 2
 mas install 1206246482
