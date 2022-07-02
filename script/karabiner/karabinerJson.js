@@ -394,6 +394,27 @@ const karabinerJson = {
                   },
                 ],
               },
+              {
+                from: {
+                  key_code: keyMap.c,
+                  modifiers: {
+                    mandatory: keyMap.tab,
+                  },
+                },
+                type: "basic",
+                to: [
+                  {
+                    key_code: "slash",
+                    modifiers: ["command"],
+                  },
+                ],
+                conditions: [
+                  {
+                    type: "frontmost_application_if",
+                    bundle_identifiers: [appMap.VSCode],
+                  },
+                ],
+              },
             ],
           },
         ],
