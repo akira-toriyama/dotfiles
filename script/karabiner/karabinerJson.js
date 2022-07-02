@@ -415,6 +415,21 @@ const karabinerJson = {
                   },
                 ],
               },
+              {
+                from: {
+                  key_code: keyMap.c,
+                  modifiers: {
+                    mandatory: keyMap.del,
+                  },
+                },
+                type: "basic",
+                to: [
+                  {
+                    key_code: "comma",
+                    modifiers: ["command"],
+                  },
+                ],
+              },
             ],
           },
         ],
