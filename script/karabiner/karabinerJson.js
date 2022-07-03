@@ -433,7 +433,7 @@ const karabinerJson = {
 
               {
                 from: {
-                  key_code: keyMap.f,
+                  key_code: keyMap.g,
                   modifiers: {
                     mandatory: keyMap.tab,
                   },
