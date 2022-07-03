@@ -59,3 +59,8 @@ https://espanso.org/
 ## workspace
 
 https://www.apptorium.com/workspaces
+
+## tool
+
+popclip
+translate
