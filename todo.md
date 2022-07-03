@@ -52,6 +52,10 @@
 - tmux
 - fig
 
-# fill in
+## fill in
 
 https://espanso.org/
+
+## workspace
+
+https://www.apptorium.com/workspaces
