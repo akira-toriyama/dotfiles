@@ -52,6 +52,6 @@
 - tmux
 - fig
 
-## その他
+# fill in
 
-todo2issue.yml を使う
+https://espanso.org/
