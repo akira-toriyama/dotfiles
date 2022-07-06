@@ -178,7 +178,7 @@ const karabinerJson = {
                 to: [
                   {
                     shell_command:
-                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/up.js`,
+                      `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/up.ts`,
                   },
                 ],
               },
@@ -190,7 +190,7 @@ const karabinerJson = {
                 to: [
                   {
                     shell_command:
-                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/down.js`,
+                      `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/down.ts`,
                   },
                 ],
               },
@@ -202,7 +202,7 @@ const karabinerJson = {
                 to: [
                   {
                     shell_command:
-                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/left.js`,
+                      `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/left.ts`,
                   },
                 ],
               },
@@ -256,7 +256,7 @@ const karabinerJson = {
                 to: [
                   {
                     shell_command:
-                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/right.js`,
+                      `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/right.ts`,
                   },
                 ],
               },
