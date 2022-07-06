@@ -118,15 +118,18 @@ asdf plugin add nodejs
 asdf plugin add golang
 asdf plugin add yarn
 asdf plugin add rust https://github.com/asdf-community/asdf-rust.git
+asdf plugin add deno  
 
 asdf install golang latest
 asdf install yarn latest
 asdf install rust latest
 asdf install nodejs latest
+asdf install deno latest
 
 asdf global golang latest
 asdf global nodejs latest
 asdf global yarn latest
+asdf global deno latest
 
 # zsh
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zprofile ~/.

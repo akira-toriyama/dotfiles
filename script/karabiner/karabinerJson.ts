@@ -1,4 +1,4 @@
-const { pathMap } = require("./config");
+import { pathMap } from "./config.ts";
 
 const keyMap = {
   0: "keypad_0",
@@ -22,13 +22,13 @@ const keyMap = {
   b: "keypad_asterisk",
   del: ["control", "shift", "option", "command"],
   tab: ["control", "shift", "option"],
-};
+} as const;
 
 const appMap = {
   Chrome: "^com\\.google\\.Chrome$",
   VSCode: "^com\\.microsoft\\.VSCode$",
   FSNotes: "^co\\.fluder\\.FSNotes$",
-};
+} as const;
 
 const karabinerJson = {
   global: {
@@ -57,7 +57,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 3:1:0:0:3:1`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 3:1:0:0:3:1`,
                   },
                 ],
               },
@@ -71,7 +72,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 3:2:0:0:3:2`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 3:2:0:0:3:2`,
                   },
                 ],
               },
@@ -82,7 +84,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 3:1:0:2:3:1`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 3:1:0:2:3:1`,
                   },
                 ],
               },
@@ -96,7 +99,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 3:1:0:1:3:2`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 3:1:0:1:3:2`,
                   },
                 ],
               },
@@ -107,7 +111,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:3:0:0:1:3`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:3:0:0:1:3`,
                   },
                 ],
               },
@@ -121,7 +126,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:3:0:0:2:3`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:3:0:0:2:3`,
                   },
                 ],
               },
@@ -132,7 +138,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:3:2:0:1:3`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:3:2:0:1:3`,
                   },
                 ],
               },
@@ -146,7 +153,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:3:1:0:2:3`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:3:1:0:2:3`,
                   },
                 ],
               },
@@ -157,7 +165,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:3:1:15:1:3`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:3:1:15:1:3`,
                   },
                 ],
               },
@@ -168,7 +177,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/up.js`,
+                    shell_command:
+                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/up.js`,
                   },
                 ],
               },
@@ -179,7 +189,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/down.js`,
+                    shell_command:
+                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/down.js`,
                   },
                 ],
               },
@@ -190,7 +201,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/left.js`,
+                    shell_command:
+                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/left.js`,
                   },
                 ],
               },
@@ -243,7 +255,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/right.js`,
+                    shell_command:
+                      `${pathMap.node} ${pathMap.dotfiles}/script/yabai/focus/right.js`,
                   },
                 ],
               },
@@ -296,7 +309,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 2:1:0:0:2:1`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 2:1:0:0:2:1`,
                   },
                 ],
               },
@@ -307,7 +321,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 2:1:0:1:2:1`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 2:1:0:1:2:1`,
                   },
                 ],
               },
@@ -318,7 +333,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:2:0:0:1:2`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:2:0:0:1:2`,
                   },
                 ],
               },
@@ -329,7 +345,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:2:1:0:1:2`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:2:1:0:1:2`,
                   },
                 ],
               },
@@ -340,7 +357,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
+                    shell_command:
+                      `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
                   },
                 ],
               },
@@ -354,7 +372,8 @@ const karabinerJson = {
                 type: "basic",
                 to: [
                   {
-                    shell_command: `${pathMap.yabai} -m config layout bsp && ${pathMap.yabai} -m config layout float`,
+                    shell_command:
+                      `${pathMap.yabai} -m config layout bsp && ${pathMap.yabai} -m config layout float`,
                   },
                 ],
               },
