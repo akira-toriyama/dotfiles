@@ -62,5 +62,5 @@ https://www.apptorium.com/workspaces
 
 ## tool
 
-popclip
-translate
+- popclip
+- translate
