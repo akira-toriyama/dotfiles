@@ -17,14 +17,6 @@
 
 - 設定を共有
 
-## メモアプリ
-
-- https://zettelkasten.de/the-archive/
-- https://github.com/glushchenko/fsnotes
-- Obsidian -> 併用
-- xwmx/nb -> ない
-- nvUltra
-
 ## クリップボード
 
 ## マウス
