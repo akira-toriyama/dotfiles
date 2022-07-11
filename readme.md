@@ -60,8 +60,11 @@ hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -voln
 ## よく使う sh
 
 ```bash
-# karabiner生成
+# karabiner.json生成
 deno run ./script/karabiner/karabinerJson.ts > .config/karabiner/karabiner.json
+
+# karabinerの使用中のキー
+deno run ./script/karabiner/usedKeys.ts 
 
 # yabai 再起動
 brew services restart yabai
