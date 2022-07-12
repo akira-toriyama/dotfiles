@@ -1,5 +1,9 @@
 # Fig pre block. Keep at the top of this file.
 [[ -f "$HOME/.fig/shell/zshrc.pre.zsh" ]] && . "$HOME/.fig/shell/zshrc.pre.zsh"
+
+# lnだと上手く動作しないので、ターミナル起動時にバックアップ
+cp ~/Library/Preferences/com.lwouis.alt-tab-macos.plist ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist
+
 # asdf
 . /usr/local/opt/asdf/libexec/asdf.sh
 
