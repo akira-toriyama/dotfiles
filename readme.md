@@ -34,7 +34,7 @@ rm -rf fonts
 
 ```bash
 # OneDrive 設定後
-ln -s ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab.macos.plist ~/Library/Preferences/com.lwouis.alt-tab-macos.plist
+ln -s ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist ~/Library/Preferences/com.lwouis.alt-tab-macos.plist
 ```
 
 ```bash
