@@ -53,7 +53,9 @@ mas install 1493508558
 mas install 823766827
 # Cursor Pro
 mas install 1447043133
-  
+# Dropover
+mas install 1355679052
+
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
 
