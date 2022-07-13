@@ -51,6 +51,8 @@ mas install 1233965871
 mas install 1493508558
 # OneDrive
 mas install 823766827
+# Cursor Pro
+mas install 1447043133
   
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
