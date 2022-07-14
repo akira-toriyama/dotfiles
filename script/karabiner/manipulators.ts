@@ -96,7 +96,7 @@ const appShortcut = [
  */
 const callApp = [
   {
-    description: "アプリランチャー(現在のスペース",
+    description: "アプリ一覧(現在のスペース",
     from: {
       key_code: keyMap.lr_rl,
     },
@@ -109,7 +109,7 @@ const callApp = [
     ],
   },
   {
-    description: "アプリランチャー(すべてのスペース",
+    description: "アプリ一覧(すべてのスペース",
     from: {
       key_code: keyMap.ll_rr,
     },
@@ -134,6 +134,22 @@ const callApp = [
       {
         key_code: "l",
         modifiers: ["control", "option", "shift"],
+      },
+    ],
+  },
+  {
+    description: "ランチャー",
+    from: {
+      key_code: keyMap.ll,
+      modifiers: {
+        mandatory: ["command"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option"],
       },
     ],
   },
