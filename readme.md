@@ -47,6 +47,12 @@ fig
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
 ```
 
+```bash
+# alt-tab
+# `ln -s`だと上手く動作しないので`cp`
+cp ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist ~/Library/Preferences/com.lwouis.alt-tab-macos.plist
+```
+
 ## ime
 
 インポートする
@@ -69,4 +75,7 @@ deno run ./script/karabiner/usedKeys.ts
 
 # yabai 再起動
 brew services restart yabai
+
+# alt-tab バックアップ
+cp ~/Library/Preferences/com.lwouis.alt-tab-macos.plist ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist
 ```
