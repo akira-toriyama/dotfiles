@@ -16,17 +16,9 @@
 ## chrome
 
 - 設定を共有
+- さーふきんぐ
 
 ## クリップボード
-
-## DnD
-
-- Yoink
-- dropzone
-
-## スクショ
-
-- https://cleanshot.com/
 
 ## mac
 
@@ -38,16 +30,8 @@
 - zsh
 - tmux
 - fig
+- neovim
 
 ## fill in
 
 https://espanso.org/
-
-## workspace
-
-https://www.apptorium.com/workspaces
-
-## tool
-
-- popclip
-- translate
