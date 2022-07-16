@@ -38,6 +38,7 @@ brew install --cask google-japanese-ime
 brew install --cask qmk-toolbox
 brew install --cask onedrive
 brew install --cask raycast
+brew install --cask cleanshot
 
 # EdgeView 2
 mas install 1206246482
@@ -121,19 +122,20 @@ defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 asdf plugin add nodejs
 asdf plugin add golang
 asdf plugin add yarn
-asdf plugin add rust https://github.com/asdf-community/asdf-rust.git
+asdf plugin add rust
 asdf plugin add deno  
 
+asdf install nodejs latest
 asdf install golang latest
 asdf install yarn latest
 asdf install rust latest
-asdf install nodejs latest
-asdf install deno latest
+asdf install deno   latest
 
-asdf global golang latest
 asdf global nodejs latest
+asdf global golang latest
 asdf global yarn latest
-asdf global deno latest
+asdf global rust latest
+asdf global deno   latest
 
 # zsh
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zprofile ~/.
