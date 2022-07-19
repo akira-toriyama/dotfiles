@@ -39,6 +39,7 @@ brew install --cask qmk-toolbox
 brew install --cask onedrive
 brew install --cask raycast
 brew install --cask cleanshot
+brew install --cask deepl
 
 # EdgeView 2
 mas install 1206246482
