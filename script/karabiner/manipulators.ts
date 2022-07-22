@@ -148,6 +148,9 @@ const callApp = [
     type: "basic",
     to: [
       {
+        "key_code": "japanese_eisuu",
+      },
+      {
         key_code: "spacebar",
         modifiers: ["option"],
       },
