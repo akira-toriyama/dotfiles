@@ -142,6 +142,9 @@ asdf global deno   latest
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zprofile ~/.
 ln -s $DOT_FILE_ROOT_PATH/dotfiles/zsh/.zshrc ~/.
 
+# yabai
+ln -s $DOT_FILE_ROOT_PATH/dotfiles/yabai/yabairc ~/.config/yabai/.
+
 # compinit
 # https://zenn.dev/tomo_saku/articles/d48a158a2c4526
 chmod 755 /usr/local/share                   

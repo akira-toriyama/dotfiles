@@ -16,4 +16,9 @@
 # wait $!
 
 
-sleep 0.03 && yabai -m window --move rel:10:5 && sleep 0.03 && yabai -m window --move rel:-10:-5 &
+# sleep 0.03 && yabai -m window --move rel:10:5 && sleep 0.03 && yabai -m window --move rel:-10:-5 &
+
+sleep 0.1
+yabai -m window --move rel:2:2
+sleep 0.1
+yabai -m window --move rel:-2:-2
