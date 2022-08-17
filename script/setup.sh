@@ -125,18 +125,21 @@ asdf plugin add golang
 asdf plugin add yarn
 asdf plugin add rust
 asdf plugin add deno  
+asdf plugin add direnv
 
 asdf install nodejs latest
 asdf install golang latest
 asdf install yarn latest
 asdf install rust latest
-asdf install deno   latest
+asdf install deno latest
+asdf direnv setup --shell zsh --version latest
 
 asdf global nodejs latest
 asdf global golang latest
 asdf global yarn latest
 asdf global rust latest
-asdf global deno   latest
+asdf global deno latest
+
 
 # .config
 mkdir $DOT_FILE_ROOT_PATH/.config
