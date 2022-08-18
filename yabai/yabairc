@@ -11,4 +11,3 @@ yabai -m config window_border on
 
 # フォーカス変更
 yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/window_focused.sh"
-xx
