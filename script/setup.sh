@@ -165,4 +165,4 @@ go install github.com/justjanne/powerline-go@latest
 chmod -R go-w '/usr/local/share/zsh' 
 
 # qmk
-qmk setup -y
+# qmk setup -y
