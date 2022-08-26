@@ -138,11 +138,29 @@ const callApp = [
     ],
   },
   {
-    description: "ランチャー",
+    description: "辞書.app",
     from: {
       key_code: keyMap.ll,
       modifiers: {
         mandatory: ["command"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        "key_code": "japanese_eisuu",
+      },
+      {
+        "shell_command": "open '/System/Applications/Dictionary.app'",
+      },
+    ],
+  },
+  {
+    description: "ランチャー",
+    from: {
+      key_code: keyMap.ll,
+      modifiers: {
+        mandatory: ["control"],
       },
     },
     type: "basic",
