@@ -22,6 +22,7 @@ brew install koekeishiya/formulae/yabai
 brew install qmk/qmk/qmk
 brew install bat
 brew install youtube-dl
+brew install shortcat
 brew install --cask fsnotes
 brew install --cask kindle
 brew install --cask google-chrome

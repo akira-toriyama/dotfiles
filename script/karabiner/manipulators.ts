@@ -174,6 +174,25 @@ const callApp = [
       },
     ],
   },
+  {
+    description: "Shortcat",
+    from: {
+      key_code: keyMap.ll,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        "key_code": "japanese_eisuu",
+      },
+      {
+        key_code: "keypad_0",
+        modifiers: ["option"],
+      },
+    ],
+  },
 ] as const;
 
 const changeActiveWindow = [

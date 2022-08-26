@@ -1,10 +1,5 @@
 # TODO
 
-## ランチャー
-
-- alfred
-- raycast
-
 ## デスクトップ
 
 - total spaces3
@@ -18,7 +13,7 @@
 - 設定を共有
 - さーふきんぐ
 
-## mac
+## TODO
 
 - マインドマップ
 - TODO アプリ
