@@ -193,6 +193,25 @@ const callApp = [
       },
     ],
   },
+
+  {
+    description: "DeepL",
+    from: {
+      key_code: keyMap.ll,
+      modifiers: {
+        mandatory: ["option", "control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        "key_code": "japanese_eisuu",
+      },
+      {
+        "shell_command": "open '/Applications/DeepL.app'",
+      },
+    ],
+  },
 ] as const;
 
 const changeActiveWindow = [
