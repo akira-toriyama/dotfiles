@@ -52,3 +52,24 @@ vcx 左1/3, 右1/3, 中1/3 画面配置
 ### その他
 
 b 最大化 zz タイリンング
+
+---
+
+- window 一覧をraycastで表示
+
+- 類義語
+  - https://codic.jp/
+  - https://www.wordsapi.com/#
+
+- 複数形, 過去形
+
+- raycastでインタラクティブコミット？
+
+const load = (): Promise<{ foo: string }> => { const p =
+"/Volumes/workspace/bird-studio/search-window/a.mjs"; return import(p); };
+
+    load()
+      .then((x) => console.log(x.foo))
+      .catch(console.log);
+
+拡張ファイルは、denoでもいいかも mjs mts
