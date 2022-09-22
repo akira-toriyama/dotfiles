@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# git hubにプルリクを出す
+
+if [ ! -n "$1" ]; then
+  echo "ブランチ名をよろ"
+  exit 1
+fi
+
+git checkout -b $1 && git -c my.interactive=yes commit --allow-empty && git push && gh pr create --fill
+exit 0
