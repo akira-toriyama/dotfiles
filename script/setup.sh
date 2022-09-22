@@ -23,6 +23,7 @@ brew install qmk/qmk/qmk
 brew install bat
 brew install youtube-dl
 brew install shortcat
+brew install gh
 brew install --cask fsnotes
 brew install --cask kindle
 brew install --cask google-chrome
@@ -141,6 +142,8 @@ asdf global yarn latest
 asdf global rust latest
 asdf global deno latest
 
+# git
+git config --global push.default current
 
 # .config
 mkdir $DOT_FILE_ROOT_PATH/.config
