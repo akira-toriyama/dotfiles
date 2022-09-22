@@ -7,5 +7,5 @@ if [ ! -n "$1" ]; then
   exit 1
 fi
 
-git checkout -b $1 && git -c my.interactive=yes commit --allow-empty && git push && gh pr create --fill
+git checkout -b $1 && git -c my.interactive=yes commit --allow-empty && git push && gh pr create --assignee @me --fill
 exit 0
