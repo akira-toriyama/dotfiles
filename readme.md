@@ -24,6 +24,9 @@ script/setup.sh
 ## 手動
 
 ```bash
+# 通知設定の動作確認
+terminal-notifier -title "📜 タイトル" -message "🍎 メッセージ"
+
 # fonts
 git clone https://github.com/powerline/fonts.git --depth=1
 cd fonts

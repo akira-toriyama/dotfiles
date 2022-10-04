@@ -24,6 +24,7 @@ brew install bat
 brew install youtube-dl
 brew install shortcat
 brew install gh
+brew install terminal-notifier
 brew install --cask fsnotes
 brew install --cask kindle
 brew install --cask google-chrome
