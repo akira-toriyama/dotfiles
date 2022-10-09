@@ -126,7 +126,7 @@ const callApp = [
     from: {
       key_code: keyMap.ll,
       modifiers: {
-        mandatory: ["shift"],
+        mandatory: ["option", "control"],
       },
     },
     type: "basic",
@@ -199,7 +199,7 @@ const callApp = [
     from: {
       key_code: keyMap.ll,
       modifiers: {
-        mandatory: ["option", "control"],
+        mandatory: ["shift"],
       },
     },
     type: "basic",
