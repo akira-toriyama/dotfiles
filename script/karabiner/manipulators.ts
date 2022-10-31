@@ -195,7 +195,7 @@ const callApp = [
   },
 
   {
-    description: "DeepL",
+    description: "翻訳",
     from: {
       key_code: keyMap.ll,
       modifiers: {
@@ -208,7 +208,7 @@ const callApp = [
         "key_code": "japanese_eisuu",
       },
       {
-        "shell_command": "open '/Applications/DeepL.app'",
+        "shell_command": "open '/Applications/Translatium.app'",
       },
     ],
   },

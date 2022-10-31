@@ -42,22 +42,17 @@ brew install --cask qmk-toolbox
 brew install --cask onedrive
 brew install --cask raycast
 brew install --cask cleanshot
-brew install --cask deepl
 
 # EdgeView 2
 mas install 1206246482
-# Translate Tab
-mas install 458887729
 # PopClip
 mas install 445189367
+# Translatium
+mas install 1547052291
 # ScreenBrush
 mas install 1233965871
-# Loud Typer
-mas install 1493508558
 # OneDrive
 mas install 823766827
-# Cursor Pro
-mas install 1447043133
 # Dropover
 mas install 1355679052
 
