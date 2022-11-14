@@ -208,7 +208,7 @@ const callApp = [
         "key_code": "japanese_eisuu",
       },
       {
-        "shell_command": "open '/Applications/Translatium.app'",
+        "shell_command": "open '/Applications/DeepL.app'",
       },
     ],
   },
