@@ -427,6 +427,56 @@ const changeActiveTab = [
   },
 ] as const;
 
+/**
+ * ゲーム用
+ */
+const rapincRootController = [
+  {
+    from: {
+      key_code: "c",
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "escape",
+      },
+    ],
+    conditions: [
+      {
+        "type": "device_if",
+        "identifiers": [
+          {
+            "vendor_id": 1240,
+            "product_id": 85,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: "left_control",
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "5",
+      },
+    ],
+    conditions: [
+      {
+        "type": "device_if",
+        "identifiers": [
+          {
+            "vendor_id": 1240,
+            "product_id": 85,
+          },
+        ],
+      },
+    ],
+  },
+];
+
 export const manipulators = [
   ...changeActiveWindow,
   ...moveWindowPosition,
@@ -434,4 +484,5 @@ export const manipulators = [
   ...callApp,
   ...appShortcut,
   ...shortcut,
+  ...rapincRootController,
 ];
