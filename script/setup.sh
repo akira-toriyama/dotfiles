@@ -167,3 +167,6 @@ chmod -R go-w '/usr/local/share/zsh'
 # TODO https://www.reddit.com/r/olkb/comments/wo3cfo/solution_qmk_bad_interpreter_message_when_running/
 # qmk
 qmk setup -y
+
+# gramma
+npm i gramma -g
