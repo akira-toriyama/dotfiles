@@ -26,12 +26,6 @@ export const keyMap = {
   b: "keypad_asterisk",
   ll: "keypad_0", // lの右
 
-  // 親指
-  ll_rr: "f19",
-  lr_rl: "f18",
-  ll_rl: "f17",
-  lr_rr: "f16",
-
   //
   del: ["control", "shift", "option", "command"],
   tab: ["control", "shift", "option"],

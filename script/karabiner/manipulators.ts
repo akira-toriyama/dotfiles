@@ -96,32 +96,6 @@ const appShortcut = [
  */
 const callApp = [
   {
-    description: "アプリ一覧(現在のスペース",
-    from: {
-      key_code: keyMap.lr_rl,
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["option"],
-      },
-    ],
-  },
-  {
-    description: "アプリ一覧(すべてのスペース",
-    from: {
-      key_code: keyMap.ll_rr,
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["option", "control"],
-      },
-    ],
-  },
-  {
     description: "FSNotes",
     from: {
       key_code: keyMap.ll,
@@ -430,52 +404,30 @@ const changeActiveTab = [
 /**
  * ゲーム用
  */
-const rapincRootController = [
-  {
-    from: {
-      key_code: "c",
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "escape",
-      },
-    ],
-    conditions: [
-      {
-        "type": "device_if",
-        "identifiers": [
-          {
-            "vendor_id": 1240,
-            "product_id": 85,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: "left_control",
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "5",
-      },
-    ],
-    conditions: [
-      {
-        "type": "device_if",
-        "identifiers": [
-          {
-            "vendor_id": 1240,
-            "product_id": 85,
-          },
-        ],
-      },
-    ],
-  },
-];
+// const gamePad = [
+//   {
+//     from: {
+//       key_code: "left_control",
+//     },
+//     type: "basic",
+//     to: [
+//       {
+//         key_code: "escape",
+//       },
+//     ],
+//     conditions: [
+//       {
+//         "type": "device_if",
+//         "identifiers": [
+//           {
+//             "vendor_id": 7247,
+//             "product_id": 124,
+//           },
+//         ],
+//       },
+//     ],
+//   },
+// ];
 
 export const manipulators = [
   ...changeActiveWindow,
@@ -484,5 +436,5 @@ export const manipulators = [
   ...callApp,
   ...appShortcut,
   ...shortcut,
-  ...rapincRootController,
+  // ...gamePad,
 ];
