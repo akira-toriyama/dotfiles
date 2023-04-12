@@ -55,6 +55,10 @@ mas install 1233965871
 mas install 823766827
 # Dropover
 mas install 1355679052
+# Be Focused Pro - Focus Timer
+mas install 961632517
+
+
 
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
