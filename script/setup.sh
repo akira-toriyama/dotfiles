@@ -21,7 +21,6 @@ brew install zsh-history-substring-search
 brew install koekeishiya/formulae/yabai
 brew install qmk/qmk/qmk
 brew install bat
-brew install youtube-dl
 brew install shortcat
 brew install gh
 brew install terminal-notifier
