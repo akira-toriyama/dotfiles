@@ -77,7 +77,8 @@ deno run ./script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.jso
 deno run ./script/karabiner/usedKeys.ts 
 
 # yabai 再起動
-brew services restart yabai
+# brew services restart yabai
+yabai --stop-service && yabai --start-service
 
 # alt-tab バックアップ
 cp ~/Library/Preferences/com.lwouis.alt-tab-macos.plist ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist
