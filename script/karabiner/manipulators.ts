@@ -299,6 +299,7 @@ const moveWindowPosition = [
       },
     ],
   },
+
   {
     description: "画面サイズ変更 (最大",
     from: {
@@ -314,13 +315,26 @@ const moveWindowPosition = [
   {
     description: "タイリング",
     from: {
-      key_code: keyMap.zz,
+      key_code: keyMap.t,
     },
     type: "basic",
     to: [
       {
         shell_command:
           `${pathMap.yabai} -m config layout bsp && ${pathMap.yabai} -m config layout float`,
+      },
+    ],
+  },
+  {
+    description: "画面サイズ変更 (中央",
+    from: {
+      key_code: keyMap.g,
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          `${pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${sizeDownWindow}`,
       },
     ],
   },
