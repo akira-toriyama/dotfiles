@@ -1,4 +1,4 @@
-import { appMap, keyMap, pathMap } from "./config.ts";
+import { appMap, keyMap, pathMap, sizeDownWindow } from "./config.ts";
 
 /**
  * 汎用的なショートカット
@@ -255,7 +255,8 @@ const moveWindowPosition = [
     type: "basic",
     to: [
       {
-        shell_command: `${pathMap.yabai} -m window --grid 2:1:0:0:2:1`,
+        shell_command:
+          `${pathMap.yabai} -m window --grid 2:1:0:0:2:1 && ${sizeDownWindow}`,
       },
     ],
   },
@@ -267,7 +268,8 @@ const moveWindowPosition = [
     type: "basic",
     to: [
       {
-        shell_command: `${pathMap.yabai} -m window --grid 2:1:0:1:2:1`,
+        shell_command:
+          `${pathMap.yabai} -m window --grid 2:1:0:1:2:1 && ${sizeDownWindow}`,
       },
     ],
   },
@@ -279,7 +281,8 @@ const moveWindowPosition = [
     type: "basic",
     to: [
       {
-        shell_command: `${pathMap.yabai} -m window --grid 1:2:0:0:1:2`,
+        shell_command:
+          `${pathMap.yabai} -m window --grid 1:2:0:0:1:2 && ${sizeDownWindow}`,
       },
     ],
   },
@@ -291,7 +294,8 @@ const moveWindowPosition = [
     type: "basic",
     to: [
       {
-        shell_command: `${pathMap.yabai} -m window --grid 1:2:1:0:1:2`,
+        shell_command:
+          `${pathMap.yabai} -m window --grid 1:2:1:0:1:2 && ${sizeDownWindow}`,
       },
     ],
   },
@@ -303,7 +307,8 @@ const moveWindowPosition = [
     type: "basic",
     to: [
       {
-        shell_command: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
+        shell_command:
+          `${pathMap.yabai} -m window --grid 1:1:0:0:1:1 && ${sizeDownWindow}`,
       },
     ],
   },

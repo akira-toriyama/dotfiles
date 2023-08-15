@@ -36,3 +36,6 @@ export const appMap = {
   VSCode: "^com\\.microsoft\\.VSCode$",
   FSNotes: "^co\\.fluder\\.FSNotes$",
 } as const;
+
+export const sizeDownWindow =
+  `${pathMap.yabai} -m window --resize right:-4:0 && ${pathMap.yabai} -m window --resize bottom:0:-4 && ${pathMap.yabai} -m window --resize left:4:0 && ${pathMap.yabai} -m window --resize top:0:4`;
