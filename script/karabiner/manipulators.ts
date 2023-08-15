@@ -307,8 +307,7 @@ const moveWindowPosition = [
     type: "basic",
     to: [
       {
-        shell_command:
-          `${pathMap.yabai} -m window --grid 1:1:0:0:1:1 && ${sizeDownWindow}`,
+        shell_command: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
       },
     ],
   },
