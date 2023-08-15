@@ -25,14 +25,9 @@
 
 # sleep 0.05
 
-yabai -m window --move rel:4:4
-yabai -m window --move rel:-4:-4
+yabai -m window --move rel:2:2
+yabai -m window --move rel:-2:-2
 
-yabai -m window --move rel:4:4
-yabai -m window --move rel:-4:-4
+yabai -m window --move rel:2:2
+yabai -m window --move rel:-2:-2
 
-yabai -m window --move rel:4:4
-yabai -m window --move rel:-4:-4
-
-yabai -m window --move rel:4:4
-yabai -m window --move rel:-4:-4
