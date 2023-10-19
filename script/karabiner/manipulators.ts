@@ -19,6 +19,12 @@ const mouse = [
           "name": "enable_mouse_motion_to_scroll",
           "value": 1,
         },
+        "lazy": true,
+      },
+    ],
+    "to_if_alone": [
+      {
+        "pointing_button": "button3",
       },
     ],
     "to_after_key_up": [
