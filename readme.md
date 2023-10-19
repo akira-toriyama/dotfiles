@@ -71,7 +71,7 @@ cp ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plis
 
 ```bash
 # karabiner.json生成
-deno run ./script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json
+deno run ./script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json && open '/Applications/Karabiner-Elements.app' && echo "Devices の マウスを on"
 
 # karabinerの使用中のキー
 deno run ./script/karabiner/usedKeys.ts 

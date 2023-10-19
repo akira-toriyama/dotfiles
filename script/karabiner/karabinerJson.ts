@@ -20,6 +20,10 @@ const karabinerJson = {
           {
             description: "dactyl",
             manipulators,
+            "options": {
+              "momentum_scroll_enabled": true,
+              "speed_multiplier": 1.0,
+            },
           },
         ],
       },

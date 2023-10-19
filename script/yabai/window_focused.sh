@@ -31,3 +31,9 @@ yabai -m window --move rel:-2:-2
 yabai -m window --move rel:2:2
 yabai -m window --move rel:-2:-2
 
+yabai -m window --move rel:2:2
+yabai -m window --move rel:-2:-2
+
+yabai -m window --move rel:2:2
+yabai -m window --move rel:-2:-2
+

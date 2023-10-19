@@ -1,22 +1,70 @@
 import { appMap, keyMap, pathMap, sizeDownWindow } from "./config.ts";
 
 /**
- * 汎用的なショートカット
+ * https://karabiner-elements.pqrs.org/docs/manual/configuration/configure-devices/
  */
-const shortcut = [
+const mouse = [
+  // ドラッグスクロール
   {
-    description: "設定 cmd + ,",
-    from: {
-      key_code: keyMap.qq,
+    "type": "basic",
+    "from": {
+      "pointing_button": "button3",
+      "modifiers": {
+        "optional": ["any"],
+      },
     },
-    type: "basic",
-    to: [
+    "to": [
       {
-        key_code: "comma",
-        modifiers: ["command"],
+        "set_variable": {
+          "name": "enable_mouse_motion_to_scroll",
+          "value": 1,
+        },
+      },
+    ],
+    "to_after_key_up": [
+      {
+        "set_variable": {
+          "name": "enable_mouse_motion_to_scroll",
+          "value": 0,
+        },
       },
     ],
   },
+  {
+    "type": "mouse_motion_to_scroll",
+    "from": {
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "conditions": [
+      {
+        "type": "variable_if",
+        "name": "enable_mouse_motion_to_scroll",
+        "value": 1,
+      },
+    ],
+  },
+  // ----
+] as const;
+
+/**
+ * 汎用的なショートカット
+ */
+const shortcut = [
+  // {
+  //   description: "設定 cmd + ,",
+  //   from: {
+  //     key_code: keyMap.qq,
+  //   },
+  //   type: "basic",
+  //   to: [
+  //     {
+  //       key_code: "comma",
+  //       modifiers: ["command"],
+  //     },
+  //   ],
+  // },
 ] as const;
 
 /**
@@ -454,5 +502,6 @@ export const manipulators = [
   ...callApp,
   ...appShortcut,
   ...shortcut,
+  ...mouse,
   // ...gamePad,
 ];
