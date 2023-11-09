@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /usr/bin/env zsh
 
 # sleep 0.03 && 
 
@@ -25,15 +25,11 @@
 
 # sleep 0.05
 
-yabai -m window --move rel:2:2
-yabai -m window --move rel:-2:-2
+# yabai -m window --move rel:2:2
+# yabai -m window --move rel:-2:-2
 
-yabai -m window --move rel:2:2
-yabai -m window --move rel:-2:-2
+# yabai -m window --move rel:2:2
+# yabai -m window --move rel:-2:-2
 
-yabai -m window --move rel:2:2
-yabai -m window --move rel:-2:-2
-
-yabai -m window --move rel:2:2
-yabai -m window --move rel:-2:-2
-
+# yabai -m window --move rel:2:2
+# yabai -m window --move rel:-2:-2

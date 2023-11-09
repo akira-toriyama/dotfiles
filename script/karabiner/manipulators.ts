@@ -1,10 +1,9 @@
 import { appMap, keyMap, pathMap, sizeDownWindow } from "./config.ts";
 
 /**
- * https://karabiner-elements.pqrs.org/docs/manual/configuration/configure-devices/
+ * ドラッグスクロール
  */
-const mouse = [
-  // ドラッグスクロール
+const _dragScroll = [
   {
     "type": "basic",
     "from": {
@@ -51,7 +50,13 @@ const mouse = [
       },
     ],
   },
-  // ----
+] as const;
+
+/**
+ * https://karabiner-elements.pqrs.org/docs/manual/configuration/configure-devices/
+ */
+const mouse = [
+  ..._dragScroll,
 ] as const;
 
 /**
@@ -473,34 +478,6 @@ const changeActiveTab = [
   },
 ] as const;
 
-/**
- * ゲーム用
- */
-// const gamePad = [
-//   {
-//     from: {
-//       key_code: "left_control",
-//     },
-//     type: "basic",
-//     to: [
-//       {
-//         key_code: "escape",
-//       },
-//     ],
-//     conditions: [
-//       {
-//         "type": "device_if",
-//         "identifiers": [
-//           {
-//             "vendor_id": 7247,
-//             "product_id": 124,
-//           },
-//         ],
-//       },
-//     ],
-//   },
-// ];
-
 export const manipulators = [
   ...changeActiveWindow,
   ...moveWindowPosition,
@@ -509,5 +486,4 @@ export const manipulators = [
   ...appShortcut,
   ...shortcut,
   ...mouse,
-  // ...gamePad,
 ];
