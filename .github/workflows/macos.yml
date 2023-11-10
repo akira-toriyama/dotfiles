@@ -1,17 +1,21 @@
 on:
-  push:
-  schedule:
-    - cron: "* 10 * * *"
+  pull_request:
+    branches:
+      - main
+    types: [closed]
 
 jobs:
   build:
-    runs-on: macos-11
+    runs-on: "ubuntu-latest"
+
+    if: github.event.pull_request.merged == true
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: "actions/checkout@v4"
 
-      - name: setup
-        run: |
-          ./script/setup.sh
-        env:
-          DOT_FILE_ROOT_PATH: /Users/runner/work/dotfiles
+      - name: "TODO to Issue"
+        uses: "alstr/todo-to-issue-action@v4"
+        id: "todo"
+        with:
+          AUTO_ASSIGN: true

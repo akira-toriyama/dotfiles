@@ -1,4 +1,4 @@
-import { pathMap } from "../../karabiner/config.ts";
+import * as config from "../../config.ts";
 
 type DirectionFn = (pa: Array<FindWindowsResult>) => void;
 const left: DirectionFn = ([currentWindow, ...windows]) =>
@@ -31,33 +31,30 @@ type FindWindowsResult = {
 };
 
 const findWindows = async () => {
-  const p = Deno.run({
-    cmd: [pathMap.yabai, "-m", "query", "--windows", "--space"],
-    stdout: "piped",
-    stderr: "piped",
+  const command = new Deno.Command(config.pathMap.yabai, {
+    args: ["-m", "query", "--windows", "--space"],
   });
 
-  const { code } = await p.status();
-  p.close();
+  const { code, stdout } = await command.output();
 
-  if (code !== 0) {
-    return [];
+  if (code === 0) {
+    const r = new TextDecoder().decode(stdout);
+    return JSON.parse(r) as Array<FindWindowsResult>;
   }
-
-  return p.output()
-    .then((v) => new TextDecoder().decode(v))
-    .then<Array<FindWindowsResult>>((v) => JSON.parse(v));
+  return [];
 };
 
 const focusMover = async (pa: FindWindowsResult) => {
-  const p = Deno.run({
-    cmd: [pathMap.yabai, "-m", "window", "--focus", `${pa.id}`],
-    stdout: "piped",
-    stderr: "piped",
+  const command = new Deno.Command(config.pathMap.yabai, {
+    args: ["-m", "window", "--focus", `${pa.id}`],
   });
 
-  await p.status();
-  p.close();
+  const { code, stdout } = await command.output();
+
+  if (code === 0) {
+    const r = new TextDecoder().decode(stdout);
+    return JSON.parse(r) as Array<FindWindowsResult>;
+  }
 };
 
 export const focusMove = (p: { direction: keyof typeof direction }) => {

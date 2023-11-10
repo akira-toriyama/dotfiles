@@ -1,4 +1,4 @@
-import { appMap, keyMap, pathMap, sizeDownWindow } from "./config.ts";
+import * as config from "./config.ts";
 
 /**
  * ドラッグスクロール
@@ -66,7 +66,7 @@ const shortcut = [
   // {
   //   description: "設定 cmd + ,",
   //   from: {
-  //     key_code: keyMap.qq,
+  //     key_code: config.keyMap.qq,
   //   },
   //   type: "basic",
   //   to: [
@@ -85,9 +85,9 @@ const appShortcut = [
   {
     description: "markdownと編集モードのトグル",
     from: {
-      key_code: keyMap.t,
+      key_code: config.keyMap.t,
       modifiers: {
-        mandatory: keyMap.tab,
+        mandatory: config.keyMap.tab,
       },
     },
     type: "basic",
@@ -100,16 +100,16 @@ const appShortcut = [
     conditions: [
       {
         type: "frontmost_application_if",
-        bundle_identifiers: [appMap.FSNotes],
+        bundle_identifiers: [config.appMap.FSNotes],
       },
     ],
   },
   {
     description: "コメント",
     from: {
-      key_code: keyMap.c,
+      key_code: config.keyMap.c,
       modifiers: {
-        mandatory: keyMap.tab,
+        mandatory: config.keyMap.tab,
       },
     },
     type: "basic",
@@ -122,16 +122,16 @@ const appShortcut = [
     conditions: [
       {
         type: "frontmost_application_if",
-        bundle_identifiers: [appMap.VSCode],
+        bundle_identifiers: [config.appMap.VSCode],
       },
     ],
   },
   {
     description: "ターミナルとエディタの移動",
     from: {
-      key_code: keyMap.g,
+      key_code: config.keyMap.g,
       modifiers: {
-        mandatory: keyMap.tab,
+        mandatory: config.keyMap.tab,
       },
     },
     type: "basic",
@@ -144,7 +144,7 @@ const appShortcut = [
     conditions: [
       {
         type: "frontmost_application_if",
-        bundle_identifiers: [appMap.VSCode],
+        bundle_identifiers: [config.appMap.VSCode],
       },
     ],
   },
@@ -155,9 +155,43 @@ const appShortcut = [
  */
 const callApp = [
   {
+    description: "alt + tab",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["shift", "control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["option"],
+      },
+    ],
+  },
+
+  {
+    description: "alt + tab 2",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["option", "command"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["option", "control"],
+      },
+    ],
+  },
+
+  {
     description: "FSNotes",
     from: {
-      key_code: keyMap.ll,
+      key_code: config.keyMap.ll,
       modifiers: {
         mandatory: ["option", "control"],
       },
@@ -173,7 +207,7 @@ const callApp = [
   {
     description: "辞書.app",
     from: {
-      key_code: keyMap.ll,
+      key_code: config.keyMap.ll,
       modifiers: {
         mandatory: ["command"],
       },
@@ -191,7 +225,7 @@ const callApp = [
   {
     description: "ランチャー",
     from: {
-      key_code: keyMap.ll,
+      key_code: config.keyMap.ll,
       modifiers: {
         mandatory: ["control"],
       },
@@ -210,7 +244,7 @@ const callApp = [
   {
     description: "Shortcat",
     from: {
-      key_code: keyMap.ll,
+      key_code: config.keyMap.ll,
       modifiers: {
         mandatory: ["option"],
       },
@@ -230,7 +264,7 @@ const callApp = [
   {
     description: "翻訳",
     from: {
-      key_code: keyMap.ll,
+      key_code: config.keyMap.ll,
       modifiers: {
         mandatory: ["shift"],
       },
@@ -251,52 +285,52 @@ const changeActiveWindow = [
   {
     description: "アクティブウィンドウの変更 上",
     from: {
-      key_code: keyMap.a,
+      key_code: config.keyMap.a,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/up.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/up.ts`,
       },
     ],
   },
   {
     description: "アクティブウィンドウの変更 下",
     from: {
-      key_code: keyMap.s,
+      key_code: config.keyMap.s,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/down.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/down.ts`,
       },
     ],
   },
   {
     description: "アクティブウィンドウの変更 左",
     from: {
-      key_code: keyMap.d,
+      key_code: config.keyMap.d,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/left.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/left.ts`,
       },
     ],
   },
   {
     description: "アクティブウィンドウの変更 右",
     from: {
-      key_code: keyMap.f,
+      key_code: config.keyMap.f,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.deno} run --allow-run ${pathMap.dotfiles}/script/yabai/focus/right.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/right.ts`,
       },
     ],
   },
@@ -309,52 +343,52 @@ const moveWindowPosition = [
   {
     description: "画面サイズ変更 (上半分",
     from: {
-      key_code: keyMap.z,
+      key_code: config.keyMap.z,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.yabai} -m window --grid 2:1:0:0:2:1 && ${sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 2:1:0:0:2:1 && ${config.sizeDownWindow}`,
       },
     ],
   },
   {
     description: "画面サイズ変更 (下半分",
     from: {
-      key_code: keyMap.x,
+      key_code: config.keyMap.x,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.yabai} -m window --grid 2:1:0:1:2:1 && ${sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 2:1:0:1:2:1 && ${config.sizeDownWindow}`,
       },
     ],
   },
   {
     description: "画面サイズ変更 (左半分",
     from: {
-      key_code: keyMap.c,
+      key_code: config.keyMap.c,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.yabai} -m window --grid 1:2:0:0:1:2 && ${sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 1:2:0:0:1:2 && ${config.sizeDownWindow}`,
       },
     ],
   },
   {
     description: "画面サイズ変更 (右半分",
     from: {
-      key_code: keyMap.v,
+      key_code: config.keyMap.v,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.yabai} -m window --grid 1:2:1:0:1:2 && ${sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 1:2:1:0:1:2 && ${config.sizeDownWindow}`,
       },
     ],
   },
@@ -362,38 +396,39 @@ const moveWindowPosition = [
   {
     description: "画面サイズ変更 (最大",
     from: {
-      key_code: keyMap.b,
+      key_code: config.keyMap.b,
     },
     type: "basic",
     to: [
       {
-        shell_command: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
+        shell_command:
+          `${config.pathMap.yabai} -m window --grid 1:1:0:0:1:1 && ${config.sizeDownWindow}`,
       },
     ],
   },
   {
     description: "タイリング",
     from: {
-      key_code: keyMap.t,
+      key_code: config.keyMap.t,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.yabai} -m config layout bsp && ${pathMap.yabai} -m config layout float`,
+          `${config.pathMap.yabai} -m config layout bsp && ${config.pathMap.yabai} -m config layout float`,
       },
     ],
   },
   {
     description: "画面サイズ変更 (中央",
     from: {
-      key_code: keyMap.g,
+      key_code: config.keyMap.g,
     },
     type: "basic",
     to: [
       {
         shell_command:
-          `${pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${config.sizeDownWindow}`,
       },
     ],
   },
@@ -403,7 +438,7 @@ const changeActiveTab = [
   {
     description: "タブ左",
     from: {
-      key_code: keyMap.e,
+      key_code: config.keyMap.e,
     },
     type: "basic",
     to: [
@@ -415,14 +450,14 @@ const changeActiveTab = [
     conditions: [
       {
         type: "frontmost_application_if",
-        bundle_identifiers: [appMap.Chrome],
+        bundle_identifiers: [config.appMap.Chrome],
       },
     ],
   },
   {
     description: "タブ左",
     from: {
-      key_code: keyMap.e,
+      key_code: config.keyMap.e,
     },
     type: "basic",
     to: [
@@ -434,14 +469,14 @@ const changeActiveTab = [
     conditions: [
       {
         type: "frontmost_application_if",
-        bundle_identifiers: [appMap.VSCode],
+        bundle_identifiers: [config.appMap.VSCode],
       },
     ],
   },
   {
     description: "タブ右",
     from: {
-      key_code: keyMap.r,
+      key_code: config.keyMap.r,
     },
     type: "basic",
     to: [
@@ -453,14 +488,14 @@ const changeActiveTab = [
     conditions: [
       {
         type: "frontmost_application_if",
-        bundle_identifiers: [appMap.Chrome],
+        bundle_identifiers: [config.appMap.Chrome],
       },
     ],
   },
   {
     description: "タブ右",
     from: {
-      key_code: keyMap.r,
+      key_code: config.keyMap.r,
     },
     type: "basic",
     to: [
@@ -472,7 +507,7 @@ const changeActiveTab = [
     conditions: [
       {
         type: "frontmost_application_if",
-        bundle_identifiers: [appMap.VSCode],
+        bundle_identifiers: [config.appMap.VSCode],
       },
     ],
   },

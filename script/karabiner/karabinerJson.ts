@@ -18,7 +18,7 @@ const karabinerJson = {
         },
         rules: [
           {
-            description: "dactyl",
+            description: "kinesis",
             manipulators,
             "options": {
               "momentum_scroll_enabled": true,
