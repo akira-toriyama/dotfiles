@@ -161,26 +161,7 @@ const callApp = [
     ],
   },
   {
-    description: "Shortcat",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        "key_code": "japanese_eisuu",
-      },
-      {
-        key_code: "keypad_0",
-        modifiers: ["option"],
-      },
-    ],
-  },
-  {
-    description: "FSNotes",
+    description: "hit a hint",
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
@@ -190,8 +171,59 @@ const callApp = [
     type: "basic",
     to: [
       {
+        "key_code": "japanese_eisuu",
+      },
+      {
+        key_code: "spacebar",
+        modifiers: ["shift", "command"],
+      },
+    ],
+  },
+  {
+    description: "FSNotes",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
         key_code: "l",
         modifiers: ["control", "option", "shift"],
+      },
+    ],
+  },
+  {
+    description: "alt + tab current",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["option", "control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["option"],
+      },
+    ],
+  },
+  {
+    description: "alt + tab all",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["shift", "command"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["option", "control"],
       },
     ],
   },
