@@ -3,7 +3,7 @@ import * as config from "./config.ts";
 /**
  * ドラッグスクロール
  */
-const _dragScroll = [
+const dragScroll = [
   {
     "type": "basic",
     "from": {
@@ -53,39 +53,13 @@ const _dragScroll = [
 ] as const;
 
 /**
- * https://karabiner-elements.pqrs.org/docs/manual/configuration/configure-devices/
- */
-const mouse = [
-  ..._dragScroll,
-] as const;
-
-/**
  * 汎用的なショートカット
  */
 const shortcut = [
-  // {
-  //   description: "設定 cmd + ,",
-  //   from: {
-  //     key_code: config.keyMap.qq,
-  //   },
-  //   type: "basic",
-  //   to: [
-  //     {
-  //       key_code: "comma",
-  //       modifiers: ["command"],
-  //     },
-  //   ],
-  // },
-] as const;
-
-/**
- * アプリ用ショートカット
- */
-const appShortcut = [
   {
-    description: "markdownと編集モードのトグル",
+    description: "設定 cmd + ,",
     from: {
-      key_code: config.keyMap.t,
+      key_code: config.keyMap.s,
       modifiers: {
         mandatory: config.keyMap.tab,
       },
@@ -93,14 +67,8 @@ const appShortcut = [
     type: "basic",
     to: [
       {
-        key_code: "grave_accent_and_tilde",
+        key_code: "comma",
         modifiers: ["command"],
-      },
-    ],
-    conditions: [
-      {
-        type: "frontmost_application_if",
-        bundle_identifiers: [config.appMap.FSNotes],
       },
     ],
   },
@@ -117,12 +85,6 @@ const appShortcut = [
       {
         key_code: "slash",
         modifiers: ["command"],
-      },
-    ],
-    conditions: [
-      {
-        type: "frontmost_application_if",
-        bundle_identifiers: [config.appMap.VSCode],
       },
     ],
   },
@@ -148,68 +110,12 @@ const appShortcut = [
       },
     ],
   },
-] as const;
-
-/**
- * アプリ呼び出し
- */
-const callApp = [
-  {
-    description: "alt + tab",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["shift", "control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["option"],
-      },
-    ],
-  },
-
-  {
-    description: "alt + tab 2",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option", "command"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["option", "control"],
-      },
-    ],
-  },
-
-  {
-    description: "FSNotes",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option", "control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "l",
-        modifiers: ["control", "option", "shift"],
-      },
-    ],
-  },
   {
     description: "辞書.app",
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
-        mandatory: ["command"],
+        mandatory: ["shift"],
       },
     },
     type: "basic",
@@ -222,6 +128,19 @@ const callApp = [
       },
     ],
   },
+] as const;
+
+/**
+ * アプリ呼び出し
+ */
+const callApp = [
+  // TODO total spaces
+  // {
+  //   description: "total spaces",
+  //   from: {
+  //     key_code: config.keyMap.ll,
+  //   },
+  // },
   {
     description: "ランチャー",
     from: {
@@ -260,27 +179,27 @@ const callApp = [
       },
     ],
   },
-
   {
-    description: "翻訳",
+    description: "FSNotes",
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
-        mandatory: ["shift"],
+        mandatory: ["command"],
       },
     },
     type: "basic",
     to: [
       {
-        "key_code": "japanese_eisuu",
-      },
-      {
-        "shell_command": "open '/Applications/DeepL.app'",
+        key_code: "l",
+        modifiers: ["control", "option", "shift"],
       },
     ],
   },
 ] as const;
 
+/**
+ * アクティブウィンドウ変更
+ */
 const changeActiveWindow = [
   {
     description: "アクティブウィンドウの変更 上",
@@ -434,6 +353,9 @@ const moveWindowPosition = [
   },
 ] as const;
 
+/**
+ * タブ切り替え
+ */
 const changeActiveTab = [
   {
     description: "タブ左",
@@ -518,7 +440,6 @@ export const manipulators = [
   ...moveWindowPosition,
   ...changeActiveTab,
   ...callApp,
-  ...appShortcut,
   ...shortcut,
-  ...mouse,
+  ...dragScroll,
 ];
