@@ -37,5 +37,10 @@ export const appMap = {
   FSNotes: "^co\\.fluder\\.FSNotes$",
 } as const;
 
-export const sizeDownWindow =
+const _sizeDown =
   `${pathMap.yabai} -m window --resize right:-4:0 && ${pathMap.yabai} -m window --resize bottom:0:-4 && ${pathMap.yabai} -m window --resize left:4:0 && ${pathMap.yabai} -m window --resize top:0:4`;
+
+export const window = {
+  sizeDown: _sizeDown,
+  center: `${pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${_sizeDown}`,
+} as const;

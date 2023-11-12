@@ -181,8 +181,9 @@ const shortcut = [
       },
     ],
   },
+
   {
-    description: "ターミナルとエディタの移動",
+    description: "Google Chrome open",
     from: {
       key_code: config.keyMap.g,
       modifiers: {
@@ -192,14 +193,8 @@ const shortcut = [
     type: "basic",
     to: [
       {
-        key_code: "i",
-        modifiers: ["command", "control"],
-      },
-    ],
-    conditions: [
-      {
-        type: "frontmost_application_if",
-        bundle_identifiers: [config.appMap.VSCode],
+        shell_command:
+          `open -na "Google Chrome" --args --new-window "" && sleep 0.2 && ${config.window.center}`,
       },
     ],
   },
@@ -232,25 +227,6 @@ const callApp = [
       {
         key_code: "spacebar",
         modifiers: ["option"],
-      },
-    ],
-  },
-  {
-    description: "hit a hint",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        "key_code": "japanese_eisuu",
-      },
-      {
-        key_code: "spacebar",
-        modifiers: ["shift", "command"],
       },
     ],
   },
@@ -378,7 +354,7 @@ const moveWindowPosition = [
     to: [
       {
         shell_command:
-          `${config.pathMap.yabai} -m window --grid 2:1:0:0:2:1 && ${config.sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 2:1:0:0:2:1 && ${config.window.sizeDown}`,
       },
     ],
   },
@@ -391,7 +367,7 @@ const moveWindowPosition = [
     to: [
       {
         shell_command:
-          `${config.pathMap.yabai} -m window --grid 2:1:0:1:2:1 && ${config.sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 2:1:0:1:2:1 && ${config.window.sizeDown}`,
       },
     ],
   },
@@ -404,7 +380,7 @@ const moveWindowPosition = [
     to: [
       {
         shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:2:0:0:1:2 && ${config.sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 1:2:0:0:1:2 && ${config.window.sizeDown}`,
       },
     ],
   },
@@ -417,7 +393,7 @@ const moveWindowPosition = [
     to: [
       {
         shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:2:1:0:1:2 && ${config.sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 1:2:1:0:1:2 && ${config.window.sizeDown}`,
       },
     ],
   },
@@ -431,7 +407,7 @@ const moveWindowPosition = [
     to: [
       {
         shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:1:0:0:1:1 && ${config.sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 1:1:0:0:1:1 && ${config.window.sizeDown}`,
       },
     ],
   },
@@ -457,7 +433,7 @@ const moveWindowPosition = [
     to: [
       {
         shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${config.sizeDownWindow}`,
+          `${config.pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${config.window.sizeDown}`,
       },
     ],
   },
