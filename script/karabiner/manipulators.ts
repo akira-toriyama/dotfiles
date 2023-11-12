@@ -1,6 +1,94 @@
 import * as config from "./config.ts";
 
 /**
+ * 右クリと合わせて
+ */
+const rightClickWith = [
+  // 右クリでレイヤー切り替え
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button2",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "set_variable": { "name": "button2_down", "value": 1 } },
+    ],
+    "to_if_alone": [
+      {
+        "pointing_button": "button2",
+      },
+    ],
+    "to_after_key_up": [
+      { "set_variable": { "name": "button2_down", "value": 0 } },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button2_down", "value": 0 },
+    ],
+  },
+
+  // 左クリックで、mission_control
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button1",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "key_code": "mission_control" },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button2_down", "value": 1 },
+    ],
+  },
+
+  // スクショ or 録画
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button4",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      {
+        "key_code": "5",
+        "modifiers": [
+          "command",
+          "shift",
+        ],
+      },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button2_down", "value": 1 },
+    ],
+  },
+  // esc
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button5",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      {
+        "key_code": "escape",
+      },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button2_down", "value": 1 },
+    ],
+  },
+];
+
+/**
  * ドラッグスクロール
  */
 const dragScroll = [
@@ -51,6 +139,11 @@ const dragScroll = [
     ],
   },
 ] as const;
+
+const mouse = [
+  ...rightClickWith,
+  ...dragScroll,
+];
 
 /**
  * 汎用的なショートカット
@@ -110,24 +203,6 @@ const shortcut = [
       },
     ],
   },
-  {
-    description: "辞書.app",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["shift"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        "key_code": "japanese_eisuu",
-      },
-      {
-        "shell_command": "open '/System/Applications/Dictionary.app'",
-      },
-    ],
-  },
 ] as const;
 
 /**
@@ -165,7 +240,7 @@ const callApp = [
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
-        mandatory: ["command"],
+        mandatory: ["option"],
       },
     },
     type: "basic",
@@ -180,18 +255,21 @@ const callApp = [
     ],
   },
   {
-    description: "FSNotes",
+    description: "hit a hint 2",
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
-        mandatory: ["option"],
+        mandatory: ["option", "control"],
       },
     },
     type: "basic",
     to: [
       {
-        key_code: "l",
-        modifiers: ["control", "option", "shift"],
+        "key_code": "japanese_eisuu",
+      },
+      {
+        key_code: "spacebar",
+        modifiers: ["shift", "command", "option"],
       },
     ],
   },
@@ -200,7 +278,7 @@ const callApp = [
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
-        mandatory: ["option", "control"],
+        mandatory: ["command"],
       },
     },
     type: "basic",
@@ -473,5 +551,5 @@ export const manipulators = [
   ...changeActiveTab,
   ...callApp,
   ...shortcut,
-  ...dragScroll,
+  ...mouse,
 ];
