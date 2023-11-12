@@ -29,8 +29,8 @@ const rightClickWith = [
     ],
   },
 
-  // 左クリックで、mission_control
   {
+    description: "mission control",
     "type": "basic",
     "from": {
       "pointing_button": "button1",
@@ -46,8 +46,8 @@ const rightClickWith = [
     ],
   },
 
-  // スクショ or 録画
   {
+    description: "スクショ or 録画",
     "type": "basic",
     "from": {
       "pointing_button": "button4",
@@ -68,8 +68,10 @@ const rightClickWith = [
       { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
-  // esc
+
   {
+    description: "escape",
+
     "type": "basic",
     "from": {
       "pointing_button": "button5",
@@ -93,6 +95,7 @@ const rightClickWith = [
  */
 const dragScroll = [
   {
+    description: "ドラッグスクロール",
     "type": "basic",
     "from": {
       "pointing_button": "button3",
@@ -150,7 +153,7 @@ const mouse = [
  */
 const shortcut = [
   {
-    description: "設定 cmd + ,",
+    description: "設定 呼び出し",
     from: {
       key_code: config.keyMap.s,
       modifiers: {
@@ -181,9 +184,8 @@ const shortcut = [
       },
     ],
   },
-
   {
-    description: "Google Chrome open",
+    description: "新規ウィンドウで、Google Chrome open",
     from: {
       key_code: config.keyMap.g,
       modifiers: {
@@ -231,26 +233,7 @@ const callApp = [
     ],
   },
   {
-    description: "hit a hint 2",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option", "control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        "key_code": "japanese_eisuu",
-      },
-      {
-        key_code: "spacebar",
-        modifiers: ["shift", "command", "option"],
-      },
-    ],
-  },
-  {
-    description: "alt + tab current",
+    description: "alt + tab current スペース",
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
@@ -266,7 +249,7 @@ const callApp = [
     ],
   },
   {
-    description: "alt + tab all",
+    description: "alt + tab all スペース",
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
@@ -278,6 +261,60 @@ const callApp = [
       {
         key_code: "tab",
         modifiers: ["option", "control"],
+      },
+    ],
+  },
+
+  {
+    description: "FSNotes",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["shift"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "l",
+        modifiers: ["control", "option", "shift"],
+      },
+    ],
+  },
+  {
+    description: "辞書.app",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["shift", "control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        "key_code": "japanese_eisuu",
+      },
+      {
+        "shell_command": "open '/System/Applications/Dictionary.app'",
+      },
+    ],
+  },
+
+  {
+    description: "Shortcat",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: config.keyMap.ll,
+        modifiers: {
+          mandatory: ["option"],
+        },
       },
     ],
   },
@@ -412,7 +449,7 @@ const moveWindowPosition = [
     ],
   },
   {
-    description: "タイリング",
+    description: "ウィンドウタイリング",
     from: {
       key_code: config.keyMap.t,
     },
@@ -444,7 +481,7 @@ const moveWindowPosition = [
  */
 const changeActiveTab = [
   {
-    description: "タブ左",
+    description: "アクティブなタブを左に切り替え",
     from: {
       key_code: config.keyMap.e,
     },
@@ -463,7 +500,7 @@ const changeActiveTab = [
     ],
   },
   {
-    description: "タブ左",
+    description: "アクティブなタブを左に切り替え",
     from: {
       key_code: config.keyMap.e,
     },
@@ -482,7 +519,7 @@ const changeActiveTab = [
     ],
   },
   {
-    description: "タブ右",
+    description: "アクティブなタブを右に切り替え",
     from: {
       key_code: config.keyMap.r,
     },
@@ -501,7 +538,7 @@ const changeActiveTab = [
     ],
   },
   {
-    description: "タブ右",
+    description: "アクティブなタブを右に切り替え",
     from: {
       key_code: config.keyMap.r,
     },

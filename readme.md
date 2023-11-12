@@ -71,7 +71,7 @@ cp ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plis
 
 ```bash
 # karabiner.json生成
-deno run ./script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json && open '/Applications/Karabiner-Elements.app' && echo "Devices の マウスを on"
+deno run ./script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json && deno run ./script/make/makeShortcuts.ts > ./Shortcuts.md && open '/Applications/Karabiner-Elements.app' && echo "Devices の マウスを on"
 
 # yabai 再起動
 # brew services restart yabai
