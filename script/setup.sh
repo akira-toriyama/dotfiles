@@ -24,6 +24,7 @@ brew install bat
 brew install shortcat
 brew install gh
 brew install terminal-notifier
+brew install font-monaspace
 brew install --cask fsnotes
 brew install --cask kindle
 brew install --cask google-chrome
