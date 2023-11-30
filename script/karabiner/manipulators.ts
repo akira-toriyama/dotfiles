@@ -196,7 +196,7 @@ const shortcut = [
     to: [
       {
         shell_command:
-          `open -na "Google Chrome" --args --new-window "" && sleep 0.2 && ${config.window.center}`,
+          `open -na "Google Chrome" --args --new-window "" && sleep 0.4 && ${config.window.center}`,
       },
     ],
   },
