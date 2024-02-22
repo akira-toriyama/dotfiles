@@ -76,10 +76,6 @@ shift & ll
 ```
 ## 辞書.app
 ```
-shift,control & ll
-```
-## Shortcat
-```
 option & ll
 ```
 ## 設定 呼び出し

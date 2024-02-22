@@ -224,9 +224,6 @@ const callApp = [
     type: "basic",
     to: [
       {
-        "key_code": "japanese_eisuu",
-      },
-      {
         key_code: "spacebar",
         modifiers: ["option"],
       },
@@ -286,7 +283,7 @@ const callApp = [
     from: {
       key_code: config.keyMap.ll,
       modifiers: {
-        mandatory: ["shift", "control"],
+        mandatory: ["option"],
       },
     },
     type: "basic",
@@ -296,25 +293,6 @@ const callApp = [
       },
       {
         "shell_command": "open '/System/Applications/Dictionary.app'",
-      },
-    ],
-  },
-
-  {
-    description: "Shortcat",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: config.keyMap.ll,
-        modifiers: {
-          mandatory: ["option"],
-        },
       },
     ],
   },
