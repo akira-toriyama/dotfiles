@@ -15,10 +15,21 @@ brew install --cask \
   raycast \
   karabiner-elements
 
+# brew install \
+#   asdf \
+#   mas \
+#   gh
+
+# # EdgeView 2
+# mas install 1206246482
+# # PopClip
+# mas install 445189367
+# # Dropover
+# mas install 1355679052
+
 brew install \
   asdf \
-  mas \
-  gh
+  mas
 
 # EdgeView 2
 mas install 1206246482
