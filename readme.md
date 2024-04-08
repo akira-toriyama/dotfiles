@@ -12,22 +12,11 @@
   </a>
 </p>
 
-## Install
-
 ```bash
+git clone https://github.com/akira-toriyama/dotfiles.git
 cd dotfiles
 script/setup/setup.sh
-```
-
-```bash
-# mas
-script/setup/mas.sh
-
-# google-japanese-ime が apple silicon 非対応なので
-softwareupdate --install-rosetta --agree-to-license && brew install --cask google-japanese-ime
-
-# yabaiは手順が複雑
-brew install koekeishiya/formulae/yabai
+script/setup/local.sh
 
 # ssh key
 ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github/akira-toriyama"
@@ -35,16 +24,8 @@ ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github
 # https://docs.github.com/ja/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 # ssh -T git@github.com.akira-toriyama
 
-# karabiner
-script/karabiner/generation.sh
-
-# workspace
-hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
-
-# commit hook
+# github
 gh auth login
-git config --local core.hooksPath .githooks
-chmod +x .githooks/prepare-commit-msg
 ```
 
 ## Google IME
