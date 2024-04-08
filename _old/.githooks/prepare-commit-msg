@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 if [[ "$(git config --get my.interactive)" = yes ]];then
     # git -c my.interactive=yes commit

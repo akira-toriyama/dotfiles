@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # refs https://github.com/caderek/gramma
 # npm i gramma -g

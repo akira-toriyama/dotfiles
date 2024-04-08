@@ -311,7 +311,7 @@ const changeActiveWindow = [
     to: [
       {
         shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/up.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/up.ts`,
       },
     ],
   },
@@ -324,7 +324,7 @@ const changeActiveWindow = [
     to: [
       {
         shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/down.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/down.ts`,
       },
     ],
   },
@@ -337,7 +337,7 @@ const changeActiveWindow = [
     to: [
       {
         shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/left.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/left.ts`,
       },
     ],
   },
@@ -350,7 +350,7 @@ const changeActiveWindow = [
     to: [
       {
         shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/yabai/focus/right.ts`,
+          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/right.ts`,
       },
     ],
   },

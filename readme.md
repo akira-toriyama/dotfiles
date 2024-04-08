@@ -32,9 +32,7 @@ ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github
 # ssh -T git@github.com.akira-toriyama
 
 # karabiner
-deno run ~/dotfiles/script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json && \
-open '/Applications/Karabiner-Elements.app' && \ 
-echo "Devices の マウスを on"
+script/karabiner/generation.sh
 
 # workspace
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage

@@ -9,7 +9,7 @@ git config --global push.default current
 
 # ssh
 mkdir -p $HOME/.ssh/github
-cp setting/.ssh/config  $HOME/.ssh/config
+cp ./setting/.ssh/config  $HOME/.ssh/config
 
-# zsh
-ln -s ./setting/zsh/.* ~
+# yabai
+ln -s $PWD/setting/yabai/.yabairc ~/.

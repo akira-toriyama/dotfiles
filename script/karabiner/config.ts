@@ -1,5 +1,5 @@
 export const pathMap = {
-  yabai: "/usr/local/bin/yabai",
+  yabai: "/opt/homebrew/bin/yabai",
   node: "/Users/tommy/.asdf/shims/node",
   dotfiles: "/Users/tommy/dotfiles",
   deno: "/Users/tommy/.asdf/shims/deno",
