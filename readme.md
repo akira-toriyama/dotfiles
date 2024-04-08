@@ -1,4 +1,4 @@
-# dotfiles
+# Dotfiles
 
 <p align="center">
   <a href="https://github.com/akira-toriyama/dotfiles">
@@ -12,71 +12,34 @@
   </a>
 </p>
 
-## 自動
+
+## Install
 
 ```bash
-git clone git@github.com:akira-toriyama/dotfiles.git
-cd dotfiles
-export DOT_FILE_ROOT_PATH=$HOME
-script/setup.sh
-```
+dotfiles/script/setup/setup.sh
 
-## 手動
+ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github/akira-toriyama"
+# pbcopy < "$HOME/.ssh/github/akira-toriyama.pub"
+# https://docs.github.com/ja/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
+# ssh -T git@github.com.akira-toriyama
 
-```bash
-# 通知設定の動作確認
-terminal-notifier -title "📜 タイトル" -message "🍎 メッセージ"
+# karabiner
+deno run ~/dotfiles/script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json && \
+open '/Applications/Karabiner-Elements.app' && \ 
+echo "Devices の マウスを on"
 
-# fonts
-git clone https://github.com/powerline/fonts.git --depth=1
-cd fonts
-./install.sh
-cd ..
-rm -rf fonts
-```
-
-```bash
-# OneDrive 設定後
-# `ln`だとうまく動作しないので`cp`
-cp ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist ~/Library/Preferences/com.lwouis.alt-tab-macos.plist
-```
-
-```bash
-fig
-```
-
-```bash
 # workspace
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
 ```
 
-```bash
-# alt-tab
-# `ln -s`だと上手く動作しないので`cp`
-cp ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist ~/Library/Preferences/com.lwouis.alt-tab-macos.plist
-```
+## Google IME
 
-## ime
-
-インポートする
-
-- ~/dotfiles/setting/ime/romantable.txt
-- ~/dotfiles/setting/ime/keymap.txt
+スペースを常に半角にする。
+`~/dotfiles/setting/ime/romantable.txt`をインポート
+`~/dotfiles/setting/ime/keymap.txt`をインポート
 
 ## yabai
 
-- https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
-
-## よく使う sh
-
 ```bash
-# karabiner.json生成
-deno run ./script/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json && deno run ./script/make/makeShortcuts.ts > ./Shortcuts.md && open '/Applications/Karabiner-Elements.app' && echo "Devices の マウスを on"
-
-# yabai 再起動
-# brew services restart yabai
-yabai --stop-service && yabai --start-service
-
-# alt-tab バックアップ
-cp ~/Library/Preferences/com.lwouis.alt-tab-macos.plist ~/Library/CloudStorage/OneDrive-個人用/plist/com.lwouis.alt-tab-macos.plist
+brew install koekeishiya/formulae/yabai
 ```

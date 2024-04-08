@@ -1,0 +1,15 @@
+on: 
+  push:
+  schedule:
+    - cron: '* 10 * * *'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: setup
+      run: |
+        ./script/setup/setup.sh
