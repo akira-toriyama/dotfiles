@@ -56,3 +56,6 @@ defaults write com.apple.finder ShowMountedServersOnDesktop -bool false
 
 # デスクトップに表示する項目 接続しているサーバ
 defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
+
+# https://discuss.binaryage.com/t/can-we-help-test-total-spaces-3-if-we-have-apple-silicon/8199/65
+defaults write com.apple.dock "mru-spaces" -bool false
