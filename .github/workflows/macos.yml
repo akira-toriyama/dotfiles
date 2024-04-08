@@ -1,21 +1,15 @@
-on:
-  pull_request:
-    branches:
-      - main
-    types: [closed]
+on: 
+  push:
+  schedule:
+    - cron: '* 10 * * *'
 
 jobs:
   build:
-    runs-on: "ubuntu-latest"
-
-    if: github.event.pull_request.merged == true
+    runs-on: macos-latest
 
     steps:
-      - name: Checkout
-        uses: "actions/checkout@v4"
+    - uses: actions/checkout@v4
 
-      - name: "TODO to Issue"
-        uses: "alstr/todo-to-issue-action@v4"
-        id: "todo"
-        with:
-          AUTO_ASSIGN: true
+    - name: setup
+      run: |
+        ./script/setup/setup.sh
