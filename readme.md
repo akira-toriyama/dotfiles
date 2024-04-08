@@ -16,6 +16,7 @@
 
 ```bash
 cd dotfiles
+
 script/setup/setup.sh
 
 # google-japanese-ime が apple silicon 非対応なので
@@ -44,5 +45,6 @@ chmod +x .githooks/prepare-commit-msg
 
 ## Google IME
 
-スペースを常に半角にする。 `~/dotfiles/setting/ime/romantable.txt`をインポート
-`~/dotfiles/setting/ime/keymap.txt`をインポート
+- スペースを常に半角に
+- `~/dotfiles/setting/ime/romantable.txt`をインポート
+- `~/dotfiles/setting/ime/keymap.txt`をインポート
