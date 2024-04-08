@@ -1,8 +1,8 @@
 #! /bin/bash
 
-~/dotfiles/script/setup/app.sh
-~/dotfiles/script/setup/defaults.sh
-~/dotfiles/script/setup/asdf.sh
+./script/setup/app.sh
+./script/setup/defaults.sh
+./script/setup/asdf.sh
 
 # git
 git config --global push.default current
@@ -12,4 +12,4 @@ mkdir -p $HOME/.ssh/github
 cp setting/.ssh/config  $HOME/.ssh/config
 
 # zsh
-ln -s ~/dotfiles/setting/zsh/.* ~
+ln -s ./setting/zsh/.* ~

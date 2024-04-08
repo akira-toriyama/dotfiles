@@ -16,7 +16,8 @@
 ## Install
 
 ```bash
-dotfiles/script/setup/setup.sh
+cd dotfiles
+script/setup/setup.sh
 
 ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github/akira-toriyama"
 # pbcopy < "$HOME/.ssh/github/akira-toriyama.pub"
