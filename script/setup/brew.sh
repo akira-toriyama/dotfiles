@@ -18,6 +18,7 @@ brew install --cask \
 brew install \
   asdf \
   mas \
-  gh
+  gh \
+  ghq
 
 brew tap FelixKratz/formulae && brew install borders
