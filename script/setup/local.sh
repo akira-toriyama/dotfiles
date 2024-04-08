@@ -16,3 +16,6 @@ hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -voln
 # commit hook
 git config --local core.hooksPath .githooks
 chmod +x .githooks/prepare-commit-msg
+
+# ghq
+git config --global ghq.root '/Volumes/workspace/'
