@@ -19,6 +19,13 @@
 cd dotfiles
 script/setup/setup.sh
 
+# google-japanese-ime が apple silicon 非対応なので
+softwareupdate --install-rosetta --agree-to-license && brew install --cask google-japanese-ime
+
+# yabaiは手順が複雑
+brew install koekeishiya/formulae/yabai
+
+# ssh key
 ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github/akira-toriyama"
 # pbcopy < "$HOME/.ssh/github/akira-toriyama.pub"
 # https://docs.github.com/ja/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
@@ -38,9 +45,3 @@ hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -voln
 スペースを常に半角にする。
 `~/dotfiles/setting/ime/romantable.txt`をインポート
 `~/dotfiles/setting/ime/keymap.txt`をインポート
-
-## yabai
-
-```bash
-brew install koekeishiya/formulae/yabai
-```

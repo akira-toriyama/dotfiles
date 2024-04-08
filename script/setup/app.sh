@@ -20,8 +20,6 @@ brew install \
   mas \
   gh
 
-softwareupdate --install-rosetta --agree-to-license && brew install --cask google-japanese-ime
-
 # EdgeView 2
 mas install 1206246482
 # PopClip
