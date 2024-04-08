@@ -43,6 +43,8 @@ hoipoiCapsule.useCase.fillInCommitMessage.run({
       q: hoipoiCapsule.preset.fillInCommitMessage.gitmojiStyle.qMap.bodyQ,
       fixCommitMessage: hoipoiCapsule.preset.fillInCommitMessage.gitmojiStyle
         .fixCommitMessageMap.body,
-    },
-  ],
+      }
+  ]
 });
+
+
