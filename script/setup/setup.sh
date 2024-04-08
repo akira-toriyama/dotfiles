@@ -1,6 +1,6 @@
 #! /bin/bash
 
-./script/setup/app.sh
+./script/setup/brew.sh
 ./script/setup/defaults.sh
 ./script/setup/asdf.sh
 

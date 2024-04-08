@@ -16,16 +16,18 @@
 
 ```bash
 cd dotfiles
-
 script/setup/setup.sh
+```
+
+```bash
+# mas
+script/setup/mas.sh
 
 # google-japanese-ime が apple silicon 非対応なので
 softwareupdate --install-rosetta --agree-to-license && brew install --cask google-japanese-ime
 
 # yabaiは手順が複雑
 brew install koekeishiya/formulae/yabai
-# CIでエラー
-brew tap FelixKratz/formulae && brew install borders
 
 # ssh key
 ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github/akira-toriyama"
