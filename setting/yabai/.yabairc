@@ -46,6 +46,6 @@ sudo yabai --load-sa
 # echo "yabai configuration loaded.."
 
 
-yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/window_focused.sh"
+# yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/window_focused.sh"
 
 ~/dotfiles/script/yabai/border_color.sh &
