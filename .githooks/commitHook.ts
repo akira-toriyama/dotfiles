@@ -1,4 +1,4 @@
-import * as hoipoiCapsule from "https://deno.land/x/hoipoi_capsule@v2.0.0/mod.ts";
+import * as hoipoiCapsule from "https://deno.land/x/hoipoi_capsule/mod.ts";
 
 const o = await hoipoiCapsule.preset.fillInCommitMessage.gitmojiStyle
   .initialize();
@@ -43,8 +43,6 @@ hoipoiCapsule.useCase.fillInCommitMessage.run({
       q: hoipoiCapsule.preset.fillInCommitMessage.gitmojiStyle.qMap.bodyQ,
       fixCommitMessage: hoipoiCapsule.preset.fillInCommitMessage.gitmojiStyle
         .fixCommitMessageMap.body,
-      }
-  ]
+    },
+  ],
 });
-
-

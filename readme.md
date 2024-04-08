@@ -12,7 +12,6 @@
   </a>
 </p>
 
-
 ## Install
 
 ```bash
@@ -36,10 +35,14 @@ script/karabiner/generation.sh
 
 # workspace
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
+
+# commit hook
+gh auth login
+git config --local core.hooksPath .githooks
+chmod +x .githooks/prepare-commit-msg
 ```
 
 ## Google IME
 
-スペースを常に半角にする。
-`~/dotfiles/setting/ime/romantable.txt`をインポート
+スペースを常に半角にする。 `~/dotfiles/setting/ime/romantable.txt`をインポート
 `~/dotfiles/setting/ime/keymap.txt`をインポート

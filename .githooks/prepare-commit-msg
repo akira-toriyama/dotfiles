@@ -1,0 +1,3 @@
+#! /bin/bash
+
+exec < /dev/tty deno run --allow-net --allow-write --allow-run --allow-read .githooks/commitHook.ts
