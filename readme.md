@@ -24,6 +24,8 @@ softwareupdate --install-rosetta --agree-to-license && brew install --cask googl
 
 # yabaiは手順が複雑
 brew install koekeishiya/formulae/yabai
+# CIでエラー
+brew tap FelixKratz/formulae && brew install borders
 
 # ssh key
 ssh-keygen -t ed25519 -C "imatomiyuichi+github3@gmail.com" -f "$HOME/.ssh/github/akira-toriyama"

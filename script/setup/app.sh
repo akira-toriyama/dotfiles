@@ -20,8 +20,6 @@ brew install \
   mas \
   gh
 
-brew tap FelixKratz/formulae && brew install borders
-
 # EdgeView 2
 mas install 1206246482
 # PopClip
