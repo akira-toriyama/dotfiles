@@ -496,6 +496,60 @@ const altTab = [
   },
 ] as const;
 
+const app = [
+  {
+    description: "ランチャー",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option"],
+      },
+    ],
+  },
+
+  {
+    description: "FSNotes",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["shift"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "l",
+        modifiers: ["control", "option", "shift"],
+      },
+    ],
+  },
+  {
+    description: "辞書.app",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        "key_code": "japanese_eisuu",
+      },
+      {
+        "shell_command": "open '/System/Applications/Dictionary.app'",
+      },
+    ],
+  },
+] as const;
+
 export const manipulators = [
   ...windowFocus,
   ...windowPosition,
@@ -504,4 +558,5 @@ export const manipulators = [
   ...rightClickWith,
   ...totalSpaces,
   ...altTab,
+  ...app,
 ];
