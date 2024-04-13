@@ -494,7 +494,7 @@ const altTab = [
       },
     ],
   },
-];
+] as const;
 
 export const manipulators = [
   ...windowFocus,
