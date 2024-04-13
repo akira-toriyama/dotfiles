@@ -44,3 +44,21 @@ export const window = {
   sizeDown: _sizeDown,
   center: `${pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${_sizeDown}`,
 } as const;
+
+export const spaces = [
+  keyMap.q,
+  keyMap.w,
+  keyMap.e,
+  keyMap.r,
+  keyMap.t,
+  keyMap.a,
+  keyMap.s,
+  keyMap.d,
+  keyMap.f,
+  keyMap.g,
+  keyMap.z,
+  keyMap.x,
+  keyMap.c,
+  keyMap.v,
+  keyMap.b,
+] as const;

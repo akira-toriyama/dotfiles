@@ -4,7 +4,9 @@ import * as config from "./config.ts";
  * 右クリと合わせて
  */
 const rightClickWith = [
-  // 右クリでレイヤー切り替え
+  /**
+   * 右クリでレイヤー切り替え
+   */
   {
     "type": "basic",
     "from": {
@@ -28,7 +30,6 @@ const rightClickWith = [
       { "type": "variable_if", "name": "button2_down", "value": 0 },
     ],
   },
-
   {
     description: "mission control",
     "type": "basic",
@@ -45,7 +46,6 @@ const rightClickWith = [
       { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
-
   {
     description: "スクショ or 録画",
     "type": "basic",
@@ -68,84 +68,25 @@ const rightClickWith = [
       { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
-
   {
-    description: "escape",
-
-    "type": "basic",
-    "from": {
-      "pointing_button": "button5",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      {
-        "key_code": "escape",
-      },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button2_down", "value": 1 },
-    ],
-  },
-];
-
-/**
- * ドラッグスクロール
- */
-const dragScroll = [
-  {
-    description: "ドラッグスクロール",
-    "type": "basic",
+    description: "Total spaces",
     "from": {
       "pointing_button": "button3",
       "modifiers": {
         "optional": ["any"],
       },
     },
-    "to": [
+    "type": "basic",
+    to: [
       {
-        "set_variable": {
-          "name": "enable_mouse_motion_to_scroll",
-          "value": 1,
-        },
-        "lazy": true,
+        key_code: "spacebar",
+        modifiers: ["shift", "option"],
       },
     ],
-    "to_if_alone": [
-      {
-        "pointing_button": "button3",
-      },
-    ],
-    "to_after_key_up": [
-      {
-        "set_variable": {
-          "name": "enable_mouse_motion_to_scroll",
-          "value": 0,
-        },
-      },
-    ],
-  },
-  {
-    "type": "mouse_motion_to_scroll",
-    "from": {
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
     "conditions": [
-      {
-        "type": "variable_if",
-        "name": "enable_mouse_motion_to_scroll",
-        "value": 1,
-      },
+      { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
-] as const;
-
-const mouse = [
-  ...rightClickWith,
-  ...dragScroll,
 ];
 
 /**
@@ -203,112 +144,9 @@ const shortcut = [
 ] as const;
 
 /**
- * アプリ呼び出し
- */
-const callApp = [
-  // TODO total spaces
-  {
-    description: "total spaces",
-    from: {
-      key_code: config.keyMap.ll,
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "space",
-        modifiers: ["shift", "option"],
-      },
-    ],
-  },
-  {
-    description: "ランチャー",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "spacebar",
-        modifiers: ["option"],
-      },
-    ],
-  },
-  {
-    description: "alt + tab current スペース",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["command"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["option"],
-      },
-    ],
-  },
-  {
-    description: "alt + tab all スペース",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["shift", "command"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["option", "control"],
-      },
-    ],
-  },
-
-  {
-    description: "FSNotes",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["shift"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "l",
-        modifiers: ["control", "option", "shift"],
-      },
-    ],
-  },
-  {
-    description: "辞書.app",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        "key_code": "japanese_eisuu",
-      },
-      {
-        "shell_command": "open '/System/Applications/Dictionary.app'",
-      },
-    ],
-  },
-] as const;
-
-/**
  * アクティブウィンドウ変更
  */
-const changeActiveWindow = [
+const windowFocus = [
   {
     description: "アクティブウィンドウの変更 上",
     from: {
@@ -366,7 +204,7 @@ const changeActiveWindow = [
 /**
  * ウィンドウの位置を変更
  */
-const moveWindowPosition = [
+const windowPosition = [
   {
     description: "画面サイズ変更 (上半分",
     from: {
@@ -464,7 +302,7 @@ const moveWindowPosition = [
 /**
  * タブ切り替え
  */
-const changeActiveTab = [
+const tabSwitching = [
   {
     description: "アクティブなタブを左に切り替え",
     from: {
@@ -543,11 +381,127 @@ const changeActiveTab = [
   },
 ] as const;
 
+const totalSpaces = [
+  {
+    description: "All spaces",
+    from: {
+      key_code: config.keyMap.ll,
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option", "shift"],
+      },
+    ],
+  },
+  /**
+   * focus
+   */
+  ...config.spaces.map((v, k) => ({
+    keyCode: v,
+    no: k + 1,
+  })).map(({ keyCode, no }) => ({
+    description: `focus spaces ${no}`,
+    from: {
+      key_code: keyCode,
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: `${config.pathMap.yabai} -m space --focus ${no}`,
+      },
+    ],
+  })),
+  /**
+   * send
+   */
+  ...config.spaces.map((v, k) => ({
+    keyCode: v,
+    no: k + 1,
+  })).map(({ keyCode, no }) => ({
+    description: `focus spaces ${no}`,
+    from: {
+      key_code: keyCode,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: `${config.pathMap.yabai} -m window --space ${no}`,
+      },
+    ],
+  })),
+  /**
+   * send & focus
+   */
+  ...config.spaces.map((v, k) => ({
+    keyCode: v,
+    no: k + 1,
+  })).map(({ keyCode, no }) => ({
+    description: `focus spaces ${no}`,
+    from: {
+      key_code: keyCode,
+      modifiers: {
+        mandatory: ["option", "control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          `${config.pathMap.yabai} -m window --space ${no} && ${config.pathMap.yabai} -m space --focus ${no}`,
+      },
+    ],
+  })),
+] as const;
+
+const altTab = [
+  {
+    description: "alt + tab current スペース",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["shift"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["option"],
+      },
+    ],
+  },
+  {
+    description: "alt + tab all スペース",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["command"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["command", "control"],
+      },
+    ],
+  },
+];
+
 export const manipulators = [
-  ...changeActiveWindow,
-  ...moveWindowPosition,
-  ...changeActiveTab,
-  ...callApp,
+  ...windowFocus,
+  ...windowPosition,
+  ...tabSwitching,
   ...shortcut,
-  ...mouse,
+  ...rightClickWith,
+  ...totalSpaces,
+  ...altTab,
 ];
