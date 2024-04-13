@@ -21,4 +21,4 @@ chmod +x .githooks/prepare-commit-msg
 git config --global ghq.root '/Volumes/workspace/'
 
 # alt-tab
-ln -s ~/Library/Mobile\ Documents/com\~apple\~CloudDocs/alt-tab/com.lwouis.alt-tab-macos.plist ~/Library/Preferences/.
+ln -s "/Users/$USER/Library/Mobile Documents/com~apple~CloudDocs/alt-tab/com.lwouis.alt-tab-macos.plist" /Users/$USER/Library/Preferences/.
