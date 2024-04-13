@@ -33,3 +33,10 @@ gh auth login
 - スペースを常に半角に
 - `~/dotfiles/setting/ime/romantable.txt`をインポート
 - `~/dotfiles/setting/ime/keymap.txt`をインポート
+
+## よく使う
+
+```bash
+# karabiner
+script/karabiner/generation.sh
+```

@@ -207,12 +207,19 @@ const shortcut = [
  */
 const callApp = [
   // TODO total spaces
-  // {
-  //   description: "total spaces",
-  //   from: {
-  //     key_code: config.keyMap.ll,
-  //   },
-  // },
+  {
+    description: "total spaces",
+    from: {
+      key_code: config.keyMap.ll,
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "space",
+        modifiers: ["shift", "option"],
+      },
+    ],
+  },
   {
     description: "ランチャー",
     from: {
