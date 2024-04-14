@@ -1,5 +1,3 @@
-# Dotfiles
-
 <p align="center">
   <a href="https://github.com/akira-toriyama/dotfiles">
     <img src="https://user-images.githubusercontent.com/92862731/166393194-1c4a4338-ae35-4dee-bd0f-7fce2f7f01dd.png"/>
@@ -12,10 +10,19 @@
   </a>
 </p>
 
+## Setup
+
 ```bash
 git clone https://github.com/akira-toriyama/dotfiles.git
 cd dotfiles
 script/setup/setup.sh
+```
+
+## Setting
+
+### Shell
+
+```bash
 script/setup/local.sh
 
 # ssh key
@@ -28,7 +35,7 @@ ssh-keygen -t ed25519 -f "$HOME/.ssh/github/akira-toriyama"
 gh auth login
 ```
 
-## Google IME
+### Google IME
 
 - スペースを常に半角に
 - `~/dotfiles/setting/ime/romantable.txt`をインポート
