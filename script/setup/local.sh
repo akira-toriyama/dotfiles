@@ -19,3 +19,7 @@ chmod +x .githooks/prepare-commit-msg
 
 # ghq
 git config --global ghq.root '/Volumes/workspace/'
+
+# alt-tab
+# ln -s は正しく動作しない
+cp setting/alt-tab/com.lwouis.alt-tab-macos.plist ~/Library/Preferences/.

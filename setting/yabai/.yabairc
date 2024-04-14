@@ -47,6 +47,9 @@ sudo yabai --load-sa
 
 # echo "yabai configuration loaded.."
 
-# yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/window_focused.sh"
+# 自動的にアクティブアクティブなウィンドウにフォーカスを合わせる
+yabai -m signal --add event=window_destroyed action="yabai -m query --windows --window &> /dev/null || yabai -m window --focus mouse"
+yabai -m signal --add event=application_terminated action="yabai -m query --windows --window &> /dev/null || yabai -m window --focus"
 
+# 枠線
 ~/dotfiles/script/yabai/border_color.sh &
