@@ -38,8 +38,12 @@ gh auth login
 ### Google IME
 
 - スペースを常に半角に
-- `~/dotfiles/setting/ime/romantable.txt`をインポート
-- `~/dotfiles/setting/ime/keymap.txt`をインポート
+- `setting/ime/romantable.txt`をインポート
+- `setting/ime/keymap.txt`をインポート
+
+### Rectangle
+
+`setting/rectangle/RectangleConfig.json`をインポート
 
 ## よく使う
 
