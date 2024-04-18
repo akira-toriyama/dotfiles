@@ -44,6 +44,9 @@ gh auth login
 ## よく使う
 
 ```bash
-# karabiner
+# karabiner 更新
 script/karabiner/generation.sh
+
+# alt-tab 更新
+cp ~/Library/Preferences/com.lwouis.alt-tab-macos.plist ~/dotfiles/setting/alt-tab/.
 ```
