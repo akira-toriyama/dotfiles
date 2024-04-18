@@ -1,9 +1,6 @@
 import * as config from "./config.ts";
 
-/**
- * 右クリと合わせて
- */
-const rightClickWith = [
+const rightClick = [
   /**
    * 右クリでレイヤー切り替え
    */
@@ -87,221 +84,8 @@ const rightClickWith = [
       { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
-];
-
-/**
- * 汎用的なショートカット
- */
-const shortcut = [
-  {
-    description: "設定 呼び出し",
-    from: {
-      key_code: config.keyMap.s,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "comma",
-        modifiers: ["command"],
-      },
-    ],
-  },
-  {
-    description: "コメント",
-    from: {
-      key_code: config.keyMap.c,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "slash",
-        modifiers: ["command"],
-      },
-    ],
-  },
-  {
-    description: "新規ウィンドウで、Google Chrome open",
-    from: {
-      key_code: config.keyMap.g,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `open -na "Google Chrome" --args --new-window "" && sleep 0.4 && ${config.window.center}`,
-      },
-    ],
-  },
 ] as const;
 
-/**
- * アクティブウィンドウ変更
- */
-const windowFocus = [
-  {
-    description: "アクティブウィンドウの変更 上",
-    from: {
-      key_code: config.keyMap.a,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/up.ts`,
-      },
-    ],
-  },
-  {
-    description: "アクティブウィンドウの変更 下",
-    from: {
-      key_code: config.keyMap.s,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/down.ts`,
-      },
-    ],
-  },
-  {
-    description: "アクティブウィンドウの変更 左",
-    from: {
-      key_code: config.keyMap.d,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/left.ts`,
-      },
-    ],
-  },
-  {
-    description: "アクティブウィンドウの変更 右",
-    from: {
-      key_code: config.keyMap.f,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus/right.ts`,
-      },
-    ],
-  },
-] as const;
-
-/**
- * ウィンドウの位置を変更
- */
-const windowPosition = [
-  {
-    description: "画面サイズ変更 (上半分",
-    from: {
-      key_code: config.keyMap.z,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.yabai} -m window --grid 2:1:0:0:2:1 && ${config.window.sizeDown}`,
-      },
-    ],
-  },
-  {
-    description: "画面サイズ変更 (下半分",
-    from: {
-      key_code: config.keyMap.x,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.yabai} -m window --grid 2:1:0:1:2:1 && ${config.window.sizeDown}`,
-      },
-    ],
-  },
-  {
-    description: "画面サイズ変更 (左半分",
-    from: {
-      key_code: config.keyMap.c,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:2:0:0:1:2 && ${config.window.sizeDown}`,
-      },
-    ],
-  },
-  {
-    description: "画面サイズ変更 (右半分",
-    from: {
-      key_code: config.keyMap.v,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:2:1:0:1:2 && ${config.window.sizeDown}`,
-      },
-    ],
-  },
-
-  {
-    description: "画面サイズ変更 (最大",
-    from: {
-      key_code: config.keyMap.b,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:1:0:0:1:1 && ${config.window.sizeDown}`,
-      },
-    ],
-  },
-  {
-    description: "ウィンドウタイリング",
-    from: {
-      key_code: config.keyMap.t,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.yabai} -m config layout bsp && ${config.pathMap.yabai} -m config layout float`,
-      },
-    ],
-  },
-  {
-    description: "画面サイズ変更 (中央",
-    from: {
-      key_code: config.keyMap.g,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          `${config.pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${config.window.sizeDown}`,
-      },
-    ],
-  },
-] as const;
-
-/**
- * タブ切り替え
- */
 const tabSwitching = [
   {
     description: "アクティブなタブを左に切り替え",
@@ -496,67 +280,346 @@ const altTab = [
   },
 ] as const;
 
-const app = [
+const _rectangle3 = [
   {
-    description: "ランチャー",
     from: {
-      key_code: config.keyMap.ll,
+      key_code: config.keyMap.s,
       modifiers: {
-        mandatory: ["control"],
+        mandatory: config.keyMap.tab,
       },
     },
     type: "basic",
     to: [
       {
-        key_code: "spacebar",
-        modifiers: ["option"],
+        shell_command: 'open -g "rectangle://execute-action?name=first-third"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.d,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=center-third"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.f,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=last-third"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.a,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=first-two-thirds"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.g,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=last-two-thirds"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.w,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=top-left-sixth"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.e,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=top-center-sixth"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.r,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=top-right-sixth"',
       },
     ],
   },
 
   {
-    description: "FSNotes",
     from: {
-      key_code: config.keyMap.ll,
+      key_code: config.keyMap.x,
       modifiers: {
-        mandatory: ["shift"],
+        mandatory: config.keyMap.tab,
       },
     },
     type: "basic",
     to: [
       {
-        key_code: "l",
-        modifiers: ["control", "option", "shift"],
+        shell_command:
+          'open -g "rectangle://execute-action?name=bottom-left-sixth"',
       },
     ],
   },
   {
-    description: "辞書.app",
     from: {
-      key_code: config.keyMap.ll,
+      key_code: config.keyMap.c,
       modifiers: {
-        mandatory: ["option"],
+        mandatory: config.keyMap.tab,
       },
     },
     type: "basic",
     to: [
       {
-        "key_code": "japanese_eisuu",
+        shell_command:
+          'open -g "rectangle://execute-action?name=bottom-center-sixth"',
       },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.v,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
       {
-        "shell_command": "open '/System/Applications/Dictionary.app'",
+        shell_command:
+          'open -g "rectangle://execute-action?name=bottom-right-sixth"',
       },
     ],
   },
 ] as const;
 
+const _rectangle2n4 = [
+  {
+    from: {
+      key_code: config.keyMap.s,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=left-half"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.d,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=center-half"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.f,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=right-half"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.a,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=first-three-fourths"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.g,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=last-three-fourths"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.z,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=first-fourth"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.x,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=second-fourth"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.c,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=third-fourth"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.v,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=last-fourth"',
+      },
+    ],
+  },
+] as const;
+
+const _rectangleMax = [
+  {
+    from: {
+      key_code: config.keyMap.q,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: 'open -g "rectangle://execute-action?name=maximize"',
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.q,
+      modifiers: {
+        mandatory: config.keyMap.del,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          'open -g "rectangle://execute-action?name=almost-maximize"',
+      },
+    ],
+  },
+] as const;
+
+const rectangle = [
+  ..._rectangle3,
+  ..._rectangle2n4,
+  ..._rectangleMax,
+] as const;
+
 export const manipulators = [
-  ...windowFocus,
-  ...windowPosition,
   ...tabSwitching,
-  ...shortcut,
-  ...rightClickWith,
+  ...rightClick,
   ...totalSpaces,
   ...altTab,
-  ...app,
+  ...rectangle,
 ];
