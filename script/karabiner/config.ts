@@ -3,6 +3,8 @@ export const pathMap = {
   node: "/Users/tommy/.asdf/shims/node",
   dotfiles: "/Users/tommy/dotfiles",
   deno: "/Users/tommy/.asdf/shims/deno",
+  jq: "/opt/homebrew/bin/jq",
+  xargs: "/usr/bin/xargs",
 } as const;
 
 export const keyMap = {

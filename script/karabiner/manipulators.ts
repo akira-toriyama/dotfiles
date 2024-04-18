@@ -165,6 +165,43 @@ const tabSwitching = [
   },
 ] as const;
 
+const focusSwitching = [
+  {
+    from: {
+      key_code: config.keyMap.f,
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: `
+${config.pathMap.yabai} -m query --spaces --space |
+${config.pathMap.jq} -re ".index" |
+${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m query --windows --space {} |
+${config.pathMap.jq} -sre 'add | map(select(."is-minimized"==false)) | sort_by(.display, .frame.y, .frame.x, .id) | . as $array | length as $array_length | index(map(select(."has-focus"==true))) as $has_index | if $array_length - 1 > $has_index then nth($has_index + 1).id else nth(0).id end' |
+${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
+`,
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.d,
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: `
+${config.pathMap.yabai} -m query --spaces --space |
+${config.pathMap.jq} -re ".index" |
+${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m query --windows --space {} |
+${config.pathMap.jq} -sre 'add | map(select(."is-minimized"==false)) | sort_by(.display, .frame.y, .frame.x, .id) | . as $array | length as $array_length | index(map(select(."has-focus"==true))) as $has_index | if $has_index > 0 then nth($has_index - 1).id else nth($array_length - 1).id end' |
+${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
+`,
+      },
+    ],
+  },
+] as const;
+
 const totalSpaces = [
   {
     description: "All spaces",
@@ -578,7 +615,7 @@ const _rectangle2n4 = [
   },
 ] as const;
 
-const _rectangleMax = [
+const _rectangleOther = [
   {
     from: {
       key_code: config.keyMap.q,
@@ -613,7 +650,7 @@ const _rectangleMax = [
 const rectangle = [
   ..._rectangle3,
   ..._rectangle2n4,
-  ..._rectangleMax,
+  ..._rectangleOther,
 ] as const;
 
 export const manipulators = [
@@ -622,4 +659,5 @@ export const manipulators = [
   ...totalSpaces,
   ...altTab,
   ...rectangle,
+  ...focusSwitching,
 ];

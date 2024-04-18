@@ -20,6 +20,7 @@ brew install \
   asdf \
   mas \
   gh \
-  ghq
+  ghq \
+  jq
 
 brew tap FelixKratz/formulae && brew install borders
