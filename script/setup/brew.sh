@@ -13,8 +13,7 @@ brew install --cask \
   appcleaner \
   vlc \
   raycast \
-  karabiner-elements \
-  rectangle
+  karabiner-elements
 
 brew install \
   asdf \

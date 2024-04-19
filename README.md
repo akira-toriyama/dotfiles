@@ -41,10 +41,6 @@ gh auth login
 - `setting/ime/romantable.txt`をインポート
 - `setting/ime/keymap.txt`をインポート
 
-### Rectangle
-
-`setting/rectangle/RectangleConfig.json`をインポート
-
 ## よく使う
 
 ```bash

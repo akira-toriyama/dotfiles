@@ -39,14 +39,6 @@ export const appMap = {
   FSNotes: "^co\\.fluder\\.FSNotes$",
 } as const;
 
-const _sizeDown =
-  `${pathMap.yabai} -m window --resize right:-4:0 && ${pathMap.yabai} -m window --resize bottom:0:-4 && ${pathMap.yabai} -m window --resize left:4:0 && ${pathMap.yabai} -m window --resize top:0:4`;
-
-export const window = {
-  sizeDown: _sizeDown,
-  center: `${pathMap.yabai} -m window --grid 1:5:1:0:3:2 && ${_sizeDown}`,
-} as const;
-
 export const spaces = [
   keyMap.q,
   keyMap.w,
@@ -63,4 +55,157 @@ export const spaces = [
   keyMap.c,
   keyMap.v,
   keyMap.b,
+] as const;
+
+export const window = [
+  {
+    key: "q",
+    move: `${pathMap.yabai} -m window --grid 2:3:0:0:2:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 6.0000,
+      "w": 3401.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "w",
+    move: `${pathMap.yabai} -m window --grid 2:3:0:0:1:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 6.0000,
+      "w": 1701.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "e",
+    move: `${pathMap.yabai} -m window --grid 2:3:1:0:1:1`,
+    "frame": {
+      "x": 1710.0000,
+      "y": 6.0000,
+      "w": 1699.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "r",
+    move: `${pathMap.yabai} -m window --grid 2:3:2:0:1:1`,
+    "frame": {
+      "x": 3413.0000,
+      "y": 6.0000,
+      "w": 1701.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "t",
+    move: `${pathMap.yabai} -m window --grid 2:3:1:0:2:1`,
+    "frame": {
+      "x": 1712.0000,
+      "y": 6.0000,
+      "w": 3401.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "a",
+    move: `${pathMap.yabai} -m window --grid 1:3:0:0:2:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 6.0000,
+      "w": 3401.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "s",
+    move: `${pathMap.yabai} -m window --grid 1:3:0:0:1:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 6.0000,
+      "w": 1701.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "d",
+    move: `${pathMap.yabai} -m window --grid 1:3:1:0:1:1`,
+    "frame": {
+      "x": 1710.0000,
+      "y": 6.0000,
+      "w": 1699.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "f",
+    move: `${pathMap.yabai} -m window --grid 1:3:2:0:1:1`,
+    "frame": {
+      "x": 3413.0000,
+      "y": 6.0000,
+      "w": 1701.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "g",
+    move: `${pathMap.yabai} -m window --grid 1:3:1:0:2:1`,
+    "frame": {
+      "x": 1712.0000,
+      "y": 6.0000,
+      "w": 3401.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "z",
+    move: `${pathMap.yabai} -m window --grid 2:3:0:1:2:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 1083.0000,
+      "w": 3401.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "x",
+    move: `${pathMap.yabai} -m window --grid 2:3:0:1:1:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 1083.0000,
+      "w": 1701.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "c",
+    move: `${pathMap.yabai} -m window --grid 2:3:1:1:1:1`,
+    "frame": {
+      "x": 1710.0000,
+      "y": 1083.0000,
+      "w": 1699.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "v",
+    move: `${pathMap.yabai} -m window --grid 2:3:2:1:1:1`,
+    "frame": {
+      "x": 3413.0000,
+      "y": 1083.0000,
+      "w": 1701.0000,
+      "h": 1071.0000,
+    },
+  },
+  {
+    key: "b",
+    move: `${pathMap.yabai} -m window --grid 2:3:1:1:2:1`,
+    "frame": {
+      "x": 1712.0000,
+      "y": 1083.0000,
+      "w": 3401.0000,
+      "h": 1071.0000,
+    },
+  },
 ] as const;
