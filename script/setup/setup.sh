@@ -6,6 +6,7 @@
 
 # git
 git config --global push.default current
+git config --global core.ignorecase false
 
 # ssh
 mkdir -p $HOME/.ssh/github
