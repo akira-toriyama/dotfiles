@@ -8,24 +8,26 @@ export const pathMap = {
 } as const;
 
 export const keyMap = {
-  qq: "non_us_backslash", // qの左
   q: "keypad_1",
   w: "keypad_2",
   e: "keypad_3",
   r: "keypad_4",
   t: "keypad_5",
-  aa: "keypad_num_lock", // aの左
   a: "keypad_6",
   s: "keypad_7",
   d: "keypad_8",
   f: "keypad_9",
   g: "keypad_plus",
-  zz: "keypad_enter", // zの左
   z: "keypad_equal_sign",
   x: "keypad_period",
   c: "keypad_hyphen",
   v: "keypad_slash",
   b: "keypad_asterisk",
+
+  //
+  qq: "non_us_backslash", // qの左
+  aa: "insert", // aの左
+  zz: "keypad_enter", // zの左
   ll: "keypad_0", // lの右
 
   //
@@ -206,6 +208,26 @@ export const window = [
       "y": 1083.0000,
       "w": 3401.0000,
       "h": 1071.0000,
+    },
+  },
+  {
+    key: "aa",
+    move: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 6.0000,
+      "w": 5108.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "zz",
+    move: `${pathMap.yabai} -m window --grid 30:30:4:1:22:28`,
+    "frame": {
+      "x": 691.0000,
+      "y": 84.0000,
+      "w": 3737.0000,
+      "h": 1994.0000,
     },
   },
 ] as const;
