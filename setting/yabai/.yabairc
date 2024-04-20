@@ -51,5 +51,12 @@ sudo yabai --load-sa
 yabai -m signal --add event=window_destroyed action="yabai -m query --windows --window &> /dev/null || yabai -m window --focus mouse"
 yabai -m signal --add event=application_terminated action="yabai -m query --windows --window &> /dev/null || yabai -m window --focus"
 
-# 枠線
-~/dotfiles/script/yabai/border_color.sh &
+yabai -m config top_padding 6
+yabai -m config bottom_padding 6
+yabai -m config left_padding 6
+yabai -m config right_padding 6
+yabai -m config window_gap 6
+
+yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/window_focused.sh"
+
+~/dotfiles/script/yabai/border.sh &

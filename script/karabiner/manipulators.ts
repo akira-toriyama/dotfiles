@@ -165,43 +165,6 @@ const tabSwitching = [
   },
 ] as const;
 
-const focusSwitching = [
-  {
-    from: {
-      key_code: config.keyMap.f,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: `
-${config.pathMap.yabai} -m query --spaces --space |
-${config.pathMap.jq} -re ".index" |
-${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m query --windows --space {} |
-${config.pathMap.jq} -sre 'add | map(select(."is-minimized"==false)) | sort_by(.display, .frame.y, .frame.x, .id) | . as $array | length as $array_length | index(map(select(."has-focus"==true))) as $has_index | if $array_length - 1 > $has_index then nth($has_index + 1).id else nth(0).id end' |
-${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
-`,
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.d,
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: `
-${config.pathMap.yabai} -m query --spaces --space |
-${config.pathMap.jq} -re ".index" |
-${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m query --windows --space {} |
-${config.pathMap.jq} -sre 'add | map(select(."is-minimized"==false)) | sort_by(.display, .frame.y, .frame.x, .id) | . as $array | length as $array_length | index(map(select(."has-focus"==true))) as $has_index | if $has_index > 0 then nth($has_index - 1).id else nth($array_length - 1).id end' |
-${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
-`,
-      },
-    ],
-  },
-] as const;
-
 const totalSpaces = [
   {
     description: "All spaces",
@@ -317,347 +280,42 @@ const altTab = [
   },
 ] as const;
 
-const _rectangle3 = [
-  {
-    from: {
-      key_code: config.keyMap.s,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
+const windowPosition = config.window.map((v) => ({
+  from: {
+    key_code: config.keyMap[v.key],
+    modifiers: {
+      mandatory: config.keyMap.tab,
     },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=first-third"',
-      },
-    ],
   },
-  {
-    from: {
-      key_code: config.keyMap.d,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
+  type: "basic",
+  to: [
+    {
+      shell_command: v.move,
     },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=center-third"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.f,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=last-third"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.a,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=first-two-thirds"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.g,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=last-two-thirds"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.w,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=top-left-sixth"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.e,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=top-center-sixth"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.r,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=top-right-sixth"',
-      },
-    ],
-  },
+  ],
+}));
 
-  {
-    from: {
-      key_code: config.keyMap.x,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
+const windowFocus = config.window.map((v) => ({
+  from: {
+    key_code: config.keyMap[v.key],
+    modifiers: {
+      mandatory: config.keyMap.del,
     },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=bottom-left-sixth"',
-      },
-    ],
   },
-  {
-    from: {
-      key_code: config.keyMap.c,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
+  type: "basic",
+  to: [
+    {
+      shell_command:
+        `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus.ts ${v.key}`,
     },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=bottom-center-sixth"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.v,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=bottom-right-sixth"',
-      },
-    ],
-  },
-] as const;
-
-const _rectangle2n4 = [
-  {
-    from: {
-      key_code: config.keyMap.s,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=left-half"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.d,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=center-half"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.f,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=right-half"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.a,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=first-three-fourths"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.g,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=last-three-fourths"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.z,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=first-fourth"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.x,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=second-fourth"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.c,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=third-fourth"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.v,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=last-fourth"',
-      },
-    ],
-  },
-] as const;
-
-const _rectangleOther = [
-  {
-    from: {
-      key_code: config.keyMap.q,
-      modifiers: {
-        mandatory: config.keyMap.tab,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command: 'open -g "rectangle://execute-action?name=maximize"',
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: config.keyMap.q,
-      modifiers: {
-        mandatory: config.keyMap.del,
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        shell_command:
-          'open -g "rectangle://execute-action?name=almost-maximize"',
-      },
-    ],
-  },
-] as const;
-
-const rectangle = [
-  ..._rectangle3,
-  ..._rectangle2n4,
-  ..._rectangleOther,
-] as const;
+  ],
+}));
 
 export const manipulators = [
   ...tabSwitching,
   ...rightClick,
   ...totalSpaces,
   ...altTab,
-  ...rectangle,
-  ...focusSwitching,
-];
+  ...windowPosition,
+  ...windowFocus,
+] as const;
