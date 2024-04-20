@@ -86,86 +86,7 @@ const rightClick = [
   },
 ] as const;
 
-const tabSwitching = [
-  {
-    description: "アクティブなタブを左に切り替え",
-    from: {
-      key_code: config.keyMap.e,
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["control", "shift"],
-      },
-    ],
-    conditions: [
-      {
-        type: "frontmost_application_if",
-        bundle_identifiers: [config.appMap.Chrome],
-      },
-    ],
-  },
-  {
-    description: "アクティブなタブを左に切り替え",
-    from: {
-      key_code: config.keyMap.e,
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "open_bracket",
-        modifiers: ["command", "shift"],
-      },
-    ],
-    conditions: [
-      {
-        type: "frontmost_application_if",
-        bundle_identifiers: [config.appMap.VSCode],
-      },
-    ],
-  },
-  {
-    description: "アクティブなタブを右に切り替え",
-    from: {
-      key_code: config.keyMap.r,
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "tab",
-        modifiers: ["control"],
-      },
-    ],
-    conditions: [
-      {
-        type: "frontmost_application_if",
-        bundle_identifiers: [config.appMap.Chrome],
-      },
-    ],
-  },
-  {
-    description: "アクティブなタブを右に切り替え",
-    from: {
-      key_code: config.keyMap.r,
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "close_bracket",
-        modifiers: ["command", "shift"],
-      },
-    ],
-    conditions: [
-      {
-        type: "frontmost_application_if",
-        bundle_identifiers: [config.appMap.VSCode],
-      },
-    ],
-  },
-] as const;
-
-const totalSpaces = [
+const spaces = [
   {
     description: "All spaces",
     from: {
@@ -245,7 +166,7 @@ const totalSpaces = [
   })),
 ] as const;
 
-const altTab = [
+const appSwitching = [
   {
     description: "alt + tab current スペース",
     from: {
@@ -311,11 +232,90 @@ const windowFocus = config.window.map((v) => ({
   ],
 }));
 
+const tabSwitching = [
+  {
+    description: "アクティブなタブを左に切り替え",
+    from: {
+      key_code: config.keyMap.e,
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["control", "shift"],
+      },
+    ],
+    conditions: [
+      {
+        type: "frontmost_application_if",
+        bundle_identifiers: [config.appMap.Chrome],
+      },
+    ],
+  },
+  {
+    description: "アクティブなタブを左に切り替え",
+    from: {
+      key_code: config.keyMap.e,
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "open_bracket",
+        modifiers: ["command", "shift"],
+      },
+    ],
+    conditions: [
+      {
+        type: "frontmost_application_if",
+        bundle_identifiers: [config.appMap.VSCode],
+      },
+    ],
+  },
+  {
+    description: "アクティブなタブを右に切り替え",
+    from: {
+      key_code: config.keyMap.r,
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["control"],
+      },
+    ],
+    conditions: [
+      {
+        type: "frontmost_application_if",
+        bundle_identifiers: [config.appMap.Chrome],
+      },
+    ],
+  },
+  {
+    description: "アクティブなタブを右に切り替え",
+    from: {
+      key_code: config.keyMap.r,
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "close_bracket",
+        modifiers: ["command", "shift"],
+      },
+    ],
+    conditions: [
+      {
+        type: "frontmost_application_if",
+        bundle_identifiers: [config.appMap.VSCode],
+      },
+    ],
+  },
+] as const;
+
 export const manipulators = [
   ...tabSwitching,
   ...rightClick,
-  ...totalSpaces,
-  ...altTab,
+  ...spaces,
+  ...appSwitching,
   ...windowPosition,
   ...windowFocus,
 ] as const;
