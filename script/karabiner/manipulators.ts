@@ -86,11 +86,45 @@ const rightClick = [
   },
 ] as const;
 
+const windowPosition = config.window.map((v) => ({
+  from: {
+    key_code: config.keyMap[v.key],
+    modifiers: {
+      mandatory: config.keyMap.tab,
+    },
+  },
+  type: "basic",
+  to: [
+    {
+      shell_command: v.move,
+    },
+  ],
+}));
+
+const windowFocus = config.window.map((v) => ({
+  from: {
+    key_code: config.keyMap[v.key],
+    modifiers: {
+      mandatory: config.keyMap.del,
+    },
+  },
+  type: "basic",
+  to: [
+    {
+      shell_command:
+        `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus.ts ${v.key}`,
+    },
+  ],
+}));
+
 const spaces = [
   {
     description: "All spaces",
     from: {
       key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["option", "control"],
+      },
     },
     type: "basic",
     to: [
@@ -200,37 +234,6 @@ const appSwitching = [
     ],
   },
 ] as const;
-
-const windowPosition = config.window.map((v) => ({
-  from: {
-    key_code: config.keyMap[v.key],
-    modifiers: {
-      mandatory: config.keyMap.tab,
-    },
-  },
-  type: "basic",
-  to: [
-    {
-      shell_command: v.move,
-    },
-  ],
-}));
-
-const windowFocus = config.window.map((v) => ({
-  from: {
-    key_code: config.keyMap[v.key],
-    modifiers: {
-      mandatory: config.keyMap.del,
-    },
-  },
-  type: "basic",
-  to: [
-    {
-      shell_command:
-        `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus.ts ${v.key}`,
-    },
-  ],
-}));
 
 const tabSwitching = [
   {
