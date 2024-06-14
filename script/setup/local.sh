@@ -1,3 +1,5 @@
+#! /bin/bash
+
 # mas
 script/setup/mas.sh
 

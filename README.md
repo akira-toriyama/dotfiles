@@ -50,6 +50,9 @@ bin/karabiner/generation.sh
 # alt-tab 更新
 cp ~/Library/Preferences/com.lwouis.alt-tab-macos.plist ~/dotfiles/setting/alt-tab/.
 
-# yabai
+# yabai のウィンドウ
 yabai -m query --windows --space | jq
+
+# 全般更新
+bin/update.sh
 ```
