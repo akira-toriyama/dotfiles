@@ -7,57 +7,107 @@ export const pathMap = {
   xargs: "/usr/bin/xargs",
 } as const;
 
-export const keyMap = {
-  q: "keypad_1",
-  w: "keypad_2",
-  e: "keypad_3",
-  r: "keypad_4",
-  t: "keypad_5",
-  a: "keypad_6",
-  s: "keypad_7",
-  d: "keypad_8",
-  f: "keypad_9",
-  g: "keypad_plus",
-  z: "keypad_equal_sign",
-  x: "keypad_period",
-  c: "keypad_hyphen",
-  v: "keypad_slash",
-  b: "keypad_asterisk",
-
-  //
-  qq: "non_us_backslash", // qの左
-  aa: "insert", // aの左
-  zz: "keypad_enter", // zの左
-  ll: "keypad_0", // lの右
-
-  //
-  del: ["control", "shift", "option", "command"],
-  tab: ["control", "shift", "option"],
-} as const;
-
 export const appMap = {
   Chrome: "^com\\.google\\.Chrome$",
   VSCode: "^com\\.microsoft\\.VSCode$",
   FSNotes: "^co\\.fluder\\.FSNotes$",
 } as const;
 
-export const spaces = [
-  keyMap.q,
-  keyMap.w,
-  keyMap.e,
-  keyMap.r,
-  keyMap.t,
-  keyMap.a,
-  keyMap.s,
-  keyMap.d,
-  keyMap.f,
-  keyMap.g,
-  keyMap.z,
-  keyMap.x,
-  keyMap.c,
-  keyMap.v,
-  keyMap.b,
+const _keyMap = {
+  q: "f13",
+  w: "f14",
+  e: "f15",
+  r: "f16",
+  t: "f17",
+  a: "f18",
+  s: "f19",
+  d: "f20",
+  f: "f21",
+  g: "f22",
+  z: "f23",
+  x: "f24",
+  c: "non_us_pound",
+  v: "print_screen",
+  b: "pause",
+  ll: "insert",
+  lr: "keypad_enter",
+  rl: "non_us_backslash",
+  rr: "application",
+} as const;
+
+export const keyMap = {
+  tab: {
+    modifiers: ["right_option", "right_shift"],
+    keys: _keyMap,
+  },
+  delete: {
+    modifiers: ["right_command", "right_shift"],
+    keys: _keyMap,
+  },
+  leftArrow: {
+    modifiers: ["right_option", "right_control"],
+    keys: _keyMap,
+  },
+  downArrow: {
+    modifiers: ["right_command", "right_option"],
+    keys: _keyMap,
+  },
+  rightArrow: {
+    modifiers: ["right_command", "right_control"],
+    keys: _keyMap,
+  },
+  upArrow: {
+    modifiers: ["right_shift", "right_control"],
+    keys: _keyMap,
+  },
+  ll: {
+    modifiers: [],
+    keys: {
+      q: "keypad_1",
+      w: "keypad_2",
+      e: "keypad_3",
+      r: "keypad_4",
+      t: "keypad_5",
+      a: "keypad_6",
+      s: "keypad_7",
+      d: "keypad_8",
+      f: "keypad_9",
+      g: "keypad_plus",
+      z: "keypad_equal_sign",
+      x: "keypad_period",
+      c: "keypad_hyphen",
+      v: "keypad_slash",
+      b: "keypad_asterisk",
+      ll: "insert",
+      lr: "keypad_enter",
+      rl: "non_us_backslash",
+      rr: "application",
+    },
+  },
+} as const;
+
+const _spaces = [
+  "q",
+  "w",
+  "e",
+  "r",
+  "t",
+  "a",
+  "s",
+  "d",
+  "f",
+  "g",
+  "z",
+  "x",
+  "c",
+  "v",
+  "b",
 ] as const;
+
+export const spaces = _spaces.map((v, k) => ({
+  keyCode: v,
+  no: k + 1,
+}));
 
 export const window = [
   {
@@ -211,7 +261,7 @@ export const window = [
     },
   },
   {
-    key: "aa",
+    key: "ll",
     move: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
     "frame": {
       "x": 6.0000,
@@ -221,13 +271,33 @@ export const window = [
     },
   },
   {
-    key: "zz",
+    key: "lr",
     move: `${pathMap.yabai} -m window --grid 30:30:4:1:22:28`,
     "frame": {
       "x": 691.0000,
       "y": 84.0000,
       "w": 3737.0000,
       "h": 1994.0000,
+    },
+  },
+  {
+    key: "rl",
+    move: `${pathMap.yabai} -m window --grid 1:2:0:0:1:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 6.0000,
+      "w": 2551.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "rr",
+    move: `${pathMap.yabai} -m window --grid 1:2:2:0:1:1`,
+    "frame": {
+      "x": 2563.0000,
+      "y": 6.0000,
+      "w": 2551.0000,
+      "h": 2148.0000,
     },
   },
 ] as const;

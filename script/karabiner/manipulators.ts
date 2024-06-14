@@ -27,6 +27,7 @@ const rightClick = [
       { "type": "variable_if", "name": "button2_down", "value": 0 },
     ],
   },
+  //
   {
     description: "mission control",
     "type": "basic",
@@ -43,6 +44,7 @@ const rightClick = [
       { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
+  //
   {
     description: "スクショ or 録画",
     "type": "basic",
@@ -65,6 +67,7 @@ const rightClick = [
       { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
+  //
   {
     description: "Total spaces",
     "from": {
@@ -88,9 +91,9 @@ const rightClick = [
 
 const windowPosition = config.window.map((v) => ({
   from: {
-    key_code: config.keyMap[v.key],
+    key_code: config.keyMap.tab.keys[v.key],
     modifiers: {
-      mandatory: config.keyMap.tab,
+      mandatory: config.keyMap.tab.modifiers,
     },
   },
   type: "basic",
@@ -103,9 +106,9 @@ const windowPosition = config.window.map((v) => ({
 
 const windowFocus = config.window.map((v) => ({
   from: {
-    key_code: config.keyMap[v.key],
+    key_code: config.keyMap.delete.keys[v.key],
     modifiers: {
-      mandatory: config.keyMap.del,
+      mandatory: config.keyMap.delete.modifiers,
     },
   },
   type: "basic",
@@ -118,34 +121,15 @@ const windowFocus = config.window.map((v) => ({
 }));
 
 const spaces = [
-  {
-    description: "All spaces",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option", "control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "spacebar",
-        modifiers: ["option", "shift"],
-      },
-    ],
-  },
   /**
    * focus
    */
-  ...config.spaces.map((v, k) => ({
-    keyCode: v,
-    no: k + 1,
-  })).map(({ keyCode, no }) => ({
-    description: `focus spaces ${no}`,
+  ...config.spaces.map(({ keyCode, no }) => ({
+    description: `focus space ${no}`,
     from: {
-      key_code: keyCode,
+      key_code: config.keyMap.leftArrow.keys[keyCode],
       modifiers: {
-        mandatory: ["control"],
+        mandatory: config.keyMap.leftArrow.modifiers,
       },
     },
     type: "basic",
@@ -158,15 +142,12 @@ const spaces = [
   /**
    * send
    */
-  ...config.spaces.map((v, k) => ({
-    keyCode: v,
-    no: k + 1,
-  })).map(({ keyCode, no }) => ({
-    description: `focus spaces ${no}`,
+  ...config.spaces.map(({ keyCode, no }) => ({
+    description: `send space ${no}`,
     from: {
-      key_code: keyCode,
+      key_code: config.keyMap.downArrow.keys[keyCode],
       modifiers: {
-        mandatory: ["option"],
+        mandatory: config.keyMap.downArrow.modifiers,
       },
     },
     type: "basic",
@@ -179,15 +160,12 @@ const spaces = [
   /**
    * send & focus
    */
-  ...config.spaces.map((v, k) => ({
-    keyCode: v,
-    no: k + 1,
-  })).map(({ keyCode, no }) => ({
-    description: `focus spaces ${no}`,
+  ...config.spaces.map(({ keyCode, no }) => ({
+    description: `focus and send space ${no}`,
     from: {
-      key_code: keyCode,
+      key_code: config.keyMap.rightArrow.keys[keyCode],
       modifiers: {
-        mandatory: ["option", "control"],
+        mandatory: config.keyMap.rightArrow.modifiers,
       },
     },
     type: "basic",
@@ -202,11 +180,27 @@ const spaces = [
 
 const appSwitching = [
   {
+    description: "All spaces",
+    from: {
+      key_code: config.keyMap.ll.keys.ll,
+      modifiers: {
+        mandatory: config.keyMap.ll.modifiers,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option", "shift"],
+      },
+    ],
+  },
+  {
     description: "alt + tab current スペース",
     from: {
-      key_code: config.keyMap.ll,
+      key_code: config.keyMap.ll.keys.rl,
       modifiers: {
-        mandatory: ["shift"],
+        mandatory: config.keyMap.ll.modifiers,
       },
     },
     type: "basic",
@@ -220,9 +214,9 @@ const appSwitching = [
   {
     description: "alt + tab all スペース",
     from: {
-      key_code: config.keyMap.ll,
+      key_code: config.keyMap.ll.keys.rr,
       modifiers: {
-        mandatory: ["command"],
+        mandatory: config.keyMap.ll.modifiers,
       },
     },
     type: "basic",
@@ -239,7 +233,7 @@ const tabSwitching = [
   {
     description: "アクティブなタブを左に切り替え",
     from: {
-      key_code: config.keyMap.e,
+      key_code: config.keyMap.ll.keys.e,
     },
     type: "basic",
     to: [
@@ -258,7 +252,7 @@ const tabSwitching = [
   {
     description: "アクティブなタブを左に切り替え",
     from: {
-      key_code: config.keyMap.e,
+      key_code: config.keyMap.ll.keys.e,
     },
     type: "basic",
     to: [
@@ -277,7 +271,7 @@ const tabSwitching = [
   {
     description: "アクティブなタブを右に切り替え",
     from: {
-      key_code: config.keyMap.r,
+      key_code: config.keyMap.ll.keys.r,
     },
     type: "basic",
     to: [
@@ -296,7 +290,7 @@ const tabSwitching = [
   {
     description: "アクティブなタブを右に切り替え",
     from: {
-      key_code: config.keyMap.r,
+      key_code: config.keyMap.ll.keys.r,
     },
     type: "basic",
     to: [
