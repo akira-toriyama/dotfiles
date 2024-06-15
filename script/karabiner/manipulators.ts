@@ -439,6 +439,25 @@ const tabSwitching = [
   },
 ] as const;
 
+const app = [
+  {
+    description: "ランチャー",
+    from: {
+      key_code: config.keyMap.ll.key,
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option"],
+      },
+    ],
+  },
+] as const;
+
 export const manipulators = [
   ...tabSwitching,
   ...rightClick,
@@ -447,4 +466,5 @@ export const manipulators = [
   ...windowPosition,
   ...windowFocus,
   ...mouse,
+  ...app,
 ] as const;
