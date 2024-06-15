@@ -1,4 +1,4 @@
-import * as hoipoiCapsule from "https://deno.land/x/hoipoi_capsule@v3.0.2/mod.ts";
+import * as hoipoiCapsule from "https://deno.land/x/hoipoi_capsule/mod.ts";
 
 const o = await hoipoiCapsule.preset.fillInCommitMessage.gitmojiStyle
   .initialize();
