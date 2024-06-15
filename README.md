@@ -26,10 +26,10 @@ script/setup/setup.sh
 script/setup/local.sh
 
 # ssh key
-ssh-keygen -t ed25519 -f "$HOME/.ssh/conf.d/keys/github.com.akira-toriyama"
-pbcopy < "$HOME/.ssh/conf.d/keys/github.com.akira-toriyama.pub"
+ssh-keygen -t ed25519 -f "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa"
+pbcopy < "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa.pub"
 # https://docs.github.com/ja/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
-# ssh -T git@github.com.akira-toriyama
+ssh -T git@github.com.akira-toriyama
 
 # github
 gh auth login
@@ -56,3 +56,5 @@ yabai -m query --windows --space | jq
 # 全般更新
 bin/update.sh
 ```
+
+ssh-keygen -t ed25519 -f "$HOME/.ssh/conf.d/hosts/aaa"
