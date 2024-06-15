@@ -33,8 +33,8 @@ git config --local core.hooksPath .githooks
 chmod +x .githooks/prepare-commit-msg
 
 # ssh
-mkdir -p $HOME/.ssh/conf.d/keys
-cp -pR ./setting/.ssh/*  $HOME/.ssh/
+mkdir -p ./.ssh/conf.d/keys
+cp -pR ./setting/.ssh/*  ~/.ssh/
 
 # yabai
-ln -s $PWD/setting/yabai/.yabairc ~/.
+ln -s ${PWD}/setting/yabai/.yabairc ~/.
