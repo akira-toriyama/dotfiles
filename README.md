@@ -56,5 +56,3 @@ yabai -m query --windows --space | jq
 # 全般更新
 bin/update.sh
 ```
-
-ssh-keygen -t ed25519 -f "$HOME/.ssh/conf.d/hosts/aaa"
