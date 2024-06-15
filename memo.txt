@@ -1,0 +1,137 @@
+
+
+const shortcut = [
+  {
+    description: "設定 呼び出し",
+    from: {
+      key_code: config.keyMap.s,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "comma",
+        modifiers: ["command"],
+      },
+    ],
+  },
+  {
+    description: "コメント",
+    from: {
+      key_code: config.keyMap.c,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "slash",
+        modifiers: ["command"],
+      },
+    ],
+  },
+  {
+    description: "新規ウィンドウで、Google Chrome open",
+    from: {
+      key_code: config.keyMap.g,
+      modifiers: {
+        mandatory: config.keyMap.tab,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command:
+          `open -na "Google Chrome" --args --new-window "" && sleep 0.4 && ${config.window.center}`,
+      },
+    ],
+  },
+] as const;
+
+const app = [
+  {
+    description: "ランチャー",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option"],
+      },
+    ],
+  },
+
+  {
+    description: "FSNotes",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["shift"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "l",
+        modifiers: ["control", "option", "shift"],
+      },
+    ],
+  },
+  {
+    description: "辞書.app",
+    from: {
+      key_code: config.keyMap.ll,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        "key_code": "japanese_eisuu",
+      },
+      {
+        "shell_command": "open '/System/Applications/Dictionary.app'",
+      },
+    ],
+  },
+] as const;
+
+---
+
+キーボードのみで
+カレントウィンドウの中心へマウスポインタジャンプ
+use framework "CoreGraphics"
+
+application's CGWarpMouseCursorPosition({500, 500})
+
+---
+
+漢字をローマ字にして、レイキャスト
+
+fsnote
+
+1233965871  ScreenBrush               (1.7.8)
+1447043133  Cursor Pro                (2.2.6)
+
+---
+
+ショートカット練習
+
+
+
+
+---
+https://www.homerow.app/
+https://github.com/wmaurer/vscode-jumpy
+
+
+warp -> zsh

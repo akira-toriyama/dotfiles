@@ -84,6 +84,24 @@ export const keyMap = {
       rr: "application",
     },
   },
+  oLl: {
+    modifiers: [
+      "right_shift",
+      "right_control",
+      "right_command",
+      "right_option",
+    ],
+    keys: {
+      s: "f24",
+      d: "f23",
+      f: "f22",
+      e: "f21",
+      leftArrow: "f20",
+      downArrow: "f17",
+      rightArrow: "f19",
+      upArrow: "f18",
+    },
+  },
 } as const;
 
 const _spaces = [
