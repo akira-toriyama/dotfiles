@@ -62,6 +62,7 @@ export const keyMap = {
   },
   ll: {
     modifiers: [],
+    key: "keypad_0",
     keys: {
       q: "keypad_1",
       w: "keypad_2",

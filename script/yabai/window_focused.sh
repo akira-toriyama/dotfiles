@@ -1,13 +1,19 @@
 #!/usr/bin/env sh
 
-yabai -m window --resize top:0:2
-yabai -m window --resize bottom:0:-2
-# yabai -m window --resize right:-2:0
-# yabai -m window --resize left:2:0
+#!/usr/bin/env sh
 
-sleep 0.02
+readonly ARRAY=("0xFFFFFF00" "0xFFFF00FF" "0xFF00FFFF" "0x00FFFFFF" "0xF0F0F0FF" "0xF0F0FFF0")
 
-yabai -m window --resize top:0:-2
-yabai -m window --resize bottom:0:2
-# yabai -m window --resize right:2:0
-# yabai -m window --resize left:-2:0
+options=(
+  ax_focus=on
+  width=20
+)
+
+borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/dev/null 1>&2 &
+sleep 0.07
+
+borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/dev/null 1>&2 &
+sleep 0.07
+
+borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/dev/null 1>&2 &
+sleep 0.07

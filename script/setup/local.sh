@@ -9,32 +9,35 @@ script/karabiner/generation.sh
 # google-japanese-ime が apple silicon 非対応なので
 softwareupdate --install-rosetta --agree-to-license && brew install --cask google-japanese-ime
 
-# yabaiは手順が複雑
-brew install koekeishiya/formulae/yabai
-
 # workspace
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
-
-# ghq
-git config --global ghq.root '/Volumes/workspace/'
 
 # alt-tab
 # ln -s は正しく動作しない
 cp setting/alt-tab/com.lwouis.alt-tab-macos.plist ~/Library/Preferences/.
 
 # git
-cp setting/.gitignore_global ~/.
+###############################################################
+# その他の設定
+cp -r ./setting/git ~/.config/.
+# git push でリモートブランチ名を指定なしで実行
 git config --global push.default current
 # 大文字・小文字区別
 git config --global core.ignorecase false
-git config --global core.excludesfile ~/.gitignore_global
+# .ssh/configとの関連付け
+git config --global url."ssh://git@github.com.akira-toriyama/akira-toriyama".insteadOf "ssh://git@github.com/akira-toriyama"
+git config --global includeIf."gitdir:/Volumes/workspace/github.com/akira-toriyama/".path "~/.config/git/user/akira-toriyama"
+# ghq
+git config --global ghq.root '/Volumes/workspace/'
+
 # commit hook
 git config --local core.hooksPath .githooks
 chmod +x .githooks/prepare-commit-msg
+###############################################################
 
 # ssh
-mkdir -p $HOME/.ssh/conf.d/keys
-cp -pR ./setting/.ssh/*  $HOME/.ssh/
+cp -r ./setting/.ssh  ~/.
 
 # yabai
-ln -s $PWD/setting/yabai/.yabairc ~/.
+brew install koekeishiya/formulae/yabai
+ln -s ${PWD}/setting/yabai/.yabairc ~/.
