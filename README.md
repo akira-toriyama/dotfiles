@@ -31,6 +31,9 @@ pbcopy < "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa.pub"
 # https://docs.github.com/ja/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 ssh -T git@github.com.akira-toriyama
 
+cp "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa" "$HOME/.ssh/conf.d/hosts/github.com.bird-studio/id_rsa"
+ssh -T git@github.com.bird-studio
+
 # github
 gh auth login
 ```
