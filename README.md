@@ -25,7 +25,7 @@ script/setup/setup.sh
 ```bash
 script/setup/local.sh
 
-# ssh key
+# GithubにSSH接続
 ssh-keygen -t ed25519 -f "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa"
 pbcopy < "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa.pub"
 # https://docs.github.com/ja/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account

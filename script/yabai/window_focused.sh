@@ -1,19 +1,19 @@
 #!/usr/bin/env sh
 
-borders active_color='gradient(top_left=0xaaffa100,bottom_right=0xaaaa0033)' \
-        ax_focus=on \
-        width=6 \
-        order=above \
-        background_color=0x00000000 \
-        2>/dev/null 1>&2 &
+#!/usr/bin/env sh
 
+readonly ARRAY=("0xFFFFFF00" "0xFFFF00FF" "0xFF00FFFF" "0x00FFFFFF" "0xF0F0F0FF" "0xF0F0FFF0")
+
+options=(
+  ax_focus=on
+  width=20
+)
+
+borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/dev/null 1>&2 &
 sleep 0.07
-borders active_color='glow(0xffff5100)' 2>/dev/null 1>&2 &
+
+borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/dev/null 1>&2 &
 sleep 0.07
-borders active_color='glow(0xffff5100)' 2>/dev/null 1>&2 &
+
+borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/dev/null 1>&2 &
 sleep 0.07
-borders active_color='glow(0xffff0000)' 2>/dev/null 1>&2 &
-sleep 0.07
-borders active_color='glow(0xffff5100)' 2>/dev/null 1>&2 &
-sleep 0.07
-borders active_color='gradient(top_left=0xffffa100,bottom_right=0xffaa0033)' 2>/dev/null 1>&2 &
