@@ -1,4 +1,5 @@
-
+raycast
+漢字をローマ字にして、レイキャスト
 
 const shortcut = [
   {
@@ -115,7 +116,6 @@ application's CGWarpMouseCursorPosition({500, 500})
 
 ---
 
-漢字をローマ字にして、レイキャスト
 
 fsnote
 
@@ -125,8 +125,6 @@ fsnote
 ---
 
 ショートカット練習
-
-
 
 
 ---
