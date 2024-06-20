@@ -1,5 +1,4 @@
 
-
 const shortcut = [
   {
     description: "設定 呼び出し",
@@ -115,7 +114,6 @@ application's CGWarpMouseCursorPosition({500, 500})
 
 ---
 
-漢字をローマ字にして、レイキャスト
 
 fsnote
 
@@ -127,11 +125,33 @@ fsnote
 ショートカット練習
 
 
-
-
 ---
 https://www.homerow.app/
 https://github.com/wmaurer/vscode-jumpy
 
 
 warp -> zsh
+
+raycast
+漢字をローマ字にして、レイキャスト
+updしんどい？
+
+---
+
+dash
+
+---
+
+https://qiita.com/leo_canada/items/7db010933f2af8437285
+
+---
+
+https://dev.to/darrinndeal/setting-mac-hot-corners-in-the-terminal-3de
+
+---
+
+https://setapp.com/apps/slidepad
+
+---
+
+https://setapp.com/apps/presentify
