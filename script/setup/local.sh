@@ -4,7 +4,7 @@
 script/setup/mas.sh
 
 # karabiner
-script/karabiner/generation.sh
+bin/karabiner/generation.sh
 
 # google-japanese-ime が apple silicon 非対応なので
 softwareupdate --install-rosetta --agree-to-license && brew install --cask google-japanese-ime
