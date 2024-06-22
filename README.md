@@ -13,6 +13,7 @@
 ## Setup
 
 ```bash
+# brew install
 git clone https://github.com/akira-toriyama/dotfiles.git
 cd dotfiles
 script/setup/setup.sh
@@ -36,6 +37,10 @@ ssh -T git@github.com.bird-studio
 
 # github
 gh auth login
+
+# dotfileのgitアカウント
+git config --local user.name "akira-toriyama"
+git config --local user.email "92862731+akira-toriyama@users.noreply.github.com"
 ```
 
 ### Google IME
