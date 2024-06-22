@@ -1,7 +1,5 @@
 #! /bin/bash
 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-
 brew install --cask \
   visual-studio-code \
   warp \

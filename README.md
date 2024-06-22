@@ -36,6 +36,10 @@ ssh -T git@github.com.bird-studio
 
 # github
 gh auth login
+
+# dotfileのgitアカウント
+git config --local user.name "akira-toriyama"
+git config --local user.email "92862731+akira-toriyama@users.noreply.github.com"
 ```
 
 ### Google IME
