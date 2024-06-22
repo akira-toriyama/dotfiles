@@ -5,7 +5,6 @@ brew install --cask \
   warp \
   alt-tab \
   fsnotes \
-  google-chrome \
   the-unarchiver \
   transmission \
   appcleaner \
