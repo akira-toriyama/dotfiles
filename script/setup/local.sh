@@ -24,6 +24,8 @@ cp -r ./setting/git ~/.config/.
 git config --global push.default current
 # 大文字・小文字区別
 git config --global core.ignorecase false
+# ghq
+git config --global ghq.root '/Volumes/workspace/'
 
 # .ssh/configとの関連付け
 git config --global includeIf."gitdir:/Volumes/workspace/github.com/akira-toriyama/".path "~/.config/git/user/akira-toriyama"
@@ -31,9 +33,6 @@ git config --global url."ssh://git@github.com.akira-toriyama/akira-toriyama".ins
 
 git config --global includeIf."gitdir:/Volumes/workspace/github.com/bird-studio/".path "~/.config/git/user/bird-studio"
 git config --global url."ssh://git@github.com.bird-studio/bird-studio".insteadOf "ssh://git@github.com/bird-studio"
-
-# ghq
-git config --global ghq.root '/Volumes/workspace/'
 
 # commit hook
 git config --local core.hooksPath .githooks
