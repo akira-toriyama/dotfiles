@@ -13,6 +13,7 @@
 ## Setup
 
 ```bash
+# brew install
 git clone https://github.com/akira-toriyama/dotfiles.git
 cd dotfiles
 script/setup/setup.sh
