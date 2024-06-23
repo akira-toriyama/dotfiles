@@ -10,7 +10,8 @@ brew install --cask \
   appcleaner \
   vlc \
   raycast \
-  karabiner-elements
+  karabiner-elements \
+  docker
 
 brew install \
   asdf \
