@@ -11,7 +11,8 @@ brew install --cask \
   vlc \
   raycast \
   karabiner-elements \
-  docker
+  docker \
+  colima
 
 brew install \
   asdf \

@@ -45,3 +45,6 @@ cp -r ./setting/.ssh  ~/.
 # yabai
 brew install koekeishiya/formulae/yabai
 ln -s ${PWD}/setting/yabai/.yabairc ~/.
+
+# https://github.com/akira-toriyama/Adv360-Pro-ZMK?tab=readme-ov-file#macos-specific
+colima start --arch x86_64

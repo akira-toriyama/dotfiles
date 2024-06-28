@@ -441,6 +441,33 @@ const tabSwitching = [
 
 const app = [] as const;
 
+const soundEffect = [
+  {
+    "type": "basic",
+    "from": {
+      "key_code": "lang3",
+    },
+    "to": [
+      {
+        shell_command:
+          "/usr/bin/afplay --volume 0.1 /Users/tommy/dotfiles/soundEffect/ja.mp3 &",
+      },
+    ],
+  },
+  {
+    "type": "basic",
+    "from": {
+      "key_code": "lang4",
+    },
+    "to": [
+      {
+        shell_command:
+          "/usr/bin/afplay --volume 0.1 /Users/tommy/dotfiles/soundEffect/en.mp3 &",
+      },
+    ],
+  },
+] as const;
+
 export const manipulators = [
   ...tabSwitching,
   ...rightClick,
@@ -450,4 +477,5 @@ export const manipulators = [
   ...windowFocus,
   ...mouse,
   ...app,
+  ...soundEffect,
 ] as const;
