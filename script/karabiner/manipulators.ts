@@ -457,10 +457,6 @@ const app = [
         key_code: "spacebar",
         modifiers: ["option"],
       },
-      {
-        shell_command:
-          `${config.pathMap.afplay} --volume 0.5 ${config.pathMap.dotfiles}/soundEffect/en.mp3 &`,
-      },
     ],
   },
   {
@@ -477,8 +473,7 @@ const app = [
         key_code: "japanese_eisuu",
       },
       {
-        shell_command:
-          `open '/System/Applications/Dictionary.app' && ${config.pathMap.afplay} --volume 0.5 ${config.pathMap.dotfiles}/soundEffect/en.mp3 &`,
+        shell_command: ` open -a Dictionary`,
       },
     ],
   },
