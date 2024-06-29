@@ -5,6 +5,7 @@ export const pathMap = {
   deno: "/Users/tommy/.asdf/shims/deno",
   jq: "/opt/homebrew/bin/jq",
   xargs: "/usr/bin/xargs",
+  afplay: "/usr/bin/afplay",
 } as const;
 
 export const appMap = {
@@ -320,5 +321,3 @@ export const window = [
     },
   },
 ] as const;
-
-export const volume = "0.03";
