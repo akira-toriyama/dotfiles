@@ -12,6 +12,7 @@ export const appMap = {
   Chrome: "^com\\.google\\.Chrome$",
   VSCode: "^com\\.microsoft\\.VSCode$",
   FSNotes: "^co\\.fluder\\.FSNotes$",
+  Dictionary: "^com\\.apple\\.Dictionary",
 } as const;
 
 const _keyMap = {

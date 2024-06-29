@@ -463,6 +463,25 @@ const app = [
       },
     ],
   },
+  {
+    description: "辞書.app",
+    from: {
+      key_code: config.keyMap.ll.key,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "japanese_eisuu",
+      },
+      {
+        shell_command:
+          `open '/System/Applications/Dictionary.app' && ${config.pathMap.afplay} --volume 0.5 ${config.pathMap.dotfiles}/soundEffect/en.mp3 &`,
+      },
+    ],
+  },
 ] as const;
 
 const soundEffect = [
@@ -492,6 +511,27 @@ const soundEffect = [
   },
 ] as const;
 
+const shortCut = [
+  {
+    from: {
+      key_code: "escape",
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "w",
+        modifiers: ["command"],
+      },
+    ],
+    conditions: [
+      {
+        type: "frontmost_application_if",
+        bundle_identifiers: [config.appMap.Dictionary],
+      },
+    ],
+  },
+];
+
 export const manipulators = [
   ...tabSwitching,
   ...rightClick,
@@ -502,4 +542,5 @@ export const manipulators = [
   ...mouse,
   ...app,
   ...soundEffect,
+  ...shortCut,
 ] as const;
