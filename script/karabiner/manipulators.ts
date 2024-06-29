@@ -451,8 +451,15 @@ const app = [
     type: "basic",
     to: [
       {
+        key_code: "japanese_eisuu",
+      },
+      {
         key_code: "spacebar",
         modifiers: ["option"],
+      },
+      {
+        shell_command:
+          `${config.pathMap.afplay} --volume 0.5 ${config.pathMap.dotfiles}/soundEffect/en.mp3 &`,
       },
     ],
   },
