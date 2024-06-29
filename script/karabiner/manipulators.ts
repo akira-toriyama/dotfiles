@@ -450,7 +450,7 @@ const soundEffect = [
     "to": [
       {
         shell_command:
-          "/usr/bin/afplay --volume 0.1 /Users/tommy/dotfiles/soundEffect/ja.mp3 &",
+          `/usr/bin/afplay --volume ${config.volume} /Users/tommy/dotfiles/soundEffect/ja.mp3 &`,
       },
     ],
   },
@@ -462,7 +462,7 @@ const soundEffect = [
     "to": [
       {
         shell_command:
-          "/usr/bin/afplay --volume 0.1 /Users/tommy/dotfiles/soundEffect/en.mp3 &",
+          `/usr/bin/afplay --volume ${config.volume} /Users/tommy/dotfiles/soundEffect/en.mp3 &`,
       },
     ],
   },

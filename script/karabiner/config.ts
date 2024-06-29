@@ -320,3 +320,5 @@ export const window = [
     },
   },
 ] as const;
+
+export const volume = "0.03";
