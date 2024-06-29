@@ -1,3 +1,5 @@
+フォーカス失敗の通知 or 効果音
+
 
 const shortcut = [
   {
@@ -51,23 +53,6 @@ const shortcut = [
 ] as const;
 
 const app = [
-  {
-    description: "ランチャー",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "spacebar",
-        modifiers: ["option"],
-      },
-    ],
-  },
-
   {
     description: "FSNotes",
     from: {

@@ -439,7 +439,24 @@ const tabSwitching = [
   },
 ] as const;
 
-const app = [] as const;
+const app = [
+  {
+    description: "ランチャー",
+    from: {
+      key_code: config.keyMap.ll.key,
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option"],
+      },
+    ],
+  },
+] as const;
 
 const soundEffect = [
   {
