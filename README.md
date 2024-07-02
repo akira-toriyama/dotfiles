@@ -26,14 +26,8 @@ script/setup/setup.sh
 ```bash
 script/setup/local.sh
 
-# GithubにSSH接続
-ssh-keygen -t ed25519 -f "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa"
-pbcopy < "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa.pub"
-# https://docs.github.com/ja/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
-ssh -T git@github.com.akira-toriyama
-
+deno run --allow-run --allow-read --allow-write --allow-env --allow-sys ~/dotfiles/bin/generateSsh.ts --accountName="akira-toriyama"
 cp "$HOME/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa" "$HOME/.ssh/conf.d/hosts/github.com.bird-studio/id_rsa"
-ssh -T git@github.com.bird-studio
 
 # github
 gh auth login
