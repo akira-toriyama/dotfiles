@@ -439,7 +439,45 @@ const tabSwitching = [
   },
 ] as const;
 
-const app = [] as const;
+const app = [
+  {
+    description: "ランチャー",
+    from: {
+      key_code: config.keyMap.ll.key,
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "japanese_eisuu",
+      },
+      {
+        key_code: "spacebar",
+        modifiers: ["option"],
+      },
+    ],
+  },
+  {
+    description: "辞書.app",
+    from: {
+      key_code: config.keyMap.ll.key,
+      modifiers: {
+        mandatory: ["option"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "japanese_eisuu",
+      },
+      {
+        shell_command: ` open -a Dictionary`,
+      },
+    ],
+  },
+] as const;
 
 const soundEffect = [
   {
@@ -450,7 +488,7 @@ const soundEffect = [
     "to": [
       {
         shell_command:
-          `/usr/bin/afplay --volume ${config.volume} /Users/tommy/dotfiles/soundEffect/ja.mp3 &`,
+          `${config.pathMap.afplay} --volume 0.1 ${config.pathMap.dotfiles}/soundEffect/ja.mp3 &`,
       },
     ],
   },
@@ -462,11 +500,32 @@ const soundEffect = [
     "to": [
       {
         shell_command:
-          `/usr/bin/afplay --volume ${config.volume} /Users/tommy/dotfiles/soundEffect/en.mp3 &`,
+          `${config.pathMap.afplay} --volume 0.1 ${config.pathMap.dotfiles}/soundEffect/en.mp3 &`,
       },
     ],
   },
 ] as const;
+
+const shortCut = [
+  {
+    from: {
+      key_code: "escape",
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "w",
+        modifiers: ["command"],
+      },
+    ],
+    conditions: [
+      {
+        type: "frontmost_application_if",
+        bundle_identifiers: [config.appMap.Dictionary],
+      },
+    ],
+  },
+];
 
 export const manipulators = [
   ...tabSwitching,
@@ -478,4 +537,5 @@ export const manipulators = [
   ...mouse,
   ...app,
   ...soundEffect,
+  ...shortCut,
 ] as const;

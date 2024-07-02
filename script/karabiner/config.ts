@@ -5,12 +5,14 @@ export const pathMap = {
   deno: "/Users/tommy/.asdf/shims/deno",
   jq: "/opt/homebrew/bin/jq",
   xargs: "/usr/bin/xargs",
+  afplay: "/usr/bin/afplay",
 } as const;
 
 export const appMap = {
   Chrome: "^com\\.google\\.Chrome$",
   VSCode: "^com\\.microsoft\\.VSCode$",
   FSNotes: "^co\\.fluder\\.FSNotes$",
+  Dictionary: "^com\\.apple\\.Dictionary",
 } as const;
 
 const _keyMap = {
@@ -320,5 +322,3 @@ export const window = [
     },
   },
 ] as const;
-
-export const volume = "0.03";

@@ -52,23 +52,6 @@ const shortcut = [
 
 const app = [
   {
-    description: "ランチャー",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "spacebar",
-        modifiers: ["option"],
-      },
-    ],
-  },
-
-  {
     description: "FSNotes",
     from: {
       key_code: config.keyMap.ll,
@@ -84,74 +67,5 @@ const app = [
       },
     ],
   },
-  {
-    description: "辞書.app",
-    from: {
-      key_code: config.keyMap.ll,
-      modifiers: {
-        mandatory: ["option"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        "key_code": "japanese_eisuu",
-      },
-      {
-        "shell_command": "open '/System/Applications/Dictionary.app'",
-      },
-    ],
-  },
+ 
 ] as const;
-
----
-
-キーボードのみで
-カレントウィンドウの中心へマウスポインタジャンプ
-use framework "CoreGraphics"
-
-application's CGWarpMouseCursorPosition({500, 500})
-
----
-
-
-fsnote
-
-1233965871  ScreenBrush               (1.7.8)
-1447043133  Cursor Pro                (2.2.6)
-
----
-
-ショートカット練習
-
-
----
-https://www.homerow.app/
-https://github.com/wmaurer/vscode-jumpy
-
-
-warp -> zsh
-
-raycast
-漢字をローマ字にして、レイキャスト
-updしんどい？
-
----
-
-dash
-
----
-
-https://qiita.com/leo_canada/items/7db010933f2af8437285
-
----
-
-https://dev.to/darrinndeal/setting-mac-hot-corners-in-the-terminal-3de
-
----
-
-https://setapp.com/apps/slidepad
-
----
-
-https://setapp.com/apps/presentify
