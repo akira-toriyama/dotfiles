@@ -1,4 +1,5 @@
 
+https://zenn.dev/c6tower/articles/5fcb5299f410d4
 
 const shortcut = [
   {
@@ -70,5 +71,3 @@ const app = [
   },
  
 ] as const;
-
-
