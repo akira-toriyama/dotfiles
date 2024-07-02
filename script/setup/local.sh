@@ -27,20 +27,10 @@ git config --global core.ignorecase false
 # ghq
 git config --global ghq.root '/Volumes/workspace/'
 
-# .ssh/configとの関連付け
-git config --global includeIf."gitdir:/Volumes/workspace/github.com/akira-toriyama/".path "~/.config/git/user/akira-toriyama"
-git config --global url."ssh://git@github.com.akira-toriyama/akira-toriyama".insteadOf "ssh://git@github.com/akira-toriyama"
-
-git config --global includeIf."gitdir:/Volumes/workspace/github.com/bird-studio/".path "~/.config/git/user/bird-studio"
-git config --global url."ssh://git@github.com.bird-studio/bird-studio".insteadOf "ssh://git@github.com/bird-studio"
-
 # commit hook
 git config --local core.hooksPath .githooks
 chmod +x .githooks/prepare-commit-msg
 ###############################################################
-
-# ssh
-cp -r ./setting/.ssh  ~/.
 
 # yabai
 brew install koekeishiya/formulae/yabai
@@ -48,3 +38,5 @@ ln -s ${PWD}/setting/yabai/.yabairc ~/.
 
 # https://github.com/akira-toriyama/Adv360-Pro-ZMK?tab=readme-ov-file#macos-specific
 colima start --arch x86_64
+
+cp -r ./setting/.ssh  ~/.
