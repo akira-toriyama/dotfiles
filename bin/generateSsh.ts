@@ -79,3 +79,14 @@ console.log(
     "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
 );
 await zx`cat ~/.gitconfig`.then((v) => console.log(v.stdout));
+
+// import { $ as $$ } from "npm:zx";
+
+// const result = await $$`ls -la`;
+
+// // echo`ok`;
+// // echo`${result}`;
+
+// // // console.log(result); // stdout, stderr, exitCodeなどが取得できる
+
+// // // deno run --allow-read --allow-sys --allow-env --allow-run ./a.ts
