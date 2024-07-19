@@ -50,6 +50,9 @@ cp ~/Library/Preferences/com.lwouis.alt-tab-macos.plist ~/dotfiles/setting/alt-t
 # yabai のウィンドウ
 yabai -m query --windows --space | jq
 
+# yabai リスタート
+yabai --stop-service && yabai --start-service
+
 # 全般更新
 bin/update.sh
 ```
