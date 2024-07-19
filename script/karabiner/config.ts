@@ -283,26 +283,6 @@ export const window = [
   },
   {
     key: "ll",
-    move: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
-    "frame": {
-      "x": 6.0000,
-      "y": 6.0000,
-      "w": 5108.0000,
-      "h": 2148.0000,
-    },
-  },
-  {
-    key: "lr",
-    move: `${pathMap.yabai} -m window --grid 30:30:4:1:22:28`,
-    "frame": {
-      "x": 691.0000,
-      "y": 84.0000,
-      "w": 3737.0000,
-      "h": 1994.0000,
-    },
-  },
-  {
-    key: "aa",
     move: `${pathMap.yabai} -m window --grid 1:2:0:0:1:1`,
     "frame": {
       "x": 6.0000,
@@ -312,12 +292,32 @@ export const window = [
     },
   },
   {
-    key: "zz",
+    key: "lr",
     move: `${pathMap.yabai} -m window --grid 1:2:2:0:1:1`,
     "frame": {
       "x": 2563.0000,
       "y": 6.0000,
       "w": 2551.0000,
+      "h": 2148.0000,
+    },
+  },
+  {
+    key: "aa",
+    move: `${pathMap.yabai} -m window --grid 30:30:4:1:22:28`,
+    "frame": {
+      "x": 691.0000,
+      "y": 84.0000,
+      "w": 3737.0000,
+      "h": 1994.0000,
+    },
+  },
+  {
+    key: "zz",
+    move: `${pathMap.yabai} -m window --grid 1:1:0:0:1:1`,
+    "frame": {
+      "x": 6.0000,
+      "y": 6.0000,
+      "w": 5108.0000,
       "h": 2148.0000,
     },
   },
