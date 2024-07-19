@@ -33,8 +33,8 @@ const _keyMap = {
   b: "pause",
   ll: "insert",
   lr: "keypad_enter",
-  rl: "non_us_backslash",
-  rr: "application",
+  aa: "non_us_backslash",
+  zz: "application",
 } as const;
 
 export const keyMap = {
@@ -83,8 +83,8 @@ export const keyMap = {
       b: "keypad_asterisk",
       ll: "insert",
       lr: "keypad_enter",
-      rl: "non_us_backslash",
-      rr: "application",
+      aa: "non_us_backslash",
+      zz: "application",
     },
   },
   oLl: {
@@ -302,7 +302,7 @@ export const window = [
     },
   },
   {
-    key: "rl",
+    key: "aa",
     move: `${pathMap.yabai} -m window --grid 1:2:0:0:1:1`,
     "frame": {
       "x": 6.0000,
@@ -312,7 +312,7 @@ export const window = [
     },
   },
   {
-    key: "rr",
+    key: "zz",
     move: `${pathMap.yabai} -m window --grid 1:2:2:0:1:1`,
     "frame": {
       "x": 2563.0000,
