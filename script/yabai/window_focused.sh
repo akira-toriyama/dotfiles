@@ -16,3 +16,4 @@ borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/de
 sleep 0.07
 
 borders "${options[@]}" active_color=${ARRAY[$(($RANDOM % ${#ARRAY[*]}))]} 2>/dev/null 1>&2 &
+sleep 0.07
