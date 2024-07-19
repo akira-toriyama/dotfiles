@@ -313,7 +313,7 @@ const appSwitching = [
   {
     description: "All spaces",
     from: {
-      key_code: config.keyMap.ll.keys.ll,
+      key_code: config.keyMap.ll.keys.aa,
       modifiers: {
         mandatory: config.keyMap.ll.modifiers,
       },
@@ -329,7 +329,7 @@ const appSwitching = [
   {
     description: "alt + tab current スペース",
     from: {
-      key_code: config.keyMap.ll.keys.rl,
+      key_code: config.keyMap.ll.keys.ll,
       modifiers: {
         mandatory: config.keyMap.ll.modifiers,
       },
@@ -345,7 +345,7 @@ const appSwitching = [
   {
     description: "alt + tab all スペース",
     from: {
-      key_code: config.keyMap.ll.keys.rr,
+      key_code: config.keyMap.ll.keys.lr,
       modifiers: {
         mandatory: config.keyMap.ll.modifiers,
       },
