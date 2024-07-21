@@ -33,8 +33,12 @@ const _keyMap = {
   b: "pause",
   ll: "insert",
   lr: "keypad_enter",
+  qq: "lang5",
   aa: "non_us_backslash",
   zz: "application",
+  num: "lang6",
+  sym1: "lang7",
+  sym2: "lang8",
 } as const;
 
 export const keyMap = {
@@ -81,10 +85,14 @@ export const keyMap = {
       c: "keypad_hyphen",
       v: "keypad_slash",
       b: "keypad_asterisk",
-      ll: "insert",
-      lr: "keypad_enter",
-      aa: "non_us_backslash",
-      zz: "application",
+      ll: "international7",
+      lr: "international8",
+      aa: "international1",
+      qq: "international3",
+      zz: "japanese_pc_katakana",
+      num: "japanese_pc_xfer",
+      sym1: "japanese_pc_nfer",
+      sym2: "international6",
     },
   },
   oLl: {

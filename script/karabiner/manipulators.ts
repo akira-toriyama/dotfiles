@@ -329,7 +329,7 @@ const appSwitching = [
   {
     description: "alt + tab current スペース",
     from: {
-      key_code: config.keyMap.ll.keys.ll,
+      key_code: config.keyMap.ll.keys.lr,
       modifiers: {
         mandatory: config.keyMap.ll.modifiers,
       },
@@ -345,7 +345,7 @@ const appSwitching = [
   {
     description: "alt + tab all スペース",
     from: {
-      key_code: config.keyMap.ll.keys.lr,
+      key_code: config.keyMap.ll.keys.ll,
       modifiers: {
         mandatory: config.keyMap.ll.modifiers,
       },
@@ -470,10 +470,10 @@ const app = [
     type: "basic",
     to: [
       {
-        key_code: "japanese_eisuu",
+        shell_command: `open -a Dictionary`,
       },
       {
-        shell_command: ` open -a Dictionary`,
+        key_code: "japanese_eisuu",
       },
     ],
   },
