@@ -8,6 +8,3 @@ mas install 445189367
 
 # Dropover
 mas install 1355679052
-
-# Cursor Pro
-mas install 1447043133
