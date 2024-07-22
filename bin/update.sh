@@ -1,7 +1,14 @@
 #! /bin/bash
 
 brew upgrade
+
 asdf plugin update --all
+asdf global nodejs latest
+asdf global golang latest
+asdf global rust latest
+asdf global deno latest
+asdf direnv setup --shell zsh --version latest
+asdf local deno latest
 
 # yabai
 # https://github.com/koekeishiya/yabai/wiki/Installing-yabai-(latest-release)

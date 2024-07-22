@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # mas
-script/setup/mas.sh
+bin/setup/mas.sh
 
 # karabiner
 bin/karabiner/generation.sh
