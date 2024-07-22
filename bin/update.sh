@@ -1,14 +1,13 @@
 #! /bin/bash
 
 brew upgrade
-asdf plugin update --all
 
+asdf plugin update --all
 asdf global nodejs latest
 asdf global golang latest
 asdf global rust latest
 asdf global deno latest
 asdf direnv setup --shell zsh --version latest
-
 asdf local deno latest
 
 # yabai
