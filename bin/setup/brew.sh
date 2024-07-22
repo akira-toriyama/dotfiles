@@ -12,7 +12,8 @@ brew install --cask \
   raycast \
   karabiner-elements \
   docker \
-  colima
+  colima \
+  trash
 
 brew install \
   asdf \
