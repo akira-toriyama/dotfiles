@@ -1,5 +1,5 @@
 #! /bin/bash
 
-./script/setup/brew.sh
-./script/setup/defaults.sh
-./script/setup/asdf.sh
+./bin/setup/brew.sh
+./bin/setup/defaults.sh
+./bin/setup/asdf.sh

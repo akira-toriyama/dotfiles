@@ -246,7 +246,7 @@ const windowFocus = config.window.map((v) => ({
   to: [
     {
       shell_command:
-        `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/script/karabiner/_/focus.ts ${v.key}`,
+        `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/setting/karabiner/_/focus.ts ${v.key}`,
     },
   ],
 }));
