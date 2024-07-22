@@ -21,8 +21,8 @@ cd dotfiles
 # brew install
 # https://brew.sh/
 
-script/setup/setup.sh
-script/setup/local.sh
+bin/setup/setup.sh
+bin/setup/local.sh
 gh auth login
 
 # akira-toriyama

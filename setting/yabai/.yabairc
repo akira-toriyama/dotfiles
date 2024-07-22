@@ -57,6 +57,6 @@ yabai -m config left_padding 6
 yabai -m config right_padding 6
 yabai -m config window_gap 6
 
-yabai -m signal --add event=window_focused action="~/dotfiles/script/yabai/window_focused.sh"
+yabai -m signal --add event=window_focused action="~/dotfiles/bin/yabai/window_focused.sh"
 
-~/dotfiles/script/yabai/border.sh &
+~/dotfiles/bin/yabai/border.sh &
