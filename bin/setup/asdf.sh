@@ -18,5 +18,3 @@ asdf global deno latest
 
 asdf plugin add direnv
 asdf direnv setup --shell zsh --version latest
-
-echo -e "\n. $(brew --prefix asdf)/libexec/asdf.sh" >> ${ZDOTDIR:-~}/.zshrc
