@@ -1,0 +1,6 @@
+#! /bin/bash
+
+# git -c my.skip=yes commit
+if [[ "$(git config --get my.skip)" != yes ]];then
+    exec < /dev/tty deno run --allow-net --allow-write --allow-run --allow-read .githooks/commitHook.ts
+fi

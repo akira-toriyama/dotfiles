@@ -1,0 +1,7 @@
+Include /Users/tommy/.colima/ssh_config
+
+Include ~/.ssh/conf.d/hosts/**/config
+
+Host *
+  ServerAliveInterval 300
+  AddKeysToAgent yes
