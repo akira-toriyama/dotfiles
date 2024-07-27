@@ -1,3 +1,5 @@
+export PATH=$(chezmoi source-path)/_/bin:$PATH
+
 ZSH_DIR="${HOME}/dotfiles/setting/.zhs.d"
 
 if [ -d $ZSH_DIR ] && [ -r $ZSH_DIR ] && [ -x $ZSH_DIR ]; then

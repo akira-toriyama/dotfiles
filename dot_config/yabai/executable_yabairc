@@ -11,8 +11,6 @@ yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
 sudo yabai --load-sa
 #
 
-# TODO ll + t から呼び出し可能にする
-
 # global settings
 # yabai -m config                                 \
 #     external_bar                 off:40:0       \
@@ -47,16 +45,24 @@ sudo yabai --load-sa
 
 # echo "yabai configuration loaded.."
 
-# 自動的にアクティブアクティブなウィンドウにフォーカスを合わせる
-yabai -m signal --add event=window_destroyed action="yabai -m query --windows --window &> /dev/null || yabai -m window --focus mouse"
-yabai -m signal --add event=application_terminated action="yabai -m query --windows --window &> /dev/null || yabai -m window --focus"
-
+# window padding
 yabai -m config top_padding 6
 yabai -m config bottom_padding 6
 yabai -m config left_padding 6
 yabai -m config right_padding 6
 yabai -m config window_gap 6
 
-yabai -m signal --add event=window_focused action="~/dotfiles/bin/yabai/window_focused.sh"
+# 自動的にアクティブアクティブなウィンドウにフォーカスを合わせる
+# https://github.com/koekeishiya/yabai/issues/485#issuecomment-617953545
+function focus_under_cursor {
+    if yabai -m query --windows --space |
+        jq -er 'map(select(.focused == 1)) | length == 0' >/dev/null; then
+        yabai -m window --focus mouse 2>/dev/null || true
+    fi
+}
+yabai -m signal --add event=window_destroyed action="${functions[focus_under_cursor]}"
+yabai -m signal --add event=window_minimized action="${functions[focus_under_cursor]}"
+yabai -m signal --add event=application_hidden action="${functions[focus_under_cursor]}"
 
-~/dotfiles/bin/yabai/border.sh &
+yabai -m signal --add event=window_focused action="$(chezmoi source-path)/_/bin/yabai--window_focused"
+$(chezmoi source-path)/_/bin/yabai--border &
