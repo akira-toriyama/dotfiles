@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+yabai --stop-service 2>/dev/null || true && yabai --start-service
