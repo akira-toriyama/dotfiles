@@ -482,9 +482,6 @@ const app = [
 const soundEffect = [
   {
     "type": "basic",
-    "from": {
-      "key_code": "lang3",
-    },
     "to": [
       {
         shell_command:
@@ -494,9 +491,6 @@ const soundEffect = [
   },
   {
     "type": "basic",
-    "from": {
-      "key_code": "lang4",
-    },
     "to": [
       {
         shell_command:
