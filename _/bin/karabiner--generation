@@ -3,5 +3,3 @@
 deno run $(chezmoi source-path)/_/karabiner/karabinerJson.ts > ~/.config/karabiner/karabiner.json
 open '/Applications/Karabiner-Elements.app'
 echo "Devices の マウスを on"
-
-
