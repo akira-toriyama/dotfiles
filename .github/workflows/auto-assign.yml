@@ -1,0 +1,12 @@
+on:
+  pull_request:
+    types: [opened]
+  issues:
+    types: [opened]
+
+jobs:
+  autoAssing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto assing
+        uses: technote-space/assign-author@v1
