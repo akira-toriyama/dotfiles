@@ -5,3 +5,5 @@
 git config --local core.hooksPath .githooks
 chmod +x .githooks/prepare-commit-msg
 ```
+
+xxx
