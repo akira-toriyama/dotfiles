@@ -64,5 +64,5 @@ yabai -m signal --add event=window_destroyed action="${functions[focus_under_cur
 yabai -m signal --add event=window_minimized action="${functions[focus_under_cursor]}"
 yabai -m signal --add event=application_hidden action="${functions[focus_under_cursor]}"
 
-yabai -m signal --add event=window_focused action="$(chezmoi source-path)/_/bin/yabai--window_focused"
-$(chezmoi source-path)/_/bin/yabai--border &
+yabai -m signal --add event=window_focused action="$(chezmoi source-path)/_/yabai/window_focused"
+$(chezmoi source-path)/_/yabai/border &
