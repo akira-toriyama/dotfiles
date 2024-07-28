@@ -1,4 +1,7 @@
 import * as config from "./config.ts";
+import * as service from "../_/service.ts";
+
+const chezmoiRoot = service.getChezmoiRoot();
 
 const rightClick = [
   /**
@@ -246,7 +249,7 @@ const windowFocus = config.window.map((v) => ({
   to: [
     {
       shell_command:
-        `${config.pathMap.deno} run --allow-run ${config.pathMap.dotfiles}/setting/karabiner/_/focus.ts ${v.key}`,
+        `${config.pathMap.deno} run --allow-run ${chezmoiRoot}/_/karabiner/_/focus.ts ${v.key}`,
     },
   ],
 }));
@@ -479,27 +482,6 @@ const app = [
   },
 ] as const;
 
-const soundEffect = [
-  {
-    "type": "basic",
-    "to": [
-      {
-        shell_command:
-          `${config.pathMap.afplay} --volume 0.1 ${config.pathMap.dotfiles}/soundEffect/ja.mp3 &`,
-      },
-    ],
-  },
-  {
-    "type": "basic",
-    "to": [
-      {
-        shell_command:
-          `${config.pathMap.afplay} --volume 0.1 ${config.pathMap.dotfiles}/soundEffect/en.mp3 &`,
-      },
-    ],
-  },
-] as const;
-
 const shortCut = [
   {
     from: {
@@ -530,6 +512,5 @@ export const manipulators = [
   ...windowFocus,
   ...mouse,
   ...app,
-  ...soundEffect,
   ...shortCut,
 ] as const;

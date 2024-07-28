@@ -54,7 +54,7 @@ const focus = () => {
       .filter((v) => !v["has-focus"]);
 
     const no = windows.length - 1;
-    if (!windows[no].id) {
+    if (!windows[no]?.id) {
       return;
     }
     switchFocus({ id: windows[no].id });
