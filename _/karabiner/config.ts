@@ -1,7 +1,6 @@
 export const pathMap = {
   yabai: "/opt/homebrew/bin/yabai",
   node: "/Users/tommy/.asdf/shims/node",
-  dotfiles: "/Users/tommy/dotfiles",
   deno: "/Users/tommy/.asdf/shims/deno",
   jq: "/opt/homebrew/bin/jq",
   xargs: "/usr/bin/xargs",
