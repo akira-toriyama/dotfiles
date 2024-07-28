@@ -23,6 +23,3 @@ version-resolver:
   patch:
     labels:
       - "x.x.o"
-
-references:
-  - main
