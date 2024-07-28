@@ -1,12 +1,14 @@
 on:
-  pull_request:
-    types: [opened]
   issues:
+    types: [opened]
+  pull_request:
     types: [opened]
 
 jobs:
-  autoAssing:
+  assign-author:
+    permissions:
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Auto assing
-        uses: technote-space/assign-author@v1
+      - uses: technote-space/assign-author@v1
