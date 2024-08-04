@@ -112,6 +112,37 @@ export const keyMap = {
       upArrow: "f18",
     },
   },
+  layer: {
+    modifiers: [
+      "right_shift",
+      "right_control",
+      "right_command",
+      "right_option",
+    ],
+    keys: {
+      num: "lang5",
+      sym1: "lang6",
+      sym2: "lang7",
+    },
+  },
+  qq: {
+    modifiers: [
+      "right_shift",
+      "right_control",
+      "right_command",
+      "right_option",
+    ],
+    key: "lang8",
+  },
+  pp: {
+    modifiers: [
+      "right_shift",
+      "right_control",
+      "right_command",
+      "right_option",
+    ],
+    key: "lang9",
+  },
 } as const;
 
 const _spaces = [

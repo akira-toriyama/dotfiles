@@ -316,9 +316,9 @@ const appSwitching = [
   {
     description: "All spaces",
     from: {
-      key_code: config.keyMap.ll.keys.aa,
+      key_code: config.keyMap.layer.keys.sym2,
       modifiers: {
-        mandatory: config.keyMap.ll.modifiers,
+        mandatory: config.keyMap.layer.modifiers,
       },
     },
     type: "basic",
@@ -332,9 +332,9 @@ const appSwitching = [
   {
     description: "alt + tab current スペース",
     from: {
-      key_code: config.keyMap.ll.keys.lr,
+      key_code: config.keyMap.layer.keys.num,
       modifiers: {
-        mandatory: config.keyMap.ll.modifiers,
+        mandatory: config.keyMap.layer.modifiers,
       },
     },
     type: "basic",
@@ -348,9 +348,9 @@ const appSwitching = [
   {
     description: "alt + tab all スペース",
     from: {
-      key_code: config.keyMap.ll.keys.ll,
+      key_code: config.keyMap.layer.keys.sym1,
       modifiers: {
-        mandatory: config.keyMap.ll.modifiers,
+        mandatory: config.keyMap.layer.modifiers,
       },
     },
     type: "basic",
@@ -530,6 +530,49 @@ const soundEffect = [
   },
 ] as const;
 
+const focusSwitching = [
+  {
+    from: {
+      key_code: config.keyMap.pp.key,
+      modifiers: {
+        mandatory: config.keyMap.pp.modifiers,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: `
+${config.pathMap.yabai} -m query --spaces --space |
+${config.pathMap.jq} -re ".index" |
+${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m query --windows --space {} |
+${config.pathMap.jq} -sre 'add | map(select(."is-minimized"==false)) | sort_by(.display, .frame.y, .frame.x, .id) | . as $array | length as $array_length | index(map(select(."has-focus"==true))) as $has_index | if $array_length - 1 > $has_index then nth($has_index + 1).id else nth(0).id end' |
+${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
+`,
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: config.keyMap.qq.key,
+      modifiers: {
+        mandatory: config.keyMap.qq.modifiers,
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        shell_command: `
+  ${config.pathMap.yabai} -m query --spaces --space |
+  ${config.pathMap.jq} -re ".index" |
+  ${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m query --windows --space {} |
+  ${config.pathMap.jq} -sre 'add | map(select(."is-minimized"==false)) | sort_by(.display, .frame.y, .frame.x, .id) | . as $array | length as $array_length | index(map(select(."has-focus"==true))) as $has_index | if $has_index > 0 then nth($has_index - 1).id else nth($array_length - 1).id end' |
+  ${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
+  `,
+      },
+    ],
+  },
+] as const;
+
 export const manipulators = [
   ...tabSwitching,
   ...rightClick,
@@ -541,4 +584,5 @@ export const manipulators = [
   ...app,
   ...shortCut,
   ...soundEffect,
+  ...focusSwitching,
 ] as const;
