@@ -533,9 +533,9 @@ const soundEffect = [
 const focusSwitching = [
   {
     from: {
-      key_code: config.keyMap.pp.key,
+      key_code: config.keyMap.ll.keys.f,
       modifiers: {
-        mandatory: config.keyMap.pp.modifiers,
+        mandatory: config.keyMap.ll.modifiers,
       },
     },
     type: "basic",
@@ -553,9 +553,9 @@ ${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
   },
   {
     from: {
-      key_code: config.keyMap.qq.key,
+      key_code: config.keyMap.ll.keys.d,
       modifiers: {
-        mandatory: config.keyMap.qq.modifiers,
+        mandatory: config.keyMap.ll.modifiers,
       },
     },
     type: "basic",
