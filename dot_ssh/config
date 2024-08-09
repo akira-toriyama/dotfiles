@@ -1,6 +1,6 @@
 Include ~/.colima/ssh_config
 
-Include ~/.ssh/conf.d/hosts/**/config
+Include ~/.ssh/conf.d/hosts/*/config
 
 Host *
   ServerAliveInterval 300
