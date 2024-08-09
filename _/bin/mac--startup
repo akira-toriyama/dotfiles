@@ -1,6 +1,4 @@
 #!/usr/bin/env sh
 
-# https://japanrock-pg.hatenablog.com/entry/20090606/1244254986
-
 open ~/Documents/workspace.dmg.sparseimage
 watchman--watch--alt-tab
