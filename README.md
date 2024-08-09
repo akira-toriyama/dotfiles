@@ -4,15 +4,12 @@
 # TODO 自動化
 git config --local core.hooksPath .githooks
 chmod +x .githooks/prepare-commit-msg
+
+# TODO 自動化
+defaults import com.lwouis.alt-tab-macos $(chezmoi source-path)/_/plist/com.lwouis.alt-tab-macos.plist
 ```
 
 ## 手動で
-
-### alt-tab の設定
-
-```bash
-defaults import com.lwouis.alt-tab-macos $(chezmoi source-path)/_/plist/com.lwouis.alt-tab-macos.plist
-```
 
 ### Google IME
 
