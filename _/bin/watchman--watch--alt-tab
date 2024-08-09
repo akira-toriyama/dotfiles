@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+# alt-tab-macos の plistを監視追加
+
+watchman watch ~/Library/Preferences
+# watchman watch-list
+
+watchman -- trigger ~/Library/Preferences alt-tab-plist 'com.lwouis.alt-tab-macos.plist' -- watchman--cmd--alt-tab
+watchman trigger-list ~/Library/Preferences
