@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# TODO 自動化 (初回のみ
+# git commitのhook
+git config --file=$(chezmoi source-path)/.git/config --add core.hooksPath .githooks
+
+# TODO 自動化 (初回のみ
+# alt-tab の設定を import
+defaults import com.lwouis.alt-tab-macos $(chezmoi source-path)/_/plist/com.lwouis.alt-tab-macos.plist
+
+# TODO 自動化 (初回のみ
+# 起動時に実行するshell
+osascript -e 'tell application "System Events" to make login item at end with properties {name: "mac--startup",path:"/Users/tommy/.local/share/chezmoi/_/bin/mac--startup", hidden:false}'
