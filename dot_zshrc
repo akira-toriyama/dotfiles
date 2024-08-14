@@ -1,0 +1,12 @@
+export PATH=$(chezmoi source-path)/_/bin:$PATH
+source "${XDG_CONFIG_HOME:-$HOME/.config}/asdf-direnv/zshrc"
+
+function load {
+    ZSH_DIR="$(chezmoi source-path)/_/zsh"
+    if [ -d $ZSH_DIR ] && [ -r $ZSH_DIR ] && [ -x $ZSH_DIR ]; then
+        for file in ${ZSH_DIR}/**/*.zsh; do
+            [ -r $file ] && source $file
+        done
+    fi
+}
+load

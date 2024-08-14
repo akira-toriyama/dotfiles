@@ -1,0 +1,16 @@
+on:
+  pull_request:
+    branches: main
+  schedule:
+    - cron: "* 10 * * *"
+
+jobs:
+  mac-setup:
+    name: mac-setup
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: mac-setup
+        run: |
+          sh -c "$(curl -fsLS chezmoi.io/get)" -- init --apply -S .
