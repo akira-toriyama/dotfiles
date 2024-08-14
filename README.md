@@ -1,5 +1,9 @@
 # dotfiles
 
+```bash
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/bin init --apply akira-toriyama
+```
+
 ## 手動で
 
 ### Git アカウント
