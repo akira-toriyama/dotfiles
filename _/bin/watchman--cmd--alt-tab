@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# alt-tab-macos の plistをexport
+
+defaults export com.lwouis.alt-tab-macos $(chezmoi source-path)/_/plist/com.lwouis.alt-tab-macos.plist

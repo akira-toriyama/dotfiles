@@ -1,0 +1,14 @@
+Include ~/.colima/ssh_config
+
+Include ~/.ssh/conf.d/hosts/**/config
+
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa
+  IdentitiesOnly yes
+  Port 22
+
+Host *
+  ServerAliveInterval 300
+  AddKeysToAgent yes

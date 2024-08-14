@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# alt-tab-macos の plistを監視削除
+
+# watchman watch-del ~/Library/Preferences
+watchman trigger-del ~/Library/Preferences alt-tab-plist
