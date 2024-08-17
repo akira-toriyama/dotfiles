@@ -12,5 +12,4 @@ xcode-select --install || echo "XCode already installed"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 brew install chezmoi
-chezmoi init danielmschmidt
 chezmoi init --apply akira-toriyama
