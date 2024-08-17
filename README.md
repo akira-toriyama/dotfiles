@@ -3,6 +3,7 @@
 ```bash
 xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# update .zprofile
 source ~/.zprofile
 brew install chezmoi
 chezmoi init --apply akira-toriyama
@@ -10,12 +11,17 @@ chezmoi init --apply akira-toriyama
 
 ## 手動で
 
+### TotalSpaces3
+
+https://downloads.binaryage.com/TotalSpaces3-0.8.114.dmg
+
 ### Shell
 
 ```bash
 gh auth login
-# ~/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa.pub
 ```
+
+###
 
 ### Google IME
 
