@@ -19,9 +19,8 @@ https://downloads.binaryage.com/TotalSpaces3-0.8.114.dmg
 
 ```bash
 gh auth login
+yabai--restart
 ```
-
-###
 
 ### Google IME
 
