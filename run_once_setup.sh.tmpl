@@ -94,9 +94,6 @@ asdf direnv setup --shell zsh --version latest
 
 
 {{ if ne (env "CI") "true" }}
-# karabiner json
-$(chezmoi source-path)/_/bin/karabiner--generation
-
 # workspace
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
 

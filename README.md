@@ -18,8 +18,9 @@ https://downloads.binaryage.com/TotalSpaces3-0.8.114.dmg
 ### Shell
 
 ```bash
-gh auth login
 yabai--restart
+karabiner--generation
+gh auth login
 ```
 
 ### Google IME
