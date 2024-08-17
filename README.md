@@ -1,6 +1,10 @@
 # dotfiles
 
 ```bash
+/bin/zsh -c "$(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/init)"
+```
+
+```bash
 xcode-select --install
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 # update .zprofile
