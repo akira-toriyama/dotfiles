@@ -6,6 +6,10 @@ MAS_APPS="$(cat .Brewfile | grep -v brew | grep mas | sed 's/^.*", id: //' | tr 
 export HOMEBREW_BUNDLE_MAS_SKIP="$MAS_APPS"
 {{ end }}
 
+{{ if ne (env "CI") "true" }}
+softwareupdate --install-rosetta --agree-to-license
+{{ end }}
+
 brew bundle --global
 source ~/.zshrc
 
@@ -90,9 +94,6 @@ asdf direnv setup --shell zsh --version latest
 
 
 {{ if ne (env "CI") "true" }}
-# karabiner json
-$(chezmoi source-path)/_/bin/karabiner--generation
-
 # workspace
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
 
@@ -101,6 +102,10 @@ colima start --arch x86_64
 
 # git commitのhook
 git config --file=$(chezmoi source-path)/.git/config --add core.hooksPath .githooks
+
+# chezmoiディレクトリのアカウント
+git config --file=$(chezmoi source-path)/.git/config --add user.name "akira-toriyama"
+git config --file=$(chezmoi source-path)/.git/config --add user.email "92862731+akira-toriyama@users.noreply.github.com"
 
 # alt-tab の設定を import
 defaults import com.lwouis.alt-tab-macos $(chezmoi source-path)/_/plist/com.lwouis.alt-tab-macos.plist
@@ -120,3 +125,4 @@ git config --global core.ignorecase false
 # ghq
 git config --global ghq.root '/Volumes/workspace/'
 {{ end }}
+
