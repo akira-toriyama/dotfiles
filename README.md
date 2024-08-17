@@ -1,16 +1,20 @@
 # dotfiles
 
 ```bash
-sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/bin init --apply akira-toriyama
+xcode-select --install
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+source ~/.zprofile
+brew install chezmoi
+chezmoi init --apply akira-toriyama
 ```
 
 ## 手動で
 
-### Git アカウント
+### Shell
 
 ```bash
-git config --local user.name "akira-toriyama"
-git config --local user.email "92862731+akira-toriyama@users.noreply.github.com"
+gh auth login
+# ~/.ssh/conf.d/hosts/github.com.akira-toriyama/id_rsa.pub
 ```
 
 ### Google IME
