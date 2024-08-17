@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
 open ~/Documents/workspace.dmg.sparseimage
-open '/Applications/TotalSpaces3.app'
 watchman--watch--alt-tab
+open '/Applications/TotalSpaces3.app'
