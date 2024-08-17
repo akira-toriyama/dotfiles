@@ -96,6 +96,7 @@ asdf direnv setup --shell zsh --version latest
 {{ if ne (env "CI") "true" }}
 # workspace
 hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
+open '/Users/tommy/Documents/workspace.dmg.sparseimage'
 
 # https://github.com/akira-toriyama/Adv360-Pro-ZMK?tab=readme-ov-file#macos-specific
 colima start --arch x86_64
