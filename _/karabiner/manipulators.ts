@@ -503,6 +503,37 @@ const shortCut = [
   },
 ];
 
+const globalShortCut = [
+  {
+    from: {
+      key_code: "m",
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "return_or_enter",
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: "j",
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "spacebar",
+      },
+    ],
+  },
+];
+
 const soundEffect = [
   {
     "type": "basic",
@@ -585,4 +616,5 @@ export const manipulators = [
   ...shortCut,
   ...soundEffect,
   ...focusSwitching,
+  ...globalShortCut,
 ] as const;
