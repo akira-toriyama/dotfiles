@@ -2,4 +2,5 @@
 
 open ~/Documents/workspace.dmg.sparseimage
 watchman--watch--alt-tab
+brew services start sleepwatcher
 open '/Applications/TotalSpaces3.app'

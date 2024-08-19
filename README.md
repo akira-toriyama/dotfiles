@@ -1,7 +1,7 @@
 # dotfiles
 
 ```bash
-/bin/zsh -c "$(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/init)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/init)"
 ```
 
 ## 手動で
