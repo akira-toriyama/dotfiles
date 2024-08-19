@@ -506,7 +506,7 @@ const shortCut = [
 const globalShortCut = [
   {
     from: {
-      key_code: "m",
+      key_code: "j",
       modifiers: {
         mandatory: ["control"],
       },
@@ -520,7 +520,7 @@ const globalShortCut = [
   },
   {
     from: {
-      key_code: "j",
+      key_code: "m",
       modifiers: {
         mandatory: ["control"],
       },

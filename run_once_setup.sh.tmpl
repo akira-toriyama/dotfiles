@@ -73,6 +73,10 @@ defaults write com.apple.finder ShowRemovableMediaOnDesktop -bool false
 # https://discuss.binaryage.com/t/can-we-help-test-total-spaces-3-if-we-have-apple-silicon/8199/65
 defaults write com.apple.dock "mru-spaces" -bool false
 
+# https://www.maclab.tokyo/document/stage-manager/12224/
+# デスクトップクリックでウィンドウを隠すを無効化
+defaults write com.apple.dock "autohide" -bool "true"
+
 asdf plugin add nodejs
 asdf install nodejs latest
 asdf global nodejs latest

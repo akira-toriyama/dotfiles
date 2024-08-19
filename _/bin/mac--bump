@@ -3,7 +3,6 @@
 brew upgrade
 
 asdf plugin update --all
-$HOME/dotfiles/bin/setup/asdf.sh
 
 # yabai
 # https://github.com/koekeishiya/yabai/wiki/Installing-yabai-(latest-release)

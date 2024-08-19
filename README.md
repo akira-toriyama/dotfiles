@@ -15,6 +15,7 @@ https://downloads.binaryage.com/TotalSpaces3-0.8.114.dmg
 ```bash
 yabai--restart
 karabiner--generation
+mac--bump
 # one　passwordをchromeにインストールしてから
 gh auth login
 
@@ -28,6 +29,10 @@ shenron--ssh--generation
 
 sudo shutdown -r now
 ```
+
+### yabai
+
+https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
 
 ### Google IME
 
