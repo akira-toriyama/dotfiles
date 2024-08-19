@@ -1,6 +1,9 @@
 # 自作コマンドへパスを通す
 export PATH=$(chezmoi source-path)/_/bin:$PATH
 
+# asdf
+source "${XDG_CONFIG_HOME:-$HOME/.config}/asdf-direnv/zshrc"
+
 # rmをゴミ箱に
 alias rm='trash'
 
