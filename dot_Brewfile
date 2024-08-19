@@ -11,6 +11,7 @@ brew "gh"
 brew "ghq"
 brew "jq"
 brew "mas"
+brew "sleepwatcher", restart_service: true
 brew "trash"
 brew "watchman"
 brew "felixkratz/formulae/borders"
