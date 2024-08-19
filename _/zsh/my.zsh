@@ -2,6 +2,8 @@
 export PATH=$(chezmoi source-path)/_/bin:$PATH
 
 # asdf
+. $(brew --prefix asdf)/libexec/asdf.sh
+# asdf-direnv
 source "${XDG_CONFIG_HOME:-$HOME/.config}/asdf-direnv/zshrc"
 
 # rmをゴミ箱に

@@ -94,8 +94,6 @@ asdf install deno latest
 asdf global deno latest
 
 asdf plugin add direnv
-asdf direnv setup --shell zsh --version latest
-
 
 {{ if ne (env "CI") "true" }}
 # workspace
@@ -130,4 +128,3 @@ git config --global core.ignorecase false
 # ghq
 git config --global ghq.root '/Volumes/workspace/'
 {{ end }}
-
