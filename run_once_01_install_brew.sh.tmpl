@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+set -e
+
+{{ if eq (env "CI") "true" }}
+# mas 関連の除外
+MAS_APPS="$(cat .Brewfile | grep -v brew | grep mas | sed 's/^.*", id: //' | tr '\n' ' ')"
+export HOMEBREW_BUNDLE_MAS_SKIP="$MAS_APPS"
+{{ end }}
+
+{{ if ne (env "CI") "true" }}
+if [[ $(/usr/sbin/sysctl hw.optional.arm64) == 'hw.optional.arm64: 0' ]]; then
+    # # Rosettaが有効の場合
+    # hw.optional.arm64: 1
+    # # Rosettaが無効の場合
+    # hw.optional.arm64: 0
+    softwareupdate --install-rosetta --agree-to-license
+fi
+{{ end }}
+
+brew bundle --file="~/.Brewfile"
+source ~/.zshrc
