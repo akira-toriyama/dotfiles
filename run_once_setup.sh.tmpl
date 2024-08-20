@@ -75,7 +75,7 @@ defaults write com.apple.dock "mru-spaces" -bool false
 
 # https://www.maclab.tokyo/document/stage-manager/12224/
 # デスクトップクリックでウィンドウを隠すを無効化
-defaults write com.apple.dock "autohide" -bool "true"
+defaults write com.apple.WindowManager EnableStandardClickToShowDesktop -bool false
 
 asdf plugin add nodejs
 asdf install nodejs latest
