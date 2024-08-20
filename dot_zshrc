@@ -1,3 +1,9 @@
-for function in $(chezmoi source-path)/_/zsh/*; do
-  source $function
-done
+function load {
+    ZSH_DIR="$(chezmoi source-path)/_/zsh"
+    if [ -d $ZSH_DIR ] && [ -r $ZSH_DIR ] && [ -x $ZSH_DIR ]; then
+        for file in ${ZSH_DIR}/**/*.zsh; do
+            [ -r $file ] && source $file
+        done
+    fi
+}
+load
