@@ -1,0 +1,57 @@
+#!/usr/bin/env sh
+
+set -e
+
+{{ if ne (env "CI") "true" }}
+
+# workspace
+##############################################################################################################################################################################################
+if ! test -f ~/Documents/workspace.dmg.sparseimage; then
+# https://github.com/twpayne/chezmoi/issues/774#issuecomment-635332419
+    hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
+    open '/Users/tommy/Documents/workspace.dmg.sparseimage'
+fi
+##############################################################################################################################################################################################
+
+# zmk
+##############################################################################################################################################################################################
+# https://github.com/akira-toriyama/Adv360-Pro-ZMK?tab=readme-ov-file#macos-specific
+colima start --arch x86_64
+##############################################################################################################################################################################################
+
+# git
+##############################################################################################################################################################################################
+# dotfilesのgit設定
+git config --file=$(chezmoi source-path)/.git/config core.hooksPath .githooks
+git config --file=$(chezmoi source-path)/.git/config user.name "akira-toriyama"
+git config --file=$(chezmoi source-path)/.git/config user.email "92862731+akira-toriyama@users.noreply.github.com"
+
+# globalのgit設定
+# git push でリモートブランチ名を指定なしで実行
+git config --global push.default current
+# 大文字・小文字区別
+git config --global core.ignorecase false
+# ghq
+git config --global ghq.root '/Volumes/workspace/'
+##############################################################################################################################################################################################
+
+# alt-tab の設定を import
+defaults import com.lwouis.alt-tab-macos $(chezmoi source-path)/_/plist/com.lwouis.alt-tab-macos.plist
+
+# Terminalを自動で閉じる
+/usr/libexec/PlistBuddy -c "set 'Window Settings':Basic:shellExitAction 1" ~/Library/Preferences/com.apple.Terminal.plist
+
+# 起動時に実行するshell
+osascript -e 'tell application "System Events" to make login item at end with properties {name: "mac--login",path:"/Users/tommy/.local/share/chezmoi/_/bin/mac--login", hidden:false}'
+
+# asdf
+asdf install nodejs latest
+asdf install golang latest
+asdf install rust latest
+asdf install deno latest
+
+asdf global nodejs latest
+asdf global golang latest
+asdf global rust latest
+asdf global deno latest
+{{ end }}

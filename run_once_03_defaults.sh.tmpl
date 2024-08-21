@@ -1,17 +1,6 @@
 #!/usr/bin/env sh
 
-{{ if eq (env "CI") "true" }}
-# mas 関連の除外
-MAS_APPS="$(cat .Brewfile | grep -v brew | grep mas | sed 's/^.*", id: //' | tr '\n' ' ')"
-export HOMEBREW_BUNDLE_MAS_SKIP="$MAS_APPS"
-{{ end }}
-
-{{ if ne (env "CI") "true" }}
-softwareupdate --install-rosetta --agree-to-license
-{{ end }}
-
-brew bundle --global
-source ~/.zshrc
+set -e
 
 # 隠しファイル表示
 defaults write com.apple.finder AppleShowAllFiles true
@@ -76,55 +65,3 @@ defaults write com.apple.dock "mru-spaces" -bool false
 # https://www.maclab.tokyo/document/stage-manager/12224/
 # デスクトップクリックでウィンドウを隠すを無効化
 defaults write com.apple.WindowManager EnableStandardClickToShowDesktop -bool false
-
-asdf plugin add nodejs
-asdf install nodejs latest
-asdf global nodejs latest
-
-asdf plugin add golang
-asdf install golang latest
-asdf global golang latest
-
-asdf plugin add rust
-asdf install rust latest
-asdf global rust latest
-
-asdf plugin add deno  
-asdf install deno latest
-asdf global deno latest
-
-asdf plugin add direnv
-
-{{ if ne (env "CI") "true" }}
-# workspace
-hdiutil create -type SPARSE -fs 'Case-sensitive Journaled HFS+' -size 256g -volname workspace ~/Documents/workspace.dmg.sparseimage
-open '/Users/tommy/Documents/workspace.dmg.sparseimage'
-
-# https://github.com/akira-toriyama/Adv360-Pro-ZMK?tab=readme-ov-file#macos-specific
-colima start --arch x86_64
-
-# git commitのhook
-git config --file=$(chezmoi source-path)/.git/config --add core.hooksPath .githooks
-
-# chezmoiディレクトリのアカウント
-git config --file=$(chezmoi source-path)/.git/config --add user.name "akira-toriyama"
-git config --file=$(chezmoi source-path)/.git/config --add user.email "92862731+akira-toriyama@users.noreply.github.com"
-
-# alt-tab の設定を import
-defaults import com.lwouis.alt-tab-macos $(chezmoi source-path)/_/plist/com.lwouis.alt-tab-macos.plist
-
-# Terminalを自動で閉じる
-/usr/libexec/PlistBuddy -c "add 'Window Settings':Basic:shellExitAction integer 1" ~/Library/Preferences/com.apple.Terminal.plist
-
-# 起動時に実行するshell
-osascript -e 'tell application "System Events" to make login item at end with properties {name: "mac--login",path:"/Users/tommy/.local/share/chezmoi/_/bin/mac--login", hidden:false}'
-
-# git push でリモートブランチ名を指定なしで実行
-git config --global push.default current
-
-# 大文字・小文字区別
-git config --global core.ignorecase false
-
-# ghq
-git config --global ghq.root '/Volumes/workspace/'
-{{ end }}
