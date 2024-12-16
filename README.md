@@ -1,5 +1,7 @@
 # dotfiles
 
+App Store にログイン
+
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/init)"
 ```
