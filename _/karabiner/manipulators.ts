@@ -3,10 +3,7 @@ import * as service from "../_/service.ts";
 
 const chezmoiRoot = service.getChezmoiRoot();
 
-const rightClick = [
-  /**
-   * 右クリでレイヤー切り替え
-   */
+const button2 = [
   {
     "type": "basic",
     "from": {
@@ -30,9 +27,8 @@ const rightClick = [
       { "type": "variable_if", "name": "button2_down", "value": 0 },
     ],
   },
-  //
   {
-    description: "mission control",
+    description: "alt",
     "type": "basic",
     "from": {
       "pointing_button": "button1",
@@ -41,18 +37,95 @@ const rightClick = [
       },
     },
     "to": [
-      { "key_code": "mission_control" },
+      {
+        "pointing_button": "button1",
+        "modifiers": [
+          "left_option",
+        ],
+      },
     ],
     "conditions": [
       { "type": "variable_if", "name": "button2_down", "value": 1 },
     ],
   },
-  //
+] as const;
+
+const button3 = [
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button3",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "set_variable": { "name": "button3_down", "value": 1 } },
+    ],
+    "to_if_alone": [
+      {
+        "pointing_button": "button3",
+      },
+    ],
+    "to_after_key_up": [
+      { "set_variable": { "name": "button3_down", "value": 0 } },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button3_down", "value": 0 },
+    ],
+  },
+  {
+    description: "ctrl",
+    "type": "basic",
+    "from": {
+      "pointing_button": "button1",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      {
+        "pointing_button": "button1",
+        "modifiers": [
+          "left_control",
+        ],
+      },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button3_down", "value": 1 },
+    ],
+  },
+] as const;
+
+const button7 = [
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button7",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "set_variable": { "name": "button7_down", "value": 1 } },
+    ],
+    "to_if_alone": [
+      {
+        "key_code": "escape",
+      },
+    ],
+    "to_after_key_up": [
+      { "set_variable": { "name": "button7_down", "value": 0 } },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button7_down", "value": 0 },
+    ],
+  },
   {
     description: "スクショ or 録画",
     "type": "basic",
     "from": {
-      "pointing_button": "button4",
+      "pointing_button": "button3",
       "modifiers": {
         "optional": ["any"],
       },
@@ -67,14 +140,29 @@ const rightClick = [
       },
     ],
     "conditions": [
-      { "type": "variable_if", "name": "button2_down", "value": 1 },
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
     ],
   },
-  //
+  {
+    description: "mission control",
+    "type": "basic",
+    "from": {
+      "pointing_button": "button1",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "key_code": "mission_control" },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
+    ],
+  },
   {
     description: "Total spaces",
     "from": {
-      "pointing_button": "button3",
+      "pointing_button": "button2",
       "modifiers": {
         "optional": ["any"],
       },
@@ -87,12 +175,74 @@ const rightClick = [
       },
     ],
     "conditions": [
-      { "type": "variable_if", "name": "button2_down", "value": 1 },
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
+    ],
+  },
+] as const;
+
+const ist = [
+  ...button2,
+  ...button3,
+  ...button7,
+  {
+    description: "popClip",
+    from: {
+      "pointing_button": "button6",
+    },
+    type: "basic",
+    "to": [
+      {
+        shell_command: `osascript -e 'tell application "PopClip" to appear'`,
+      },
     ],
   },
 ] as const;
 
 const mouse = [
+  {
+    from: {
+      key_code: "u",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    type: "basic",
+    "to": [{ "mouse_key": { "horizontal_wheel": 128 } }],
+    conditions: [
+      { "type": "variable_if", "name": "button8_down", "value": 1 },
+      {
+        "type": "device_if",
+        "identifiers": [
+          {
+            "product_id": 425,
+            "vendor_id": 1390,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    from: {
+      key_code: "d",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    type: "basic",
+    "to": [{ "mouse_key": { "horizontal_wheel": -128 } }],
+    conditions: [
+      { "type": "variable_if", "name": "button8_down", "value": 1 },
+      {
+        "type": "device_if",
+        "identifiers": [
+          {
+            "product_id": 425,
+            "vendor_id": 1390,
+          },
+        ],
+      },
+    ],
+  },
   {
     from: {
       key_code: config.keyMap.oLl.keys.s,
@@ -501,7 +651,7 @@ const shortCut = [
       },
     ],
   },
-];
+] as const;
 
 const globalShortCut = [
   {
@@ -532,7 +682,7 @@ const globalShortCut = [
       },
     ],
   },
-];
+] as const;
 
 const soundEffect = [
   {
@@ -604,9 +754,11 @@ ${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
   },
 ] as const;
 
+// TODO 他には、kinesisの条件を付与
+
 export const manipulators = [
+  ...ist,
   ...tabSwitching,
-  ...rightClick,
   ...spaces,
   ...appSwitching,
   ...windowPosition,

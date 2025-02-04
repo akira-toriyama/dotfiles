@@ -34,7 +34,6 @@ mas "Be Focused Pro", id: 961632517
 mas "Dropover", id: 1355679052
 mas "EdgeView 2", id: 1206246482
 mas "Flashcards", id: 307840670
-mas "PopClip", id: 445189367
 vscode "bierner.markdown-mermaid"
 vscode "bierner.markdown-preview-github-styles"
 vscode "clinyong.vscode-css-modules"
