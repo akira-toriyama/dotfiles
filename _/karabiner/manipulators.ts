@@ -181,9 +181,9 @@ const button7 = [
 ] as const;
 
 const ist = [
+  ...button7,
   ...button2,
   ...button3,
-  ...button7,
   {
     description: "popClip",
     from: {
