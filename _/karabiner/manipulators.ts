@@ -201,50 +201,6 @@ const ist = [
 const mouse = [
   {
     from: {
-      key_code: "u",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    type: "basic",
-    "to": [{ "mouse_key": { "horizontal_wheel": 128 } }],
-    conditions: [
-      { "type": "variable_if", "name": "button8_down", "value": 1 },
-      {
-        "type": "device_if",
-        "identifiers": [
-          {
-            "product_id": 425,
-            "vendor_id": 1390,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: "d",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    type: "basic",
-    "to": [{ "mouse_key": { "horizontal_wheel": -128 } }],
-    conditions: [
-      { "type": "variable_if", "name": "button8_down", "value": 1 },
-      {
-        "type": "device_if",
-        "identifiers": [
-          {
-            "product_id": 425,
-            "vendor_id": 1390,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    from: {
       key_code: config.keyMap.oLl.keys.s,
       "modifiers": {
         mandatory: config.keyMap.oLl.modifiers,
@@ -753,8 +709,6 @@ ${config.pathMap.xargs} -I{} ${config.pathMap.yabai} -m window --focus {}
     ],
   },
 ] as const;
-
-// TODO 他には、kinesisの条件を付与
 
 export const manipulators = [
   ...ist,
