@@ -291,9 +291,9 @@ const appSwitching = [
   {
     description: "All spaces",
     from: {
-      key_code: config.keyMap.layer.keys.sym2,
+      key_code: config.keyMap.ll.keys.sym2,
       modifiers: {
-        mandatory: config.keyMap.layer.modifiers,
+        mandatory: config.keyMap.ll.modifiers,
       },
     },
     type: "basic",
@@ -305,11 +305,11 @@ const appSwitching = [
     ],
   },
   {
-    description: "alt + tab current スペース",
+    description: "AltTab current スペース",
     from: {
-      key_code: config.keyMap.layer.keys.num,
+      key_code: config.keyMap.ll.keys.num,
       modifiers: {
-        mandatory: config.keyMap.layer.modifiers,
+        mandatory: config.keyMap.ll.modifiers,
       },
     },
     type: "basic",
@@ -321,11 +321,11 @@ const appSwitching = [
     ],
   },
   {
-    description: "alt + tab all スペース",
+    description: "AltTab all スペース",
     from: {
-      key_code: config.keyMap.layer.keys.sym1,
+      key_code: config.keyMap.ll.keys.sym1,
       modifiers: {
-        mandatory: config.keyMap.layer.modifiers,
+        mandatory: config.keyMap.ll.modifiers,
       },
     },
     type: "basic",
