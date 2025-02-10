@@ -493,20 +493,6 @@ const globalShortCut = [
       },
     ],
   },
-  {
-    from: {
-      key_code: "m",
-      modifiers: {
-        mandatory: ["control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "spacebar",
-      },
-    ],
-  },
 ] as const;
 
 const soundEffect = [
