@@ -493,6 +493,20 @@ const globalShortCut = [
       },
     ],
   },
+  {
+    from: {
+      key_code: "h",
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "delete_or_backspace",
+      },
+    ],
+  },
 ] as const;
 
 const soundEffect = [
