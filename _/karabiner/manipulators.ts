@@ -507,6 +507,20 @@ const globalShortCut = [
       },
     ],
   },
+  {
+    from: {
+      key_code: "d",
+      modifiers: {
+        mandatory: ["control"],
+      },
+    },
+    type: "basic",
+    to: [
+      {
+        key_code: "delete_forward",
+      },
+    ],
+  },
 ] as const;
 
 const soundEffect = [
