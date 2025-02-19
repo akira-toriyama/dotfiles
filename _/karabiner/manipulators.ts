@@ -215,9 +215,9 @@ const windowPosition = config.window.map((v) => ({
 
 const windowFocus = config.window.map((v) => ({
   from: {
-    key_code: config.keyMap.delete.keys[v.key],
+    key_code: config.keyMap.upArrow.keys[v.key],
     modifiers: {
-      mandatory: config.keyMap.delete.modifiers,
+      mandatory: config.keyMap.upArrow.modifiers,
     },
   },
   type: "basic",
