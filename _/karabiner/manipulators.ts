@@ -523,6 +523,22 @@ const globalShortCut = [
   },
 ] as const;
 
+const mousePointerJump = config.mousePointerJump.map((v) => ({
+  from: {
+    key_code: config.keyMap.delete.keys[v.key],
+    modifiers: {
+      mandatory: config.keyMap.delete.modifiers,
+    },
+  },
+  type: "basic",
+  to: [
+    {
+      shell_command:
+        `osascript ${chezmoiRoot}/_/bin/mouse-pointer-jump.scpt ${v.x} ${v.y} > /dev/null 2>&1`,
+    },
+  ],
+}));
+
 const soundEffect = [
   {
     "type": "basic",
@@ -532,7 +548,7 @@ const soundEffect = [
     "to": [
       {
         shell_command:
-          `${config.pathMap.afplay} --volume 0.1 ${chezmoiRoot}/_/soundEffect/to_mouse_layer.mp3 &`,
+          `${config.pathMap.afplay} --volume 0.1 ${chezmoiRoot}/_/soundEffect/to_mouse_layer.mp3 > /dev/null 2>&1`,
       },
     ],
   },
@@ -544,7 +560,7 @@ const soundEffect = [
     "to": [
       {
         shell_command:
-          `${config.pathMap.afplay} --volume 0.1 ${chezmoiRoot}/_/soundEffect/to_default_layer.mp3 &`,
+          `${config.pathMap.afplay} --volume 0.1 ${chezmoiRoot}/_/soundEffect/to_default_layer.mp3 > /dev/null 2>&1`,
       },
     ],
   },
@@ -605,4 +621,5 @@ export const manipulators = [
   ...soundEffect,
   ...focusSwitching,
   ...globalShortCut,
+  ...mousePointerJump,
 ] as const;

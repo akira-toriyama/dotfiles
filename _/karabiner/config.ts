@@ -360,3 +360,85 @@ export const window = [
     },
   },
 ] as const;
+
+const x = 5120;
+const y = 2160;
+export const mousePointerJump = [
+  {
+    key: "q",
+    x: x * 0,
+    y: 0,
+  },
+  {
+    key: "w",
+    x: x * 0.25,
+    y: 0,
+  },
+  {
+    key: "e",
+    x: x * 0.5,
+    y: 0,
+  },
+  {
+    key: "r",
+    x: x * 0.75,
+    y: 0,
+  },
+  {
+    key: "t",
+    x: x * 1,
+    y: 0,
+  },
+
+  {
+    key: "a",
+    x: x * 0,
+    y: y / 2,
+  },
+  {
+    key: "s",
+    x: x * 0.25,
+    y: y / 2,
+  },
+  {
+    key: "d",
+    x: x * 0.5,
+    y: y / 2,
+  },
+  {
+    key: "f",
+    x: x * 0.75,
+    y: y / 2,
+  },
+  {
+    key: "g",
+    x: x * 1,
+    y: y / 2,
+  },
+
+  {
+    key: "z",
+    x: x * 0,
+    y: y,
+  },
+  {
+    key: "x",
+    x: x * 0.25,
+    y: y,
+  },
+  {
+    key: "c",
+    x: x * 0.5,
+    y: y,
+  },
+  {
+    key: "v",
+    x: x * 0.75,
+    y: y,
+  },
+  {
+    key: "b",
+    x: x * 1,
+    y: y,
+  },
+] as const;
