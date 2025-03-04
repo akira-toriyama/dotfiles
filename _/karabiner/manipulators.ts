@@ -97,6 +97,54 @@ const button3 = [
   },
 ] as const;
 
+const button6 = [
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button6",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "set_variable": { "name": "button6_down", "value": 1 } },
+    ],
+    "to_if_alone": [
+      {
+        shell_command: `osascript -e 'tell application "PopClip" to appear'`,
+      },
+    ],
+    "to_after_key_up": [
+      { "set_variable": { "name": "button6_down", "value": 0 } },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button6_down", "value": 0 },
+    ],
+  },
+  {
+    description: "スクショ or 録画",
+    "type": "basic",
+    "from": {
+      "pointing_button": "button1",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      {
+        "key_code": "5",
+        "modifiers": [
+          "command",
+          "shift",
+        ],
+      },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button6_down", "value": 1 },
+    ],
+  },
+] as const;
+
 const button7 = [
   {
     "type": "basic",
@@ -119,28 +167,6 @@ const button7 = [
     ],
     "conditions": [
       { "type": "variable_if", "name": "button7_down", "value": 0 },
-    ],
-  },
-  {
-    description: "スクショ or 録画",
-    "type": "basic",
-    "from": {
-      "pointing_button": "button3",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      {
-        "key_code": "5",
-        "modifiers": [
-          "command",
-          "shift",
-        ],
-      },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button7_down", "value": 1 },
     ],
   },
   {
@@ -181,21 +207,10 @@ const button7 = [
 ] as const;
 
 const ist = [
+  ...button6,
   ...button7,
   ...button2,
   ...button3,
-  {
-    description: "popClip",
-    from: {
-      "pointing_button": "button6",
-    },
-    type: "basic",
-    "to": [
-      {
-        shell_command: `osascript -e 'tell application "PopClip" to appear'`,
-      },
-    ],
-  },
 ] as const;
 
 const windowPosition = config.window.map((v) => ({
