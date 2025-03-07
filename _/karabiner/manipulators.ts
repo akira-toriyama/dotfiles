@@ -143,6 +143,42 @@ const button6 = [
       { "type": "variable_if", "name": "button6_down", "value": 1 },
     ],
   },
+  {
+    description: "alt",
+    "type": "basic",
+    "from": {
+      "pointing_button": "button2",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      {
+        "key_code": "left_option",
+      },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button6_down", "value": 1 },
+    ],
+  },
+  {
+    description: "ctrl",
+    "type": "basic",
+    "from": {
+      "pointing_button": "button3",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      {
+        "key_code": "left_control",
+      },
+    ],
+    "conditions": [
+      { "type": "variable_if", "name": "button6_down", "value": 1 },
+    ],
+  },
 ] as const;
 
 const button7 = [
