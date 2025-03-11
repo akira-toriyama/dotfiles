@@ -25,23 +25,21 @@ const button2 = [
     ],
     "conditions": [
       { "type": "variable_if", "name": "button2_down", "value": 0 },
+      { "type": "variable_if", "name": "button3_down", "value": 0 },
     ],
   },
   {
     description: "alt",
     "type": "basic",
     "from": {
-      "pointing_button": "button1",
+      "pointing_button": "button3",
       "modifiers": {
         "optional": ["any"],
       },
     },
     "to": [
       {
-        "pointing_button": "button1",
-        "modifiers": [
-          "left_option",
-        ],
+        "key_code": "left_option",
       },
     ],
     "conditions": [
@@ -72,23 +70,21 @@ const button3 = [
     ],
     "conditions": [
       { "type": "variable_if", "name": "button3_down", "value": 0 },
+      { "type": "variable_if", "name": "button2_down", "value": 0 },
     ],
   },
   {
     description: "ctrl",
     "type": "basic",
     "from": {
-      "pointing_button": "button1",
+      "pointing_button": "button2",
       "modifiers": {
         "optional": ["any"],
       },
     },
     "to": [
       {
-        "pointing_button": "button1",
-        "modifiers": [
-          "left_control",
-        ],
+        "key_code": "left_control",
       },
     ],
     "conditions": [
@@ -137,42 +133,6 @@ const button6 = [
           "command",
           "shift",
         ],
-      },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button6_down", "value": 1 },
-    ],
-  },
-  {
-    description: "alt",
-    "type": "basic",
-    "from": {
-      "pointing_button": "button2",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      {
-        "key_code": "left_option",
-      },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button6_down", "value": 1 },
-    ],
-  },
-  {
-    description: "ctrl",
-    "type": "basic",
-    "from": {
-      "pointing_button": "button3",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      {
-        "key_code": "left_control",
       },
     ],
     "conditions": [
