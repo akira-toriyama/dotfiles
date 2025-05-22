@@ -360,3 +360,95 @@ export const window = [
     },
   },
 ] as const;
+
+const width = {
+  x: {
+    start: 5,
+    end: 5120,
+  },
+  y: {
+    start: 5,
+    end: 2160,
+  },
+  adjust: 5,
+};
+
+export const mousePointerJump = [
+  {
+    key: "q",
+    x: width.x.start,
+    y: width.y.start,
+  },
+  {
+    key: "w",
+    x: width.x.end * 0.25,
+    y: width.y.start,
+  },
+  {
+    key: "e",
+    x: width.x.end * 0.5,
+    y: width.y.start,
+  },
+  {
+    key: "r",
+    x: width.x.end * 0.75,
+    y: width.y.start,
+  },
+  {
+    key: "t",
+    x: width.x.end * 1 - width.adjust,
+    y: width.y.start,
+  },
+  //
+  {
+    key: "a",
+    x: width.x.start,
+    y: width.y.end * 0.5,
+  },
+  {
+    key: "s",
+    x: width.x.end * 0.25,
+    y: width.y.end * 0.5,
+  },
+  {
+    key: "d",
+    x: width.x.end * 0.5,
+    y: width.y.end * 0.5,
+  },
+  {
+    key: "f",
+    x: width.x.end * 0.75,
+    y: width.y.end * 0.5,
+  },
+  {
+    key: "g",
+    x: width.x.end * 1 - width.adjust,
+    y: width.y.end * 0.5,
+  },
+  //
+  {
+    key: "z",
+    x: width.x.start,
+    y: width.y.end - width.adjust,
+  },
+  {
+    key: "x",
+    x: width.x.end * 0.25,
+    y: width.y.end - width.adjust,
+  },
+  {
+    key: "c",
+    x: width.x.end * 0.5,
+    y: width.y.end - width.adjust,
+  },
+  {
+    key: "v",
+    x: width.x.end * 0.75,
+    y: width.y.end - width.adjust,
+  },
+  {
+    key: "b",
+    x: width.x.end * 1 - width.adjust,
+    y: width.y.end - width.adjust,
+  },
+] as const;
