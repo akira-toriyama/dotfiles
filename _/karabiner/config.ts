@@ -14,6 +14,21 @@ export const appMap = {
   Dictionary: "^com\\.apple\\.Dictionary",
 } as const;
 
+export const deviceMap = {
+  ist: {
+    "vendor_id": 1390,
+  },
+} as const;
+
+export const mouseMap = {
+  button4: {
+    key_code: "home",
+  },
+  button5: {
+    key_code: "end",
+  },
+};
+
 const _keyMap = {
   q: "f13",
   w: "f14",

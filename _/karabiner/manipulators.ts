@@ -3,122 +3,39 @@ import * as service from "../_/service.ts";
 
 const chezmoiRoot = service.getChezmoiRoot();
 
+// 左
+const button1 = [
+  // alt + tab
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button2",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    to: [
+      {
+        key_code: "tab",
+        modifiers: ["command", "control"],
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
+    ],
+  },
+] as const;
+
+// 右
 const button2 = [
+  // alt + tab all
   {
-    "type": "basic",
-    "from": {
-      "pointing_button": "button2",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      { "set_variable": { "name": "button2_down", "value": 1 } },
-    ],
-    "to_if_alone": [
-      {
-        "pointing_button": "button2",
-      },
-    ],
-    "to_after_key_up": [
-      { "set_variable": { "name": "button2_down", "value": 0 } },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button2_down", "value": 0 },
-      { "type": "variable_if", "name": "button3_down", "value": 0 },
-    ],
-  },
-  {
-    description: "alt",
-    "type": "basic",
-    "from": {
-      "pointing_button": "button3",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      {
-        "key_code": "left_option",
-      },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button2_down", "value": 1 },
-    ],
-  },
-] as const;
-
-const button3 = [
-  {
-    "type": "basic",
-    "from": {
-      "pointing_button": "button3",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      { "set_variable": { "name": "button3_down", "value": 1 } },
-    ],
-    "to_if_alone": [
-      {
-        "pointing_button": "button3",
-      },
-    ],
-    "to_after_key_up": [
-      { "set_variable": { "name": "button3_down", "value": 0 } },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button3_down", "value": 0 },
-      { "type": "variable_if", "name": "button2_down", "value": 0 },
-    ],
-  },
-  {
-    description: "ctrl",
-    "type": "basic",
-    "from": {
-      "pointing_button": "button2",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      {
-        "key_code": "left_control",
-      },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button3_down", "value": 1 },
-    ],
-  },
-] as const;
-
-const button6 = [
-  {
-    "type": "basic",
-    "from": {
-      "pointing_button": "button6",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      { "set_variable": { "name": "button6_down", "value": 1 } },
-    ],
-    "to_if_alone": [
-      {
-        shell_command: `osascript -e 'tell application "PopClip" to appear'`,
-      },
-    ],
-    "to_after_key_up": [
-      { "set_variable": { "name": "button6_down", "value": 0 } },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button6_down", "value": 0 },
-    ],
-  },
-  {
-    description: "スクショ or 録画",
     "type": "basic",
     "from": {
       "pointing_button": "button1",
@@ -126,21 +43,104 @@ const button6 = [
         "optional": ["any"],
       },
     },
-    "to": [
+    to: [
       {
-        "key_code": "5",
-        "modifiers": [
-          "command",
-          "shift",
-        ],
+        key_code: "tab",
+        modifiers: ["option"],
       },
     ],
     "conditions": [
-      { "type": "variable_if", "name": "button6_down", "value": 1 },
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
+    ],
+  },
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button2",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "key_code": "left_option" },
+    ],
+    "to_if_alone": [
+      {
+        "pointing_button": "button2",
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
     ],
   },
 ] as const;
 
+// 右右
+const button3 = [
+  // デスクトップ一覧
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button3",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    to: [
+      {
+        key_code: "spacebar",
+        modifiers: ["option", "shift"],
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
+    ],
+  },
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button3",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to": [
+      { "key_code": "left_control" },
+    ],
+    "to_if_alone": [
+      {
+        "pointing_button": "button3",
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+    ],
+  },
+] as const;
+
+// 親指上
 const button7 = [
   {
     "type": "basic",
@@ -163,50 +163,159 @@ const button7 = [
     ],
     "conditions": [
       { "type": "variable_if", "name": "button7_down", "value": 0 },
-    ],
-  },
-  {
-    description: "mission control",
-    "type": "basic",
-    "from": {
-      "pointing_button": "button1",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "to": [
-      { "key_code": "mission_control" },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button7_down", "value": 1 },
-    ],
-  },
-  {
-    description: "Total spaces",
-    "from": {
-      "pointing_button": "button2",
-      "modifiers": {
-        "optional": ["any"],
-      },
-    },
-    "type": "basic",
-    to: [
       {
-        key_code: "spacebar",
-        modifiers: ["shift", "option"],
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
       },
-    ],
-    "conditions": [
-      { "type": "variable_if", "name": "button7_down", "value": 1 },
     ],
   },
 ] as const;
 
+// 親指下
+const button6 = [
+  {
+    "type": "basic",
+    "from": {
+      "pointing_button": "button6",
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to_if_alone": [
+      {
+        shell_command: `osascript -e 'tell application "PopClip" to appear'`,
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+    ],
+  },
+] as const;
+
+// 進む
+const button5 = [
+  // 録画 & スクショ
+  {
+    "type": "basic",
+    "from": {
+      ...config.mouseMap.button5,
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    to: [
+      {
+        "key_code": "5",
+        "modifiers": [
+          "command",
+          "shift",
+        ],
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
+    ],
+  },
+  {
+    "type": "basic",
+    "from": {
+      ...config.mouseMap.button5,
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to_if_alone": [
+      {
+        "pointing_button": "button5",
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+    ],
+  },
+] as const;
+
+// 戻る
+const button4 = [
+  // cmd + bs
+  {
+    "type": "basic",
+    "from": {
+      ...config.mouseMap.button4,
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    to: [
+      {
+        key_code: "delete_or_backspace",
+        modifiers: ["command"],
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+      { "type": "variable_if", "name": "button7_down", "value": 1 },
+    ],
+  },
+  {
+    "type": "basic",
+    "from": {
+      ...config.mouseMap.button4,
+      "modifiers": {
+        "optional": ["any"],
+      },
+    },
+    "to_if_alone": [
+      {
+        "pointing_button": "button4",
+      },
+    ],
+    "conditions": [
+      {
+        "type": "device_if",
+        "identifiers": [
+          { "vendor_id": config.deviceMap.ist.vendor_id },
+        ],
+      },
+    ],
+  },
+] as const;
+
+// TODO
+// 横スクロール
+// ドラッグスクロール
+// ジェスチャー
 const ist = [
-  ...button6,
-  ...button7,
+  ...button1,
   ...button2,
   ...button3,
+  ...button4,
+  ...button5,
+  ...button6,
+  ...button7,
 ] as const;
 
 const windowPosition = config.window.map((v) => ({
@@ -489,51 +598,6 @@ const shortCut = [
   },
 ] as const;
 
-const globalShortCut = [
-  {
-    from: {
-      key_code: "j",
-      modifiers: {
-        mandatory: ["control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "return_or_enter",
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: "h",
-      modifiers: {
-        mandatory: ["control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "delete_or_backspace",
-      },
-    ],
-  },
-  {
-    from: {
-      key_code: "d",
-      modifiers: {
-        mandatory: ["control"],
-      },
-    },
-    type: "basic",
-    to: [
-      {
-        key_code: "delete_forward",
-      },
-    ],
-  },
-] as const;
-
 const mousePointerJump = config.mousePointerJump.map((v) => ({
   from: {
     key_code: config.keyMap.delete.keys[v.key],
@@ -631,6 +695,5 @@ export const manipulators = [
   ...shortCut,
   ...soundEffect,
   ...focusSwitching,
-  ...globalShortCut,
   ...mousePointerJump,
 ] as const;
