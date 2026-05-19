@@ -1,0 +1,17 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/sh
+# ~/.Brewfile が変わると下記ハッシュが変化 → chezmoi が本スクリプトを
+# 再実行 → brew bundle で差分インストール（新PC初回も含め一括再現）。
+#
+# Brewfile: {{ include "dot_Brewfile" | sha256sum }}
+set -e
+
+if ! command -v brew >/dev/null 2>&1; then
+  echo "Homebrew 未導入のためスキップ（install.sh を先に実行）" >&2
+  exit 0
+fi
+
+# --global は ~/.Brewfile を参照（chezmoi が dot_Brewfile を配置）
+brew bundle --global --no-lock
+echo "brew bundle 完了"
+{{- end -}}
