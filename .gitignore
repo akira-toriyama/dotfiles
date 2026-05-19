@@ -1,0 +1,3 @@
+# nix build 成果物（darwin-rebuild build / nix build の symlink）
+result
+result-*
