@@ -1,7 +1,7 @@
 # dotfiles
 
 [chezmoi](https://www.chezmoi.io/) でネイティブ管理する macOS 環境一式。
-deno/TS 生成パイプラインを廃し、再現性・可読性のある静的設定として育てている。
+再現性・可読性を重視した静的設定として育てる。
 
 ## 新しい Mac の再現（1 コマンド）
 
@@ -32,8 +32,8 @@ sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/ma
 
 - **補助スクリプトは設定と同じ階層に colocate**し、`executable_` 接頭辞で実行権限(755)を再現
   （例: `dot_config/borders/executable_border-cycle`, `dot_config/rift/scripts/executable_*.py`）。
-- **生成パイプラインに戻さない**。新規移行は chezmoi 管理の静的ファイルとして再現する。
-- 移行後は `chezmoi diff` でソース⇔実体一致を確認してからコミットする。
+- 設定は **chezmoi 管理の静的ファイル**として表現する（生成スクリプトに依存しない）。
+- 取り込み後は `chezmoi diff` でソース⇔実体一致を確認してからコミットする。
 
 ## よく使うコマンド
 
@@ -45,4 +45,4 @@ chezmoi cd             # ソースリポジトリへ
 brew bundle dump --file=- --describe > dot_Brewfile   # Brewfile 更新
 ```
 
-旧 main の Brewfile/defaults 参照台帳は [docs/legacy-inventory.md](docs/legacy-inventory.md)。
+パッケージ / macOS defaults の参照台帳は [docs/legacy-inventory.md](docs/legacy-inventory.md)（設計の入力素材）。
