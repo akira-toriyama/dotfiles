@@ -1,7 +1,7 @@
 #!/bin/sh
 # 新 Mac を 1 コマンドで再現するブートストラップ。
 #
-#   sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
+#   sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/rebuild/install.sh)"
 #
 # 流れ: Xcode CLT → Homebrew → chezmoi → chezmoi init --apply
 #       → run_onchange_install-packages が brew bundle を実行（アプリ一括導入）

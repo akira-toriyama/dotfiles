@@ -6,7 +6,7 @@
 ## 新しい Mac の再現（1 コマンド）
 
 ```sh
-sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
+sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/rebuild/install.sh)"
 ```
 
 `install.sh` が Xcode CLT → Homebrew → chezmoi → `chezmoi init --apply` を実行し、
@@ -45,4 +45,4 @@ chezmoi cd             # ソースリポジトリへ
 brew bundle dump --file=- --describe > dot_Brewfile   # Brewfile 更新
 ```
 
-パッケージ / macOS defaults の参照台帳は [docs/legacy-inventory.md](docs/legacy-inventory.md)（設計の入力素材）。
+パッケージ / macOS defaults の素材台帳は [docs/system-inventory.md](docs/system-inventory.md)（設計の入力）。
