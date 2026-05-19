@@ -4,8 +4,8 @@
 # 太さ・時間は固定。テーマ追加 = パレット変数を足し THEMES に名前を足すだけ。
 # PATH(Homebrew) は LaunchAgent の EnvironmentVariables で解決済み。
 
-WIDTH=40        # 枠の太さ（固定）
-FLASHES=7       # 点滅回数（固定）
+WIDTH=10        # 枠の太さ（固定）
+FLASHES=5       # 点滅回数（固定）
 INTERVAL=0.03   # 点滅間隔・秒（固定）／計 ≈ 0.21s
 
 # ===== テーマ定義（色 0xAARRGGBB / 半角スペース区切り）==================

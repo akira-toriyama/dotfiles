@@ -1,0 +1,18 @@
+#!/bin/sh
+# border-cycle の LaunchAgent を (再)ロードする。
+# plist かループ本体が変わると下記ハッシュが変化 → chezmoi が本スクリプトを
+# 再実行 → bootout/bootstrap で常駐を入れ替え（編集が即反映）。
+#
+# plist:  {{ include "Library/LaunchAgents/com.local.border-cycle.plist.tmpl" | sha256sum }}
+# script: {{ include "dot_config/borders/executable_border-cycle" | sha256sum }}
+set -e
+
+LABEL=com.local.border-cycle
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+
+mkdir -p "$HOME/.local/state"
+
+launchctl bootout  "gui/$(id -u)/$LABEL" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$PLIST"
+
+echo "loaded: $LABEL"

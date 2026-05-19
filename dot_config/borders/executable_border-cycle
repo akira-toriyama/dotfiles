@@ -1,0 +1,22 @@
+#!/bin/sh
+# アクティブ枠を常時カラーチェンジさせる常駐ループ（yabai 非依存）。
+# JankyBorders 常駐へ INTERVAL ごとに active_color を送り続ける。
+# width/style/inactive は bordersrc 側のまま（ここは active 色だけ変える）。
+# PATH(Homebrew) は LaunchAgent の EnvironmentVariables 側で解決する想定。
+
+INTERVAL=0.2   # 色を変える間隔・秒
+
+# パレット（0xAARRGGBB / 半角スペース区切り）
+PALETTE="0xff00e5ff 0xffff00ff 0xff39ff14 0xfffe019a 0xff04d9ff 0xffbc13fe 0xffffea00 0xffff6d00"
+
+set -- $PALETTE
+n=$#
+prev=0
+while :; do
+  i=$(( RANDOM % n + 1 ))
+  [ "$i" -eq "$prev" ] && i=$(( i % n + 1 ))   # 連続同色を排除
+  prev=$i
+  c=$(eval echo "\${$i}")
+  borders active_color="$c" >/dev/null 2>&1
+  sleep "$INTERVAL"
+done
