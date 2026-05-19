@@ -28,9 +28,9 @@
 
 ## フェーズ 1: 構成判断の確定（コア・最重要）
 
-- [ ] **`.chezmoiroot=chezmoi` 採用の最終決定**（設計 §2 / 旧「フラット維持」を撤回推奨）
-  - 決めたら `git mv` で `dot_config/ dot_claude/ dot_local/ Library/ run_onchange_*` を `chezmoi/` へ
-  - `chezmoi diff` が空（実体不変）になることを確認
+- [x] **`.chezmoiroot=chezmoi` 採用**（ユーザー決定 / commit f9b1800）
+  - `git mv` で `dot_*` `Library/` `run_onchange_*` `.chezmoi*` を `chezmoi/` へ集約
+  - 検証ゲート通過: 再配置前後で `chezmoi managed`(28件) と `chezmoi diff` が**完全一致**（$HOME 不変。※既存の未適用 .Brewfile 差分は再配置と無関係に元から存在）
 - [ ] flake スケルトン作成（適用しない・ビルド確認のみ）
   - `flake.nix` / `system/hosts/<hostname>.nix` / `home/modules/` 雛形
   - `nix flake check` が通る
@@ -101,7 +101,8 @@
 
 ## 未決事項（判断待ち・随時更新）
 
-- [ ] `.chezmoiroot` 採用の最終 GO（フェーズ1のブロッカー）
+- [x] `.chezmoiroot` 採用の最終 GO → 採用決定・実施済み（commit f9b1800）
+- [ ] ブランチ運用（`rebuild` を正式ラインへ昇格 / 既定ブランチ変更するか）
 - [ ] LICENSE / リポジトリ公開範囲
 - [ ] asdf の置換先（nix / mise / devbox）
 - [ ] just（タスクランナー）導入可否
