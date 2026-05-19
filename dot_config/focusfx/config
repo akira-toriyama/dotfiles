@@ -1,0 +1,13 @@
+# focusfx — アクティブ（フォーカス）ウィンドウが変わるたびに
+# 以下のコマンドを /bin/sh -c で実行する。1行＝1コマンド。# はコメント。
+# 保存すれば次の発火時に自動反映（hot reload・デーモン再起動不要）。
+#
+# 利用できる環境変数:
+#   $FOCUSFX_EVENT      "window_focused"
+#   $FOCUSFX_WINDOW_ID  フォーカス窓の CGWindowID
+#   $FOCUSFX_PID        アプリの PID
+#   $FOCUSFX_APP        アプリ名
+#   $FOCUSFX_TITLE      ウィンドウタイトル
+
+# 効果音（machine 非依存・テンプレート無し）
+afplay --volume 0.1 "$HOME/.local/share/sounds/window_focused.wav"
