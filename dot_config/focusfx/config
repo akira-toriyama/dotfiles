@@ -12,7 +12,10 @@
 # 効果音（machine 非依存・テンプレート無し）
 afplay --volume 0.1 "$HOME/.local/share/sounds/window_focused.wav"
 
-# 枠強調（JankyBorders）。旧 _/yabai/window_focused の忠実移植:
-# 6色パレットから乱択し width=20 で 0.07s 間隔に3回フラッシュ。
-# 常駐時の細枠(width=6)復帰は別途 borders 常駐が前提（後述・要相談）。
-A="0xFFFFFF00 0xFFFF00FF 0xFF00FFFF 0x00FFFFFF 0xF0F0F0FF 0xF0F0FFF0"; b(){ set -- $A; eval borders ax_focus=on width=20 active_color=\${$((RANDOM%6+1))} >/dev/null 2>&1 & }; b; sleep 0.07; b; sleep 0.07; b
+# 枠強調（JankyBorders）。フォーカス変更時、6色パレットから乱択し
+# width=20 で 0.08s 間隔に3回フラッシュ → 直後に bordersrc 相当の
+# steady-state(角丸 width=6 青紫グラデ)へ自己復帰する。
+# JankyBorders は自動復帰せず、homebrew 常駐も steady-state を起動時に
+# 1回設定するのみ（再適用ループ無し）なので、最後に明示的に戻す。
+# PATH は LaunchAgent の EnvironmentVariables で解決済み（per-command ハック不要）。
+A="0xFFFFFF00 0xFFFF00FF 0xFF00FFFF 0x00FFFFFF 0xF0F0F0FF 0xF0F0FFF0"; f(){ set -- $A; eval borders width=20 active_color=\${$((RANDOM%6+1))} >/dev/null 2>&1; }; f; sleep 0.08; f; sleep 0.08; f; sleep 0.08; borders style=round width=6.0 hidpi=on active_color="gradient(top_left=0xff7aa2f7,bottom_right=0xffbb9af7)" inactive_color=0x00000000 >/dev/null 2>&1
