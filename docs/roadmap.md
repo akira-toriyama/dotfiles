@@ -1,6 +1,6 @@
 # ロードマップ（このPC破棄 → 新Mac 再現）
 
-設計: [reproduction-architecture.md](reproduction-architecture.md) / 台帳: [legacy-inventory.md](legacy-inventory.md)
+設計: [reproduction-architecture.md](reproduction-architecture.md) / 台帳: [system-inventory.md](system-inventory.md)
 
 **進め方の原則**
 
@@ -64,7 +64,7 @@
 
 ## フェーズ 4: パッケージの Nix 化
 
-- [ ] CLI を `home.packages` へ（legacy-inventory の「維持候補」基準で取捨）
+- [ ] CLI を `home.packages` へ（system-inventory の「維持候補」基準で取捨）
 - [ ] cask を `nix-darwin homebrew.casks` へ（karabiner-elements 等は必須維持）
 - [ ] mas を `homebrew.masApps` へ（PopClip 必須=karabiner button6 依存）
 - [ ] カスタム tap ツールを `homebrew.brews`+`taps` へ（borders/rift/skhd 等）
@@ -78,7 +78,7 @@
 
 ## フェーズ 5: macOS defaults の宣言化
 
-- [ ] legacy-inventory の defaults 表を `system.defaults` / `CustomUserPreferences` へ
+- [ ] system-inventory の defaults 表を `system.defaults` / `CustomUserPreferences` へ
 - [ ] ⚠️ セキュリティ低下2項目（Gatekeeper 無効 / 復帰時パスワード省略）は
       **再現しない方向で再考**。必要理由が無ければ持ち込まない
 - [ ] `darwin-rebuild switch` で defaults が反映されることを確認

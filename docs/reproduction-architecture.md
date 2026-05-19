@@ -22,7 +22,7 @@
 | GUI アプリ / cask / Mac App Store | **nix-darwin** `homebrew.casks` / `masApps` | Nix は cask をビルド不可 |
 | Homebrew 本体 | **nix-homebrew** モジュール | brew バイナリ導入も再現可能に（任意だが推奨） |
 | カスタム tap のツール（borders, rift, skhd, krp 等） | **nix-darwin** `homebrew.brews` + `taps` | nixpkgs に無い→ brew 維持 |
-| macOS defaults（Dock/Finder/NSGlobalDomain 等） | **nix-darwin** `system.defaults` / `CustomUserPreferences` | 宣言的に再現。legacy-inventory が入力 |
+| macOS defaults（Dock/Finder/NSGlobalDomain 等） | **nix-darwin** `system.defaults` / `CustomUserPreferences` | 宣言的に再現。system-inventory が入力 |
 | zsh / starship / git のプログラム設定（DSL あり） | **home-manager** `programs.zsh` / `starship` / `git` | DSL で生成。現 `.zshrc` は刷新（後述） |
 | アプリ固有の手編集 dotfile（karabiner, borders, rift, focusfx, claude） | **chezmoi** | Nix DSL が無い・アプリ所有の生 JSON。現状維持 |
 | シークレット（SSH 鍵, PAT, トークン） | **chezmoi + 1Password** `onepasswordRead` テンプレート | リポジトリに置かず apply 時に注入 |
@@ -123,8 +123,8 @@ chezmoi apply                                              # dotfile
 - mas（PopClip ほか）→ `homebrew.masApps`
 - カスタム tap（borders=felixkratz, rift=acsandmann, skhd=jackielii 等）→ `homebrew.brews`+`taps`
 - `sleepwatcher (restart_service)` → `homebrew.brews`（service 扱いの正確な option 名は nix-darwin manual で要確認）
-- macOS defaults（legacy-inventory の表）→ `system.defaults` / `CustomUserPreferences`
-  - ⚠️ legacy-inventory で警告済みの2項目（Gatekeeper 無効化 / 復帰時パスワード省略）は
+- macOS defaults（system-inventory の表）→ `system.defaults` / `CustomUserPreferences`
+  - ⚠️ system-inventory で警告済みの2項目（Gatekeeper 無効化 / 復帰時パスワード省略）は
     **持ち込み前にセキュリティ再考**。安易に再現しない。
 - `run_onchange_install-packages.sh.tmpl`（brew bundle 実行）は **役目消滅**→ `darwin-rebuild` に置換。
   `dot_Brewfile` は移行完了・検証後に削除（それまで参照保持）。

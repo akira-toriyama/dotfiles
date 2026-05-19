@@ -1,10 +1,9 @@
-# legacy inventory（旧 main 参照台帳）
+# system inventory（環境インベントリ）
 
-旧 `main` ブランチの `dot_Brewfile` / `run_once_03_defaults.sh.tmpl` の**中身を素材として保全**した参照台帳。
-形（Brewfile / sh）は移植しない。**nix パッケージ層 / nix-darwin defaults を構築する際の入力**として使う。
-出典: `akira-toriyama/dotfiles` 旧 `main`（HEAD `8d12a8e` 時点）。
+再現したい macOS 環境の **パッケージ / macOS defaults の素材台帳**。
+**nix パッケージ層 / nix-darwin defaults を構築する際の入力**として使う（[reproduction-architecture.md](reproduction-architecture.md) 参照）。
 
-移植方針との対応: zsh=刷新 / ssh=1Password / IME=Azookey予定 / yabai=破棄 / karabiner=マウスのみ移植済。
+構築方針との対応: zsh=刷新 / ssh=1Password / IME=Azookey予定 / yabai=不採用 / karabiner=マウスのみ採用。
 
 ## Homebrew taps
 
@@ -59,7 +58,7 @@
 | Dropover | 1355679052 | 任意 |
 | EdgeView 2 | 1206246482 | 任意 |
 | Flashcards | 307840670 | 任意 |
-| **PopClip** | **445189367** | **維持（ユーザー決定）**。旧 main source からは外れていたが復活させる。karabiner button6 ルールが依存 |
+| **PopClip** | **445189367** | **維持（ユーザー決定）**。karabiner button6 ルールが依存 |
 
 ## VS Code 拡張（要判断: nix/home-manager 管理 or 手動）
 
