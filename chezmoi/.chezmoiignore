@@ -1,0 +1,5 @@
+# chezmoi が $HOME へ適用しないファイル。
+# .chezmoiroot=chezmoi により、リポジトリ運用ファイル
+# (README.md / install.sh / docs / .editorconfig / flake.nix / system/ / home/ 等)
+# はソースルート(chezmoi/)の外にあるため、ここで列挙する必要はない。
+# chezmoi/ 配下に $HOME へ出したくないものが出たらここへ追加する。

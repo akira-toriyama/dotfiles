@@ -1,8 +1,0 @@
-# chezmoi が $HOME へ適用しないファイル（リポジトリ運用用の成果物）。
-# 旧構成の _/ エスケープ方式は不採用（必要最小限のみ）。
-README.md
-docs
-install.sh
-.editorconfig
-LICENSE
-.github
