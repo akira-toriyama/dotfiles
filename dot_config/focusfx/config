@@ -11,3 +11,8 @@
 
 # 効果音（machine 非依存・テンプレート無し）
 afplay --volume 0.1 "$HOME/.local/share/sounds/window_focused.wav"
+
+# 枠強調（JankyBorders）。旧 _/yabai/window_focused の忠実移植:
+# 6色パレットから乱択し width=20 で 0.07s 間隔に3回フラッシュ。
+# 常駐時の細枠(width=6)復帰は別途 borders 常駐が前提（後述・要相談）。
+A="0xFFFFFF00 0xFFFF00FF 0xFF00FFFF 0x00FFFFFF 0xF0F0F0FF 0xF0F0FFF0"; b(){ set -- $A; eval borders ax_focus=on width=20 active_color=\${$((RANDOM%6+1))} >/dev/null 2>&1 & }; b; sleep 0.07; b; sleep 0.07; b
