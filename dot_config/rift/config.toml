@@ -1,0 +1,124 @@
+# ~/.config/rift は chezmoi 管理の dotfiles（source: capsule-corp、$HOME ベース・
+# ユーザ名非ハードコード）。restore スクリプト群も同梱（run_on_start 参照）。
+# 機能レビュー（2026-05-19）完了。主要キーは導入済み・不要機能は精査済。
+[settings]
+animate = false
+
+# スペースは起動時すべて無効（rift 非管理＝macOS標準の自由配置）で開始。
+# 各スペースで Alt+Z（toggle_space_activated）を押して個別に有効化する。
+default_disable = true
+
+# マウス／フォーカス
+focus_follows_mouse = false # ウィンドウにマウスを乗せてもフォーカスは変わらない。
+# フォーカス変更時にポインタを当該ウィンドウ中心へワープしない。
+# rift-tabs での窓選択時にカーソルが飛ぶのを避けるため全体 OFF。
+mouse_follows_focus = false
+mouse_hides_on_focus = false # フォーカス後にマウスカーソルを隠さない。
+
+auto_focus_blacklist = []
+
+# 外部スクリプト方式の状態復元（rift 本体は無改造／stock CLI のみ）。
+# - 1本目: あらゆるイベントで現在の WS割当・レイアウトモードを
+#   ~/.rift/restore.json にスナップショット保存（rift-restore-save.py）。
+# - 2本目: 起動時に1回、ウィンドウ発見が安定してから復元（rift-restore-apply.py）。
+# rift はこれらをシェル非経由（Command::new）で起動するため ~ や環境変数は
+# 展開されない。sh -c 経由にして $HOME を展開する（ユーザ名ハードコード回避、
+# rift 自身の ~/.config/rift 規約と一致）。
+run_on_start = [
+  "rift-cli subscribe cli --event * --command sh --args -c --args $HOME/.config/rift/scripts/rift-restore-save.py",
+  "sh -c $HOME/.config/rift/scripts/rift-restore-apply.py",
+]
+
+# 設定ファイルを監視し、保存時に自動リロードする。
+hot_reload = true
+
+[settings.layout]
+# master_stack のみ採用。他モード（traditional/bsp/stack/scrolling）は不使用。
+# master_stack が使いにくい場面は Alt+Z で Space 全体を一時手動化して対応。
+mode = "master_stack"
+
+# master_stack を左右運用で固定。
+# - master_ratio 0.65 : master(左) を広めに。好みの範囲 0.65〜0.7。
+# - master_count 1    : master は常に1枚＝左半分は単一ウィンドウで安定。
+# - master_side left  : master は左、stack は右（root は左右分割で固定）。
+# - new_window_placement stack : 新規は stack(右) へ。master(左) を奪わない
+#   ＝左の主役は Alt+Ctrl+M(promote_to_master) で自分で決める運用。
+# 注意: ウィンドウ3枚以上だと右(stack)側は上下に積まれる（master_stack の
+# 仕様）。全窓を左右カラムにはできない（それは別モードで不採用のため）。
+[settings.layout.master_stack]
+master_ratio = 0.65
+master_count = 1
+master_side = "left"
+new_window_placement = "stack"
+
+# 画面端とウィンドウの間隔
+[settings.layout.gaps.outer]
+top = 12
+left = 12
+bottom = 12
+right = 12
+
+# タイル化されたウィンドウ同士の間隔
+[settings.layout.gaps.inner]
+horizontal = 10
+vertical = 10
+
+# scrolling モード用。フォーカス列の幅を画面の半分に詰めて評価。
+[settings.layout.scrolling]
+column_width_ratio = 0.5
+min_column_width_ratio = 0.3
+max_column_width_ratio = 0.9
+alignment = "center"
+focus_navigation_style = "niri"
+
+# rift 独自 mission control（ワークスペース/ウィンドウのグリッド表示）
+[settings.ui.mission_control]
+enabled = true
+fade_enabled = true
+fade_duration_ms = 180.0
+# 全ワークスペース表示でウィンドウのサムネイルを別WSタイルへ DnD して移動。
+# dev ビルド限定の追加機能（fork: feat/mission-control-dnd）。
+# 警告: Homebrew 版 rift に戻す場合はこの行をコメントアウトすること。
+# Homebrew 版はこのキーを知らず deny_unknown_fields で config 全体が
+# 読込エラーになる。
+drag_to_move = true
+
+# マウス DnD でウィンドウを重ねたときのスワップ挙動。
+# ミッションコントロール内ではなく通常のタイル表示中に有効。
+[settings.window_snapping]
+# ドラッグ中のウィンドウが相手にどれだけ重なったらスワップするか (0.0..1.0)。
+# 小さくすると敏感に、大きくするとより深く重ねないとスワップしない。
+# マウスアップ時にスワップ確定。デフォルトは 0.3。
+drag_swap_fraction = 0.3
+
+[virtual_workspaces]
+enabled = true
+default_workspace_count = 4
+auto_assign_windows = true
+preserve_focus_per_workspace = true
+workspace_names = ["first", "second"]
+
+# 全ワークスペース master_stack で統一（bsp は一旦無し）。
+workspace_rules = [
+  { workspace = 0, layout = "master_stack" },
+  { workspace = 1, layout = "master_stack" },
+  { workspace = 2, layout = "master_stack" },
+  { workspace = 3, layout = "master_stack" },
+]
+
+# 再利用する修飾キー組み合わせ。"comb1 + H" = { ... } で参照。
+[modifier_combinations]
+comb1 = "Alt + Shift"   # 掴んで動かす（move_node）
+comb2 = "Alt"           # フォーカスだけ移す（move_focus）
+
+# [keys]: 移行予定。キーバインドは skhd に一本化する方針。
+#   移行先: capsule-corp host/skhd/skhdrc.tmpl（chezmoi テンプレート）
+#   skhd 側は `rift-cli execute …` を呼ぶ形（rift ネイティブ binds とは別表現。
+#   例: { adjust_master_ratio = { delta = 0.05 } } ⇔
+#       rift-cli execute layout adjust-master-ratio --delta 0.05）。
+# カットオーバー手順（重要・二重発火防止）:
+#   1) skhd 側に対応バインドを追加し検証
+#   2) 検証OK後、この [keys] セクションを丸ごと削除
+#   （両方生きていると rift native と skhd→rift-cli が競合/二重実行）
+# それまでは下記 rift ネイティブ binds を暫定使用。
+[keys]
