@@ -31,12 +31,14 @@
 - [x] **`.chezmoiroot=chezmoi` 採用**（ユーザー決定 / commit f9b1800）
   - `git mv` で `dot_*` `Library/` `run_onchange_*` `.chezmoi*` を `chezmoi/` へ集約
   - 検証ゲート通過: 再配置前後で `chezmoi managed`(28件) と `chezmoi diff` が**完全一致**（$HOME 不変。※既存の未適用 .Brewfile 差分は再配置と無関係に元から存在）
-- [ ] flake スケルトン作成（適用しない・ビルド確認のみ）
-  - `flake.nix` / `system/hosts/<hostname>.nix` / `home/modules/` 雛形
-  - `nix flake check` が通る
-- [ ] ホスト名・ユーザー名・メールを `.chezmoi.toml.tmpl` の prompt 化方針を決定
+- [x] flake スケルトン作成（適用しない・ビルド確認のみ / commit 546d2c8）
+  - `flake.nix`（nix-darwin/master + home-manager + nix-homebrew, follows 固定）
+  - `system/hosts/tominoMac-mini.nix`（host=LocalHostName。Computer`name`は日本語不可）
+  - `system/modules/` `home/modules/` 雛形（空）。Determinate 共存で `nix.enable=false`
+  - 強化検証ゲート通過（非破壊）: `nix flake check` ＋ **`darwin-rebuild build` 成功**（switch せず・実機でクロージャ生成確認）
+- [ ] ホスト名・ユーザー名・メールを `.chezmoi.toml.tmpl` の prompt 化方針を決定（→ 単一機なら据え置き可。複数機対応時に着手）
 
-**検証ゲート**: `chezmoi diff` が空 かつ `nix flake check` 成功（適用はまだしない）
+**検証ゲート**: ✅ 達成 — `nix flake check` ＋ `darwin-rebuild build`（当初案より一段強化）成功。`chezmoi diff` は再配置で不変を確認済み。switch/apply はまだしない
 
 ---
 
