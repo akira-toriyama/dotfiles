@@ -84,26 +84,27 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 
 ## フェーズ 4: パッケージの Nix 化
 
-- [ ] CLI を `home.packages` へ（system-inventory の「維持候補」基準で取捨）
-- [ ] cask を `nix-darwin homebrew.casks` へ（karabiner-elements 等は必須維持）
-- [ ] mas を `homebrew.masApps` へ（PopClip 必須=karabiner button6 依存）
-- [ ] カスタム tap ツールを `homebrew.brews`+`taps` へ（borders/rift/skhd 等）
-- [ ] ⚠️ 要判断項目を決着（asdf→nix/mise?, colima/docker, watchman 破棄 等）
-- [ ] `nix-homebrew` 採用可否（`autoMigrate=true` で既存 brew 吸収）
+- [x] **CLI を `home.packages` へ**: op, gh, chezmoi, ghq, jq, mas（commit 5adc5ed/e26d65b）
+- [~] **cask を `nix-darwin homebrew.casks` へ**: 1password, appcleaner, azookey, fsnotes, google-chrome, the-unarchiver, visual-studio-code, vlc（karabiner-elements / raycast / linearmouse / popclip / flashspace / via 等は未宣言＝既存 brew のまま温存中）
+- [ ] ⏸ **mas を `homebrew.masApps` へ**: mas-cli 1.8.6 が macOS 15+ で破損（`mas get` unrecognized）。修正版/代替が出るまで凍結。新PC では当面手動 install
+- [~] **カスタム tap ツールを `homebrew.brews`+`taps` へ**: felixkratz/formulae/borders のみ宣言（rift/skhd-zig/krp/sleepwatcher 他は未宣言）
+- [ ] ⚠️ **要判断項目を決着**（asdf→nix/mise?, colima/docker, watchman 破棄, sleepwatcher 等）
+- [x] **`nix-homebrew` 採用**: `autoMigrate=true` で既存 brew 吸収（commit 13f75ab）
+- [x] **VSCode 拡張**: `anthropic.claude-code` を chezmoi `run_onchange` で idempotent install
 
-**検証ゲート**: `darwin-rebuild switch` 成功し、必要アプリ/ツールが揃う。
-旧 `dot_Brewfile` はこの時点では**まだ削除しない**（参照保持）
+**検証ゲート**: ✅ 部分達成 — switch で宣言済みアプリ/CLI は揃う。`cleanup="none"` のため未宣言の既存 brew は温存。
+旧 `dot_Brewfile` / `run_onchange_install-packages` はまだ削除しない（残 brew の参照素材）
 
 ---
 
 ## フェーズ 5: macOS defaults の宣言化
 
-- [ ] system-inventory の defaults 表を `system.defaults` / `CustomUserPreferences` へ
-- [ ] ⚠️ セキュリティ低下2項目（Gatekeeper 無効 / 復帰時パスワード省略）は
-      **再現しない方向で再考**。必要理由が無ければ持ち込まない
-- [ ] `darwin-rebuild switch` で defaults が反映されることを確認
+- [x] system-inventory の defaults 表を `system.defaults` / `CustomUserPreferences` へ（commit 7004512、`system/modules/defaults.nix`）
+- [x] ⚠️ セキュリティ低下2項目（Gatekeeper 無効化 / 復帰時パスワード省略）は方針通り**持ち込まない**ことを明文化
+- [x] `darwin-rebuild switch`（世代5）で defaults 反映確認（Finder/Dock/MenuBar/LSQuarantine/Library 全て期待通り）
+- [x] `~/Library` 可視化（`chflags nohidden`）を `system.activationScripts.unhideLibrary` で冪等処理
 
-**検証ゲート**: 新規ユーザー or VM で defaults が宣言通り適用される
+**検証ゲート**: ✅ 達成 — `defaults read` で主要項目が宣言値に一致、`~/Library` flags 空（nohidden）確認
 
 ---
 
