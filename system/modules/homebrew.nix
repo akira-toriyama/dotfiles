@@ -16,17 +16,11 @@
       cleanup = "none";   # 未宣言の既存 brew/cask を消さない（フェーズ4 まで温存）
     };
 
-    # === カスタム tap 由来 brew は全 drop（ユーザー方針: 新PC で WM スタック再考）===
-    # 新PC に持ち越さない:
-    #   acsandmann/tap/rift, jackielii/tap/skhd-zig,
-    #   felixkratz/formulae/borders, koekeishiya/formulae/{yabai,krp},
-    #   akira-toriyama/tap/{chord,facet,wand,ws-tabs}
-    # 本機の既存 brew は cleanup="none" で温存中（即アンインストールしない）。
-    #
-    # 波及: focusfx は borders 前提なので新PC では空動作になる。
-    # chezmoi/dot_config/{rift, focusfx, ...} は残置だが新PC で消費先なし
-    # （別途掃除するか、WM 再決定後に整理）。
-    taps = [ ];
+    # === カスタム tap brew はユーザー方針で原則 drop（新PC で WM スタック再考）===
+    # 例外: omniwm は cask だが barutsrb/tap 由来のため tap だけ宣言が要る。
+    taps = [
+      "barutsrb/tap"   # omniwm (Niri-inspired tiling WM by BarutSRB) を解決するため
+    ];
     brews = [ ];
 
     casks = [
