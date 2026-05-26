@@ -82,12 +82,14 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Render each .tmpl
+        # chezmoi の include は --source が指す source dir 起点で解決されるため、
+        # repo の chezmoi/ を明示する。
         run: |
           set -e
           failed=0
           while IFS= read -r f; do
             echo "::group::Render $f"
-            if ! chezmoi execute-template < "$f" >/dev/null; then
+            if ! chezmoi --source ./chezmoi execute-template < "$f" >/dev/null; then
               echo "::error file=$f::template render failed"
               failed=1
             fi
