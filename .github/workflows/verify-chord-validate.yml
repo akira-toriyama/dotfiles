@@ -1,8 +1,12 @@
 name: Verify chord config (strict)
 
-# chezmoi/dot_config/chord/private_config.toml.tmpl を render し、
+# chezmoi apply で chord 設定を $HOME/.config/chord/config.toml へ正規展開し、
 # chord --validate --strict で「warning / drop が 1 件でもあれば fail」する
 # 厳格 CI ゲート（chord v0.2.0 PR2-strict）。
+# 手元 apply と同じパス（chord バイナリのデフォルト探索先）を踏むことで、
+# 以前 execute-template で /tmp に render していた際に発生していた
+# "config not found at ~/.config/chord/config.toml" warn → strict fail を回避。
+# target を ~/.config/chord に絞り、CI runner の他 dotfile に副作用を出さない。
 #
 # verify-chord-doc.yml (Python stdlib のみ・docs/chord.md 表の同期確認) とは分離:
 #   - 当ワークフローは macos-15 + brew install で 30s 程度のオーバーヘッド
@@ -41,16 +45,17 @@ jobs:
           brew install akira-toriyama/tap/chord
           brew install chezmoi
 
-      - name: Render chezmoi tmpl → /tmp/chord-config.toml
-        # chezmoi.homeDir 等のテンプレ変数を解決するため execute-template を使う。
+      - name: chezmoi apply ~/.config/chord
+        # 正規パス（chord のデフォルト探索先）へ chord 設定のみを展開。
         # --source は chezmoi ソースルート (.chezmoiroot=chezmoi に相当)。
-        run: |
-          chezmoi --source ./chezmoi execute-template \
-            < chezmoi/dot_config/chord/private_config.toml.tmpl \
-            > /tmp/chord-config.toml
+        # target を絞ることで CI runner の他 dotfile（.claude/ 等）に副作用を
+        # 出さない。run_onchange_after_chord-validate.sh.tmpl は include した
+        # chord config の sha256 に応じて apply 時に走る（非 strict, hook 健在性
+        # 確認も兼ねる）。
+        run: chezmoi --source ./chezmoi apply ~/.config/chord
 
       - name: chord --validate --strict
         # warning / drop / undefined-alias が 1 件でもあれば exit 1。
-        # run_onchange_after_chord-validate.sh.tmpl (non-strict) は手元 apply 用、
-        # ここで strict を別途回して typo 系の静かな drop を確実に弾く。
-        run: chord --validate --strict /tmp/chord-config.toml
+        # 上の apply で配置した実体に対して strict を別途回し、hook (非 strict)
+        # では拾えない typo 系の静かな drop を確実に弾く。
+        run: chord --validate --strict "$HOME/.config/chord/config.toml"
