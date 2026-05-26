@@ -1,0 +1,30 @@
+name: Verify chord doc sync
+
+# chezmoi/dot_config/chord/private_config.toml.tmpl を単一ソースとし、
+# docs/chord.md のショートカット表がそこから生成された状態と一致するかを検証する。
+on:
+  push:
+    branches: [rebuild, main]
+    paths:
+      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - docs/chord.md
+      - scripts/gen-chord-doc.py
+      - .github/workflows/verify-chord-doc.yml
+  pull_request:
+    branches: [rebuild, main]
+    paths:
+      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - docs/chord.md
+      - scripts/gen-chord-doc.py
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Check chord doc is in sync
+        run: python3 scripts/gen-chord-doc.py --check

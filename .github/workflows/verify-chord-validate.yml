@@ -1,0 +1,53 @@
+name: Verify chord config (strict)
+
+# chezmoi/dot_config/chord/private_config.toml.tmpl を render し、
+# chord --validate --strict で「warning / drop が 1 件でもあれば fail」する
+# 厳格 CI ゲート（chord v0.2.0 PR2-strict）。
+#
+# verify-chord-doc.yml (Python stdlib のみ・docs/chord.md 表の同期確認) とは分離:
+#   - 当ワークフローは macos-15 + brew install で 30s 程度のオーバーヘッド
+#   - doc-only PR (docs/chord.md / gen-chord-doc.py 変更) では brew install を
+#     走らせたくないため paths で限定
+#
+# Homebrew tap: akira-toriyama/homebrew-tap の Formula/chord.rb から install。
+# Swift 6 toolchain 必須のため runs-on は macos-15 を明示（chord 本家 CI と同じ）。
+on:
+  push:
+    branches: [rebuild, main]
+    paths:
+      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - chezmoi/run_onchange_after_chord-validate.sh.tmpl
+      - .github/workflows/verify-chord-validate.yml
+  pull_request:
+    branches: [rebuild, main]
+    paths:
+      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - chezmoi/run_onchange_after_chord-validate.sh.tmpl
+      - .github/workflows/verify-chord-validate.yml
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install chord + chezmoi from brew
+        # chezmoi は runner image に既存だが念のため明示。
+        run: |
+          brew install akira-toriyama/tap/chord
+          brew install chezmoi
+
+      - name: Render chezmoi tmpl → /tmp/chord-config.toml
+        # chezmoi.homeDir 等のテンプレ変数を解決するため execute-template を使う。
+        # --source は chezmoi ソースルート (.chezmoiroot=chezmoi に相当)。
+        run: |
+          chezmoi --source ./chezmoi execute-template \
+            < chezmoi/dot_config/chord/private_config.toml.tmpl \
+            > /tmp/chord-config.toml
+
+      - name: chord --validate --strict
+        # warning / drop / undefined-alias が 1 件でもあれば exit 1。
+        # run_onchange_after_chord-validate.sh.tmpl (non-strict) は手元 apply 用、
+        # ここで strict を別途回して typo 系の静かな drop を確実に弾く。
+        run: chord --validate --strict /tmp/chord-config.toml
