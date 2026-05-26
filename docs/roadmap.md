@@ -49,9 +49,11 @@
 - [x] `op` 導入方式を決定 → **Nix 化**（home.packages `_1password-cli`、unfree は個別ホワイトリスト）
 - [x] `gh`（GitHub CLI）も同じ home.packages へ（commit 5adc5ed）
 - [x] `darwin-rebuild switch` で op 2.34.0 / gh 2.92.0 が `/etc/profiles/per-user/tommy/bin` に乗ることを確認（世代2 生成）
+- [x] **1Password 8 デスクトップを `homebrew.casks` で宣言導入**（commit 359e126、世代3、8.12.21 確認）— 新PC ではこの宣言だけで `/Applications/1Password.app` が降臨
 - [ ] 1Password アカウント/ vault 構造を決定（**ユーザー外部作業**）
   - 推奨: `Private` vault に `GitHub PAT` / `SSH (新PC用)` 等のアイテムを置く
-- [ ] `op signin` でこの PC からアクセスできることを確認（ユーザー手）
+- [ ] アプリ設定: Developer → 「Integrate with 1Password CLI」/「Use the SSH agent」を有効化（**ユーザー外部作業**）
+- [ ] `op signin` / `op whoami` でこの PC からアクセスできることを確認（ユーザー手）
 
 **新PCワークフロー（このフェーズで確立する手順）**
 
