@@ -73,7 +73,11 @@
         hostModule = ./system/hosts/ci.nix;
         extraModules = [
           ({ lib, ... }: {
+            # CI では App Store サインインができないので masApps を空に
             homebrew.masApps = lib.mkForce { };
+            # CI runner の brew メタデータは古い可能性があるので毎回 update
+            # (実機の通常 switch には影響なし)
+            homebrew.onActivation.autoUpdate = lib.mkForce true;
           })
         ];
       };
