@@ -63,12 +63,10 @@
       #   google-japanese-ime ← azookey に置換済。cleanup=zap 化で消える
     ];
 
-    # ⚠️ masApps は一時的に空。
-    # brew 同梱の mas 1.8.6 が macOS 15+ で `mas get/install` を動かせず
-    # (Unrecognized command: 'get')、宣言すると brew bundle が失敗する。
-    # 既知の mas-cli 上流バグ。修正版 or 代替が出るまでコメントアウト。
-    # 新PC では下記アプリを手動で App Store からインストールする:
-    #   - EdgeView 3 (id=1580323719) 画像ビューア
-    masApps = { };
+    # mas 7.0.0 で macOS 15+ の "Unrecognized command: 'get'" バグが解消
+    # → 凍結解除（commit より前に brew upgrade mas を済ませること）。
+    masApps = {
+      "EdgeView 3" = 1580323719; # 画像ビューア（旧 EdgeView 2 は不採用）
+    };
   };
 }
