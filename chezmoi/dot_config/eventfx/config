@@ -1,0 +1,24 @@
+# eventfx — イベント発火時に /bin/sh -c で実行する。1 行 = 1 コマンド。
+# 空行と # 行は無視。保存で hot reload (デーモン再起動不要)。
+#
+# 重要: eventfx は行ごとに別コマンドとして渡す。バックスラッシュ継続 (\)
+# は効かない。1 コマンドは必ず物理 1 行で書く。
+#
+# 環境変数:
+#   共通:           $EVENTFX_EVENT / $EVENTFX_PID / $EVENTFX_APP
+#   window_focused: $EVENTFX_WINDOW_ID / $EVENTFX_TITLE
+#   text_selected:  $EVENTFX_SELECTION / $EVENTFX_CURSOR_X / $EVENTFX_CURSOR_Y
+#                   (cursor は Cocoa 座標, 全スクリーン)
+
+# ===== window_focused ===================================================
+
+# 効果音
+[ "$EVENTFX_EVENT" = window_focused ] && afplay --volume 0.3 "$HOME/.local/share/sounds/window_focused.wav"
+
+# 枠フラッシュ (テーマ抽選 → glow 点滅 → steady-state 復帰)
+[ "$EVENTFX_EVENT" = window_focused ] && "$HOME/.config/eventfx/border-flash"
+
+# ===== text_selected ====================================================
+# CGEventTap で "マウスドラッグで text 選択" を確定したときだけ発火する
+# (キーボード Shift+矢印 / Cmd+A / IME 変換は除外)。
+[ "$EVENTFX_EVENT" = text_selected ] && "$HOME/.config/eventfx/text-selected-launcher"

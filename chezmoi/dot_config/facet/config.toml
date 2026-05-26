@@ -1,0 +1,110 @@
+# facet — user configuration
+# https://github.com/akira-toriyama/facet
+#
+# This file is the **single source of truth** for facet's settings.
+# Drop it (or your edited copy) at ~/.config/facet/config.toml:
+#
+#   curl --create-dirs -o ~/.config/facet/config.toml \
+#     https://raw.githubusercontent.com/akira-toriyama/facet/main/config.toml
+#
+# facet only ever READS this file; runtime CLI overrides (e.g.
+# `facet --theme=cute`) apply for the current session only. To
+# make a change stick, edit the value here and restart facet.
+#
+# Out-of-range / unknown values are silently clamped to safe
+# defaults rather than rejected — a typo can't break the layout.
+
+
+# -----------------------------------------------------------------
+# Startup view
+# -----------------------------------------------------------------
+# What facet shows when it launches. Comment out (prefix with `#`)
+# to start in agent-only mode — facet stays running but draws no
+# panel until the CLI asks (`facet --view=grid` etc.).
+#
+#   "tree"  — translucent always-on-top sidebar listing every
+#             workspace and its windows as a tree
+#   "grid"  — full-screen TS3-style overview with DnD between cells
+#
+# Default for a fresh `curl` install: "tree" (the always-on-top
+# sidebar — facet's primary surface; the grid is a TS3-style
+# overview you summon on demand with `facet --view=grid`).
+default_view = "tree"
+
+
+# -----------------------------------------------------------------
+# Color / typography theme
+# -----------------------------------------------------------------
+# Picks the palette + font for the tree panel, grid overlay, and
+# popup menus.
+#
+#   "terminal" — dark near-black bg, Tokyo-Night-ish accents, mono
+#                font. The original look.
+#   "cute"     — soft pastel pink, rounded font.
+#   "system"   — native vibrancy + dynamic system colors. Adapts
+#                to macOS dark/light mode.
+#
+# CLI override (session only): `facet --theme=cute`
+theme = "terminal"
+
+
+# -----------------------------------------------------------------
+# Grid overview
+# -----------------------------------------------------------------
+[grid]
+
+# Number of columns in the overview grid. The row count is derived
+# from the number of workspaces (e.g. 15 workspaces with cols = 4
+# → 4/4/4/3 rows). Clamped 1..12.
+cols = 5
+
+# Where the workspace label sits relative to its cell.
+#
+#   "up"   — label above each cell (Mission Control / TS3 style).
+#   "down" — label below each cell (Stage Manager / dock style).
+label-position = "up"
+
+# Workspace label font size in points. Clamped 8..32. The label
+# band height tracks this so larger labels reserve more space.
+label-size = 15
+
+# Background ScreenCaptureKit refresh cadence (seconds) that keeps
+# grid-view thumbnails warm so `--view=grid` paints immediately
+# with real screenshots instead of icon-fallback. 0 disables the
+# background refresh entirely (cells still capture on demand the
+# first time the grid opens, just with a brief icon flash).
+# Clamped 1..60 when set.
+thumbnail-refresh-seconds = 4
+
+
+# -----------------------------------------------------------------
+# Virtual-workspace behavior (M5 Phase α)
+# -----------------------------------------------------------------
+[workspace]
+
+# How facet hides the windows of a workspace you're not currently
+# looking at. macOS public APIs cannot truly remove a window from
+# the screen, so each method below is a different tradeoff between
+# instant switching, visual cleanliness, and crash safety.
+#
+#   "anchor"   — park each window at a 1×41 px sliver in the
+#                bottom-right corner (rift / AeroSpace's approach).
+#                Instant. No animation. Still appears in Mission
+#                Control (handy if facet crashes — you can pull
+#                windows back). Tiny sliver is visible at the corner.
+#                Recommended default. The 41 px is macOS's enforced
+#                title-bar guarantee — can't go smaller via public APIs.
+#
+#   "minimize" — AX kAXMinimized. Window goes to the Dock with the
+#                genie animation. Cleaner visually but slower; window
+#                vanishes from Mission Control. Crash-safe (recover
+#                from Dock). Best when "really hide this away" matters
+#                more than instant switching.
+#
+# True hide (gone from Mission Control + Cmd-Tab) needs SLS private
+# APIs + SIP off, which lives in the separate `facet-x` binary
+# (deep-core, M6+). The `facet` binary you're configuring here stays
+# inside macOS's public-API contract.
+#
+# Unknown values clamp to "anchor".
+hide_method = "anchor"

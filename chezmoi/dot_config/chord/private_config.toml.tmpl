@@ -1,0 +1,162 @@
+# ~/.config/chord/config.toml の chezmoi ソース (private_config.toml.tmpl)。
+# 編集は `chezmoi edit ~/.config/chord/config.toml` → `chezmoi apply` で反映。
+# homeDir 依存パスは chezmoi の template 変数で展開する (envsubst は廃止)。
+#
+# chord (akira-toriyama/chord) の TOML 文法:
+#   • input  = "<mods> - <key>"   ※ key は標準名 or `keycode-<decimal>`
+#   • action-keys  = "<mods> - <key>"
+#   • action-shell = "<command>"
+#   • apps         = ["<bundle-id-or-glob>", ...]  省略時は全アプリ
+#   • 同じ input が複数ある場合は document 順で最初に apps が match した
+#     binding が発火（first-match-wins）。
+
+[options]
+# 未マッチイベントは OS へ素通し。
+passthrough-unmatched = true
+# 全アプリで chord を無効化する bundle id（glob 可）。
+exclude-apps = []
+
+
+# =====================================================================
+# Bindings — 各 binding 直前の `# doc: <動作>` は host/chord/README.md の
+# 一覧生成の唯一ソース（scripts/gen-chord-doc.py が読む）。
+# =====================================================================
+
+# ---- ULTRA_LL レイヤ（ZMK 右側 ALT+SHIFT+CTRL チョード） ----
+
+# doc: タブを左へ（Chrome: Ctrl+Shift+Tab）
+[[bindings]]
+name = "tab-left (Chrome)"
+input = "rctrl + ralt + rshift - c"
+apps = ["com.google.Chrome"]
+action-keys = "ctrl + shift - tab"
+
+# doc: タブを左へ（VS Code: Cmd+Shift+[）
+[[bindings]]
+name = "tab-left (VS Code)"
+input = "rctrl + ralt + rshift - c"
+apps = ["com.microsoft.VSCode"]
+action-keys = "cmd + shift - ["
+
+# doc: タブを右へ（Chrome: Ctrl+Tab）
+[[bindings]]
+name = "tab-right (Chrome)"
+input = "rctrl + ralt + rshift - v"
+apps = ["com.google.Chrome"]
+action-keys = "ctrl - tab"
+
+# doc: タブを右へ（VS Code: Cmd+Shift+]）
+[[bindings]]
+name = "tab-right (VS Code)"
+input = "rctrl + ralt + rshift - v"
+apps = ["com.microsoft.VSCode"]
+action-keys = "cmd + shift - ]"
+
+# doc: 前のウィンドウへ（rift フォーカス）
+[[bindings]]
+name = "rift focus prev"
+input = "rctrl + ralt + rshift - d"
+action-shell = "rift-cli execute window prev"
+
+# doc: 次のウィンドウへ（rift フォーカス）
+[[bindings]]
+name = "rift focus next"
+input = "rctrl + ralt + rshift - f"
+action-shell = "rift-cli execute window next"
+
+# doc: AltTab 起動（全スペース。旧 cmd+ctrl+tab）
+[[bindings]]
+name = "alttab all-spaces"
+input = "rctrl + ralt + rshift - a"
+action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=1"
+
+# doc: AltTab 起動（現スペース。旧 alt+tab）
+[[bindings]]
+name = "alttab current-space"
+input = "rctrl + ralt + rshift - s"
+action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=0"
+
+
+# ---- ZMK 単押し専用キー ----
+
+# doc: Mission Control（全ワークスペースをグリッド表示）
+# X_1 = ZMK の L 右隣（HID 0x53 = kp_1 として届く）。
+[[bindings]]
+name = "rift mission-control show-all"
+input = "kp_1"
+action-shell = "rift-cli execute mission-control show-all"
+
+
+# ---- emacs / readline 風 Ctrl+key remap ----
+
+# doc: ← Left
+[[bindings]]
+name = "ctrl-b → ←"
+input = "ctrl - b"
+action-keys = "left"
+
+# doc: → Right
+[[bindings]]
+name = "ctrl-f → →"
+input = "ctrl - f"
+action-keys = "right"
+
+# doc: ↑ Up
+[[bindings]]
+name = "ctrl-p → ↑"
+input = "ctrl - p"
+action-keys = "up"
+
+# doc: ↓ Down
+[[bindings]]
+name = "ctrl-n → ↓"
+input = "ctrl - n"
+action-keys = "down"
+
+# doc: Backspace
+[[bindings]]
+name = "ctrl-h → backspace"
+input = "ctrl - h"
+action-keys = "backspace"
+
+# doc: 前方削除（Forward Delete）
+[[bindings]]
+name = "ctrl-d → ⌦"
+input = "ctrl - d"
+action-keys = "forward_delete"
+
+# doc: Return
+[[bindings]]
+name = "ctrl-j → return"
+input = "ctrl - j"
+action-keys = "return"
+
+
+# ---- 未定義キー効果音フォールバック ----
+# 4 修飾子セット (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) で実バインド済みの
+# キー以外を押すと効果音を鳴らす。chord v0.2.0 PR5 の `[[fallbacks]]` +
+# `*` ワイルドカードで実装。[[bindings]] が全 miss した時だけ [[fallbacks]]
+# が評価されるので、既存バインドとの誤爆は発生しない。
+# 音は 1 種共通（旧 skhd 時代の運用と同じ）。アセット配備は dotfiles 管轄、
+# パスは chezmoi tmpl の homeDir 変数で展開される。
+# `# doc:` は付けない（README ショートカット表に出さない＝負のバインド扱い）。
+
+[[fallbacks]]
+name = "ULTRA_LL undefined feedback"
+input = "rctrl + ralt + rshift - *"
+action-shell = 'afplay "{{ .chezmoi.homeDir }}/.local/share/sounds/undefined_key.wav"'
+
+[[fallbacks]]
+name = "MIRACLE_LM undefined feedback"
+input = "rctrl + rcmd + rshift - *"
+action-shell = 'afplay "{{ .chezmoi.homeDir }}/.local/share/sounds/undefined_key.wav"'
+
+[[fallbacks]]
+name = "MEGA_RM undefined feedback"
+input = "rctrl + rcmd + ralt - *"
+action-shell = 'afplay "{{ .chezmoi.homeDir }}/.local/share/sounds/undefined_key.wav"'
+
+[[fallbacks]]
+name = "WONDER_RR undefined feedback"
+input = "rcmd + ralt + rshift - *"
+action-shell = 'afplay "{{ .chezmoi.homeDir }}/.local/share/sounds/undefined_key.wav"'

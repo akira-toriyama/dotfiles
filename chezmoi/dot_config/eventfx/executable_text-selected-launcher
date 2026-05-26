@@ -1,0 +1,38 @@
+#!/bin/sh
+# eventfx text_selected ランチャー。AX 経由で取れた選択文字列とマウス座標を
+# wand に渡し、カーソル直下に NSMenu を出す。
+# 入力は eventfx が注入する環境変数:
+#   $EVENTFX_SELECTION / $EVENTFX_CURSOR_X / $EVENTFX_CURSOR_Y
+# items 定義は同階層の text_selected.toml (wand v4.0+ [[launcher.item]] 形式)。
+
+# wand dev ビルドは Homebrew PATH に乗らないので明示する。
+# ビルドが入れ替わったらここを差し替える 1 箇所。
+# 注: PR #37 で stroke binary は wand に rename された。
+WAND_BIN="/Volumes/workspace/github.com/akira-toriyama/stroke/Wand-dev.app/Contents/MacOS/wand"
+ITEMS="$HOME/.config/eventfx/text_selected.toml"
+
+[ -x "$WAND_BIN" ] || exit 0   # dev mount が外れている等は静かに諦める
+[ -r "$ITEMS" ]    || exit 0
+
+# マウスポインタ近くにメニューを置く (PopClip 風)。
+# 想定 layout: wand の `[launcher] layout = "toolbar"` — 横長コンパクト。
+# アンカー = メニュー左上端 (右に展開・少し下に展開)。
+#
+# 配置の意図:
+#   OFFSET_X = -120  ← toolbar 幅 ~240px と仮定して中央がカーソル付近
+#   OFFSET_Y =  45   ← カーソル上方に短いギャップ。toolbar 高 ~30-40px
+#                      なので toolbar 下端がカーソルから ~10-15px 上で
+#                      クリック誤反応も避けやすい。
+# 多 item でメニュー幅が増えたら OFFSET_X をより負へ。layout を縦長
+# (list) に戻すなら OFFSET_Y を +150 などに上げ直す。
+OFFSET_X=-120
+OFFSET_Y=75
+
+X=$(( EVENTFX_CURSOR_X + OFFSET_X ))
+Y=$(( EVENTFX_CURSOR_Y + OFFSET_Y ))
+
+exec "$WAND_BIN" \
+    --show-menu \
+    --items "$ITEMS" \
+    --at "$X" "$Y" \
+    --selection "$EVENTFX_SELECTION"

@@ -1,0 +1,19 @@
+#!/bin/sh
+# chord config validation gate (旧 capsule-corp/host/chord/render.sh の責務を継承)。
+# chezmoi apply 後に走り、chord 在中時のみ実体ファイルを --validate する。
+# 失敗時 exit 1 で chezmoi apply の戻り値に validate 失敗が残る (CI/手元両対応)。
+# chord 未インストール環境 (fresh bootstrap / CI Linux) では何もせず exit 0。
+#
+# 再実行トリガ: chord config の中身が変わったとき。include 経由で raw 内容を
+# sha256sum し本スクリプトの hash を変動させる (run_onchange_ の規約)。
+# chord config sha256: {{ include "dot_config/chord/private_config.toml.tmpl" | sha256sum }}
+
+set -eu
+
+CFG="$HOME/.config/chord/config.toml"
+command -v chord >/dev/null 2>&1 || exit 0
+
+if ! chord --validate --config "$CFG"; then
+    echo "chord --validate failed for $CFG" >&2
+    exit 1
+fi

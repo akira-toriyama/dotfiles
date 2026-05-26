@@ -1,0 +1,517 @@
+# -----------------------------------------------------------------
+# Global — disable wand entirely for specific bundle ids
+# -----------------------------------------------------------------
+# v4.0 で [recognition].exclude-apps から移動。空配列 = 何も除外しない。
+[exclude]
+apps = []
+
+
+# stroke — ユーザー設定
+# https://github.com/akira-toriyama/stroke
+#
+# このファイルが stroke の設定の **唯一の真実源**。stroke は GUI を
+# 持たない。stroke はこのファイルを READ するだけ。範囲外・未知の値は
+# 拒否せず黙って安全なデフォルトに clamp される — typo でデーモンが
+# 壊れることはない。明示的に検証するなら `stroke --validate`。
+#
+# 編集はホットリロード対応(保存すると次のジェスチャーから反映)。
+# 唯一の例外は `[trigger]` で、ボタン / 修飾キーを変えた時だけ
+# 再起動が必要(イベントタップの mask に焼き込まれているため)。
+# その場合はデーモンログに restart 警告が出る。
+
+
+# -----------------------------------------------------------------
+# Trigger — どのボタン(+ 任意の修飾キー)でストロークを開始するか
+# -----------------------------------------------------------------
+[gesture]
+
+# ストロークを開始するマウスボタン。
+#   "right"   — 右ボタン(最も一般的)
+#   "middle"  — 中ボタン / ホイールクリック
+#   "side1"   — 戻るボタン(Mouse Button 4)
+#   "side2"   — 進むボタン(Mouse Button 5)
+button = "right"
+
+# ボタン押下時に押されていなければならない修飾キー。
+# 空 = 修飾キー不要。
+# 有効な値: "cmd", "opt", "ctrl", "shift", "fn"
+modifiers = []
+
+
+# -----------------------------------------------------------------
+# Recognition — サンプル列をどう方向シーケンスに変換するか
+# -----------------------------------------------------------------
+
+
+# 新しい方向を 1 つ出すのに必要な最小移動量(px)。
+# 小さいほど敏感(小さなフリックも拾う)、大きいほど手ブレに寛容。
+# 4..200 に clamp。
+min-stroke-px = 16
+
+# 1 セグメント(直線区間)の制限時間(ms)。**曲がるたびにリセット**
+# されるので全体ではなく方向ごとの予算。複数方向のジェスチャーは各区間に
+# フル予算が与えられ、ひとつの方向で止まったまま超過したもの(通常の
+# 右ドラッグ)だけ破棄される。0 = 無制限。設定時は 100..60000 に clamp。
+max-segment-ms = 1500
+
+# スクリブル・キャンセル: 180° 方向反転がこの回数に達するとジェスチャー
+# を破棄(タイムアウト待ち不要)。一般的なジェスチャーは反転しないので、
+# 既定 2 で素早い「ぐしゃぐしゃ」だけを取消とみなす。0 = 無効。
+# 設定時は 1..20 に clamp。
+cancel-reversals = 2
+
+# 上記の反転回数が満たされるべき時間窓(ms)— **素早い**往復だけを
+# 取消とみなすための速度ゲート。ゆっくりした往復は別意図の動きと
+# みなして発動可能。0 = 速度不問。設定時は 100..5000 に clamp。
+cancel-window-ms = 500
+
+# stroke を完全に無効化する Bundle ID — 既にネイティブの
+# ジェスチャーを持つアプリ(Xcode、動画編集など)に便利。
+# `*` / `?` のグロブ対応。
+
+
+# -----------------------------------------------------------------
+# Overlay — ジェスチャー描画中の HUD(軌跡 + アシスト + バッジ)
+# -----------------------------------------------------------------
+# どの項目もホットリロード対象。色を変えて保存すれば次のジェスチャー
+# から新しい色で描画される。
+[gesture.overlay]
+
+# HUD 全体の on/off。off にすると軌跡もアシストカードもバッジも消える
+# (デーモン自体は動き続ける)。
+enabled = true
+
+# 軌跡の色(マッチ時 / 不一致時)。色は名前("blue", "red", "green",
+# "orange", "purple", "pink", "yellow", "white", "black",
+# "accent"=システムアクセント)か `#rgb` / `#rrggbb` / `#rrggbbaa`。
+color = "#3b82f6"
+color-no-match = "#ef4444"
+
+# 軌跡線の太さ(pt)。1..40 に clamp。
+width = 3
+
+# ジェスチャー開始位置に出る「対象アプリのアイコン」バッジを表示するか。
+# off にしてもアシストカードと軌跡は残る。
+badge-enabled = true
+
+# バッジのサイズ(pt)。32..96 に clamp。
+badge-size = 56
+
+# HUD 背景に macOS のフロストブラー(NSVisualEffectView)を使うか。
+# off で従来の黒ベタ。アクセシビリティ重視や好みで切り替え可能。
+blur-enabled = true
+
+# バッジ登場時の小さなスケールイン(0.85→1.0 を 150ms)。off で
+# モーション無効。
+anim-enabled = true
+
+
+# -----------------------------------------------------------------
+# Effects — アシストカードの退場アニメ
+# -----------------------------------------------------------------
+# カードは普段、現在の形から到達できなくなった瞬間にパッと消えるだけ。
+# 効果を設定するとふわっと退場する。
+#   unmatch — ジェスチャー途中で到達不能になったカード
+#             (途中で方向を変えて「もう発火しない」と確定した瞬間)
+#   match   — ボタン離しで発動したカード(ご褒美演出)
+#
+# 種類:
+#   none           — 即消え(既定)
+#   drop           — 下にドロップ
+#   rise           — 上に飛んでいく
+#   slide-left     — 左に流れる
+#   slide-right    — 右に流れる
+#   explode        — 拡大しながらフェードアウト
+#   vibrate        — 振動してフェード
+#   fade           — シンプルなフェードアウト
+#   fireworks      — カード下から花火が打ち上がる
+#   confetti       — カード上から紙吹雪が降る
+#   random         — カードが消えるたびにランダムで 1 つ選ぶ
+#
+# パーティクル系(fireworks / confetti)は match に置くと一番映える。
+[gesture.effect]
+unmatch = "random"
+match = "random"
+
+# 効果の大きさ — 投げる距離 / パーティクル量に作用。
+#   subtle  ≈ 0.6× (控えめ)
+#   normal  ≈ 1.0× (既定。基準にチューニング済み)
+#   bold    ≈ 1.6× (派手め)
+#   wild    ≈ 2.5× (やりすぎ)
+intensity = "bold"
+
+
+# -----------------------------------------------------------------
+# Launcher — 中ボタンクリックでカーソル横にコンテキストメニュー
+# -----------------------------------------------------------------
+# ジェスチャーとは別のもう一つのトリガー。enabled = true で
+# 2 つ目の event tap を立ち上げる(ジェスチャーと共存)。
+# メニューは macOS ネイティブ NSMenu = サブメニュー / キーボード
+# / クリック外で消える、全部 OS 任せ。
+#
+# ターゲット解決はジェスチャーと同じ「ボタン押下時のカーソル直下
+# ウィンドウ」。フォーカスは関係ない。
+#
+# 再起動が必要な変更 2 つ(tap の event mask に焼き込まれてる):
+#   - enabled = false ↔ true の切替
+#   - button の変更
+# どちらも `stroke --status` の pending-restart に出る。
+[launcher]
+enabled = true
+button = "middle"
+modifiers = []
+
+# --- ブラウザ系トップレベル ---
+
+[[launcher.item]]
+name = "Echo selection"
+icon = "SF:doc.text.magnifyingglass"
+action-type = "shell"
+action-cmd = 'say "$SELECTION"'
+
+
+[[launcher.item]]
+name = "新しいタブ"
+icon = "SF:plus.square"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+t"
+
+[[launcher.item]]
+name = "再読み込み"
+icon = "SF:arrow.clockwise"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+r"
+
+[[launcher.item]]
+name = "戻る"
+icon = "SF:arrow.left"
+apps = ["*chrome*", "*safari*"]
+separator-before = true
+action-type = "key"
+action-keys = "cmd+["
+
+[[launcher.item]]
+name = "進む"
+icon = "SF:arrow.right"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+]"
+
+# --- 「タブ」サブメニュー(ブラウザ用)---
+
+[[launcher.item]]
+name = "閉じる"
+icon = "SF:xmark"
+group = ["タブ"]
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+w"
+
+[[launcher.item]]
+name = "復元"
+icon = "SF:arrow.uturn.backward"
+group = ["タブ"]
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+shift+t"
+
+[[launcher.item]]
+name = "次へ"
+icon = "SF:chevron.right"
+group = ["タブ"]
+separator-before = true
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "ctrl+tab"
+
+[[launcher.item]]
+name = "前へ"
+icon = "SF:chevron.left"
+group = ["タブ"]
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "ctrl+shift+tab"
+
+# --- 「ウィンドウ」サブメニュー(全アプリ)---
+
+[[launcher.item]]
+name = "最小化"
+icon = "SF:minus.square"
+group = ["ウィンドウ"]
+action-type = "ax"
+action-verb = "minimize"
+
+[[launcher.item]]
+name = "最大化(ズーム)"
+icon = "SF:arrow.up.left.and.arrow.down.right"
+group = ["ウィンドウ"]
+action-type = "ax"
+action-verb = "zoom"
+
+[[launcher.item]]
+name = "閉じる"
+icon = "🗑️"
+group = ["ウィンドウ"]
+separator-before = true
+action-type = "ax"
+action-verb = "close"
+
+# --- filter-title / filter-shell smoke test ------------------------
+# タイトルに「github.com」が含まれる Chrome タブだけで出る項目。
+[[launcher.item]]
+name = "GitHub Issue 検索"
+icon = "SF:magnifyingglass"
+apps = ["*chrome*"]
+filter-title = "*github.com*"
+separator-before = true
+action-type = "url"
+action-url = "https://github.com/search?type=issues&q=is:open"
+
+# 22:00 以降だけ出る。filter-shell の挙動チェック用。
+[[launcher.item]]
+name = "深夜限定リマインダ(22:00-)"
+icon = "SF:moon.stars"
+filter-shell = "test $(date +%H) -ge 22"
+action-type = "shell"
+action-cmd  = "afplay /System/Library/Sounds/Glass.aiff"
+
+
+# --- Dynamic item smoke test ---------------------------------------
+# stdout から子メニューを生成。Home の最近編集ファイル top 5。
+[[launcher.item]]
+name = "Home の最近編集"
+icon = "SF:clock"
+separator-before = true
+dynamic = 'cd ~ && ls -t | head -5'
+template-name = "{line}"
+template-icon = "SF:doc"
+template-action-type = "shell"
+template-action-cmd  = 'open ~/"{line}"'
+
+# --- Checkmark / state smoke test ---------------------------------
+# `state = "shell:<cmd>"` で menu-open ごとに評価 → exit 0 で ✓ 表示。
+# 下は「現在ダークモード?」を OS に問う例。AppleInterfaceStyle が
+# "Dark" のときだけ exit 0 になる。
+[[launcher.item]]
+name = "ダークモード(現在の状態)"
+icon = "SF:moon"
+separator-before = true
+state = "shell:defaults read -g AppleInterfaceStyle 2>/dev/null | grep -q Dark"
+action-type = "shell"
+action-cmd  = 'osascript -e "tell app \"System Events\" to keystroke \"d\" using {control down, option down, command down}"'
+
+# --- グローバル(全アプリ)ツール系 --------------------------------
+# `apps` 省略 = どのアプリ上でも表示。よく使うシステムアプリ起動を
+# サブメニューにまとめる。
+
+[[launcher.item]]
+name = "ターミナル"
+icon = "SF:terminal"
+group = ["ツール"]
+separator-before = true
+action-type = "shell"
+action-cmd  = "open -a Terminal"
+
+[[launcher.item]]
+name = "メモ"
+icon = "SF:note.text"
+group = ["ツール"]
+action-type = "shell"
+action-cmd  = "open -a Notes"
+
+[[launcher.item]]
+name = "計算機"
+icon = "SF:plus.forwardslash.minus"
+group = ["ツール"]
+action-type = "shell"
+action-cmd  = "open -a Calculator"
+
+[[launcher.item]]
+name = "スクリーンショット"
+icon = "SF:camera.viewfinder"
+group = ["ツール"]
+separator-before = true
+action-type = "key"
+action-keys = "cmd+shift+5"
+
+[[launcher.item]]
+name = "システム設定"
+icon = "SF:gearshape"
+group = ["ツール"]
+action-type = "shell"
+action-cmd  = "open -a 'System Settings'"
+
+[[launcher.item]]
+name = "Finder"
+icon = "SF:folder"
+group = ["ツール"]
+action-type = "shell"
+action-cmd  = "open -a Finder"
+
+# --- グローバル単発(top-level)----------------------------------
+# 頻度高めのものはサブメニュー無しで一発アクセス。
+
+[[launcher.item]]
+name = "Spotlight"
+icon = "SF:magnifyingglass"
+separator-before = true
+action-type = "key"
+action-keys = "cmd+space"
+
+[[launcher.item]]
+name = "Mission Control"
+icon = "SF:macwindow.on.rectangle"
+action-type = "key"
+action-keys = "ctrl+up"
+
+[[launcher.item]]
+name = "画面ロック"
+icon = "SF:lock"
+action-type = "key"
+action-keys = "ctrl+cmd+q"
+
+
+# -----------------------------------------------------------------
+# Rules — 先勝ち。カーソル直下のターゲットに対して適用される
+# -----------------------------------------------------------------
+# 各 `[[rules]]` ブロックが 1 つの「ジェスチャー → アクション」対応を
+# 定義する。ルールは記述順にマッチされ、`pattern` が一致し かつ
+# `apps` フィルタがターゲットウィンドウの bundle id を許可する
+# 「最初の」ルールが発火する。
+#
+# パターンのアルファベット:
+#   L  = 左(left)    U  = 上(up)
+#   R  = 右(right)   D  = 下(down)
+# 連結する: "DR" = 下→右、"URD" = 上→右→下。
+# **同方向の連打は不可** — 認識器が同じ方向を 1 つに合体させるので、
+# `DRR` や `LL` のような繰り返しは描けない。そういうルールは
+# `stroke --validate` がロード時に loudly drop する。
+#
+# 重要 — カーソル基準のマッチング:
+#   `apps` は **ストローク開始時にカーソル直下にあるウィンドウ** に
+#   対してマッチする(フォーカス中のアプリではない)。だから
+#   ディスプレイ 2 の Chrome を指したまま描けば、ディスプレイ 1 で
+#   Finder がフォーカスを持っていても常に `*chrome*` に一致する。
+#   これが stroke の設計の核心。
+#
+# `apps` の書き方(正のエントリ + `!`-プレフィクスの除外、大小無視):
+#   "*"                   — すべての bundle id にマッチ
+#   "com.apple.Safari"    — 完全一致
+#   "*chrome*"            — グロブ(`*`, `?`)
+#   "!com.apple.dt.Xcode" — 除外(マッチする除外があれば勝つ)
+# 「正のいずれかにマッチ(または正自体が無い)かつ `!` のどれにも
+#  マッチしない」時に適用。
+#
+# アクションの形(TOML パーサを最小に保つためキーに分解 —
+# インラインテーブルは使わない):
+#
+#   action-type = "key"    + action-keys = "cmd+w"
+#   action-type = "ax"     + action-verb = "close" | "minimize" |
+#                                            "zoom" | "raise"
+#   action-type = "shell"  + action-cmd  = "open -a Terminal …"
+#
+# shell アクションにはターゲットを表す環境変数が渡される:
+#   STROKE_TARGET_BUNDLE_ID, STROKE_TARGET_PID,
+#   STROKE_TARGET_TITLE,     STROKE_TARGET_FRAME (x,y,w,h)
+# `STROKE_TARGET_TITLE` は Web ページタイトル等の **untrusted** な
+# 文字列が入りうるので、シェルコマンドに展開するときは必ず
+# `"$STROKE_TARGET_TITLE"` のようにクオートすること。
+
+# --- ブラウザ(Chrome / Safari)----------------------------------
+
+[[gesture.rule]]
+name = "タブを閉じる"
+pattern = "DL"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+w"
+
+[[gesture.rule]]
+name = "aaa-xxx"
+pattern = "DLU"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+w"
+
+[[gesture.rule]]
+name = "aaa-2"
+pattern = "DLU"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+w"
+
+[[gesture.rule]]
+name = "タブを復元"
+pattern = "UR"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+shift+t"
+
+[[gesture.rule]]
+name = "新しいタブ"
+pattern = "DU"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+t"
+
+[[gesture.rule]]
+name = "次のタブ"
+pattern = "RD"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "ctrl+tab"
+
+[[gesture.rule]]
+name = "前のタブ"
+pattern = "LD"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "ctrl+shift+tab"
+
+[[gesture.rule]]
+name = "再読み込み"
+pattern = "UD"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+r"
+
+[[gesture.rule]]
+name = "戻る"
+pattern = "LU"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+["
+
+[[gesture.rule]]
+name = "進む"
+pattern = "RU"
+apps = ["*chrome*", "*safari*"]
+action-type = "key"
+action-keys = "cmd+]"
+
+
+# --- 全アプリ共通 -----------------------------------------------
+
+[[gesture.rule]]
+name = "ウィンドウを閉じる"
+pattern = "DRU"
+apps = ["*"]
+action-type = "ax"
+action-verb = "close"
+
+[[gesture.rule]]
+name = "最小化"
+pattern = "L"
+apps = ["*"]
+action-type = "ax"
+action-verb = "minimize"
+
+[[gesture.rule]]
+name = "最大化(ズーム)"
+pattern = "UL"
+apps = ["*"]
+action-type = "ax"
+action-verb = "zoom"
+
