@@ -17,5 +17,10 @@
     ghq     # リポジトリ管理（go get 風 clone）
     jq      # JSON CLI
     mas     # Mac App Store CLI（masApps 宣言と独立して `mas search` 等で使える）
+
+    # === コンテナ stack（docker CLI + macOS 上の Linux VM 提供 colima）===
+    docker
+    docker-compose
+    colima  # docker CLI を動かす実行基盤(Lightweight Linux VM)。drop すると docker が無効化
   ];
 }
