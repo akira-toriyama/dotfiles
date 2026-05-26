@@ -1,12 +1,12 @@
 # Claude 向け作業指針（このリポジトリ用）
 
-詳細設計: [docs/reproduction-architecture.md](docs/reproduction-architecture.md) /
+個人 macOS 環境の dotfiles（host: `tominoMac-mini` / aarch64-darwin / user: `tommy`）。
+スタック: **nix-darwin + home-manager + chezmoi + 1Password**。
+詳細: [docs/reproduction-architecture.md](docs/reproduction-architecture.md) /
 進捗: [docs/roadmap.md](docs/roadmap.md) /
 環境素材: [docs/system-inventory.md](docs/system-inventory.md)
 
-## 最終目標
-
-このマシンを破棄しても、新しい Mac で **`install.sh` ワンコマンド** で同等の環境を再現できる状態を維持する。
+**最終目標**: このマシンを破棄しても新しい Mac で `install.sh` ワンコマンドで同等の環境が再現できる状態を維持する。
 
 ## アーキテクチャ（責務分担、絶対の鉄則）
 
@@ -23,41 +23,68 @@
 
 ## レイアウト規約
 
-- `.chezmoiroot = chezmoi` — リポジトリ直下は Nix flake 用、dotfile ソースは `chezmoi/` 配下。
-- リポジトリ運用ファイル（README.md, install.sh, docs/, .github/ 等）は `chezmoi/` の**外**にあるため `$HOME` には適用されない。
-- `chezmoi/` 配下のスクリプトは `executable_` 接頭辞で +x を再現（CI で検知）。
+- `.chezmoiroot = chezmoi` — リポジトリ直下は Nix flake、dotfile ソースは `chezmoi/` 配下。
+- リポジトリ運用ファイル（`README.md` `install.sh` `docs/` `.github/` `CLAUDE.md` 等）は `chezmoi/` の**外**にあるため `$HOME` に適用されない。
+- `chezmoi/` 配下のスクリプトは `executable_` 接頭辞で +x を再現（**CI で強制**）。
 - 例外的に `run_*` と `.chezmoiscripts/` 配下は chezmoi 自身が実行するので接頭辞不要。
+
+## GitHub / CI
+
+- **作業ブランチは `rebuild` 一本**。**`main` には絶対にコミット/マージしない**（ユーザー明示指示まで）。
+- **コミットは論理単位ごとに即 push**（`git push origin rebuild`、auto-push 方針）。
+- **コミットメッセージは gitmoji + Conventional Commits**: `:sparkles: feat(nix): ...` / `:memo: docs(roadmap): ...` / `:fire: fix(...): ...`。`git log -n 20` でスタイルを確認してから書く。
+- **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
+  - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
+  - `shellcheck` — `install.sh` 静的解析
+  - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞強制
+  - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
+- **CI green を確認してから push の次の作業へ**。失敗したら**新規コミットで修正**（`--amend` は使わない）。
+- **PR/--force push は禁止**。ユーザー明示指示があった場合のみ。
+
+## シークレット取扱（YOU MUST）
+
+- **YOU MUST NOT** secret 値（API トークン / 鍵 / パスワード / PAT 等）を **print / log / echo / コミットメッセージ / コマンド文字列 / テンプレートにリテラル化** しない。
+- secret は常に **参照** で扱う: `$(op read "op://Vault/Item/field")` / `$(gh auth token)` / `$ENV_VAR`。
+- chezmoi テンプレで秘密を扱うときは `onepasswordRead "op://..."` を使い、`op signin` は既に通っている前提とする。
+- **`home.file.*.text` に secret を書かない**（`/nix/store` は world-readable）。
+- secret ファイルを chezmoi に置く場合は `private_` 接頭辞（権限 600）か `encrypted_` 接頭辞（age/gpg）必須。
 
 ## 作業時の絶対ルール
 
-1. **生成パイプラインを再導入しない**。設定は静的ファイルとして表現する（旧 deno/TS 等の復活禁止）。
-2. **`main` ブランチは無視**。作業は `rebuild` 上で、論理単位コミットごとに自動 push。
-3. **検証ゲートを必ず通す**:
-   - chezmoi の取り込み/編集後 → `chezmoi diff` でソース⇔実体一致を確認してから commit
-   - Nix 側を触ったら → `nix flake check` ＋ `darwin-rebuild build` （非破壊）まで通してから switch
-   - `switch` が必要な場合は sudo パスワード入力が必要なので **コマンドを提示してユーザーに実行させる**
-4. **破壊的 git 操作を避ける**: `--force` push / 履歴改変はユーザー明示指示なしに行わない。
-5. **`main` への push/マージはユーザー明示指示まで保留**。
+1. **検証ゲートを必ず通す**:
+   - chezmoi 編集後 → `chezmoi diff` でソース⇔実体一致を確認してから commit
+   - Nix 編集後 → `nix flake check` ＋ `darwin-rebuild build`（非破壊）通過後に switch
+2. **`switch` は sudo パスワード入力が要るので、コマンドを提示してユーザーに実行させる**（このセッションからは sudo を直接呼ばない）。
+3. **生成パイプラインを再導入しない**。設定は静的ファイルとして表現する。
+4. **破壊的 git 操作を避ける**: `--force` push / 履歴改変 / `--amend`（push 済みコミットへ）はユーザー明示指示なしに禁止。
 
-## 既知の落とし穴
+## 既知の落とし穴（読まずに「修正」を試みない）
 
-- Determinate Nix と nix-darwin の二重管理回避のため `nix.enable = false`（host nix で設定済み）。
-- macOS の sudo は PATH を引き継がないため `sudo /run/current-system/sw/bin/darwin-rebuild ...` のようにフルパス指定が必要。
-- switch 直後の親シェルでは `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` が継承されて PATH 異常に見える false positive がある。検証は新ターミナル or `env -i HOME=$HOME /bin/zsh -l -c '...'` で行う。
-- nix-darwin `homebrew.onActivation.cleanup = "none"` を当面維持（"zap" にすると未宣言の既存 brew を消すので、Phase 4 で残全部を移行完了するまで保守的）。
-- brew 同梱 `mas 1.8.6` は macOS 15+ で `mas get/install` が壊れている。masApps 宣言は当面凍結。
+- `sudo darwin-rebuild` は PATH を引き継がないので **`sudo /run/current-system/sw/bin/darwin-rebuild ...`** とフルパス指定する。
+- Determinate Nix と二重管理しないため **`nix.enable = false`**（host nix に設定済）。`/etc/nix/nix.custom.conf` には触らない。
+- switch 直後の親シェルでは `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` を継承して PATH 異常に見える false positive がある。**検証は新ターミナル or `env -i HOME=$HOME /bin/zsh -l -c '...'`** で行う。
+- `homebrew.onActivation.cleanup = "none"` 据え置き。`"zap"` 化は Phase 4 残りを全部宣言化してからユーザー確認の上で。
+- brew 同梱 `mas 1.8.6` は macOS 15+ で `mas get/install` が壊れている。`homebrew.masApps` 宣言は当面凍結（Nix 側 mas 6.0.1 は動くが nix-darwin homebrew モジュールが brew の mas を呼ぶため迂回できない）。
+- `system.defaults` は **ByHost ドメイン（`-currentHost`）には書けない**。Display 配置や一部 Finder 詳細は activationScripts で `defaults -currentHost write` を使う以外手がない。
+- macOS の **TCC/sandbox で保護されたアプリ**（Mail / Safari / Calendar 等）の defaults は switch が成功しても無音で適用されない。AI は「修正」追加で深追いしない。
+- chezmoi run スクリプトは **`run_onchange_` 既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap でのみ使う。
+- 編集を許したい AI/ユーザー共有ファイル（例: `~/.claude/settings.json`）は home.file に直接書かず **`mkOutOfStoreSymlink`** で逃がす（直書きは Nix store immutable で AI 編集できなくなる）。
 
-## よく使うコマンド
+## よく使うコマンド（Claude が推測できないもの）
 
 ```sh
 # Nix 側（システム/パッケージ）
-nix flake check --no-build                           # eval だけ
-nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini    # 非破壊
-sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#tominoMac-mini  # 実適用
-sudo darwin-rebuild --rollback                       # 1世代戻す
+nix flake check --no-build                                                       # eval のみ
+nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini              # 非破壊ビルド
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#tominoMac-mini   # 実適用
+sudo /run/current-system/sw/bin/darwin-rebuild --rollback                        # 1世代戻す
 
 # chezmoi 側（手編集 dotfile）
-chezmoi diff                                         # ソース⇔実体
-chezmoi apply                                        # 適用
-chezmoi add <path>                                   # 実体を取り込み
+chezmoi diff                                                                     # ソース⇔実体（必ず apply 前に）
+chezmoi --source ./chezmoi execute-template < <file.tmpl>                        # tmpl レンダ検証（CI と同じ）
+chezmoi apply -v
+chezmoi add <path>                                                               # 実体取り込み（chezmoi/ 配下へ）
+
+# 1Password（secret 注入の前提として op signin 済を想定）
+op read "op://Vault/Item/field"
 ```
