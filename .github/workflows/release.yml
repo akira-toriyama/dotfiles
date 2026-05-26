@@ -1,0 +1,61 @@
+name: release
+
+# `git push origin vX.Y.Z` で発火し、tag annotation を Release notes として
+# GitHub Release を自動作成する。
+# 設計参考: akira-toriyama/facet の release ワークフロー(tag-driven)。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'タグ名(例: v0.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: create GitHub Release from tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # tag annotation の本文を読むため全履歴を取得
+          fetch-depth: 0
+
+      - name: 解決した tag 名
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: tag annotation を notes に展開
+        run: |
+          tag="${{ steps.tag.outputs.name }}"
+          # annotated tag なら本文を取得、lightweight tag なら commit message を fallback
+          notes=$(git tag -l "$tag" --format='%(contents)')
+          if [ -z "$notes" ]; then
+            notes=$(git log -1 --format=%B "$tag")
+          fi
+          printf '%s\n' "$notes" > /tmp/release_notes.txt
+          echo "--- notes ---"
+          cat /tmp/release_notes.txt
+
+      - name: 既存 Release があれば skip、無ければ作成
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.tag.outputs.name }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::notice::Release $tag は既に存在するため skip"
+            exit 0
+          fi
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes-file /tmp/release_notes.txt
