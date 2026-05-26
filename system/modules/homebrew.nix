@@ -18,12 +18,27 @@
 
     # nixpkgs に無いカスタム tap のツール
     taps = [
-      "felixkratz/formulae" # borders
+      "felixkratz/formulae"   # borders
+      "acsandmann/tap"        # rift
+      "jackielii/tap"         # skhd-zig
+      "akira-toriyama/tap"    # 自作ツール群(chord/facet/wand/ws-tabs)
     ];
 
     brews = [
-      # アクティブウィンドウ枠ハイライト（focusfx が依存）
-      "felixkratz/formulae/borders"
+      # === window/space 管理（active）===
+      "felixkratz/formulae/borders" # アクティブウィンドウ枠ハイライト（focusfx 依存）
+      "acsandmann/tap/rift"         # タイリング WM（~/.config/rift 設定あり）
+      "jackielii/tap/skhd-zig"      # ホットキーデーモン（~/.config/skhd 設定あり）
+
+      # === 自作ツール（akira-toriyama/tap, 全て /opt/homebrew/bin に install 済）===
+      "akira-toriyama/tap/chord"
+      "akira-toriyama/tap/facet"    # facet: 窓レイアウト管理 CLI
+      "akira-toriyama/tap/wand"
+      "akira-toriyama/tap/ws-tabs"
+
+      # 明示的に未宣言:
+      #   koekeishiya/formulae/yabai ← 不採用(rift に置換、inventory ❌)
+      #   koekeishiya/formulae/krp   ← 用途不明・active 指標なし。要判断
     ];
 
     casks = [
