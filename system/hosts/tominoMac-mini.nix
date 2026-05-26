@@ -1,4 +1,4 @@
-{ pkgs, username, ... }:
+{ pkgs, lib, username, ... }:
 
 {
   imports = [
@@ -9,6 +9,12 @@
   # 実パッケージ / cask / defaults は後続フェーズで投入する。
 
   nixpkgs.hostPlatform = "aarch64-darwin";
+
+  # unfree パッケージは個別ホワイトリスト方式で許可（allowUnfree=true 一括は付けない）
+  nixpkgs.config.allowUnfreePredicate = pkg:
+    builtins.elem (lib.getName pkg) [
+      "1password-cli"
+    ];
 
   # nix-darwin が管理する macOS ユーザー。home-manager の前提。
   users.users.${username} = {

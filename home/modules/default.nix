@@ -5,6 +5,7 @@
   # 後続フェーズで git.nix / packages.nix を追加していく。
   imports = [
     ./zsh.nix
+    ./packages.nix
   ];
 
   home.username = username;
