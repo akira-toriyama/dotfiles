@@ -86,10 +86,10 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 
 - [x] **CLI を `home.packages` へ**: op, gh, chezmoi, ghq, jq, mas（commit 5adc5ed/e26d65b）
 - [x] **cask を `nix-darwin homebrew.casks` へ**: 20本宣言済（残: `google-japanese-ime` は破棄方針で意図的に未宣言）
-- [x] **カスタム tap brew を `homebrew.brews`+`taps` へ**: borders / rift / skhd-zig / akira-toriyama/tap 自作4本（chord/facet/wand/ws-tabs）。未宣言: yabai(破棄方針) / krp(要判断)
+- [x] **カスタム tap 由来 brew は全 drop**（ユーザー方針: 新PC で WM スタック再構築。rift / skhd-zig / borders / yabai / krp / akira-toriyama 自作4本すべて未宣言、commit d8dd2d2）
+  - 波及: focusfx は borders 前提 → 新PC で no-op、chezmoi/dot_config/{rift, focusfx} は orphan ソースとして残置
 - [ ] ⏸ **mas を `homebrew.masApps` へ**: mas-cli 1.8.6 が macOS 15+ で破損（`mas get` unrecognized）。修正版/代替が出るまで凍結。新PC では当面手動 install
-- [~] **カスタム tap ツールを `homebrew.brews`+`taps` へ**: felixkratz/formulae/borders のみ宣言（rift/skhd-zig/krp/sleepwatcher 他は未宣言）
-- [ ] ⚠️ **要判断項目を決着**（asdf→nix/mise?, colima/docker, watchman 破棄, sleepwatcher 等）
+- [ ] ⚠️ **要判断項目を決着**（asdf→nix/mise?, colima/docker, watchman 破棄, sleepwatcher 等の残 formula leaves）
 - [x] **`nix-homebrew` 採用**: `autoMigrate=true` で既存 brew 吸収（commit 13f75ab）
 - [x] **VSCode 拡張**: `anthropic.claude-code` を chezmoi `run_onchange` で idempotent install
 
