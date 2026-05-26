@@ -46,10 +46,18 @@
       "raycast"             # ランチャー
       "font-hack-nerd-font" # プロンプト/ターミナル用 Nerd Font
 
-      # 未宣言（cleanup="none" で温存中、要ユーザー判断）:
-      #   google-japanese-ime ← 破棄方針(azookey に置き換え済) だが zap=enable 前に消さない
-      #   flashspace / linearmouse / omniwm / via — inventory 後追加。用途確認の上で追加
-      #   transmission / warp / zed — inventory 任意/要判断
+      # === inventory 後の追加分 / 任意・要判断分（現に導入済 → 新PC 再現で欠落しないよう宣言）===
+      # 不要と判明したものは1行消すだけで cleanup=zap 時に消える
+      "flashspace"          # Space 切替 UI
+      "linearmouse"         # マウス挙動カスタム（karabiner と棲み分け: 速度/加速）
+      "omniwm"              # WM（rift と併用中の可能性、用途要再確認）
+      "via"                 # キーボード(QMK/VIA) マッピング GUI
+      "transmission"        # BitTorrent
+      "warp"                # ターミナル（任意）
+      "zed"                 # エディタ（vscode と棲み分けの可能性）
+
+      # 明示的に未宣言（破棄方針）:
+      #   google-japanese-ime ← azookey に置換済。cleanup=zap 化で消える
     ];
 
     # ⚠️ masApps は一時的に空。
