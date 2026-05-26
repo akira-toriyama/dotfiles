@@ -57,7 +57,10 @@ jobs:
         run: sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#ci --show-trace
 
       - name: Verify CLI on PATH（home.packages 経由）
+        # GitHub Actions の step shell は login shell ではないので
+        # /etc/zshenv 経由の nix path がロードされない。明示的に追加する。
         run: |
+          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
           for c in docker docker-compose colima op gh chezmoi ghq jq mas; do
             path=$(which "$c" || true)
             if [ -n "$path" ]; then
@@ -76,7 +79,9 @@ jobs:
           done
 
       - name: chezmoi apply (dot_claude / VSCode 拡張 / 他)
-        run: chezmoi --source ./chezmoi apply --verbose
+        run: |
+          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
+          chezmoi --source ./chezmoi apply --verbose
 
   # シェルスクリプトの静的解析（install.sh のみ。.tmpl は chezmoi 構文が混ざるので除外）
   shellcheck:
