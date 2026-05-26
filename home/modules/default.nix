@@ -1,9 +1,11 @@
 { username, ... }:
 
 {
-  # home-manager ユーザー環境の集約点（フェーズ1: 最小）。
-  # 後続フェーズで zsh.nix / git.nix / packages.nix を imports する。
-  imports = [ ];
+  # home-manager ユーザー環境の集約点。
+  # 後続フェーズで git.nix / packages.nix を追加していく。
+  imports = [
+    ./zsh.nix
+  ];
 
   home.username = username;
   home.homeDirectory = "/Users/${username}";

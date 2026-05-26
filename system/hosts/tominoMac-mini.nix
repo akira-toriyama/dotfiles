@@ -23,4 +23,9 @@
 
   # nix-darwin の状態バージョン（移行の基準。安易に上げない）
   system.stateVersion = 6;
+
+  # システム zsh を nix-darwin 管理に。
+  # /etc/zshrc 等を nix-darwin が用意し、Nix/Homebrew のパスが
+  # ログインシェルでも通る（home-manager 側の zsh.nix が ~/.zshrc を生成）。
+  programs.zsh.enable = true;
 }

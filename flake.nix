@@ -35,6 +35,8 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = { inherit username; };
+            # 既存 ~/.* と衝突した場合は .hm-backup を付けて退避(初回 switch の安全網)
+            home-manager.backupFileExtension = "hm-backup";
             home-manager.users.${username} = import ./home/modules;
           }
 
