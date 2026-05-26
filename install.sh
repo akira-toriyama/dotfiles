@@ -1,15 +1,26 @@
 #!/bin/sh
-# 新 Mac を 1 コマンドで再現するブートストラップ。
+# 新 Mac の環境再現ブートストラップ。
 #
 #   sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/rebuild/install.sh)"
 #
-# 流れ: Xcode CLT → Homebrew → chezmoi → chezmoi init --apply
-#       → run_onchange_install-packages が brew bundle を実行（アプリ一括導入）
+# 流れ:
+#   1. Xcode Command Line Tools
+#   2. Determinate Nix インストール
+#   3. このリポジトリを ~/dotfiles へ clone
+#   4. (sudo) darwin-rebuild switch  ← brew/cask/mas/CLI/defaults を宣言通り一括適用
+#                                      (nix-homebrew が brew 本体も自動導入)
+#   5. (任意) 1Password.app をサインインし、op CLI 連携を有効化
+#   6. chezmoi apply  ← dot_claude/settings.json や VSCode 拡張 install など
+#
+# 詳細設計: docs/reproduction-architecture.md
 set -e
 
 GITHUB_USERNAME="akira-toriyama"
+BRANCH="rebuild"
+REPO_DIR="$HOME/dotfiles"
+FLAKE_HOST="default"  # ホスト別 darwinConfigurations へのエイリアス(flake.nix)
 
-# 1. Xcode Command Line Tools（git/cc に必要）
+# 1. Xcode Command Line Tools
 if ! xcode-select -p >/dev/null 2>&1; then
   echo "==> Xcode Command Line Tools をインストール"
   xcode-select --install || true
@@ -17,27 +28,38 @@ if ! xcode-select -p >/dev/null 2>&1; then
   exit 1
 fi
 
-# 2. Homebrew
-if ! command -v brew >/dev/null 2>&1; then
-  echo "==> Homebrew をインストール"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || /usr/local/bin/brew shellenv)"
-
-# 3. chezmoi
-if ! command -v chezmoi >/dev/null 2>&1; then
-  echo "==> chezmoi をインストール"
-  brew install chezmoi
+# 2. Nix (Determinate Systems インストーラ)
+if ! command -v nix >/dev/null 2>&1; then
+  echo "==> Nix を導入 (Determinate Systems)"
+  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+  echo "新しいシェルで再実行してください（Nix の PATH 反映のため）。" >&2
+  exit 1
 fi
 
-# 4. dotfiles 適用（差分プレビュー → 適用）。Brewfile の brew bundle は
-#    run_onchange_install-packages により apply 中に自動実行される。
-echo "==> chezmoi init（適用前に diff を確認）"
-chezmoi init "$GITHUB_USERNAME"
-chezmoi diff || true
-printf "上記差分を適用しますか? [y/N] "
-read -r ans
-case "$ans" in
-  [yY]*) chezmoi apply --verbose ;;
-  *) echo "中断しました。chezmoi apply で後から適用できます。" ;;
-esac
+# 3. リポジトリを clone
+if [ ! -d "$REPO_DIR/.git" ]; then
+  echo "==> $REPO_DIR に clone"
+  git clone -b "$BRANCH" "https://github.com/${GITHUB_USERNAME}/dotfiles.git" "$REPO_DIR"
+fi
+cd "$REPO_DIR"
+
+# 4. nix-darwin 適用（brew/cask/mas/CLI/defaults を一括導入）
+echo "==> darwin-rebuild switch（sudo パスワードを入力してください）"
+sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ".#${FLAKE_HOST}"
+
+# 5. 1Password 連携の案内（手動ステップ）
+cat <<'EOM'
+
+==> 1Password CLI を使う場合は次を行ってください（任意・secret 注入の前提）:
+    1. /Applications/1Password.app を起動してアカウントにサインイン
+    2. 設定 → Developer → 「Integrate with 1Password CLI」を有効化
+    3. ターミナルで `op whoami` で疎通確認
+
+EOM
+
+# 6. chezmoi で残りの手編集 dotfile を適用
+echo "==> chezmoi apply（dot_claude / run_onchange 各種）"
+chezmoi --source "$REPO_DIR/chezmoi" apply --verbose
+
+echo
+echo "✓ 完了。新しいターミナルを開いて環境が揃っていることを確認してください。"
