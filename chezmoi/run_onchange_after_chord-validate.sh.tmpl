@@ -1,5 +1,5 @@
 #!/bin/sh
-# chord config validation gate (旧 capsule-corp/host/chord/render.sh の責務を継承)。
+# chord config validation gate (旧 canon/host/chord/render.sh の責務を継承)。
 # chezmoi apply 後に走り、chord 在中時のみ実体ファイルを --validate する。
 # 失敗時 exit 1 で chezmoi apply の戻り値に validate 失敗が残る (CI/手元両対応)。
 # chord 未インストール環境 (fresh bootstrap / CI Linux) では何もせず exit 0。
