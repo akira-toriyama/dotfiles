@@ -1,0 +1,96 @@
+name: ci
+
+on:
+  push:
+    branches: [rebuild, main]
+  pull_request:
+    branches: [rebuild, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # nix の評価チェック。--no-build で darwin 固有のビルドはせず eval のみ。
+  # 実 build/switch は macOS 実機でしか保証できないため CI は型/eval だけ拾う。
+  nix-flake-check:
+    name: nix flake check (eval only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: nix flake check --no-build
+        run: nix flake check --no-build --show-trace
+
+  # シェルスクリプトの静的解析（install.sh のみ。.tmpl は chezmoi 構文が混ざるので除外）
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run shellcheck on install.sh
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+          additional_files: 'install.sh'
+          ignore_paths: 'chezmoi .git'
+
+  # 規約チェック: chezmoi 配下のスクリプトは executable_ 接頭辞を持つこと。
+  # 例外: run_* / .chezmoiscripts/ 配下 (chezmoi 自身が実行 = $HOME に展開しない)。
+  convention-executable-prefix:
+    name: convention / executable_ prefix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shebang scripts under chezmoi/ have executable_ prefix
+        run: |
+          set -e
+          violations=$(
+            find chezmoi -type f \
+              \( -name '*.sh' -o -name '*.py' -o -name '*.zsh' -o -name '*.bash' \) \
+              -not -path '*/.chezmoiscripts/*' \
+              -not -name 'run_*' \
+              | while IFS= read -r f; do
+                  if head -1 "$f" | grep -q '^#!' \
+                     && [[ "$(basename "$f")" != executable_* ]]; then
+                    echo "$f"
+                  fi
+                done
+          )
+          if [ -n "$violations" ]; then
+            echo "::error::shebang script under chezmoi/ without executable_ prefix:"
+            echo "$violations" | sed 's/^/  - /'
+            exit 1
+          fi
+          echo "✅ executable_ 規約 OK"
+
+  # chezmoi テンプレートのレンダリング検証（構文エラー早期検出）
+  chezmoi-templates:
+    name: chezmoi templates render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install chezmoi
+        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Render each .tmpl
+        run: |
+          set -e
+          failed=0
+          while IFS= read -r f; do
+            echo "::group::Render $f"
+            if ! chezmoi execute-template < "$f" >/dev/null; then
+              echo "::error file=$f::template render failed"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done < <(find . -path ./.git -prune -o -name '*.tmpl' -print | grep -v '^./.git/')
+          exit $failed
