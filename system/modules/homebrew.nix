@@ -38,6 +38,18 @@
       "the-unarchiver"      # 解凍
       "visual-studio-code"  # エディタ
       "vlc"                 # メディア
+
+      # === inventory「維持」確定組（追加）===
+      "karabiner-elements"  # 必須: マウス/キー再マップ(ist-mouse.json の本体)
+      "popclip"             # 必須: karabiner button6 → PopClip ルールが依存
+      "alt-tab"             # 維持候補: karabiner レイヤー設定が AltTab 前提
+      "raycast"             # ランチャー
+      "font-hack-nerd-font" # プロンプト/ターミナル用 Nerd Font
+
+      # 未宣言（cleanup="none" で温存中、要ユーザー判断）:
+      #   google-japanese-ime ← 破棄方針(azookey に置き換え済) だが zap=enable 前に消さない
+      #   flashspace / linearmouse / omniwm / via — inventory 後追加。用途確認の上で追加
+      #   transmission / warp / zed — inventory 任意/要判断
     ];
 
     # ⚠️ masApps は一時的に空。
