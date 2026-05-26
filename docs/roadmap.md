@@ -48,7 +48,7 @@
 
 - [x] `op` 導入方式を決定 → **Nix 化**（home.packages `_1password-cli`、unfree は個別ホワイトリスト）
 - [x] `gh`（GitHub CLI）も同じ home.packages へ（commit 5adc5ed）
-- [ ] `darwin-rebuild switch` 実行で op/gh が PATH に乗ることを確認（ユーザー手）
+- [x] `darwin-rebuild switch` で op 2.34.0 / gh 2.92.0 が `/etc/profiles/per-user/tommy/bin` に乗ることを確認（世代2 生成）
 - [ ] 1Password アカウント/ vault 構造を決定（**ユーザー外部作業**）
   - 推奨: `Private` vault に `GitHub PAT` / `SSH (新PC用)` 等のアイテムを置く
 - [ ] `op signin` でこの PC からアクセスできることを確認（ユーザー手）
