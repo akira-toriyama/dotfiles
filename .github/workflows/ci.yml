@@ -41,6 +41,43 @@ jobs:
       - name: nix-darwin build (default host alias)
         run: nix run nix-darwin/master#darwin-rebuild -- build --flake .#default --show-trace
 
+  # 実 switch によるスモークテスト。新PCで install.sh を回した時の挙動を
+  # macos-latest runner で再現する(masApps だけ App Store サインイン不要のため空)。
+  # runner は ephemeral なので副作用 OK。
+  darwin-switch-smoke:
+    name: darwin-rebuild switch smoke (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: darwin-rebuild switch (CI variant, masApps 空)
+        run: sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#ci --show-trace
+
+      - name: Verify CLI on PATH（home.packages 経由）
+        run: |
+          for c in docker docker-compose colima op gh chezmoi ghq jq mas; do
+            path=$(which "$c" || true)
+            if [ -n "$path" ]; then
+              echo "  ✓ $c -> $path"
+            else
+              echo "  ✗ $c (not found)"; exit 1
+            fi
+          done
+
+      - name: Verify casks installed
+        run: |
+          brew list --cask | sort > /tmp/installed_casks.txt
+          cat /tmp/installed_casks.txt
+          for c in 1password appcleaner azookey fsnotes google-chrome the-unarchiver visual-studio-code vlc popclip alt-tab raycast font-hack-nerd-font flashspace linearmouse omniwm via transmission warp zed; do
+            grep -qx "$c" /tmp/installed_casks.txt && echo "  ✓ $c" || { echo "  ✗ $c"; exit 1; }
+          done
+
+      - name: chezmoi apply (dot_claude / VSCode 拡張 / 他)
+        run: chezmoi --source ./chezmoi apply --verbose
+
   # シェルスクリプトの静的解析（install.sh のみ。.tmpl は chezmoi 構文が混ざるので除外）
   shellcheck:
     name: shellcheck
