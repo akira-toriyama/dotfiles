@@ -43,24 +43,24 @@
       "vlc"                 # メディア
 
       # === inventory「維持」確定組（追加）===
-      "karabiner-elements"  # 必須: マウス/キー再マップ(ist-mouse.json の本体)
-      "popclip"             # 必須: karabiner button6 → PopClip ルールが依存
-      "alt-tab"             # 維持候補: karabiner レイヤー設定が AltTab 前提
+      "popclip"             # テキスト操作（単体で標準動作、karabiner 連携は廃止）
+      "alt-tab"             # Cmd-Tab 強化（単体動作、karabiner 連携は廃止）
       "raycast"             # ランチャー
       "font-hack-nerd-font" # プロンプト/ターミナル用 Nerd Font
 
       # === inventory 後の追加分 / 任意・要判断分（現に導入済 → 新PC 再現で欠落しないよう宣言）===
       # 不要と判明したものは1行消すだけで cleanup=zap 時に消える
       "flashspace"          # Space 切替 UI
-      "linearmouse"         # マウス挙動カスタム（karabiner と棲み分け: 速度/加速）
-      "omniwm"              # WM（rift と併用中の可能性、用途要再確認）
+      "linearmouse"         # マウス挙動カスタム（速度/加速）
+      "omniwm"              # WM（用途要再確認）
       "via"                 # キーボード(QMK/VIA) マッピング GUI
       "transmission"        # BitTorrent
       "warp"                # ターミナル（任意）
       "zed"                 # エディタ（vscode と棲み分けの可能性）
 
       # 明示的に未宣言（破棄方針）:
-      #   google-japanese-ime ← azookey に置換済。cleanup=zap 化で消える
+      #   google-japanese-ime  ← azookey に置換済。cleanup=zap 化で消える
+      #   karabiner-elements   ← 新PC では使わない方針(設定 chezmoi/dot_config/karabiner も削除)
     ];
 
     # mas 7.0.0 で macOS 15+ の "Unrecognized command: 'get'" バグが解消
