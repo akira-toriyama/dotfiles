@@ -12,14 +12,17 @@ name: Verify chord config (strict)
 # Homebrew tap: akira-toriyama/homebrew-tap の Formula/chord.rb から install。
 # Swift 6 toolchain 必須のため runs-on は macos-15 を明示（chord 本家 CI と同じ）。
 on:
+  # chord ソースは rebuild にしか存在しないため main は除外。
+  # 過去 main に登録目的で workflow YAML を push した際 paths 自己トリガで
+  # main 上に存在しないソースを読みに行って失敗した経緯 (098c801)。
   push:
-    branches: [rebuild, main]
+    branches: [rebuild]
     paths:
       - chezmoi/dot_config/chord/private_config.toml.tmpl
       - chezmoi/run_onchange_after_chord-validate.sh.tmpl
       - .github/workflows/verify-chord-validate.yml
   pull_request:
-    branches: [rebuild, main]
+    branches: [rebuild]
     paths:
       - chezmoi/dot_config/chord/private_config.toml.tmpl
       - chezmoi/run_onchange_after_chord-validate.sh.tmpl
