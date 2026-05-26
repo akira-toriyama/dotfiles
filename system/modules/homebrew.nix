@@ -16,30 +16,18 @@
       cleanup = "none";   # 未宣言の既存 brew/cask を消さない（フェーズ4 まで温存）
     };
 
-    # nixpkgs に無いカスタム tap のツール
-    taps = [
-      "felixkratz/formulae"   # borders
-      "acsandmann/tap"        # rift
-      "jackielii/tap"         # skhd-zig
-      "akira-toriyama/tap"    # 自作ツール群(chord/facet/wand/ws-tabs)
-    ];
-
-    brews = [
-      # === window/space 管理（active）===
-      "felixkratz/formulae/borders" # アクティブウィンドウ枠ハイライト（focusfx 依存）
-      "acsandmann/tap/rift"         # タイリング WM（~/.config/rift 設定あり）
-      "jackielii/tap/skhd-zig"      # ホットキーデーモン（~/.config/skhd 設定あり）
-
-      # === 自作ツール（akira-toriyama/tap, 全て /opt/homebrew/bin に install 済）===
-      "akira-toriyama/tap/chord"
-      "akira-toriyama/tap/facet"    # facet: 窓レイアウト管理 CLI
-      "akira-toriyama/tap/wand"
-      "akira-toriyama/tap/ws-tabs"
-
-      # 明示的に未宣言:
-      #   koekeishiya/formulae/yabai ← 不採用(rift に置換、inventory ❌)
-      #   koekeishiya/formulae/krp   ← 用途不明・active 指標なし。要判断
-    ];
+    # === カスタム tap 由来 brew は全 drop（ユーザー方針: 新PC で WM スタック再考）===
+    # 新PC に持ち越さない:
+    #   acsandmann/tap/rift, jackielii/tap/skhd-zig,
+    #   felixkratz/formulae/borders, koekeishiya/formulae/{yabai,krp},
+    #   akira-toriyama/tap/{chord,facet,wand,ws-tabs}
+    # 本機の既存 brew は cleanup="none" で温存中（即アンインストールしない）。
+    #
+    # 波及: focusfx は borders 前提なので新PC では空動作になる。
+    # chezmoi/dot_config/{rift, focusfx, ...} は残置だが新PC で消費先なし
+    # （別途掃除するか、WM 再決定後に整理）。
+    taps = [ ];
+    brews = [ ];
 
     casks = [
       # 1Password 8 デスクトップ。SSH エージェント / op CLI 連携の前提

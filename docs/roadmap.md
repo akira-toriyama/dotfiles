@@ -85,7 +85,8 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 ## フェーズ 4: パッケージの Nix 化
 
 - [x] **CLI を `home.packages` へ**: op, gh, chezmoi, ghq, jq, mas（commit 5adc5ed/e26d65b）
-- [~] **cask を `nix-darwin homebrew.casks` へ**: 1password, appcleaner, azookey, fsnotes, google-chrome, the-unarchiver, visual-studio-code, vlc, karabiner-elements, popclip, alt-tab, raycast, font-hack-nerd-font (13本)。残: google-japanese-ime(破棄方針) / flashspace / linearmouse / omniwm / via / transmission / warp / zed は要判断で温存中
+- [x] **cask を `nix-darwin homebrew.casks` へ**: 20本宣言済（残: `google-japanese-ime` は破棄方針で意図的に未宣言）
+- [x] **カスタム tap brew を `homebrew.brews`+`taps` へ**: borders / rift / skhd-zig / akira-toriyama/tap 自作4本（chord/facet/wand/ws-tabs）。未宣言: yabai(破棄方針) / krp(要判断)
 - [ ] ⏸ **mas を `homebrew.masApps` へ**: mas-cli 1.8.6 が macOS 15+ で破損（`mas get` unrecognized）。修正版/代替が出るまで凍結。新PC では当面手動 install
 - [~] **カスタム tap ツールを `homebrew.brews`+`taps` へ**: felixkratz/formulae/borders のみ宣言（rift/skhd-zig/krp/sleepwatcher 他は未宣言）
 - [ ] ⚠️ **要判断項目を決着**（asdf→nix/mise?, colima/docker, watchman 破棄, sleepwatcher 等）
