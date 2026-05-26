@@ -44,13 +44,28 @@
 
 ## フェーズ 2: シークレット基盤（1Password）
 
-- [ ] `op`（1Password CLI）導入方法を決定（cask か nix か）
-- [ ] 1Password に SSH 鍵 / PAT を格納し vault 構成を決める
-- [ ] `chezmoi/private_dot_ssh/private_id_*.tmpl` を `onepasswordRead` で試作
-- [ ] `known_hosts` は非秘密として平文 chezmoi 管理に
-- [ ] ⚠️ 既存 `~/.ssh/*.pem`（平文）の棚卸し: 不要鍵は破棄、必要分のみ 1Password へ
+**方針確定**: SSH 鍵は**移植せず新PCで新規発行**する。フェーズ2 は op CLI + GitHub CLI の宣言導入と新PCワークフローの確立に絞る（既存 `~/.ssh/*.pem` は Udemy サンプルで dotfiles 責務外、放置）。
 
-**検証ゲート**: `chezmoi apply` で SSH 鍵が 0600 で正しく生成され、`ssh -T` 等で疎通
+- [x] `op` 導入方式を決定 → **Nix 化**（home.packages `_1password-cli`、unfree は個別ホワイトリスト）
+- [x] `gh`（GitHub CLI）も同じ home.packages へ（commit 5adc5ed）
+- [ ] `darwin-rebuild switch` 実行で op/gh が PATH に乗ることを確認（ユーザー手）
+- [ ] 1Password アカウント/ vault 構造を決定（**ユーザー外部作業**）
+  - 推奨: `Private` vault に `GitHub PAT` / `SSH (新PC用)` 等のアイテムを置く
+- [ ] `op signin` でこの PC からアクセスできることを確認（ユーザー手）
+
+**新PCワークフロー（このフェーズで確立する手順）**
+
+```
+1. install.sh で flake が走り op + gh が入る
+2. ユーザーが 1Password 8 アプリにログイン → op の biometric/desktop 連携を有効化
+3. ssh-keygen で新規鍵生成 → 1Password に保存（Item 名は決め打ち）
+4. gh auth login --with-token <<< "$(op read 'op://Private/GitHub PAT/credential')"
+5. ~/.ssh/config は chezmoi で配布（鍵ファイル本体は新規発行物・gitignore 対象）
+```
+
+PAT/トークン等で chezmoi テンプレが要るようになったら `chezmoi/private_*.tmpl` + `onepasswordRead` を都度追加（雛形は新PC で実鍵生成時に作る）。
+
+**検証ゲート**: 新規シェルで `op --version` / `gh --version` 解決。op signin 成功（ユーザー作業後）
 
 ---
 
