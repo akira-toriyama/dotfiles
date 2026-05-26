@@ -40,9 +40,12 @@
       "vlc"                 # メディア
     ];
 
-    masApps = {
-      # 表示名 = App Store ID
-      "EdgeView 3" = 1580323719; # 画像ビューア（新版、旧 EdgeView 2 は不採用）
-    };
+    # ⚠️ masApps は一時的に空。
+    # brew 同梱の mas 1.8.6 が macOS 15+ で `mas get/install` を動かせず
+    # (Unrecognized command: 'get')、宣言すると brew bundle が失敗する。
+    # 既知の mas-cli 上流バグ。修正版 or 代替が出るまでコメントアウト。
+    # 新PC では下記アプリを手動で App Store からインストールする:
+    #   - EdgeView 3 (id=1580323719) 画像ビューア
+    masApps = { };
   };
 }
