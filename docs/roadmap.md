@@ -113,8 +113,10 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 - [ ] 使い捨て VM / 予備機で設計 §3 のブートストラップを通しで実行
 - [ ] 差分（手作業で直した箇所）を洗い出し、該当フェーズへ反映
 - [ ] 旧 `dot_Brewfile` / `run_onchange_install-packages` を削除（役目消滅を確認後）
-- [ ] CI 導入（`.github`: `nix flake check` + `shellcheck` + `chezmoi verify`）
+- [x] CI 導入（`.github/workflows/ci.yml`、4ジョブ全グリーン）
+  - `nix flake check --no-build`（型/eval）/ `shellcheck`（install.sh）/ 規約検知（`executable_` 接頭辞 grep）/ `chezmoi execute-template` レンダ
   - ⚠️ macOS cask/defaults は Linux CI で完全検証不可。CI は部分保証、本命は実機テスト
+- [x] 規約は [CLAUDE.md](../CLAUDE.md) + CI に集約し、README から重複削除
 
 **検証ゲート（=最終ゴール）**: クリーン環境で `clone → bootstrap` のみで同等環境が再現できる
 
