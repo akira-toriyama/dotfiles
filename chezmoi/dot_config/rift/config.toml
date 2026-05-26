@@ -106,6 +106,14 @@ workspace_rules = [
   { workspace = 3, layout = "master_stack" },
 ]
 
+# タイル管理に向かないアプリはフロート扱い。
+# 既に開いている窓には遡及しないので、初回は Alt+Shift+Space で手動フロート化
+# するか開き直しで反映する。app_id はバンドルID完全一致（言語UIに依らず同一）。
+app_rules = [
+  # システム設定（macOS 13+ 名称変更後もバンドルIDは com.apple.systempreferences のまま）
+  { app_id = "com.apple.systempreferences", floating = true },
+]
+
 # 再利用する修飾キー組み合わせ。"comb1 + H" = { ... } で参照。
 [modifier_combinations]
 comb1 = "Alt + Shift"   # 掴んで動かす（move_node）

@@ -16,9 +16,33 @@
       cleanup = "none";   # 未宣言の既存 brew/cask を消さない（フェーズ4 まで温存）
     };
 
+    # nixpkgs に無いカスタム tap のツール
+    taps = [
+      "felixkratz/formulae" # borders
+    ];
+
+    brews = [
+      # アクティブウィンドウ枠ハイライト（focusfx が依存）
+      "felixkratz/formulae/borders"
+    ];
+
     casks = [
       # 1Password 8 デスクトップ。SSH エージェント / op CLI 連携の前提
       "1password"
+
+      # 常用 GUI（ユーザー選択）
+      "appcleaner"          # アンインストーラ
+      "azookey"             # 日本語 IME（google-japanese-ime の置き換え先）
+      "fsnotes"             # ノート
+      "google-chrome"       # ブラウザ
+      "the-unarchiver"      # 解凍
+      "visual-studio-code"  # エディタ
+      "vlc"                 # メディア
     ];
+
+    masApps = {
+      # 表示名 = App Store ID
+      "EdgeView 3" = 1580323719; # 画像ビューア（新版、旧 EdgeView 2 は不採用）
+    };
   };
 }
