@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   # nix の評価チェック。--no-build で darwin 固有のビルドはせず eval のみ。
-  # 実 build/switch は macOS 実機でしか保証できないため CI は型/eval だけ拾う。
+  # Linux runner で十分速く取れる構造検証。
   nix-flake-check:
     name: nix flake check (eval only)
     runs-on: ubuntu-latest
@@ -25,6 +25,21 @@ jobs:
 
       - name: nix flake check --no-build
         run: nix flake check --no-build --show-trace
+
+  # macOS 実機相当(arm64)で darwin-rebuild build を回し、Determinate Nix 環境で
+  # flake が活性化可能かを End-to-end に近い形で証明する。
+  # switch はしない(非破壊)。本機の動作は影響を受けない。
+  darwin-build:
+    name: darwin-rebuild build (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: nix-darwin build (default host alias)
+        run: nix run nix-darwin/master#darwin-rebuild -- build --flake .#default --show-trace
 
   # シェルスクリプトの静的解析（install.sh のみ。.tmpl は chezmoi 構文が混ざるので除外）
   shellcheck:
