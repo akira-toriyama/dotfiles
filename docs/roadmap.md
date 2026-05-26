@@ -88,7 +88,7 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 - [x] **cask を `nix-darwin homebrew.casks` へ**: 20本宣言済（残: `google-japanese-ime` は破棄方針で意図的に未宣言）
 - [x] **カスタム tap 由来 brew は全 drop**（ユーザー方針: 新PC で WM スタック再構築。rift / skhd-zig / borders / yabai / krp / akira-toriyama 自作4本すべて未宣言、commit d8dd2d2）
   - 波及: focusfx は borders 前提 → 新PC で no-op、chezmoi/dot_config/{rift, focusfx} は orphan ソースとして残置
-- [ ] ⏸ **mas を `homebrew.masApps` へ**: mas-cli 1.8.6 が macOS 15+ で破損（`mas get` unrecognized）。修正版/代替が出るまで凍結。新PC では当面手動 install
+- [x] **mas を `homebrew.masApps` へ**: `brew upgrade mas` で 1.8.6 → 7.0.0 化により macOS 15+ の破損が解消。EdgeView 3 (id=1580323719) を declare 復活、switch で正常動作確認（21 deps complete）
 - [x] **要判断項目を決着**: docker stack(docker/docker-compose/colima)のみ Nix 化保持、残 formula leaves(act/asdf/cliclick/cmake/ninja/gperf/direnv/f2/gifski/git-cliff/node/pipx/shellcheck/sleepwatcher/watchman/yt-dlp/trash/yabai 18本)は全 drop(新PC で install されない)
 - [x] **`nix-homebrew` 採用**: `autoMigrate=true` で既存 brew 吸収（commit 13f75ab）
 - [x] **VSCode 拡張**: `anthropic.claude-code` を chezmoi `run_onchange` で idempotent install
