@@ -40,8 +40,16 @@ done
 # export GITHUB_TOKEN=$(gh auth token) のように事前に投入する想定。
 if [ -n "${GITHUB_TOKEN:-}" ]; then
   echo "==> nix に GITHUB_TOKEN を渡す (api.github.com rate limit 回避)"
+  # POSIX sh 互換のため $'\n' (bash 拡張) は使わずヒアドキュメントで実改行を取る。
   NIX_CONFIG_EXTRA="access-tokens = github.com=$GITHUB_TOKEN"
-  export NIX_CONFIG="${NIX_CONFIG:-}${NIX_CONFIG:+$'\n'}$NIX_CONFIG_EXTRA"
+  if [ -n "${NIX_CONFIG:-}" ]; then
+    # 既存 NIX_CONFIG があれば改行区切りで追加
+    NIX_CONFIG="${NIX_CONFIG}
+${NIX_CONFIG_EXTRA}"
+  else
+    NIX_CONFIG="${NIX_CONFIG_EXTRA}"
+  fi
+  export NIX_CONFIG
 fi
 
 # 1. Xcode Command Line Tools

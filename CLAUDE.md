@@ -30,8 +30,8 @@
 
 ## GitHub / CI
 
-- **作業ブランチは `rebuild` 一本**。**`main` には絶対にコミット/マージしない**（ユーザー明示指示まで）。
-- **コミットは論理単位ごとに即 push**（`git push origin rebuild`、auto-push 方針）。
+- **作業ブランチは `main` 一本** (2026-05-27 に `rebuild` を統合・削除。CI も main 単発)。
+- **コミットは論理単位ごとに即 push**（`git push origin main`、auto-push 方針）。
 - **コミットメッセージは gitmoji + Conventional Commits**: `:sparkles: feat(nix): ...` / `:memo: docs(roadmap): ...` / `:fire: fix(...): ...`。`git log -n 20` でスタイルを確認してから書く。
 - **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）

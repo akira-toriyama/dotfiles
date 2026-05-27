@@ -7,14 +7,14 @@ on:
   # 過去 main に登録目的で workflow YAML を push した際 paths 自己トリガで
   # main 上に存在しないソースを読みに行って失敗した経緯 (098c801)。
   push:
-    branches: [rebuild]
+    branches: [main]
     paths:
       - chezmoi/dot_config/chord/private_config.toml.tmpl
       - docs/chord.md
       - scripts/gen-chord-doc.py
       - .github/workflows/verify-chord-doc.yml
   pull_request:
-    branches: [rebuild]
+    branches: [main]
     paths:
       - chezmoi/dot_config/chord/private_config.toml.tmpl
       - docs/chord.md
