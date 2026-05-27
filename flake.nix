@@ -20,12 +20,28 @@
   outputs =
     { self, nixpkgs, nix-darwin, home-manager, nix-homebrew }:
     let
-      # ホスト識別子は LocalHostName を使用（ASCII 安全）。
-      # ComputerName ("tommyのMac mini") は日本語を含み Nix 属性名に不適。
+      # 既知の実機ホスト識別子 (LocalHostName 由来、ASCII 安全)。
+      # tommy の現用 Mac mini。新 PC では .#default 経由で動的に user を解決する。
       hostname = "tominoMac-mini";
 
+      # `darwinConfigurations.default` 用に実行時の user 名を決定する。
+      # 優先順:
+      #   1. FLAKE_USER 環境変数 (会社 PC 等で明示指定したい場合)
+      #   2. USER 環境変数 (通常はこれで OK、新 PC でも自動追従)
+      #   3. フォールバック "tommy" (env 無し時の互換、評価エラー回避)
+      # ※ getEnv 利用のため `--impure` フラグが必須。install.sh で付与する。
+      detectUser =
+        let
+          fromFlakeUser = builtins.getEnv "FLAKE_USER";
+          fromUser = builtins.getEnv "USER";
+        in
+        if fromFlakeUser != "" then fromFlakeUser
+        else if fromUser != "" then fromUser
+        else "tommy";
+
       # 1ホスト分の darwinSystem を組み立てる共通工場。
-      # ci variant では user が "runner" になり、host module で masApps を空にする等の上書きを足す。
+      # username が specialArgs に注入され、host module で users.users.${username} と
+      # system.primaryUser を構成する。
       mkDarwin = { username, hostModule, extraModules ? [ ] }:
         nix-darwin.lib.darwinSystem {
           modules = [
@@ -54,44 +70,29 @@
         };
     in
     {
-      # 通常ホスト（実機）
+      # 既知の実機 (tommy の Mac mini)。明示的に host 名を指す場合用。
       darwinConfigurations.${hostname} = mkDarwin {
         username = "tommy";
         hostModule = ./system/hosts/${hostname}.nix;
       };
 
-      # 利便用エイリアス（install.sh から `--flake .#default` で参照）
-      darwinConfigurations.default = self.darwinConfigurations.${hostname};
+      # 新 PC ブートストラップ用: install.sh が `--flake .#default --impure` で呼ぶ。
+      # username は detectUser (FLAKE_USER → USER → "tommy") で実行時解決するため、
+      # 任意ユーザー名の Mac (= tommy 以外の新 PC や会社 PC) でもそのまま動く。
+      # 既存 tommy の Mac でも `USER=tommy` なので同じ結果になり、後方互換あり。
+      darwinConfigurations.default = mkDarwin {
+        username = detectUser;
+        hostModule = ./system/hosts/generic.nix;
+      };
 
       # CI 用: GitHub Actions の macos-latest runner で switch をスモークテストする。
       # 違い:
-      #   - username = "runner" (runner ホスト OS のユーザー)
-      #   - host module は ci.nix (アーキ等は共有、user 名のみ差し替え)
+      #   - username = "runner" (runner ホスト OS のユーザー、env に依存させない)
       #   - masApps は空 (App Store サインインができない CI で落ちないように)
+      #   - autoUpdate=true (runner image の brew メタデータが古い可能性への対策)
       darwinConfigurations.ci = mkDarwin {
         username = "runner";
-        hostModule = ./system/hosts/ci.nix;
-        extraModules = [
-          ({ lib, ... }: {
-            # CI では App Store サインインができないので masApps を空に
-            homebrew.masApps = lib.mkForce { };
-            # CI runner の brew メタデータは古い可能性があるので毎回 update
-            # (実機の通常 switch には影響なし)
-            homebrew.onActivation.autoUpdate = lib.mkForce true;
-          })
-        ];
-      };
-
-      # Tart VM 用: 手元の cirruslabs/macos-sequoia-base イメージで
-      # `install.sh` を新 Mac 再現テストする (roadmap Phase 6 ゴール判定)。
-      # 違い:
-      #   - username = "admin" (cirruslabs base image の既定ユーザー)
-      #   - host module は ci.nix を再利用 (ci variant とほぼ同条件)
-      #   - masApps 空 + autoUpdate 強制 (CI と同じ理由)
-      # 使い方: VM 内で `FLAKE_HOST=tart ./install.sh`
-      darwinConfigurations.tart = mkDarwin {
-        username = "admin";
-        hostModule = ./system/hosts/ci.nix;
+        hostModule = ./system/hosts/generic.nix;
         extraModules = [
           ({ lib, ... }: {
             homebrew.masApps = lib.mkForce { };

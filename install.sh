@@ -68,8 +68,11 @@ fi
 cd "$REPO_DIR"
 
 # 4. nix-darwin 適用（brew/cask/mas/CLI/defaults を一括導入）
-echo "==> darwin-rebuild switch (--flake .#${FLAKE_HOST})"
-sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ".#${FLAKE_HOST}"
+# --impure: flake.nix の detectUser が $USER (or $FLAKE_USER) を builtins.getEnv で
+#           読むので必須。sudo 越しに USER/FLAKE_USER を伝搬する。
+echo "==> darwin-rebuild switch (--flake .#${FLAKE_HOST}, user=${FLAKE_USER:-$USER})"
+sudo USER="$USER" FLAKE_USER="${FLAKE_USER:-}" \
+  nix run nix-darwin/master#darwin-rebuild -- switch --flake ".#${FLAKE_HOST}" --impure
 
 # 5. 1Password 連携の案内（手動ステップ・対話モードのみ表示）
 if [ "$NON_INTERACTIVE" != "1" ]; then
