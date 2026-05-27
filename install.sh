@@ -81,7 +81,25 @@ sudo USER="$USER" FLAKE_USER="${FLAKE_USER:-}" \
 darwin_rc=$?
 set -e
 if [ $darwin_rc -ne 0 ]; then
-  echo "⚠ darwin-rebuild switch exit code $darwin_rc (cask DL 失敗等。chezmoi apply は続行する)" >&2
+  echo "⚠ darwin-rebuild switch exit code $darwin_rc (cask DL 失敗等)" >&2
+
+  # nix-darwin の brew bundle は "fetch all → install all" のバルク mode で動き、
+  # 1 件でも fetch 失敗があると install phase 全体を skip するため、Caskroom
+  # に何も配置されない致命的な状況になる (新 PC Tart VM 検証で再現)。
+  # `brew bundle` を直接実行すると sequential mode (per-cask fetch → install)
+  # で動き、失敗 cask のみ skip して他は全部 install される。
+  # nix-darwin が生成した Brewfile を /nix/store/*-Brewfile から拾って再試行。
+  BREWFILE=$(/usr/bin/find /nix/store -maxdepth 1 -name '*-Brewfile' -print 2>/dev/null | head -1)
+  if [ -n "$BREWFILE" ] && [ -x /opt/homebrew/bin/brew ]; then
+    echo "==> brew bundle retry (sequential mode、部分 install 救済): $BREWFILE" >&2
+    set +e
+    /opt/homebrew/bin/brew bundle --file="$BREWFILE" --no-upgrade
+    bundle_rc=$?
+    set -e
+    [ $bundle_rc -ne 0 ] && echo "⚠ brew bundle retry exit $bundle_rc (cask 個別失敗が残存。/Applications を確認)" >&2
+  fi
+
+  echo "==> chezmoi apply は続行する" >&2
 fi
 
 # 5. 1Password 連携の案内（手動ステップ・対話モードのみ表示）
