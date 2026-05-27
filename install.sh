@@ -83,20 +83,25 @@ set -e
 if [ $darwin_rc -ne 0 ]; then
   echo "⚠ darwin-rebuild switch exit code $darwin_rc (cask DL 失敗等)" >&2
 
-  # nix-darwin の brew bundle は "fetch all → install all" のバルク mode で動き、
-  # 1 件でも fetch 失敗があると install phase 全体を skip するため、Caskroom
-  # に何も配置されない致命的な状況になる (新 PC Tart VM 検証で再現)。
-  # `brew bundle` を直接実行すると sequential mode (per-cask fetch → install)
-  # で動き、失敗 cask のみ skip して他は全部 install される。
-  # nix-darwin が生成した Brewfile を /nix/store/*-Brewfile から拾って再試行。
+  # nix-darwin の brew bundle は "fetch all → install all" 設計で、cask が
+  # 1 件でも fetch 失敗すると install phase 全体を skip → Caskroom に何も
+  # 配置されない致命傷 (新 PC Tart VM 検証で再現、brew 5.1.11 挙動)。
+  # brew bundle 直接呼びも同じ。partial install option も無い。
+  # フォールバック: Brewfile を parse して per-cask `brew install --cask` を
+  # 逐次実行。失敗した cask 1 件のみ skip され他は全 install される。
   BREWFILE=$(/usr/bin/find /nix/store -maxdepth 1 -name '*-Brewfile' -print 2>/dev/null | head -1)
   if [ -n "$BREWFILE" ] && [ -x /opt/homebrew/bin/brew ]; then
-    echo "==> brew bundle retry (sequential mode、部分 install 救済): $BREWFILE" >&2
-    set +e
-    /opt/homebrew/bin/brew bundle --file="$BREWFILE" --no-upgrade
-    bundle_rc=$?
-    set -e
-    [ $bundle_rc -ne 0 ] && echo "⚠ brew bundle retry exit $bundle_rc (cask 個別失敗が残存。/Applications を確認)" >&2
+    echo "==> per-cask install フォールバック (Brewfile: $BREWFILE)" >&2
+    failed_casks=""
+    # Brewfile から `cask "name"` 行を抽出して逐次 install
+    /usr/bin/grep '^cask "' "$BREWFILE" | /usr/bin/sed 's/cask "\([^"]*\)".*/\1/' | while IFS= read -r cask; do
+      [ -z "$cask" ] && continue
+      if /opt/homebrew/bin/brew install --cask "$cask" >/dev/null 2>&1; then
+        echo "  ✓ $cask" >&2
+      else
+        echo "  ✘ $cask 失敗 (続行)" >&2
+      fi
+    done
   fi
 
   echo "==> chezmoi apply は続行する" >&2
