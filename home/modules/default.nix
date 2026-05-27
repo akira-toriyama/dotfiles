@@ -6,6 +6,7 @@
   imports = [
     ./zsh.nix
     ./packages.nix
+    ./mise.nix
   ];
 
   home.username = username;
