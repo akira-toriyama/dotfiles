@@ -108,3 +108,6 @@ thumbnail-refresh-seconds = 4
 #
 # Unknown values clamp to "anchor".
 hide_method = "anchor"
+
+[tree]
+preview_mode = "mirror"
