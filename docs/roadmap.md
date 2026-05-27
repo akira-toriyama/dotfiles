@@ -161,16 +161,16 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
   - 論点: per-project ランタイム切替が本当に要るか。要るなら nix 一貫性 vs mise の手軽さの trade-off
   - 必要情報: 現在 asdf でどのランタイムを切替えていたか (`.tool-versions` の grep)、頻度
 
-- [ ] **just (タスクランナー) 導入可否**
-  - 現状: 未導入。タスクは `~/dotfiles` 内のシェルスクリプト or `darwin-rebuild` 直叩き
-  - 選択肢: (a) just 導入で `justfile` にプロジェクト操作集約、(b) GNU make で代替、(c) シェルスクリプト + `scripts/` 階層のまま
-  - 論点: dotfiles に頻繁な定型タスク (build / apply / cleanup 等) が育つなら just が便利。育たないなら yagni
-  - 必要情報: 現状の「定型作業」リスト (e.g., 検証時の `chezmoi diff` → `darwin-rebuild build` の連続実行頻度)
+- [x] **just (タスクランナー) 導入可否** → **現状維持で確定クローズ** (2026-05-27)
+  - 判定: `scripts/` 配下は `gen-chord-doc.py` 1 本のみ。`justfile` を埋める材料が無い = YAGNI
+  - 再検討トリガ: 定型タスクが **3 個以上**育ったら再考 (例: `just rebuild` / `just diff` / `just doc-gen`)。
+    あるいは mise 採用後に `mise.toml` の `[tasks]` で吸収しきれない複雑タスクが出てきた場合
 
-- [ ] **nix 側シークレット方式 (sops-nix / agenix)**
-  - 現状: secret は **chezmoi + 1Password (`onepasswordRead`)** で apply 時注入。nix 側に secret を embed する場面は未発生
-  - 選択肢: (a) **sops-nix** (Mozilla SOPS、age/gpg、Nix flake input として組み込み)、(b) **agenix** (Nix native、age key ベース、よりシンプル)、(c) 現状維持 (chezmoi + 1Password で十分)
-  - 論点: nix-darwin の `system.activationScripts` 内や home-manager の `home.file.*.text` に secret を入れたい状況が出てきた時のみ必要。現時点では未発生
-  - 必要情報: nix 側に secret を embed したい具体ユースケース (思い当たらなければ「現状維持」確定でクローズ可)
+- [x] **nix 側シークレット方式 (sops-nix / agenix)** → **現状維持で確定クローズ** (2026-05-27)
+  - 判定: 現行 secret は (a) `gh` 等の CLI token は **1Password CLI で runtime 取得**、(b) chord 等 user-space
+    設定は **chezmoi + `onepasswordRead`** で apply 時注入、で十分。nix store / `system.activationScripts` /
+    `home.file.*.text` に secret を埋めたい具体ユースケースは未発生
+  - 再検討トリガ: nix-darwin のサービス宣言 (例: `services.*.authKeyFile`) や home-manager 生成ファイルに
+    secret を埋めたくなった瞬間 → **agenix** を採用 (sops-nix より依存が薄いため第一候補)
 
 > このファイルは「育てて移行」方針の進捗台帳。フェーズ完了ごとに本書を更新してコミットする。
