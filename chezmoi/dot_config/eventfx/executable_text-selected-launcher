@@ -7,8 +7,9 @@
 
 # wand dev ビルドは Homebrew PATH に乗らないので明示する。
 # ビルドが入れ替わったらここを差し替える 1 箇所。
-# 注: PR #37 で stroke binary は wand に rename された。
-WAND_BIN="/Volumes/workspace/github.com/akira-toriyama/stroke/Wand-dev.app/Contents/MacOS/wand"
+# 注: PR #37 で stroke binary は wand に rename された。clone 自体も
+# stroke/ → wand/ にリネーム済 (stroke/ の方は古い fork で stale)。
+WAND_BIN="/Volumes/workspace/github.com/akira-toriyama/wand/Wand-dev.app/Contents/MacOS/wand"
 ITEMS="$HOME/.config/eventfx/text_selected.toml"
 
 [ -x "$WAND_BIN" ] || exit 0   # dev mount が外れている等は静かに諦める
@@ -35,4 +36,5 @@ exec "$WAND_BIN" \
     --show-menu \
     --items "$ITEMS" \
     --at "$X" "$Y" \
-    --selection "$EVENTFX_SELECTION"
+    --selection "$EVENTFX_SELECTION" \
+    --title "$EVENTFX_TITLE"
