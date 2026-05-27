@@ -4,7 +4,7 @@
 ## 環境再現コマンド
 
 ```sh
-sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/rebuild/install.sh)"
+sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 ```
 
 `install.sh` の流れ: Xcode CLT → Determinate Nix → リポジトリ clone →

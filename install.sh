@@ -1,7 +1,7 @@
 #!/bin/sh
 # 新 Mac の環境再現ブートストラップ。
 #
-#   sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/rebuild/install.sh)"
+#   sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 #
 # 流れ:
 #   1. Xcode Command Line Tools
@@ -19,7 +19,7 @@
 set -e
 
 GITHUB_USERNAME="akira-toriyama"
-BRANCH="${BRANCH:-rebuild}"
+BRANCH="${BRANCH:-main}"
 REPO_DIR="${REPO_DIR:-$HOME/dotfiles}"
 FLAKE_HOST="${FLAKE_HOST:-default}"
 
