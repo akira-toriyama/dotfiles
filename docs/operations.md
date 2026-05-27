@@ -117,14 +117,18 @@ mas search "App Name"
 # 3. PR ~ merge（セクション 2 と同じフロー）
 ```
 
-### ⚠️ 既知の制約
+### ⚠️ 既知の制約（2 段重ね）
 
-[CLAUDE.md:67](../CLAUDE.md) のとおり、brew 同梱 `mas 1.8.6` は macOS 15+ で `mas get/install` が壊れている。masApps 宣言は **当面凍結傾向**。実際の install は:
+1. **`bootstrapBrewOverride` が masApps を強制的に空にする**
+   `flake.nix` の `darwinConfigurations.default` には `lib.mkForce { }` を含む override が適用される（PR #108 で常用 + bootstrap 共通方針に統一）。**masApps に何を宣言しても live では `{}`**。
+2. brew 同梱 `mas 1.8.6` は macOS 15+ で `mas get/install` が壊れていた経緯あり ([CLAUDE.md:67](../CLAUDE.md))。`brew upgrade mas` で 7.x 化すれば解消するが、nix-darwin の homebrew モジュールは内部で brew 同梱 `mas` を呼ぶため迂回しづらい。
 
-- (a) 手動で App Store からインストール済みにしておく、または
-- (b) Nix 側の `mas 6.0.1`（`home.packages` 経由）で別途 `mas install <id>` を手で叩く
+そのため実際の install は:
 
-mas が修復された段階で nix-darwin homebrew 経由の install が復活する想定。
+- (a) 手動で App Store からインストール済みにしておく（最も確実）、または
+- (b) Nix 側の `mas`（`home/modules/packages.nix` 経由）で別途 `mas install <id>` を手で叩く
+
+将来 `bootstrapBrewOverride` を緩めるか、nix-darwin の mas 呼び出しが Nix 側を見るようになれば nix-darwin homebrew 経由の install が復活する想定。
 
 </details>
 
@@ -200,8 +204,11 @@ nix flake check --no-build                                          # eval/型
 nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure  # 非破壊 build
 
 # brew 側（宣言 vs 実 install）
-brew list --cask | sort                  # 実 install
-# 宣言側は CI ジョブ "Verify casks installed" が正の sort 済みリストを出す
+brew list --cask | sort                                                          # 実 install
+nix eval --json '.#darwinConfigurations.default.config.homebrew.casks' --impure \
+  | jq -r '.[]' | sort                                                           # 宣言
+diff <(brew list --cask | sort) \
+     <(nix eval --json '.#darwinConfigurations.default.config.homebrew.casks' --impure | jq -r '.[]' | sort)
 ```
 
 ### 5.4 別 PC ブートストラップ
@@ -214,7 +221,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 これだけで:
 1. Xcode CLT install
 2. Nix install（Determinate）
-3. flake clone → `darwin-rebuild switch`（cask / brew / mas / defaults を一括）
+3. flake clone → `darwin-rebuild switch --flake .#default --impure`（cask / brew / macOS defaults を一括、masApps は `bootstrapBrewOverride` で `{}` forced のためスキップ）
 4. chezmoi init → apply（dot_* / private_* を配置、`op signin` 済の前提で secret も注入）
 5. `run_onchange_` 自動実行（VSCode 拡張 install / chord-validate 等）
 
@@ -248,12 +255,12 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 
 ### 5.7 run_onchange_ スクリプト
 
-`chezmoi/run_onchange_*.sh.tmpl` は **「ファイル hash が変わったら再走」** の仕組み。現状:
+`chezmoi/run_onchange_*` は **「rendered 後の本文 hash が変わったら再走」** の仕組み。`.tmpl` 接尾辞は任意（必要な時だけ）。現状:
 
-- `run_onchange_chord-validate.sh.tmpl` — chord config 変更時に `chord --validate` で strict 検証
-- `run_onchange_install-vscode-extensions.sh.tmpl` — 拡張リスト変更時に `code --install-extension`
+- `run_onchange_after_chord-validate.sh.tmpl` — chord config 変更時に `chord --validate --strict` 検証。`{{ include "..." | sha256sum }}` で **外部** chord config の hash を埋め込むため **`.tmpl` 必須**。
+- `run_onchange_install-vscode-extensions.sh` — 拡張リスト変更時に `code --install-extension`。拡張リストは script 本文の `for ext in ...` の右辺に直書き → 本文 hash で再走判定するため **`.tmpl` 不要** (PR #108 で plain 化)。
 
-スクリプト中に hash 化したい外部ファイルの内容を埋め込む（template の `include` で raw 取得して sha256 を埋め込む）と、その内容変化で再走する。
+外部ファイルの内容変化を再走トリガにしたい場合のみ `.tmpl` + `{{ include "..." | sha256sum }}` を使う。スクリプト本文内の宣言で済むなら plain `.sh` で良い。
 
 新規追加する場合は `run_once_` ではなく **`run_onchange_` を既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap 用。
 
@@ -289,12 +296,16 @@ op read "op://Vault/Item/field"
 | switch 後の親シェルで PATH 異常に見える | `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` 継承の false positive → **新ターミナル**または `env -i HOME=$HOME /bin/zsh -l -c '...'` |
 | `chezmoi apply` が prompt で止まる | MM 状態 → `--force` で source 優先、または re-add で live 優先 |
 | cask が CI で fail | cask 名タイポ / 廃止 / macOS 要件不一致 → `brew info --cask <name>` で確認 |
-| `mas install` が無音失敗 | brew 同梱 mas 1.8.6 のバグ（macOS 15+）→ Nix 側 mas 6.0.1 経由で叩く |
+| `mas install` が無音失敗 | brew 同梱 mas のバグ（過去 1.8.6 系で macOS 15+ 不具合）→ Nix 側 `mas`（`home/modules/packages.nix`）経由で叩く |
 | `system.defaults` がアプリに反映されない | TCC/sandbox 保護領域（Mail/Safari/Calendar 等）は switch 成功でも適用されない、深追いしない |
 
 </details>
 
 ---
+
+## 将来計画メモ
+
+- **chord `[input-aliases]` 機能** — chord 本体に modifier セットの alias 解決機能を追加できれば、`chezmoi/dot_config/chord/private_config.toml` の literal modifier 表記 (`rctrl + ralt + rshift - c` × 14 箇所) を bare 論理名 (`ULTRA_LL - c`) に書き戻せる。`scripts/gen-chord-doc.py` の hardcoded dict も削除可。PR #108 では Phase 1（dotfiles 単独で `.tmpl` 廃止）まで実行、Phase 2 は別 PR 想定。
 
 ## 参考
 
