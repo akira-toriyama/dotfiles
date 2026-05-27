@@ -6,10 +6,12 @@
 ---
 
 <details>
-<summary><b>1. <code>~/.config/xxx/config.toml</code> を編集した場合（chezmoi）</b></summary>
+<summary><b>1. <code>~/.config/chord/config.toml</code> を編集した場合（chezmoi）</b></summary>
 
 ### シナリオ
-`~/.config/chord/config.toml` や `~/.config/eventfx/...` を直接編集した、または上流（chord / wand 等）の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
+`~/.config/chord/config.toml` を直接編集した、または上流 chord の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
+
+chord は **`.tmpl` を持つ**（`chezmoi/dot_config/chord/private_config.toml.tmpl`）ので、source 側を編集する b) の手順が正解。`.tmpl` を持たないファイル（例: `~/.config/eventfx/config`）なら a) の `chezmoi re-add` で済む。
 
 ### 手順
 
@@ -19,28 +21,28 @@ chezmoi status      # 各行 MM = source/target 両方変更ありの状態
 chezmoi diff        # 何が違うか
 
 # 2. 取り込む方向を選ぶ
-#  a) live を正として source へ反映（普通のケース）
+#  a) .tmpl を持たないファイル（例: eventfx）→ live を source に re-add
 chezmoi re-add ~/.config/eventfx/config
 
-#  b) source 側を編集して live へ apply
-$EDITOR /Volumes/workspace/github.com/akira-toriyama/dotfiles/chezmoi/dot_config/xxx/...
-chezmoi apply --force ~/.config/xxx/...
+#  b) .tmpl を持つファイル（chord はこちら）→ source 側 .tmpl を直接編集
+$EDITOR "$(ghq root)/github.com/akira-toriyama/dotfiles/chezmoi/dot_config/chord/private_config.toml.tmpl"
+chezmoi apply --force ~/.config/chord/config.toml
 # --force は MM 状態の interactive prompt をスキップ
 
 # 3. dotfiles repo で確認 → PR
-cd /Volumes/workspace/github.com/akira-toriyama/dotfiles
+cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 git status
-git checkout -b chore/sync-xxx
-git add chezmoi/dot_config/xxx/...
-git commit -m ":memo: chore(dotfiles): xxx 設定を source に反映"
-git push -u origin chore/sync-xxx
+git checkout -b chore/sync-chord-config
+git add chezmoi/dot_config/chord/private_config.toml.tmpl
+git commit -m ":memo: chore(dotfiles): chord 設定を source に反映"
+git push -u origin chore/sync-chord-config
 gh pr create --title "..." --body "..."
 gh pr merge --auto --squash
 ```
 
 ### 注意点
 
-- **template (`.tmpl`) を持つファイル** （例: `chezmoi/dot_config/chord/private_config.toml.tmpl`）は `chezmoi re-add` だと template 変数（`{{ $ULTRA_LL }}` 等）が展開済みの literal に戻ってしまう。`.tmpl` がある場合は **source 側を直接編集** が正解。
+- **template (`.tmpl`) を持つファイル** に `chezmoi re-add` を使うと、template 変数（`{{ $ULTRA_LL }}` 等）が展開済みの literal に戻ってしまう → **source 側 `.tmpl` を直接編集** が正解。chord (`private_config.toml.tmpl`) はこのパターン。
 - `run_onchange_` スクリプトが依存している設定は、`chezmoi apply` で hash 変化を検知して再走する（例: chord-validate.sh は chord config の sha256 を埋め込んでいる）。
 
 </details>
@@ -69,11 +71,11 @@ brew install --cask foo
 
 # 4. chezmoi 連携の要否を判定
 #    ~/Library/Containers/...      → 不要（sandbox 配下、追跡しづらい）
-#    ~/.config/xxx/...             → 必要、セクション 1 の手順で取り込む
+#    ~/.config/<app>/...           → 必要、セクション 1 の手順で取り込む
 #    ~/Library/Preferences/*.plist → defaults.nix で書く（chezmoi ではない）
 
 # 5. ローカルで非破壊チェック
-cd /Volumes/workspace/github.com/akira-toriyama/dotfiles
+cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 nix flake check --no-build
 nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini
 
