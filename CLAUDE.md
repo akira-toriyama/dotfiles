@@ -21,6 +21,33 @@
 
 **1 ファイル 1 所有**。Nix と chezmoi の両方が同じファイルを管理してはいけない（事故の主因）。
 
+## インストール先の判断フロー
+
+```mermaid
+flowchart TD
+    Start([追加したい]) --> Q1{種類は?}
+    Q1 -->|GUI アプリ| Q2{cask 経路}
+    Q1 -->|CLI ツール| Q3{nixpkgs に<br/>あるか?}
+    Q1 -->|ランタイム<br/>node/python/deno等| M[programs.mise.globalConfig.tools]
+    Q2 -->|普通の cask| C1[homebrew.casks]
+    Q2 -->|カスタム tap 経由| C2[homebrew.taps + casks]
+    Q2 -->|Mac App Store のみ| C3[homebrew.masApps]
+    Q3 -->|あり & 汎用 CLI| N1[home.packages]
+    Q3 -->|macOS 専用 / nixpkgs 古い| C4[homebrew.brews]
+```
+
+**原則: 迷ったら Nix**（reproducibility / Linux 互換 / hash pin）。GUI と macOS 統合（SSH agent / Spotlight / pkg-installer 等）が要るものは無理に Nix にしない。
+
+グレーゾーン例:
+
+| 対象 | 採用 | 理由 |
+|---|---|---|
+| `_1password-cli` (op) | Nix | CLI、nixpkgs にある、`onepasswordRead` template の前提 |
+| `1password` GUI | Brew cask | `.app`、SSH agent / op CLI 連携が cask に乗る |
+| `font-*-nerd-font` | Brew cask | cask 版は `~/Library/Fonts` に置くので Spotlight / 他アプリから見える |
+| `docker` CLI | Nix | colima 経由、CLI のみ必要 |
+| `mise` 本体 | home-manager `programs.mise` | `enable = true` で zsh init まで自動 wiring |
+
 ## レイアウト規約
 
 - `.chezmoiroot = chezmoi` — リポジトリ直下は Nix flake、dotfile ソースは `chezmoi/` 配下。
