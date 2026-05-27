@@ -73,7 +73,7 @@ brew install --cask foo
 # 5. ローカルで非破壊チェック
 cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 nix flake check --no-build
-nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini
+nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure
 
 # 6. PR
 git checkout -b feat/add-foo-cask
@@ -86,7 +86,7 @@ gh pr create
 # 7. merge 後、手元に反映
 gh pr merge <PR#> --auto --squash
 git checkout main && git pull
-sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#tominoMac-mini
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure
 # 既に手で試用 install してた場合は実質 no-op
 ```
 
@@ -197,7 +197,7 @@ chezmoi diff        # 詳細
 
 # Nix 側
 nix flake check --no-build                                          # eval/型
-nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini  # 非破壊 build
+nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure  # 非破壊 build
 
 # brew 側（宣言 vs 実 install）
 brew list --cask | sort                  # 実 install
@@ -264,12 +264,12 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 chezmoi status                                                 # source ↔ live の乖離
 chezmoi diff                                                   # 内容差分
 nix flake check --no-build                                     # Nix eval
-darwin-rebuild build --flake .#tominoMac-mini                  # 非破壊 Nix build
+darwin-rebuild build --flake .#default --impure                  # 非破壊 Nix build
 
 # 反映系
 chezmoi apply [-v] [--force]                                   # chezmoi 適用
 sudo /run/current-system/sw/bin/darwin-rebuild switch \
-  --flake .#tominoMac-mini                                     # Nix 適用（sudo 必要）
+  --flake .#default --impure                                     # Nix 適用（sudo 必要）
 
 # 取り込み系
 chezmoi add <path>                                             # 新規取り込み
