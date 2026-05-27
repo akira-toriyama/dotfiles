@@ -4,10 +4,15 @@
 #
 # 仕様:
 #   - cask: 双方向 (未宣言 install / 未 install 宣言) の両方検出
-#   - brew: missing (宣言 - install) のみ。brew leaves で top-level 比較
+#   - brew: 双方向 (未宣言 install / 未 install 宣言) の両方検出
+#           ※ install 側は `brew leaves` を使い deps を除外、top-level のみ比較
 #   - mas:  bootstrapBrewOverride で masApps が常に {} になるため対象外
 #   - 通知本文には最初の「未宣言 cask」の brew description を添える
 #   - flake パスは ghq → $HOME/dotfiles → $DOTFILES_FLAKE_DIR の順で解決
+#   - 通知は terminal-notifier (brew formula、homebrew.nix の brews で宣言)
+#     osascript の display notification は macOS 15 で Script Editor 経由に
+#     なり banner 抑止されがちなため不採用。
+#   - -group homebrew-drift 固定で「通知センターに常に最新 1 件」運用
 #   - 出力は /tmp/homebrew-drift.log にも残る (launchd の StandardOutPath)
 set -eu
 
@@ -57,16 +62,18 @@ for ignore in $IGNORE_EXTRA_CASKS; do
   extra_casks=$(echo "$extra_casks" | grep -v "^${ignore}$" || true)
 done
 missing_casks=$(comm -23 <(echo "$declared_casks") <(echo "$installed_casks") | grep -v '^$' || true)
+extra_brews=$(comm -13 <(echo "$declared_brews") <(echo "$installed_brews") | grep -v '^$' || true)
 missing_brews=$(comm -23 <(echo "$declared_brews") <(echo "$installed_brews") | grep -v '^$' || true)
 
 # stderr/log にも残す
 {
   [ -n "$extra_casks" ]   && printf '[未宣言 cask]\n%s\n' "$extra_casks"
   [ -n "$missing_casks" ] && printf '[未 install cask]\n%s\n' "$missing_casks"
+  [ -n "$extra_brews" ]   && printf '[未宣言 brew]\n%s\n' "$extra_brews"
   [ -n "$missing_brews" ] && printf '[未 install brew]\n%s\n' "$missing_brews"
 } || true
 
-if [ -z "$extra_casks$missing_casks$missing_brews" ]; then
+if [ -z "$extra_casks$missing_casks$extra_brews$missing_brews" ]; then
   echo "[$(date)] no drift"
   exit 0
 fi
@@ -75,6 +82,7 @@ fi
 summary=""
 [ -n "$extra_casks" ]   && summary="$summary 未宣言 cask: $(echo "$extra_casks" | tr '\n' ' ')"
 [ -n "$missing_casks" ] && summary="$summary / 未 install cask: $(echo "$missing_casks" | tr '\n' ' ')"
+[ -n "$extra_brews" ]   && summary="$summary / 未宣言 brew: $(echo "$extra_brews" | tr '\n' ' ')"
 [ -n "$missing_brews" ] && summary="$summary / 未 install brew: $(echo "$missing_brews" | tr '\n' ' ')"
 
 # 最初の「未宣言 cask」だけ brew info の description を添える (なぜ入れたかのヒント)
@@ -84,11 +92,16 @@ if [ -n "$first_extra" ]; then
   [ -n "$desc" ] && summary="$summary - 例: $first_extra → $desc"
 fi
 
-# osascript の文字列に " が混ざるとパース崩れ。エスケープ。
-escaped=$(printf '%s' "$summary" | sed 's/"/\\"/g')
-
-osascript \
-  -e "display notification \"$escaped\" with title \"homebrew drift\" subtitle \"system/modules/homebrew.nix を更新\" sound name \"Pop\"" \
-  >/dev/null 2>&1 || true
-
-echo "[$(date)] notified: $summary"
+# 通知。terminal-notifier 未導入なら log だけ残して exit (新 PC 初日対策)。
+if command -v terminal-notifier >/dev/null 2>&1; then
+  terminal-notifier \
+    -group "homebrew-drift" \
+    -title "homebrew drift" \
+    -subtitle "system/modules/homebrew.nix を更新" \
+    -message "$summary" \
+    -sound Pop \
+    >/dev/null 2>&1 || true
+  echo "[$(date)] notified: $summary"
+else
+  echo "[$(date)] terminal-notifier not found, drift logged only: $summary"
+fi
