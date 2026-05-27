@@ -18,6 +18,7 @@
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [
       "1password-cli"
+      "tart"  # macOS/Linux VM on Apple Silicon (Apple Virtualization framework 利用)
     ];
 
   users.users.${username} = {

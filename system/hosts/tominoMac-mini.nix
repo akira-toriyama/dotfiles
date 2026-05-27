@@ -14,6 +14,7 @@
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [
       "1password-cli"
+      "tart"  # macOS/Linux VM on Apple Silicon (Apple Virtualization framework 利用)
     ];
 
   # nix-darwin が管理する macOS ユーザー。home-manager の前提。
