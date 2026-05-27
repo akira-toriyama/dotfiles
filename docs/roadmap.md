@@ -142,10 +142,35 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 ## 未決事項（判断待ち・随時更新）
 
 - [x] `.chezmoiroot` 採用の最終 GO → 採用決定・実施済み（commit f9b1800）
-- [x] **ブランチ運用** → `rebuild` を `main` へ force-push 統合、`install.sh` URL も `/main/` に正式昇格 (2026-05-27、commit `44417f4`)。以降の新規作業は引き続き `rebuild` を作業ブランチとし、節目で `main` へ同期する運用
-- [ ] LICENSE / リポジトリ公開範囲
-- [ ] asdf の置換先（nix / mise / devbox）
-- [ ] just（タスクランナー）導入可否
-- [ ] nix 側シークレットが必要になった場合の方式（sops-nix / agenix）
+- [x] **ブランチ運用** → `rebuild` を `main` へ force-push 統合、`install.sh` URL も `/main/` に正式昇格 (2026-05-27、commit `44417f4`)。**rebuild ブランチ削除 + main 単発運用へ移行** (2026-05-27、commit `08bee4d`、CI workflow も `branches: [main]` 単発化)。CLAUDE.md にも反映済
+
+### 別セッションで検討するもの (2026-05-27 切り出し)
+
+以下 4 項目は roadmap 達成 (Phase 6 完了) 後に独立検討するテーマ。それぞれ独立しているので個別 PR/セッションで判断可。
+
+- [ ] **LICENSE / リポジトリ公開範囲**
+  - 現状: LICENSE 無し、リポジトリは public (誰でも clone 可能、ただし二次利用権は不明確)
+  - 選択肢: (a) MIT/Apache-2.0 を付けて二次利用許可、(b) UNLICENSED/All-Rights-Reserved を明示、(c) リポジトリを private 化
+  - 論点: 個人 dotfiles のため利用者は基本自分のみ。ただし install.sh / flake / chord 設定等の汎用度が高いものは参考に使われる可能性あり。公開判断と LICENSE はセット
+  - 必要情報: 「他人に使わせて OK か」「forked 派生物の扱い」「業務 PC 設定が混ざる可能性」
+  - 参考: `webpro/awesome-dotfiles` の慣例は MIT
+
+- [ ] **asdf の置換先 (nix / mise / devbox)**
+  - 現状: フェーズ 4 で `asdf` formula は drop 済み (homebrew には未宣言)。`~/.asdfrc` 等の残骸は確認要
+  - 選択肢: (a) **nix** (devshell / direnv 連携で per-project ランタイム)、(b) **mise** (asdf 互換、現代的 UX、Rust 製で速い)、(c) **devbox** (nix を意識せず使える)、(d) 全部 drop して system Node/Python で済ます
+  - 論点: per-project ランタイム切替が本当に要るか。要るなら nix 一貫性 vs mise の手軽さの trade-off
+  - 必要情報: 現在 asdf でどのランタイムを切替えていたか (`.tool-versions` の grep)、頻度
+
+- [ ] **just (タスクランナー) 導入可否**
+  - 現状: 未導入。タスクは `~/dotfiles` 内のシェルスクリプト or `darwin-rebuild` 直叩き
+  - 選択肢: (a) just 導入で `justfile` にプロジェクト操作集約、(b) GNU make で代替、(c) シェルスクリプト + `scripts/` 階層のまま
+  - 論点: dotfiles に頻繁な定型タスク (build / apply / cleanup 等) が育つなら just が便利。育たないなら yagni
+  - 必要情報: 現状の「定型作業」リスト (e.g., 検証時の `chezmoi diff` → `darwin-rebuild build` の連続実行頻度)
+
+- [ ] **nix 側シークレット方式 (sops-nix / agenix)**
+  - 現状: secret は **chezmoi + 1Password (`onepasswordRead`)** で apply 時注入。nix 側に secret を embed する場面は未発生
+  - 選択肢: (a) **sops-nix** (Mozilla SOPS、age/gpg、Nix flake input として組み込み)、(b) **agenix** (Nix native、age key ベース、よりシンプル)、(c) 現状維持 (chezmoi + 1Password で十分)
+  - 論点: nix-darwin の `system.activationScripts` 内や home-manager の `home.file.*.text` に secret を入れたい状況が出てきた時のみ必要。現時点では未発生
+  - 必要情報: nix 側に secret を embed したい具体ユースケース (思い当たらなければ「現状維持」確定でクローズ可)
 
 > このファイルは「育てて移行」方針の進捗台帳。フェーズ完了ごとに本書を更新してコミットする。
