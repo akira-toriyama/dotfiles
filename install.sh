@@ -97,8 +97,12 @@ EOM
 fi
 
 # 6. chezmoi で残りの手編集 dotfile を適用
+# nix-darwin switch で /etc/profiles/per-user/$USER/bin に chezmoi が入るが、
+# 同シェル中の $PATH には反映されない (新シェルでのみ /etc/zshenv 経由で
+# 入る)。install.sh の同プロセスで chezmoi を呼べるように明示的に追加する。
 echo "==> chezmoi apply（dot_claude / run_onchange 各種）"
-chezmoi --source "$REPO_DIR/chezmoi" apply --verbose
+PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH" \
+  chezmoi --source "$REPO_DIR/chezmoi" apply --verbose
 
 echo
 echo "✓ 完了。新しいターミナルを開いて環境が揃っていることを確認してください。"
