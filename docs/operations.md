@@ -299,13 +299,47 @@ op read "op://Vault/Item/field"
 | `mas install` が無音失敗 | brew 同梱 mas のバグ（過去 1.8.6 系で macOS 15+ 不具合）→ Nix 側 `mas`（`home/modules/packages.nix`）経由で叩く |
 | `system.defaults` がアプリに反映されない | TCC/sandbox 保護領域（Mail/Safari/Calendar 等）は switch 成功でも適用されない、深追いしない |
 
+### 5.10 chord daemon を手元 build で入れ替え（AX 維持）
+
+chord 本体に PR が ship されたけど tap formula がまだ古い、という過渡期に「手元 build を brew install の代わりに走らせる」手順。chord-dev 自己署名で再署名すれば既存 AX (Accessibility) 許可が引き継がれる。
+
+```sh
+# 1. 最新 chord (PR 含む main) を release build
+cd "$(ghq root)/github.com/akira-toriyama/chord"
+git switch main && git pull
+swift build -c release
+
+# 2. daemon 停止
+brew services stop chord
+sleep 1
+
+# 3. brew install の Chord.app 中の binary を swap
+CHORD_APP=/opt/homebrew/Cellar/chord/0.4.0/Chord.app
+NEW=/Volumes/workspace/github.com/akira-toriyama/chord/.build/release/chord
+cp "$CHORD_APP/Contents/MacOS/chord" "$CHORD_APP/Contents/MacOS/chord.bak"
+cp "$NEW" "$CHORD_APP/Contents/MacOS/chord"
+
+# 4. chord-dev で再署名 (TCC が同一 identity として認識 → AX 維持)
+codesign --force --sign chord-dev "$CHORD_APP"
+
+# 5. daemon 再起動 + 確認
+brew services start chord
+sleep 2
+chord --doctor
+# bindings: N loaded, ... 0 dropped (期待値)
+```
+
+戻すとき: `cp "$CHORD_APP/Contents/MacOS/chord.bak" "$CHORD_APP/Contents/MacOS/chord" && codesign --force --sign chord-dev "$CHORD_APP" && brew services restart chord`
+
+正規 tap release が出たら `brew upgrade chord && chord --resign` で本来の運用に戻る。
+
 </details>
 
 ---
 
-## 将来計画メモ
+## 完了済の大きな migration
 
-- **chord `[input-aliases]` 機能** — chord 本体に modifier セットの alias 解決機能を追加できれば、`chezmoi/dot_config/chord/private_config.toml` の literal modifier 表記 (`rctrl + ralt + rshift - c` × 14 箇所) を bare 論理名 (`ULTRA_LL - c`) に書き戻せる。`scripts/gen-chord-doc.py` の hardcoded dict も削除可。PR #108 では Phase 1（dotfiles 単独で `.tmpl` 廃止）まで実行、Phase 2 は別 PR 想定。
+- **chord `[input-aliases]` 機能 + 論理名移行** — chord 本体 ([akira-toriyama/chord PR #4](https://github.com/akira-toriyama/chord/pull/4)) で `[input-aliases]` 機能が ship 済。`chezmoi/dot_config/chord/private_config.toml` は `[input-aliases]` テーブル + bare `ULTRA_LL` 参照に移行済、`scripts/gen-chord-doc.py` の hardcoded dict も削除済。daemon 入れ替え手順は下の 5.10 を参照。
 
 ## 参考
 
