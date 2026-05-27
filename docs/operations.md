@@ -11,7 +11,14 @@
 ### シナリオ
 `~/.config/chord/config.toml` を直接編集した、または上流 chord の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
 
-chord は **`.tmpl` を持つ**（`chezmoi/dot_config/chord/private_config.toml.tmpl`）ので、source 側を編集する b) の手順が正解。`.tmpl` を持たないファイル（例: `~/.config/eventfx/config`）なら a) の `chezmoi re-add` で済む。
+**source 側に `.tmpl` があるかどうかで取り込み方が違う**:
+
+| ケース | 代表例 | source ファイル | 取り込み方 |
+|---|---|---|---|
+| **.tmpl あり** | chord | `chezmoi/dot_config/chord/private_config.toml.tmpl` | source `.tmpl` を直接編集 |
+| **.tmpl 無し** | eventfx | `chezmoi/dot_config/eventfx/config` | `chezmoi re-add` |
+
+判別: `ls "$(ghq root)/github.com/akira-toriyama/dotfiles/chezmoi/dot_config/<app>/"` で `.tmpl` 接尾辞の有無を見る。
 
 ### 手順
 
@@ -20,11 +27,13 @@ chord は **`.tmpl` を持つ**（`chezmoi/dot_config/chord/private_config.toml.
 chezmoi status      # 各行 MM = source/target 両方変更ありの状態
 chezmoi diff        # 何が違うか
 
-# 2. 取り込む方向を選ぶ
-#  a) .tmpl を持たないファイル（例: eventfx）→ live を source に re-add
-chezmoi re-add ~/.config/eventfx/config
+# 2. ファイル種別で分岐
 
-#  b) .tmpl を持つファイル（chord はこちら）→ source 側 .tmpl を直接編集
+# === .tmpl 無し（例: eventfx）===
+chezmoi re-add ~/.config/eventfx/config
+# live を正として source へ反映、これで終わり
+
+# === .tmpl あり（例: chord）===
 $EDITOR "$(ghq root)/github.com/akira-toriyama/dotfiles/chezmoi/dot_config/chord/private_config.toml.tmpl"
 chezmoi apply --force ~/.config/chord/config.toml
 # --force は MM 状態の interactive prompt をスキップ
@@ -42,7 +51,7 @@ gh pr merge --auto --squash
 
 ### 注意点
 
-- **template (`.tmpl`) を持つファイル** に `chezmoi re-add` を使うと、template 変数（`{{ $ULTRA_LL }}` 等）が展開済みの literal に戻ってしまう → **source 側 `.tmpl` を直接編集** が正解。chord (`private_config.toml.tmpl`) はこのパターン。
+- **`.tmpl あり` に `chezmoi re-add` 厳禁** — template 変数（`{{ $ULTRA_LL }}` 等）が展開済みの literal に戻ってしまう。chord (`private_config.toml.tmpl`) はこのパターン。
 - `run_onchange_` スクリプトが依存している設定は、`chezmoi apply` で hash 変化を検知して再走する（例: chord-validate.sh は chord config の sha256 を埋め込んでいる）。
 
 </details>
