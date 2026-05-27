@@ -81,5 +81,23 @@
           })
         ];
       };
+
+      # Tart VM 用: 手元の cirruslabs/macos-sequoia-base イメージで
+      # `install.sh` を新 Mac 再現テストする (roadmap Phase 6 ゴール判定)。
+      # 違い:
+      #   - username = "admin" (cirruslabs base image の既定ユーザー)
+      #   - host module は ci.nix を再利用 (ci variant とほぼ同条件)
+      #   - masApps 空 + autoUpdate 強制 (CI と同じ理由)
+      # 使い方: VM 内で `FLAKE_HOST=tart ./install.sh`
+      darwinConfigurations.tart = mkDarwin {
+        username = "admin";
+        hostModule = ./system/hosts/ci.nix;
+        extraModules = [
+          ({ lib, ... }: {
+            homebrew.masApps = lib.mkForce { };
+            homebrew.onActivation.autoUpdate = lib.mkForce true;
+          })
+        ];
+      };
     };
 }
