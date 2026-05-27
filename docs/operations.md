@@ -35,12 +35,6 @@ gh pr create --title "..." --body "..."
 gh pr merge --auto --squash
 ```
 
-### 注意点
-
-- **`.tmpl` を持つのは現状 `run_onchange_after_chord-validate.sh.tmpl` のみ** で、これは `{{ include ... | sha256sum }}` で chord config の hash を埋め込む技術的必要から（他ファイル変更を再走トリガに使う）。直接編集対象ではないので運用上の影響なし。
-- 将来もし `.tmpl` を新規追加するなら、その対象ファイルは `chezmoi re-add` ではなく **source `.tmpl` を直接編集**する必要がある（template 変数が literal に戻ってしまうため）。
-- `run_onchange_` スクリプトは `chezmoi apply` で hash 変化を検知して再走する（例: chord-validate.sh は chord config の sha256 を埋め込んでいる）。
-
 </details>
 
 ---
@@ -314,7 +308,9 @@ brew services stop chord
 sleep 1
 
 # 3. brew install の Chord.app 中の binary を swap
-CHORD_APP=/opt/homebrew/Cellar/chord/0.4.0/Chord.app
+#    `/opt/homebrew/opt/chord` は現バージョンへの symlink (例: ../Cellar/chord/0.5.0)
+#    なので version 数字を埋め込まずに済む。
+CHORD_APP="$(brew --prefix chord)/Chord.app"
 NEW=/Volumes/workspace/github.com/akira-toriyama/chord/.build/release/chord
 cp "$CHORD_APP/Contents/MacOS/chord" "$CHORD_APP/Contents/MacOS/chord.bak"
 cp "$NEW" "$CHORD_APP/Contents/MacOS/chord"
@@ -339,7 +335,7 @@ chord --doctor
 
 ## 完了済の大きな migration
 
-- **chord `[input-aliases]` 機能 + 論理名移行** — chord 本体 ([akira-toriyama/chord PR #4](https://github.com/akira-toriyama/chord/pull/4)) で `[input-aliases]` 機能が ship 済。`chezmoi/dot_config/chord/private_config.toml` は `[input-aliases]` テーブル + bare `ULTRA_LL` 参照に移行済、`scripts/gen-chord-doc.py` の hardcoded dict も削除済。daemon 入れ替え手順は下の 5.10 を参照。
+- **chord `[input-aliases]` 機能 + 論理名移行** — chord 本体で `[input-aliases]` 機能が ship 済 ([PR #4](https://github.com/akira-toriyama/chord/pull/4) v0.5.0 初版、[PR #7](https://github.com/akira-toriyama/chord/pull/7) で v0.6.0 として `$prefix` 必須 + `[aliases]` → `[action-aliases]` rename + schema v2 → v3)。`chezmoi/dot_config/chord/private_config.toml` は `[action-aliases]` + `[input-aliases]` + `$prefix` 参照 (`input = "$ULTRA_LL - c"`) に移行済。`scripts/gen-chord-doc.py` の hardcoded dict は削除済 (chord 自身が alias 解決)。daemon 入れ替えは `brew upgrade chord && chord --resign` か 5.10 の手元 build 手順を参照。
 
 ## 参考
 
