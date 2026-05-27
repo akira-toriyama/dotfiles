@@ -155,11 +155,13 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
   - 必要情報: 「他人に使わせて OK か」「forked 派生物の扱い」「業務 PC 設定が混ざる可能性」
   - 参考: `webpro/awesome-dotfiles` の慣例は MIT
 
-- [ ] **asdf の置換先 (nix / mise / devbox)**
-  - 現状: フェーズ 4 で `asdf` formula は drop 済み (homebrew には未宣言)。`~/.asdfrc` 等の残骸は確認要
-  - 選択肢: (a) **nix** (devshell / direnv 連携で per-project ランタイム)、(b) **mise** (asdf 互換、現代的 UX、Rust 製で速い)、(c) **devbox** (nix を意識せず使える)、(d) 全部 drop して system Node/Python で済ます
-  - 論点: per-project ランタイム切替が本当に要るか。要るなら nix 一貫性 vs mise の手軽さの trade-off
-  - 必要情報: 現在 asdf でどのランタイムを切替えていたか (`.tool-versions` の grep)、頻度
+- [x] **asdf の置換先 (nix / mise / devbox)** → **mise 採用で確定クローズ** (2026-05-27)
+  - 判定: per-directory で Node / Python / Deno を切替えたいニーズあり (旧 asdf の用途と同等)。
+    mise は (a) `.tool-versions` 互換で asdf 資産流用可、(b) Deno が core plugin、
+    (c) home-manager の `programs.mise.enable` で宣言性が本リポジトリの流儀 (`programs.zsh.enable` 等)
+    と整合、(d) `[env]` / `[tasks]` で direnv / just 相当を吸収可 (ツール肥大化予防)
+  - 実装: [home/modules/mise.nix](../home/modules/mise.nix) で `programs.mise.enable` + globalConfig.tools 宣言。
+    プロジェクト個別バージョンは `mise use <tool>@<ver>` で `.mise.toml` を生成して上書き
 
 - [x] **just (タスクランナー) 導入可否** → **現状維持で確定クローズ** (2026-05-27)
   - 判定: `scripts/` 配下は `gen-chord-doc.py` 1 本のみ。`justfile` を埋める材料が無い = YAGNI
