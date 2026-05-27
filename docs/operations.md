@@ -6,10 +6,12 @@
 ---
 
 <details>
-<summary><b>1. <code>~/.config/xxx/config.toml</code> を編集した場合（chezmoi）</b></summary>
+<summary><b>1. <code>~/.config/&lt;app&gt;/...</code> を編集した場合（chezmoi）</b></summary>
 
 ### シナリオ
-`~/.config/chord/config.toml` や `~/.config/eventfx/...` を直接編集した、または上流（chord / wand 等）の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
+`~/.config/chord/config.toml` や `~/.config/eventfx/config` を直接編集した、または上流（chord / wand 等）の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
+
+dot_config 配下の管理ファイルは **全て plain（`.tmpl` なし）** に統一済み。チェック内容に template 変数が登場しないので、`chezmoi re-add` で安全に取り込める。
 
 ### 手順
 
@@ -18,30 +20,26 @@
 chezmoi status      # 各行 MM = source/target 両方変更ありの状態
 chezmoi diff        # 何が違うか
 
-# 2. 取り込む方向を選ぶ
-#  a) live を正として source へ反映（普通のケース）
-chezmoi re-add ~/.config/eventfx/config
-
-#  b) source 側を編集して live へ apply
-$EDITOR /Volumes/workspace/github.com/akira-toriyama/dotfiles/chezmoi/dot_config/xxx/...
-chezmoi apply --force ~/.config/xxx/...
-# --force は MM 状態の interactive prompt をスキップ
+# 2. live を source に取り込む
+chezmoi re-add ~/.config/chord/config.toml
+# 例: ~/.config/eventfx/config も同様
 
 # 3. dotfiles repo で確認 → PR
-cd /Volumes/workspace/github.com/akira-toriyama/dotfiles
+cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 git status
-git checkout -b chore/sync-xxx
-git add chezmoi/dot_config/xxx/...
-git commit -m ":memo: chore(dotfiles): xxx 設定を source に反映"
-git push -u origin chore/sync-xxx
+git checkout -b chore/sync-chord-config
+git add chezmoi/dot_config/chord/private_config.toml
+git commit -m ":memo: chore(dotfiles): chord 設定を source に反映"
+git push -u origin chore/sync-chord-config
 gh pr create --title "..." --body "..."
 gh pr merge --auto --squash
 ```
 
 ### 注意点
 
-- **template (`.tmpl`) を持つファイル** （例: `chezmoi/dot_config/chord/private_config.toml.tmpl`）は `chezmoi re-add` だと template 変数（`{{ $ULTRA_LL }}` 等）が展開済みの literal に戻ってしまう。`.tmpl` がある場合は **source 側を直接編集** が正解。
-- `run_onchange_` スクリプトが依存している設定は、`chezmoi apply` で hash 変化を検知して再走する（例: chord-validate.sh は chord config の sha256 を埋め込んでいる）。
+- **`.tmpl` を持つのは現状 `run_onchange_after_chord-validate.sh.tmpl` のみ** で、これは `{{ include ... | sha256sum }}` で chord config の hash を埋め込む技術的必要から（他ファイル変更を再走トリガに使う）。直接編集対象ではないので運用上の影響なし。
+- 将来もし `.tmpl` を新規追加するなら、その対象ファイルは `chezmoi re-add` ではなく **source `.tmpl` を直接編集**する必要がある（template 変数が literal に戻ってしまうため）。
+- `run_onchange_` スクリプトは `chezmoi apply` で hash 変化を検知して再走する（例: chord-validate.sh は chord config の sha256 を埋め込んでいる）。
 
 </details>
 
@@ -69,13 +67,13 @@ brew install --cask foo
 
 # 4. chezmoi 連携の要否を判定
 #    ~/Library/Containers/...      → 不要（sandbox 配下、追跡しづらい）
-#    ~/.config/xxx/...             → 必要、セクション 1 の手順で取り込む
+#    ~/.config/<app>/...           → 必要、セクション 1 の手順で取り込む
 #    ~/Library/Preferences/*.plist → defaults.nix で書く（chezmoi ではない）
 
 # 5. ローカルで非破壊チェック
-cd /Volumes/workspace/github.com/akira-toriyama/dotfiles
+cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 nix flake check --no-build
-nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini
+nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure
 
 # 6. PR
 git checkout -b feat/add-foo-cask
@@ -88,7 +86,7 @@ gh pr create
 # 7. merge 後、手元に反映
 gh pr merge <PR#> --auto --squash
 git checkout main && git pull
-sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#tominoMac-mini
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure
 # 既に手で試用 install してた場合は実質 no-op
 ```
 
@@ -199,7 +197,7 @@ chezmoi diff        # 詳細
 
 # Nix 側
 nix flake check --no-build                                          # eval/型
-nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini  # 非破壊 build
+nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure  # 非破壊 build
 
 # brew 側（宣言 vs 実 install）
 brew list --cask | sort                  # 実 install
@@ -266,12 +264,12 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 chezmoi status                                                 # source ↔ live の乖離
 chezmoi diff                                                   # 内容差分
 nix flake check --no-build                                     # Nix eval
-darwin-rebuild build --flake .#tominoMac-mini                  # 非破壊 Nix build
+darwin-rebuild build --flake .#default --impure                  # 非破壊 Nix build
 
 # 反映系
 chezmoi apply [-v] [--force]                                   # chezmoi 適用
 sudo /run/current-system/sw/bin/darwin-rebuild switch \
-  --flake .#tominoMac-mini                                     # Nix 適用（sudo 必要）
+  --flake .#default --impure                                     # Nix 適用（sudo 必要）
 
 # 取り込み系
 chezmoi add <path>                                             # 新規取り込み

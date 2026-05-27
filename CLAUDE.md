@@ -1,6 +1,6 @@
 # Claude 向け作業指針（このリポジトリ用）
 
-個人 macOS 環境の dotfiles（host: `tominoMac-mini` / aarch64-darwin / user: `tommy`）。
+個人 macOS 環境の dotfiles（aarch64-darwin / user: `tommy`）。
 スタック: **nix-darwin + home-manager + chezmoi + 1Password**。
 詳細: [docs/reproduction-architecture.md](docs/reproduction-architecture.md) /
 進捗: [docs/roadmap.md](docs/roadmap.md) /
@@ -103,8 +103,8 @@ flowchart TD
 ```sh
 # Nix 側（システム/パッケージ）
 nix flake check --no-build                                                       # eval のみ
-nix run nix-darwin#darwin-rebuild -- build --flake .#tominoMac-mini              # 非破壊ビルド
-sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#tominoMac-mini   # 実適用
+nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure            # 非破壊ビルド
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure # 実適用
 sudo /run/current-system/sw/bin/darwin-rebuild --rollback                        # 1世代戻す
 
 # chezmoi 側（手編集 dotfile）

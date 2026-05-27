@@ -33,7 +33,7 @@
   - 検証ゲート通過: 再配置前後で `chezmoi managed`(28件) と `chezmoi diff` が**完全一致**（$HOME 不変。※既存の未適用 .Brewfile 差分は再配置と無関係に元から存在）
 - [x] flake スケルトン作成（適用しない・ビルド確認のみ / commit 546d2c8）
   - `flake.nix`（nix-darwin/master + home-manager + nix-homebrew, follows 固定）
-  - `system/hosts/tominoMac-mini.nix`（host=LocalHostName。Computer`name`は日本語不可）
+  - `system/hosts/<hostname>.nix`（旧: 当初は LocalHostName 固定モジュール。後にホスト依存をやめ `system/hosts/generic.nix` に統一）
   - `system/modules/` `home/modules/` 雛形（空）。Determinate 共存で `nix.enable=false`
   - 強化検証ゲート通過（非破壊）: `nix flake check` ＋ **`darwin-rebuild build` 成功**（switch せず・実機でクロージャ生成確認）
 - [ ] ホスト名・ユーザー名・メールを `.chezmoi.toml.tmpl` の prompt 化方針を決定（→ 単一機なら据え置き可。複数機対応時に着手）
@@ -122,7 +122,7 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
   - `0b23dc6` :bug: install.sh: brew bundle 一括失敗時の per-tap/cask フォールバック (1 件失敗 → 全体 skip の救済)
   - `1c19955` :sparkles: install.sh: `GITHUB_TOKEN` env → nix `access-tokens` 注入 (api.github.com の rate limit 60 req/hr 回避、5000 req/hr 化)
 - [x] **`flake.nix` の `default` を動的 user 解決へ昇格** (`1f55e96`)
-  - 旧: `tominoMac-mini` alias で `username = "tommy"` ハードコード → tommy 以外の Mac で `system.primaryUser` エラー
+  - 旧: ホスト固定 alias (LocalHostName 名) で `username = "tommy"` ハードコード → tommy 以外の Mac で `system.primaryUser` エラー
   - 新: `detectUser` (FLAKE_USER → USER → "tommy") を `builtins.getEnv` で読む `.#default`。新 PC で任意ユーザー名対応、会社 PC 固定名は `FLAKE_USER` で override
 - [x] **`tart` を `home.packages` に追加** (`a6d6c3e`) — 新 PC でも再現テスト用 VM をすぐ立てられる
 - [x] **`rebuild` → `main` 昇格** (`44417f4`) — bootstrap URL を `/rebuild/` → `/main/` に切替、`install.sh` の `BRANCH` 既定も `main`

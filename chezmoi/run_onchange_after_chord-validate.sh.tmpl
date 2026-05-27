@@ -6,7 +6,7 @@
 #
 # 再実行トリガ: chord config の中身が変わったとき。include 経由で raw 内容を
 # sha256sum し本スクリプトの hash を変動させる (run_onchange_ の規約)。
-# chord config sha256: {{ include "dot_config/chord/private_config.toml.tmpl" | sha256sum }}
+# chord config sha256: {{ include "dot_config/chord/private_config.toml" | sha256sum }}
 
 set -eu
 

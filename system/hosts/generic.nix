@@ -6,9 +6,8 @@
   # system.primaryUser をそれに合わせて設定する。
   #
   # 利用ケース:
-  #   - darwinConfigurations.default  → $USER (= 任意の新 PC ユーザー名)
+  #   - darwinConfigurations.default  → $USER (常用 + 新 PC bootstrap、任意ユーザー名)
   #   - darwinConfigurations.ci       → "runner" (GitHub Actions runner)
-  #   - darwinConfigurations.<hostname> → 個別ホスト固定 (tominoMac-mini 等)
   imports = [
     ../modules
   ];
