@@ -70,9 +70,19 @@ cd "$REPO_DIR"
 # 4. nix-darwin 適用（brew/cask/mas/CLI/defaults を一括導入）
 # --impure: flake.nix の detectUser が $USER (or $FLAKE_USER) を builtins.getEnv で
 #           読むので必須。sudo 越しに USER/FLAKE_USER を伝搬する。
+# 失敗許容: brew cask の transient ダウンロード失敗 (上流 mirror 不調等) で
+# switch が非 0 終了しても、home.packages (nix 側) は switch の早期段階で
+# 既に適用済のため Phase 6 (chezmoi apply) は必ず走らせたい。`set -e` の
+# 一時解除 + warning 表示で続行する。真に致命的な失敗は warning が手がかり。
 echo "==> darwin-rebuild switch (--flake .#${FLAKE_HOST}, user=${FLAKE_USER:-$USER})"
+set +e
 sudo USER="$USER" FLAKE_USER="${FLAKE_USER:-}" \
   nix run nix-darwin/master#darwin-rebuild -- switch --flake ".#${FLAKE_HOST}" --impure
+darwin_rc=$?
+set -e
+if [ $darwin_rc -ne 0 ]; then
+  echo "⚠ darwin-rebuild switch exit code $darwin_rc (cask DL 失敗等。chezmoi apply は続行する)" >&2
+fi
 
 # 5. 1Password 連携の案内（手動ステップ・対話モードのみ表示）
 if [ "$NON_INTERACTIVE" != "1" ]; then
