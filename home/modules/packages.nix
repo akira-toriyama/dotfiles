@@ -22,5 +22,12 @@
     docker
     docker-compose
     colima  # docker CLI を動かす実行基盤(Lightweight Linux VM)。drop すると docker が無効化
+
+    # === 再現テスト基盤（roadmap Phase 6: 新 PC install.sh 自動検証）===
+    # Tart: Apple Silicon ネイティブの macOS/Linux 仮想化。
+    # cirruslabs/macos-sequoia-base イメージで「新 Mac 同然」の VM を立て、
+    # install.sh の一発再現を確認できる (GitHub Actions の macos-15 runner も
+    # 中身は Tart)。手元再現テストの起点。
+    tart
   ];
 }
