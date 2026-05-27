@@ -91,15 +91,27 @@ if [ $darwin_rc -ne 0 ]; then
   # 逐次実行。失敗した cask 1 件のみ skip され他は全 install される。
   BREWFILE=$(/usr/bin/find /nix/store -maxdepth 1 -name '*-Brewfile' -print 2>/dev/null | head -1)
   if [ -n "$BREWFILE" ] && [ -x /opt/homebrew/bin/brew ]; then
-    echo "==> per-cask install フォールバック (Brewfile: $BREWFILE)" >&2
-    failed_casks=""
+    echo "==> per-tap/cask install フォールバック (Brewfile: $BREWFILE)" >&2
+
+    # nix-darwin brew bundle abort 時はカスタム tap も未追加で残る可能性が
+    # あるため (Tart 検証で barutsrb/tap が抜けて omniwm が install 不能に
+    # なった件)、Brewfile から tap 行も拾って事前に `brew tap` する。
+    /usr/bin/grep '^tap "' "$BREWFILE" | /usr/bin/sed 's/tap "\([^"]*\)".*/\1/' | while IFS= read -r tap; do
+      [ -z "$tap" ] && continue
+      if /opt/homebrew/bin/brew tap "$tap" >/dev/null 2>&1; then
+        echo "  ✓ tap $tap" >&2
+      else
+        echo "  ✘ tap $tap 失敗 (依存 cask は install 不可)" >&2
+      fi
+    done
+
     # Brewfile から `cask "name"` 行を抽出して逐次 install
     /usr/bin/grep '^cask "' "$BREWFILE" | /usr/bin/sed 's/cask "\([^"]*\)".*/\1/' | while IFS= read -r cask; do
       [ -z "$cask" ] && continue
       if /opt/homebrew/bin/brew install --cask "$cask" >/dev/null 2>&1; then
-        echo "  ✓ $cask" >&2
+        echo "  ✓ cask $cask" >&2
       else
-        echo "  ✘ $cask 失敗 (続行)" >&2
+        echo "  ✘ cask $cask 失敗 (続行)" >&2
       fi
     done
   fi
