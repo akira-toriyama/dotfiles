@@ -4,7 +4,8 @@
 スタック: **nix-darwin + home-manager + chezmoi + 1Password**。
 詳細: [docs/reproduction-architecture.md](docs/reproduction-architecture.md) /
 進捗: [docs/roadmap.md](docs/roadmap.md) /
-環境素材: [docs/system-inventory.md](docs/system-inventory.md)
+環境素材: [docs/system-inventory.md](docs/system-inventory.md) /
+運用: [docs/operations.md](docs/operations.md)
 
 **最終目標**: このマシンを破棄しても新しい Mac で `install.sh` ワンコマンドで同等の環境が再現できる状態を維持する。
 
