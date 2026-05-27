@@ -40,7 +40,12 @@ separator-before = true
 action-type = "shell"
 # --copy フラグで panel 表示と同時に pbcopy。翻訳結果を後で
 # paste したいフローのテンプレ。
-action-cmd = 'printf "%s" "$SELECTION" | "$HOME/.local/bin/glance" --title "Selection" --width 480 --copy'
+# title = 選択元ウィンドウのタイトル ($WAND_TARGET_TITLE)。
+# wand v4.x+ では --show-menu が --title CLI flag を受け、
+# launcher が $EVENTFX_TITLE をそれで明示注入する (env が IPC で
+# 落ちる問題の根本対策)。指定無しでも daemon 側で AX-fetch する
+# fallback あり。取得不可は "Selection" にフォールバック。
+action-cmd = 'printf "%s" "$SELECTION" | "$HOME/.local/bin/glance" --title "${WAND_TARGET_TITLE:-Selection}" --width 480 --copy'
 
 # DeepL を curl 経由でパイプにすると翻訳結果を panel に出しつつ pbcopy
 # できる ($DEEPL_API_KEY 設定済前提)。ブラウザ open 版と置き換える場合:
@@ -49,7 +54,7 @@ action-cmd = 'printf "%s" "$SELECTION" | "$HOME/.local/bin/glance" --title "Sele
 # name = "DeepL で翻訳 → 表示 + コピー"
 # icon = "SF:character.bubble"
 # action-type = "shell"
-# action-cmd = 'printf %s "$SELECTION" | curl -s -X POST "https://api-free.deepl.com/v2/translate" -H "Authorization: DeepL-Auth-Key $DEEPL_API_KEY" --data-urlencode "text@-" -d "target_lang=JA" | jq -r ".translations[0].text" | "$HOME/.local/bin/glance" --title DeepL --width 480 --copy'
+# action-cmd = 'printf %s "$SELECTION" | curl -s -X POST "https://api-free.deepl.com/v2/translate" -H "Authorization: DeepL-Auth-Key $DEEPL_API_KEY" --data-urlencode "text@-" -d "target_lang=JA" | jq -r ".translations[0].text" | "$HOME/.local/bin/glance" --title "DeepL — ${WAND_TARGET_TITLE:-Selection}" --width 480 --copy'
 
 [[launcher.item]]
 name = "文字数・行数"

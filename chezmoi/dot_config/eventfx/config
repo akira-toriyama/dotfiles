@@ -6,7 +6,9 @@
 #
 # 環境変数:
 #   共通:           $EVENTFX_EVENT / $EVENTFX_PID / $EVENTFX_APP
-#   window_focused: $EVENTFX_WINDOW_ID / $EVENTFX_TITLE
+#                   $EVENTFX_WINDOW_ID / $EVENTFX_TITLE
+#                   (text_selected でも focused window の id/title が入る。
+#                    取得不可は 0 / 空)
 #   text_selected:  $EVENTFX_SELECTION / $EVENTFX_CURSOR_X / $EVENTFX_CURSOR_Y
 #                   (cursor は Cocoa 座標, 全スクリーン)
 

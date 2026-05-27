@@ -170,3 +170,30 @@ action-shell = 'afplay "{{ .chezmoi.homeDir }}/.local/share/sounds/undefined_key
 name = "WONDER_RR undefined feedback"
 input = "{{ $WONDER_RR }} - *"
 action-shell = 'afplay "{{ .chezmoi.homeDir }}/.local/share/sounds/undefined_key.wav"'
+
+
+# =====================================================================
+# v2.1 stateful bindings (chord >= 0.4.0)
+# action-set-var / when-var / hold-while-timeout は dfb5f74 で本流入り。
+# 古い chord バイナリでは "missing-action" warning で drop される。
+# =====================================================================
+
+# ---- ULTRA_LL j-layer (1500ms inactivity timeout) ----
+
+[[bindings]]
+name = "ULTRA_LL + j → arm j-layer"
+input = "{{ $ULTRA_LL }} - j"
+action-set-var = "jlayer"
+hold-while-timeout = 1500
+
+[[bindings]]
+name = "ULTRA_LL + k → Enter (in j-layer)"
+input = "{{ $ULTRA_LL }} - k"
+when-var = "jlayer"
+action-keys = "return"
+
+[[bindings]]
+name = "ULTRA_LL + l → Backspace (in j-layer)"
+input = "{{ $ULTRA_LL }} - l"
+when-var = "jlayer"
+action-keys = "backspace"
