@@ -3,7 +3,7 @@
 # eventfx 等と同じ「直接編集 → re-add」運用。
 #
 # 修飾子 4 セット (ZMK 物理 chord) は [input-aliases] で論理名化し、
-# `input = "ULTRA_LL - c"` のように bare reference する
+# `input = "$ULTRA_LL - c"` のように `$prefix` で参照する
 # (chord の [input-aliases] 機能、akira-toriyama/chord PR #4)。
 #   ULTRA_LL   = rctrl + ralt + rshift   (RALT+RSHIFT+RCTRL, RGUI なし)
 #   MIRACLE_LM = rctrl + rcmd + rshift   (RGUI+RSHIFT+RCTRL, RALT なし)
@@ -28,17 +28,17 @@ exclude-apps = []
 
 
 # =====================================================================
-# Aliases — chord 0.3.x の [aliases] 機能で shell-action を DRY 化。
+# Aliases — chord の [action-aliases] 機能 (v0.6.0+)で shell-action を DRY 化。
 # `@name` で参照。$HOME は zsh -l -c が実行時展開する。
 # =====================================================================
 
-[aliases]
+[action-aliases]
 play-undef = 'afplay "$HOME/.local/share/sounds/undefined_key.wav"'
 
 
 # =====================================================================
 # Input aliases — chord の [input-aliases] 機能で modifier セットを論理名化。
-# bare reference (no @ prefix)。built-in modifier (cmd / ctrl / ...) と
+# `$prefix` で参照 (v0.6.0+、no @ prefix と区別)。built-in modifier (cmd / ctrl / ...) と
 # 名前衝突する alias は load 時 reject される。case-insensitive。
 # =====================================================================
 
@@ -59,53 +59,53 @@ WONDER_RR  = "rcmd + ralt + rshift"
 # doc: タブを左へ（Chrome: Ctrl+Shift+Tab）
 [[bindings]]
 name = "tab-left (Chrome)"
-input = "ULTRA_LL - c"
+input = "$ULTRA_LL - c"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl + shift - tab"
 
 # doc: タブを左へ（VS Code: Cmd+Shift+[）
 [[bindings]]
 name = "tab-left (VS Code)"
-input = "ULTRA_LL - c"
+input = "$ULTRA_LL - c"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ["
 
 # doc: タブを右へ（Chrome: Ctrl+Tab）
 [[bindings]]
 name = "tab-right (Chrome)"
-input = "ULTRA_LL - v"
+input = "$ULTRA_LL - v"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl - tab"
 
 # doc: タブを右へ（VS Code: Cmd+Shift+]）
 [[bindings]]
 name = "tab-right (VS Code)"
-input = "ULTRA_LL - v"
+input = "$ULTRA_LL - v"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ]"
 
 # doc: 前のウィンドウへ（rift フォーカス）
 [[bindings]]
 name = "rift focus prev"
-input = "ULTRA_LL - d"
+input = "$ULTRA_LL - d"
 action-shell = "rift-cli execute window prev"
 
 # doc: 次のウィンドウへ（rift フォーカス）
 [[bindings]]
 name = "rift focus next"
-input = "ULTRA_LL - f"
+input = "$ULTRA_LL - f"
 action-shell = "rift-cli execute window next"
 
 # doc: AltTab 起動（全スペース。旧 cmd+ctrl+tab）
 [[bindings]]
 name = "alttab all-spaces"
-input = "ULTRA_LL - a"
+input = "$ULTRA_LL - a"
 action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=1"
 
 # doc: AltTab 起動（現スペース。旧 alt+tab）
 [[bindings]]
 name = "alttab current-space"
-input = "ULTRA_LL - s"
+input = "$ULTRA_LL - s"
 action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=0"
 
 
@@ -170,27 +170,27 @@ action-keys = "return"
 # `*` ワイルドカードで実装。[[bindings]] が全 miss した時だけ [[fallbacks]]
 # が評価されるので、既存バインドとの誤爆は発生しない。
 # 音は 1 種共通（旧 skhd 時代の運用と同じ）。アセットは dotfiles 管轄、
-# `@play-undef` (上の [aliases]) 経由で参照する。
+# `@play-undef` (上の [action-aliases]) 経由で参照する。
 # `# doc:` は付けない（README ショートカット表に出さない＝負のバインド扱い）。
 
 [[fallbacks]]
 name = "ULTRA_LL undefined feedback"
-input = "ULTRA_LL - *"
+input = "$ULTRA_LL - *"
 action-shell = "@play-undef"
 
 [[fallbacks]]
 name = "MIRACLE_LM undefined feedback"
-input = "MIRACLE_LM - *"
+input = "$MIRACLE_LM - *"
 action-shell = "@play-undef"
 
 [[fallbacks]]
 name = "MEGA_RM undefined feedback"
-input = "MEGA_RM - *"
+input = "$MEGA_RM - *"
 action-shell = "@play-undef"
 
 [[fallbacks]]
 name = "WONDER_RR undefined feedback"
-input = "WONDER_RR - *"
+input = "$WONDER_RR - *"
 action-shell = "@play-undef"
 
 
@@ -204,18 +204,18 @@ action-shell = "@play-undef"
 
 [[bindings]]
 name = "ULTRA_LL + j → arm j-layer"
-input = "ULTRA_LL - j"
+input = "$ULTRA_LL - j"
 action-set-var = "jlayer"
 hold-while-timeout = 1500
 
 [[bindings]]
 name = "ULTRA_LL + k → Enter (in j-layer)"
-input = "ULTRA_LL - k"
+input = "$ULTRA_LL - k"
 when-var = "jlayer"
 action-keys = "return"
 
 [[bindings]]
 name = "ULTRA_LL + l → Backspace (in j-layer)"
-input = "ULTRA_LL - l"
+input = "$ULTRA_LL - l"
 when-var = "jlayer"
 action-keys = "backspace"

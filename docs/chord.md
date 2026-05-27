@@ -8,10 +8,10 @@ ZMK ファームから届くチョードを macOS 側で捕まえてアクショ
 
 - [chezmoi/dot_config/chord/private_config.toml](../chezmoi/dot_config/chord/private_config.toml):
   plain TOML（**唯一のソース**、template 評価なし）。`[options]`、
-  `[aliases]`（shell-action の DRY 化）、`[input-aliases]`（modifier セットの
+  `[action-aliases]`（shell-action の DRY 化、`@name`）、`[input-aliases]`（modifier セットの
   論理名）、`[[bindings]]`、`[[fallbacks]]` を含む。ZMK 右側修飾子セット 4 個
   (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) は `[input-aliases]` で **論理名定義**
-  → `input = "ULTRA_LL - c"` のように bare reference する。
+  → `input = "$ULTRA_LL - c"` のように `$prefix` で参照する。
 - [chezmoi/run_onchange_after_chord-validate.sh.tmpl](../chezmoi/run_onchange_after_chord-validate.sh.tmpl):
   `chezmoi apply` 後に `chord --validate` を走らせる検証ゲート。chord 在中時のみ
   実行され、失敗時は exit 1 を返す（fresh bootstrap や CI Linux では no-op）。
@@ -33,7 +33,7 @@ chezmoi re-add ~/.config/chord/config.toml  # source に取り込み
 
 chord は vnode 監視で自動 reload するので明示 `chord --reload` は不要。
 修飾子組を変える場合は `[input-aliases]` テーブルの 1 行を書き換えるだけで、
-binding 側 (`input = "ULTRA_LL - c"`) は触らずに済む。
+binding 側 (`input = "$ULTRA_LL - c"`) は触らずに済む。
 
 ## chord 側のセットアップ（参考）
 
@@ -64,14 +64,14 @@ private_config.toml の `# doc:` 行＋`[[bindings]]` を編集 →
 
 | Chord | Action | Apps |
 |---|---|---|
-| `ULTRA_LL + C` | タブを左へ（Chrome: Ctrl+Shift+Tab） | com.google.Chrome |
-| `ULTRA_LL + C` | タブを左へ（VS Code: Cmd+Shift+[） | com.microsoft.VSCode |
-| `ULTRA_LL + V` | タブを右へ（Chrome: Ctrl+Tab） | com.google.Chrome |
-| `ULTRA_LL + V` | タブを右へ（VS Code: Cmd+Shift+]） | com.microsoft.VSCode |
-| `ULTRA_LL + D` | 前のウィンドウへ（rift フォーカス） | * |
-| `ULTRA_LL + F` | 次のウィンドウへ（rift フォーカス） | * |
-| `ULTRA_LL + A` | AltTab 起動（全スペース。旧 cmd+ctrl+tab） | * |
-| `ULTRA_LL + S` | AltTab 起動（現スペース。旧 alt+tab） | * |
+| `$ULTRA_LL + C` | タブを左へ（Chrome: Ctrl+Shift+Tab） | com.google.Chrome |
+| `$ULTRA_LL + C` | タブを左へ（VS Code: Cmd+Shift+[） | com.microsoft.VSCode |
+| `$ULTRA_LL + V` | タブを右へ（Chrome: Ctrl+Tab） | com.google.Chrome |
+| `$ULTRA_LL + V` | タブを右へ（VS Code: Cmd+Shift+]） | com.microsoft.VSCode |
+| `$ULTRA_LL + D` | 前のウィンドウへ（rift フォーカス） | * |
+| `$ULTRA_LL + F` | 次のウィンドウへ（rift フォーカス） | * |
+| `$ULTRA_LL + A` | AltTab 起動（全スペース。旧 cmd+ctrl+tab） | * |
+| `$ULTRA_LL + S` | AltTab 起動（現スペース。旧 alt+tab） | * |
 | `kp_1` | Mission Control（全ワークスペースをグリッド表示） | * |
 | `Ctrl + B` | ← Left | * |
 | `Ctrl + F` | → Right | * |

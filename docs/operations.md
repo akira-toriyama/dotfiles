@@ -335,7 +335,7 @@ chord --doctor
 
 ## 完了済の大きな migration
 
-- **chord `[input-aliases]` 機能 + 論理名移行** — chord 本体 ([akira-toriyama/chord PR #4](https://github.com/akira-toriyama/chord/pull/4)) で `[input-aliases]` 機能が ship 済。`chezmoi/dot_config/chord/private_config.toml` は `[input-aliases]` テーブル + bare `ULTRA_LL` 参照に移行済、`scripts/gen-chord-doc.py` の hardcoded dict も削除済。daemon 入れ替え手順は下の 5.10 を参照。
+- **chord `[input-aliases]` 機能 + 論理名移行** — chord 本体で `[input-aliases]` 機能が ship 済 ([PR #4](https://github.com/akira-toriyama/chord/pull/4) v0.5.0 初版、[PR #7](https://github.com/akira-toriyama/chord/pull/7) で v0.6.0 として `$prefix` 必須 + `[aliases]` → `[action-aliases]` rename + schema v2 → v3)。`chezmoi/dot_config/chord/private_config.toml` は `[action-aliases]` + `[input-aliases]` + `$prefix` 参照 (`input = "$ULTRA_LL - c"`) に移行済。`scripts/gen-chord-doc.py` の hardcoded dict は削除済 (chord 自身が alias 解決)。daemon 入れ替えは `brew upgrade chord && chord --resign` か 5.10 の手元 build 手順を参照。
 
 ## 参考
 
