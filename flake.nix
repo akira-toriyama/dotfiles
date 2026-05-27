@@ -68,9 +68,22 @@
           ] ++ extraModules;
           specialArgs = { inherit username; };
         };
+
+      # 新 PC bootstrap / CI / Tart VM 共通の brew override。
+      #   - autoUpdate=true: 新規環境では cask メタデータが古い (上流 cask 更新
+      #     直後だと checksum mismatch で brew bundle fetch が失敗する)。
+      #     activation の度に brew update を強制して fresh metadata を引く。
+      #   - masApps 空: 1Password など App Store サインインが必要な mas は
+      #     bootstrap/CI/VM の文脈ではセットアップできない、強制空に。
+      # tominoMac-mini (tommy の実機・常用) は override 不要 (autoUpdate=false 既定)。
+      bootstrapBrewOverride = { lib, ... }: {
+        homebrew.masApps = lib.mkForce { };
+        homebrew.onActivation.autoUpdate = lib.mkForce true;
+      };
     in
     {
       # 既知の実機 (tommy の Mac mini)。明示的に host 名を指す場合用。
+      # autoUpdate=false の常用ホスト (頻繁な brew 更新を避ける、既定)。
       darwinConfigurations.${hostname} = mkDarwin {
         username = "tommy";
         hostModule = ./system/hosts/${hostname}.nix;
@@ -80,25 +93,20 @@
       # username は detectUser (FLAKE_USER → USER → "tommy") で実行時解決するため、
       # 任意ユーザー名の Mac (= tommy 以外の新 PC や会社 PC) でもそのまま動く。
       # 既存 tommy の Mac でも `USER=tommy` なので同じ結果になり、後方互換あり。
+      # bootstrap override (autoUpdate=true, masApps 空) を適用、新規環境で
+      # 確実に cask が fetch できる + App Store サインイン不要構成。
       darwinConfigurations.default = mkDarwin {
         username = detectUser;
         hostModule = ./system/hosts/generic.nix;
+        extraModules = [ bootstrapBrewOverride ];
       };
 
       # CI 用: GitHub Actions の macos-latest runner で switch をスモークテストする。
-      # 違い:
-      #   - username = "runner" (runner ホスト OS のユーザー、env に依存させない)
-      #   - masApps は空 (App Store サインインができない CI で落ちないように)
-      #   - autoUpdate=true (runner image の brew メタデータが古い可能性への対策)
+      # username = "runner" (env に依存させず固定)、override は default と共通。
       darwinConfigurations.ci = mkDarwin {
         username = "runner";
         hostModule = ./system/hosts/generic.nix;
-        extraModules = [
-          ({ lib, ... }: {
-            homebrew.masApps = lib.mkForce { };
-            homebrew.onActivation.autoUpdate = lib.mkForce true;
-          })
-        ];
+        extraModules = [ bootstrapBrewOverride ];
       };
     };
 }
