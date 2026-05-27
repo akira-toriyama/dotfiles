@@ -35,12 +35,6 @@ gh pr create --title "..." --body "..."
 gh pr merge --auto --squash
 ```
 
-### 注意点
-
-- **`.tmpl` を持つのは現状 `run_onchange_after_chord-validate.sh.tmpl` のみ** で、これは `{{ include ... | sha256sum }}` で chord config の hash を埋め込む技術的必要から（他ファイル変更を再走トリガに使う）。直接編集対象ではないので運用上の影響なし。
-- 将来もし `.tmpl` を新規追加するなら、その対象ファイルは `chezmoi re-add` ではなく **source `.tmpl` を直接編集**する必要がある（template 変数が literal に戻ってしまうため）。
-- `run_onchange_` スクリプトは `chezmoi apply` で hash 変化を検知して再走する（例: chord-validate.sh は chord config の sha256 を埋め込んでいる）。
-
 </details>
 
 ---
