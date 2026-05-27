@@ -314,7 +314,9 @@ brew services stop chord
 sleep 1
 
 # 3. brew install の Chord.app 中の binary を swap
-CHORD_APP=/opt/homebrew/Cellar/chord/0.4.0/Chord.app
+#    `/opt/homebrew/opt/chord` は現バージョンへの symlink (例: ../Cellar/chord/0.5.0)
+#    なので version 数字を埋め込まずに済む。
+CHORD_APP="$(brew --prefix chord)/Chord.app"
 NEW=/Volumes/workspace/github.com/akira-toriyama/chord/.build/release/chord
 cp "$CHORD_APP/Contents/MacOS/chord" "$CHORD_APP/Contents/MacOS/chord.bak"
 cp "$NEW" "$CHORD_APP/Contents/MacOS/chord"
