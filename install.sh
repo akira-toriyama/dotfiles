@@ -32,6 +32,18 @@ done
 # GitHub Actions / 一般 CI 環境では自動的に非対話扱い
 [ -n "${CI:-}" ] && NON_INTERACTIVE=1
 
+# GITHUB_TOKEN が渡されていれば nix の GitHub fetcher 認証に使う。
+# nix run nix-darwin/master#... は api.github.com で master ref を解決する
+# ので、未認証だと 60 req/hr の rate limit に当たって 403 で switch が
+# 失敗する (Tart 検証反復で再現)。fine-grained でも classic でも、scope
+# 不要な public-read 範囲だけあれば十分。
+# export GITHUB_TOKEN=$(gh auth token) のように事前に投入する想定。
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  echo "==> nix に GITHUB_TOKEN を渡す (api.github.com rate limit 回避)"
+  NIX_CONFIG_EXTRA="access-tokens = github.com=$GITHUB_TOKEN"
+  export NIX_CONFIG="${NIX_CONFIG:-}${NIX_CONFIG:+$'\n'}$NIX_CONFIG_EXTRA"
+fi
+
 # 1. Xcode Command Line Tools
 if ! xcode-select -p >/dev/null 2>&1; then
   echo "==> Xcode Command Line Tools をインストール"
@@ -76,7 +88,7 @@ cd "$REPO_DIR"
 # 一時解除 + warning 表示で続行する。真に致命的な失敗は warning が手がかり。
 echo "==> darwin-rebuild switch (--flake .#${FLAKE_HOST}, user=${FLAKE_USER:-$USER})"
 set +e
-sudo USER="$USER" FLAKE_USER="${FLAKE_USER:-}" \
+sudo USER="$USER" FLAKE_USER="${FLAKE_USER:-}" NIX_CONFIG="${NIX_CONFIG:-}" \
   nix run nix-darwin/master#darwin-rebuild -- switch --flake ".#${FLAKE_HOST}" --impure
 darwin_rc=$?
 set -e
