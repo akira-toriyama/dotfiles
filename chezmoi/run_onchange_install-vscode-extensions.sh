@@ -2,15 +2,10 @@
 # VSCode 拡張の宣言的インストール。
 # VSCode 本体は cask（nix-darwin/homebrew.casks）管理だが、拡張は
 # `code --install-extension` で追加するのが正攻法なので chezmoi 側で扱う。
-# 拡張リストが変わるとハッシュが変化 → chezmoi が再実行 → 増分 install。
+# 拡張リストが変わるとスクリプト本文の hash が変化 → chezmoi が再実行 → 増分 install。
 #
 # 拡張リスト:
-{{- $extensions := list
-  "anthropic.claude-code"
--}}
-{{ range $extensions -}}
-# - {{ . }}
-{{ end -}}
+# - anthropic.claude-code
 set -e
 
 # cask の VSCode が提供する code バイナリ
@@ -21,7 +16,9 @@ if [ ! -x "$CODE_BIN" ]; then
   exit 0
 fi
 
-{{ range $extensions -}}
-"$CODE_BIN" --install-extension {{ . | quote }} --force >/dev/null
-{{ end -}}
+for ext in \
+  anthropic.claude-code
+do
+  "$CODE_BIN" --install-extension "$ext" --force >/dev/null
+done
 echo "VSCode 拡張のインストール完了"

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""chezmoi/dot_config/chord/private_config.toml.tmpl から docs/chord.md の
+"""chezmoi/dot_config/chord/private_config.toml から docs/chord.md の
 ショートカット表を生成。
 
 各 `[[bindings]]` 直前の `# doc: <動作>` 行を唯一のソースとし、docs/chord.md
 内の AUTO-GENERATED マーカー間（markdown 表）を書き換える。
-ショートカット表記は `input = "..."` から導出。`{{ $ULTRA_LL }}` 等の
-chezmoi template 変数は論理名のまま表示（rendered 後の `rctrl + ralt + rshift`
-ではなく ZMK 側の論理名 `ULTRA_LL` を表に出す）。
+ショートカット表記は `input = "..."` から導出。modifier セットが ZMK 物理
+chord の 4 組（ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR）に一致する場合は
+論理名で出力する（literal の `rctrl + ralt + rshift` ではなく `ULTRA_LL`）。
 
   python3 scripts/gen-chord-doc.py            # 生成して docs/chord.md を更新
   python3 scripts/gen-chord-doc.py --check    # 差分があれば exit 1 (CI 用)
@@ -20,10 +20,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TMPL = ROOT / "chezmoi" / "dot_config" / "chord" / "private_config.toml.tmpl"
+TMPL = ROOT / "chezmoi" / "dot_config" / "chord" / "private_config.toml"
 DOC = ROOT / "docs" / "chord.md"
 
-BEGIN = "<!-- AUTO-GENERATED (scripts/gen-chord-doc.py from chezmoi/dot_config/chord/private_config.toml.tmpl) — do not edit -->"
+BEGIN = "<!-- AUTO-GENERATED (scripts/gen-chord-doc.py from chezmoi/dot_config/chord/private_config.toml) — do not edit -->"
 END = "<!-- END AUTO-GENERATED -->"
 
 DOC_RE = re.compile(r"^#\s*doc:\s*(.+?)\s*$")
@@ -31,8 +31,16 @@ BIND_RE = re.compile(r'^\[\[bindings\]\]\s*$')
 INPUT_RE = re.compile(r'^input\s*=\s*"(.+?)"\s*$')
 APPS_RE = re.compile(r'^apps\s*=\s*\[(.+?)\]\s*$')
 
-# chezmoi template 変数参照: `{{ $ULTRA_LL }}` → "ULTRA_LL"
-TMPL_VAR_RE = re.compile(r"\{\{\s*\$([A-Z_][A-Z0-9_]*)\s*\}\}")
+# ZMK 物理 chord (4 修飾子セット) の literal → 論理名 mapping。
+# 順序非依存に照合するため frozenset で持つ。
+# chord 本体に [input-aliases] 機能が入ったら、config の [input-aliases]
+# テーブルを直接読む実装に差し替えてこの dict を削除する予定。
+MODIFIER_SET_NAMES: dict[frozenset[str], str] = {
+    frozenset(["rctrl", "ralt", "rshift"]): "ULTRA_LL",
+    frozenset(["rctrl", "rcmd", "rshift"]): "MIRACLE_LM",
+    frozenset(["rctrl", "rcmd", "ralt"]):   "MEGA_RM",
+    frozenset(["rcmd",  "ralt", "rshift"]): "WONDER_RR",
+}
 
 # 修飾子トークンの表記正規化（chord の input 文法に合わせる）。
 _MOD = {
@@ -43,11 +51,8 @@ _MOD = {
 
 
 def _format_token(tok: str) -> str:
-    """`{{ $ULTRA_LL }}` → `ULTRA_LL`、修飾子は表記正規化、単文字は大文字、
-    複数文字キー（kp_1/forward_delete/left 等）はそのまま。"""
-    m = TMPL_VAR_RE.fullmatch(tok)
-    if m:
-        return m.group(1)
+    """修飾子は表記正規化、単文字は大文字、複数文字キー（kp_1/forward_delete/
+    left 等）はそのまま。"""
     low = tok.lower()
     if low in _MOD:
         return _MOD[low]
@@ -55,13 +60,17 @@ def _format_token(tok: str) -> str:
 
 
 def chord_str(input_raw: str) -> str:
-    """`{{ $ULTRA_LL }} - c` → `ULTRA_LL + C`。
-    `ctrl + shift - tab` → `Ctrl + Shift + Tab`。
+    """`rctrl + ralt + rshift - c` → `ULTRA_LL + C`（4 set のいずれかに該当時）。
+    `ctrl + shift - tab` → `Ctrl + Shift + Tab`（該当しない時の通常表記）。
     mods の有無に対応（単押し: `kp_1` → `kp_1`）。"""
     if " - " in input_raw:
         mod_part, key_part = input_raw.split(" - ", 1)
-        toks = [_format_token(t.strip()) for t in mod_part.split("+")]
+        mods_lower = [t.strip().lower() for t in mod_part.split("+")]
         key = _format_token(key_part.strip())
+        ms_name = MODIFIER_SET_NAMES.get(frozenset(mods_lower))
+        if ms_name:
+            return f"{ms_name} + {key}"
+        toks = [_format_token(t.strip()) for t in mod_part.split("+")]
         return " + ".join(toks + [key])
     return _format_token(input_raw.strip())
 
