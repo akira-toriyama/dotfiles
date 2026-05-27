@@ -111,22 +111,38 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 
 ## フェーズ 6: 再現テスト（ゴール判定）
 
-- [ ] 使い捨て VM / 予備機で設計 §3 のブートストラップを通しで実行
-- [ ] 差分（手作業で直した箇所）を洗い出し、該当フェーズへ反映
+- [x] **使い捨て VM (Tart) で設計 §3 のブートストラップ通し実行 → 完走** (2026-05-27)
+  - `cirruslabs/macos-sequoia-base` を Tart VM 化、`install.sh` ワンコマンドで全工程再現
+  - `CI=true` 投入で対話 skip、約 14 分で `✓ 完了。` 到達
+  - 配置物: home.packages 10 種 / cask 19 本 (1Password〜zed)/ chezmoi seed 9 ファイル (mode 維持: chord 0600, eventfx scripts +x)
+- [x] **差分洗い出し → 該当フェーズへ反映** (今回 5 つの fix を install.sh / flake.nix に投入):
+  - `a1ff163` :bug: install.sh: `darwin-rebuild switch` 失敗許容 (cask DL 失敗で Phase 6 が skip される問題)
+  - `2993144` :bug: install.sh: chezmoi 呼び出し前に `/etc/profiles/per-user/$USER/bin` を PATH 注入
+  - `f4bc63c` :bug: host modules: `tart` を `allowUnfreePredicate` に追加 (switch eval 失敗回避)
+  - `0b23dc6` :bug: install.sh: brew bundle 一括失敗時の per-tap/cask フォールバック (1 件失敗 → 全体 skip の救済)
+  - `1c19955` :sparkles: install.sh: `GITHUB_TOKEN` env → nix `access-tokens` 注入 (api.github.com の rate limit 60 req/hr 回避、5000 req/hr 化)
+- [x] **`flake.nix` の `default` を動的 user 解決へ昇格** (`1f55e96`)
+  - 旧: `tominoMac-mini` alias で `username = "tommy"` ハードコード → tommy 以外の Mac で `system.primaryUser` エラー
+  - 新: `detectUser` (FLAKE_USER → USER → "tommy") を `builtins.getEnv` で読む `.#default`。新 PC で任意ユーザー名対応、会社 PC 固定名は `FLAKE_USER` で override
+- [x] **`tart` を `home.packages` に追加** (`a6d6c3e`) — 新 PC でも再現テスト用 VM をすぐ立てられる
+- [x] **`rebuild` → `main` 昇格** (`44417f4`) — bootstrap URL を `/rebuild/` → `/main/` に切替、`install.sh` の `BRANCH` 既定も `main`
+- [x] **README に `CI=true` / `GITHUB_TOKEN` 解説追加** (`f0097dc`)
+- [x] **chord/eventfx/facet/wand を chezmoi に取り込み** (rebuild フェーズ後半で完了、`/Volumes/.../canon` 側から chord 設定を完全移管)
 - [x] 旧 `dot_Brewfile` / `run_onchange_install-packages` を削除（commit 41ecb56、役目消滅確認・install.sh も Nix-first フローに書き換え）
 - [x] CI 導入（`.github/workflows/ci.yml`、4ジョブ全グリーン）
   - `nix flake check --no-build`（型/eval）/ `shellcheck`（install.sh）/ 規約検知（`executable_` 接頭辞 grep）/ `chezmoi execute-template` レンダ
-  - ⚠️ macOS cask/defaults は Linux CI で完全検証不可。CI は部分保証、本命は実機テスト
+  - ⚠️ macOS cask/defaults は Linux CI で完全検証不可。CI は部分保証、本命は実機テスト ← Tart VM 検証で補完
+- [x] **chord 専用 CI 追加**: `verify-chord-validate.yml` (macos-15 で `chord --validate --strict`) + `verify-chord-doc.yml` (`docs/chord.md` 同期検証)
 - [x] 規約は [CLAUDE.md](../CLAUDE.md) + CI に集約し、README から重複削除
 
-**検証ゲート（=最終ゴール）**: クリーン環境で `clone → bootstrap` のみで同等環境が再現できる
+**検証ゲート（=最終ゴール）**: ✅ **達成** — Tart VM の admin user で `install.sh` ワンコマンドで同等環境再現、claude / user の二重検証で完走確認 (2026-05-27)
 
 ---
 
 ## 未決事項（判断待ち・随時更新）
 
 - [x] `.chezmoiroot` 採用の最終 GO → 採用決定・実施済み（commit f9b1800）
-- [ ] ブランチ運用（`rebuild` を正式ラインへ昇格 / 既定ブランチ変更するか）
+- [x] **ブランチ運用** → `rebuild` を `main` へ force-push 統合、`install.sh` URL も `/main/` に正式昇格 (2026-05-27、commit `44417f4`)。以降の新規作業は引き続き `rebuild` を作業ブランチとし、節目で `main` へ同期する運用
 - [ ] LICENSE / リポジトリ公開範囲
 - [ ] asdf の置換先（nix / mise / devbox）
 - [ ] just（タスクランナー）導入可否
