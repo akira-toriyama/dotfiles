@@ -7,11 +7,11 @@ ZMK ファームから届くチョードを macOS 側で捕まえてアクショ
 ## ファイル
 
 - [chezmoi/dot_config/chord/private_config.toml](../chezmoi/dot_config/chord/private_config.toml):
-  plain TOML（**唯一のソース**、template 評価なし）。`[[bindings]]`（実バインド）
-  と `[[fallbacks]]`（未定義キー効果音）、`[aliases]`（shell-action の DRY 化）
-  を含む。ZMK 右側修飾子セット 4 個は literal 表記
-  （`rctrl + ralt + rshift` = ULTRA_LL 等）。論理名は docs 生成時に
-  `scripts/gen-chord-doc.py` の dict が復元する。
+  plain TOML（**唯一のソース**、template 評価なし）。`[options]`、
+  `[aliases]`（shell-action の DRY 化）、`[input-aliases]`（modifier セットの
+  論理名）、`[[bindings]]`、`[[fallbacks]]` を含む。ZMK 右側修飾子セット 4 個
+  (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) は `[input-aliases]` で **論理名定義**
+  → `input = "ULTRA_LL - c"` のように bare reference する。
 - [chezmoi/run_onchange_after_chord-validate.sh.tmpl](../chezmoi/run_onchange_after_chord-validate.sh.tmpl):
   `chezmoi apply` 後に `chord --validate` を走らせる検証ゲート。chord 在中時のみ
   実行され、失敗時は exit 1 を返す（fresh bootstrap や CI Linux では no-op）。
@@ -19,21 +19,21 @@ ZMK ファームから届くチョードを macOS 側で捕まえてアクショ
   hash を埋め込み、変更時の再走トリガに使うため）。
 - [scripts/gen-chord-doc.py](../scripts/gen-chord-doc.py):
   上記 config の `# doc:` コメントから本ドキュメントのショートカット表を生成。
-  4 修飾子セット (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) の literal → 論理名
-  mapping を内部 dict で保持。
+  `input` の token を `_format_token` で表記正規化するだけ。論理名
+  (ULTRA_LL 等) は原文のまま出力されるので、`[input-aliases]` で定義した
+  名前がそのまま表に出る。
 
 ## 使い方
 
 ```sh
 $EDITOR ~/.config/chord/config.toml         # 直接編集（eventfx 等と同じ運用）
-chord --validate --config ~/.config/chord/config.toml  # 動作確認（任意）
+chord --validate                            # 動作確認（任意）
 chezmoi re-add ~/.config/chord/config.toml  # source に取り込み
 ```
 
 chord は vnode 監視で自動 reload するので明示 `chord --reload` は不要。
-修飾子組を変える場合は literal を一括置換 (`sed` 等)。将来 chord 本体に
-`[input-aliases]` 機能が入ったら、bare 参照 (`input = "ULTRA_LL - c"`) に
-書き換える予定。
+修飾子組を変える場合は `[input-aliases]` テーブルの 1 行を書き換えるだけで、
+binding 側 (`input = "ULTRA_LL - c"`) は触らずに済む。
 
 ## chord 側のセットアップ（参考）
 

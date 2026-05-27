@@ -4,9 +4,14 @@
 
 各 `[[bindings]]` 直前の `# doc: <動作>` 行を唯一のソースとし、docs/chord.md
 内の AUTO-GENERATED マーカー間（markdown 表）を書き換える。
-ショートカット表記は `input = "..."` から導出。modifier セットが ZMK 物理
-chord の 4 組（ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR）に一致する場合は
-論理名で出力する（literal の `rctrl + ralt + rshift` ではなく `ULTRA_LL`）。
+
+ショートカット表記は `input = "..."` から導出。`input` 内の token は:
+  • built-in modifier (cmd / ctrl / shift / ...) → 表記正規化（Cmd / Ctrl /
+    ...）
+  • chord の `[input-aliases]` で定義された論理名 (ULTRA_LL 等) →
+    そのまま出力（bare reference を尊重）
+  • 単文字キー → 大文字
+  • 複数文字キー (kp_1 / forward_delete / left 等) → そのまま
 
   python3 scripts/gen-chord-doc.py            # 生成して docs/chord.md を更新
   python3 scripts/gen-chord-doc.py --check    # 差分があれば exit 1 (CI 用)
@@ -31,18 +36,9 @@ BIND_RE = re.compile(r'^\[\[bindings\]\]\s*$')
 INPUT_RE = re.compile(r'^input\s*=\s*"(.+?)"\s*$')
 APPS_RE = re.compile(r'^apps\s*=\s*\[(.+?)\]\s*$')
 
-# ZMK 物理 chord (4 修飾子セット) の literal → 論理名 mapping。
-# 順序非依存に照合するため frozenset で持つ。
-# chord 本体に [input-aliases] 機能が入ったら、config の [input-aliases]
-# テーブルを直接読む実装に差し替えてこの dict を削除する予定。
-MODIFIER_SET_NAMES: dict[frozenset[str], str] = {
-    frozenset(["rctrl", "ralt", "rshift"]): "ULTRA_LL",
-    frozenset(["rctrl", "rcmd", "rshift"]): "MIRACLE_LM",
-    frozenset(["rctrl", "rcmd", "ralt"]):   "MEGA_RM",
-    frozenset(["rcmd",  "ralt", "rshift"]): "WONDER_RR",
-}
-
 # 修飾子トークンの表記正規化（chord の input 文法に合わせる）。
+# [input-aliases] で定義された論理名 (ULTRA_LL 等) はこの dict に該当
+# しないので、_format_token のフォールバックで原文のまま出力される。
 _MOD = {
     "cmd": "Cmd", "opt": "Opt", "alt": "Opt", "option": "Opt",
     "ctrl": "Ctrl", "control": "Ctrl",
@@ -51,8 +47,8 @@ _MOD = {
 
 
 def _format_token(tok: str) -> str:
-    """修飾子は表記正規化、単文字は大文字、複数文字キー（kp_1/forward_delete/
-    left 等）はそのまま。"""
+    """built-in modifier は表記正規化、単文字は大文字、複数文字キー / 論理名
+    （ULTRA_LL 等）はそのまま。"""
     low = tok.lower()
     if low in _MOD:
         return _MOD[low]
@@ -60,17 +56,13 @@ def _format_token(tok: str) -> str:
 
 
 def chord_str(input_raw: str) -> str:
-    """`rctrl + ralt + rshift - c` → `ULTRA_LL + C`（4 set のいずれかに該当時）。
-    `ctrl + shift - tab` → `Ctrl + Shift + Tab`（該当しない時の通常表記）。
-    mods の有無に対応（単押し: `kp_1` → `kp_1`）。"""
+    """`ULTRA_LL - c` → `ULTRA_LL + C`（input-aliases の bare reference）。
+    `ctrl + shift - tab` → `Ctrl + Shift + Tab`（built-in modifier 表記）。
+    `kp_1` → `kp_1`（単押しキー）。"""
     if " - " in input_raw:
         mod_part, key_part = input_raw.split(" - ", 1)
-        mods_lower = [t.strip().lower() for t in mod_part.split("+")]
-        key = _format_token(key_part.strip())
-        ms_name = MODIFIER_SET_NAMES.get(frozenset(mods_lower))
-        if ms_name:
-            return f"{ms_name} + {key}"
         toks = [_format_token(t.strip()) for t in mod_part.split("+")]
+        key = _format_token(key_part.strip())
         return " + ".join(toks + [key])
     return _format_token(input_raw.strip())
 
