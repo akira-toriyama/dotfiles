@@ -49,19 +49,11 @@ if [ -z "$FLAKE_DIR" ] || [ ! -e "$FLAKE_DIR/flake.nix" ]; then
   exit 0
 fi
 
-# add-homebrew / homebrew-drift-check は Nix (writeShellScriptBin) で PATH に乗る。
-# 未配置の新 PC では repo の実体パスにフォールバック。
-if command -v add-homebrew >/dev/null 2>&1; then
-  ADD_SH="add-homebrew"
-else
-  ADD_SH="$FLAKE_DIR/system/modules/scripts/add-homebrew.sh"
-fi
-# RECHECK = drift 再チェック (md 再生成 + 通知)。削除/install コマンドに chain する。
-if command -v homebrew-drift-check >/dev/null 2>&1; then
-  RECHECK="homebrew-drift-check"
-else
-  RECHECK="$FLAKE_DIR/system/modules/scripts/check-homebrew-drift.sh"
-fi
+# md に出すコマンド名。add-homebrew / homebrew-drift-check は Nix
+# (writeShellScriptBin) で PATH に乗る。md は switch 済み環境で使う前提なので
+# 絶対パスにフォールバックせず常に bare 名で出す (パス埋め込みを避ける)。
+ADD_SH="add-homebrew"
+RECHECK="homebrew-drift-check"
 
 echo "[$(date)] checking drift against $FLAKE_DIR"
 
@@ -158,7 +150,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       [ -z "$name" ] && continue
       desc=$(get_desc_brew "$name")
       echo "- **$name**${desc:+ — $desc}"
-      fence "brew uninstall $name && $RECHECK"
+      fence "brew uninstall $name"
       echo
     done <<< "$dup_brews"
     echo
@@ -176,7 +168,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       echo "- 宣言 (実行後に自動で再チェック+通知)"
       fence "$ADD_SH --name=\"$name\" --desc=\"$desc\""
       echo "- 削除"
-      fence "brew uninstall $name && $RECHECK"
+      fence "brew uninstall $name"
       echo
     done <<< "$undeclared_brews"
     echo
@@ -192,7 +184,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       echo "- 宣言 (実行後に自動で再チェック+通知)"
       fence "$ADD_SH --name=\"$name\" --desc=\"$desc\""
       echo "- 削除"
-      fence "brew uninstall --cask $name && $RECHECK"
+      fence "brew uninstall --cask $name"
       echo
     done <<< "$extra_casks"
     echo
@@ -206,7 +198,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       desc=$(get_desc_cask "$name")
       echo "### $name${desc:+ — $desc}"
       echo "- install"
-      fence "brew install --cask $name && $RECHECK"
+      fence "brew install --cask $name"
       echo "- 宣言取消: \`homebrew.nix\` の casks から該当行を削除"
       echo
     done <<< "$missing_casks"
@@ -221,7 +213,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       desc=$(get_desc_brew "$name")
       echo "### $name${desc:+ — $desc}"
       echo "- install"
-      fence "brew install $name && $RECHECK"
+      fence "brew install $name"
       echo "- 宣言取消: \`homebrew.nix\` の brews から該当行を削除"
       echo
     done <<< "$missing_brews"
@@ -242,7 +234,7 @@ if command -v terminal-notifier >/dev/null 2>&1; then
     -group "homebrew-drift" \
     -title "homebrew drift" \
     -subtitle "$subtitle" \
-    -message "クリックで詳細 (.md) を開く" \
+    -message "🤖 詳細を開く" \
     -execute "/opt/homebrew/bin/code $DETAIL_FILE" \
     -sound Pop \
     >/dev/null 2>&1 || true
