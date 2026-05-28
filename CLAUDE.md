@@ -68,6 +68,7 @@ flowchart TD
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
 - **CI green を確認してからマージ**。失敗したら**新規コミットで修正**（push 済みへの `--amend` は使わない）。
 - **`--force` push / 履歴改変は禁止**（ユーザー明示指示がある場合のみ）。
+- **push は pre-push フック（[.githooks/pre-push](.githooks/pre-push)）が `chezmoi verify` で apply 忘れを検知して止める**。乖離（`chezmoi status` の `R` 含む）があれば `chezmoi apply` してから push する。緊急時のみ `git push --no-verify`。詳細 → [docs/operations.md §5.11](docs/operations.md)。
 
 ## シークレット取扱（YOU MUST）
 

@@ -1,0 +1,30 @@
+#!/bin/sh
+# pre-push guard — chezmoi の source ↔ live が乖離していたら push を止める。
+#
+# 防ぐ事故: 「~/.config を直接編集 → chezmoi re-add → chezmoi apply を忘れて
+# git push」。apply 忘れは「リポは新しいのに自分のマシンは古い」「検証ゲート
+# (chord-validate 等) が未実行のまま push」を招く。
+#
+# 判定: chezmoi verify は live が target state と一致しないと非0を返す
+# (run_onchange の保留 = chezmoi status の "R" でも非0)。--source でこのリポに
+# 固定し、グローバル設定に依存せず fresh clone でも同じ挙動にする。
+#
+# 抜け道: どうしても乖離のまま push したいときは `git push --no-verify`。
+# chezmoi 未導入 (CI / bootstrap 途中) では何もせず通す。
+
+set -eu
+
+command -v chezmoi >/dev/null 2>&1 || exit 0
+
+repo_root=$(git rev-parse --show-toplevel)
+
+if chezmoi --source "$repo_root/chezmoi" verify; then
+    exit 0
+fi
+
+echo "✗ pre-push 中止: chezmoi の source ↔ live に乖離があります。" >&2
+echo "  apply 忘れの可能性。次で確認・解消してから push してください:" >&2
+echo "    chezmoi status        # 乖離一覧" >&2
+echo "    chezmoi apply -v      # live に反映 + run_onchange 検証 (R を消す)" >&2
+echo "  どうしても push する場合のみ: git push --no-verify" >&2
+exit 1
