@@ -85,7 +85,7 @@ private_config.toml の `# doc:` 行＋`[[bindings]]` を編集 →
 
 ## chord 文法の制約メモ
 
-- **L/R 修飾子は side-specific**: tmpl 冒頭の `{{ $ULTRA_LL := "rctrl + ralt + rshift" }}`
+- **L/R 修飾子は side-specific**: `[input-aliases]` の `ULTRA_LL = "rctrl + ralt + rshift"`
   のように **右側修飾子トークンに固定**している。chord v0.2.0 の PR1
   (`ed1c032 feat(core)!: side-specific modifier tokens`) で `rctrl/ralt/rshift/rcmd` /
   `lctrl/...` トークンが解禁されたため。これにより ZMK ファームの右側修飾子チョードだけが
@@ -100,7 +100,7 @@ private_config.toml の `# doc:` 行＋`[[bindings]]` を編集 →
 
 4 修飾子セット (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) で実バインド済みの
 キー以外を押すと効果音 (`undefined_key.wav`) を鳴らす。chord v0.2.0 PR5 の
-`[[fallbacks]]` + `*` ワイルドカードで実装（tmpl 末尾）。
+`[[fallbacks]]` + `*` ワイルドカードで実装（private_config.toml の `[[fallbacks]]` 群）。
 
 - `[[bindings]]` が全 miss した時だけ `[[fallbacks]]` が評価される
   → 既存バインドの誤爆は発生しない

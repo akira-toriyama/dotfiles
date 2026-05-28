@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TMPL = ROOT / "chezmoi" / "dot_config" / "chord" / "private_config.toml"
+CONFIG = ROOT / "chezmoi" / "dot_config" / "chord" / "private_config.toml"
 DOC = ROOT / "docs" / "chord.md"
 
 BEGIN = "<!-- AUTO-GENERATED (scripts/gen-chord-doc.py from chezmoi/dot_config/chord/private_config.toml) — do not edit -->"
@@ -78,7 +78,7 @@ def build_block() -> str:
     current_input: str | None = None
     current_apps: list[str] = []
     in_binding = False
-    lines = TMPL.read_text(encoding="utf-8").splitlines()
+    lines = CONFIG.read_text(encoding="utf-8").splitlines()
 
     def flush() -> None:
         nonlocal pending_doc, current_input, current_apps
@@ -126,7 +126,7 @@ def build_block() -> str:
 
     if not rows:
         raise SystemExit(
-            f"{TMPL.name}: # doc + [[bindings]] の組が見つかりません ({TMPL})"
+            f"{CONFIG.name}: # doc + [[bindings]] の組が見つかりません ({CONFIG})"
         )
 
     out = [BEGIN, ""]
