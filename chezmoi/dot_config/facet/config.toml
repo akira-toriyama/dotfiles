@@ -111,3 +111,49 @@ hide_method = "anchor"
 
 [tree]
 preview_mode = "mirror"
+
+# -----------------------------------------------------------------
+# Per-native-Space workspaces  [space.N]
+# -----------------------------------------------------------------
+# Each native macOS Space keeps its own independent set of facet
+# workspaces. `N` is the native Space's position in Mission Control
+# order (1-based, user Spaces only — fullscreen Spaces don't count).
+# Inside a section, `index = "name"` works exactly like [workspace].
+# A native Space WITHOUT a [space.N] section falls back to the
+# global [workspace] above. Edits take effect on facet restart.
+#
+# Note: the mapping is by Mission Control position, so reordering
+# Spaces in Mission Control re-points these sections (cosmetic only
+# — windows stay scoped to their real Space).
+
+[space.1]
+1 = "WS1-1"
+2 = "WS1-2"
+3 = "WS1-3"
+
+[space.2]
+1 = "WS2-1"
+2 = "WS2-2"
+3 = "WS2-3"
+4 = "WS2-4"
+
+[space.3]
+1 = "WS3-1"
+2 = "WS3-2"
+3 = "WS3-3"
+4 = "WS3-4"
+5 = "WS3-5"
+
+[space.4]
+1 = "WS4-1"
+2 = "WS4-2"
+3 = "WS4-3"
+4 = "WS4-4"
+5 = "WS4-5"
+
+[space.5]
+1 = "WS5-1"
+2 = "WS5-2"
+3 = "WS5-3"
+4 = "WS5-4"
+5 = "WS5-5"

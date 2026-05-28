@@ -164,6 +164,43 @@ input = "ctrl - j"
 action-keys = "return"
 
 
+# ---- facet オーバーレイ ----
+# macOS は矢印キーに常に fn (NSEventModifierFlagFunction / maskSecondaryFn) を
+# 付与する。chord の matcher は未言及カテゴリの modifier 不在を要求し、fn は
+# 完全一致 (Models.swift `self.contains(.fn) == event.contains(.fn)`) なので、
+# 物理 ctrl+→ にマッチさせるには input 側にも fn を明記する必要がある。
+# fn を書かない `ctrl - right` は実イベント (ctrl+fn+right) と一致せず発火しない。
+# bare `right` は KeyCodes で 0x7C（右矢印）に解決される（mouse 扱いは
+# `mouse.right` の時だけ）。
+#
+# action-shell は ActionDispatcher.swift で `/bin/zsh -l -c` 実行。login zsh の
+# PATH に /opt/homebrew/bin を載せるため home-manager の home.sessionPath で
+# 通している (dotfiles home/modules/default.nix)。これで bare `facet` が解決する。
+
+# doc: スペース右へ移動しつつ facet tree 表示（ctrl+→）
+# action-shell が先に発火（facet 起動・撃ちっぱなし）→ 直後に action-keys で
+# ctrl+→ を再送してスペース右移動。元イベントは consume、再送分は synthetic
+# タグ付きなので matcher に再入せずループしない。出力側にも fn を明記するのは、
+# 矢印に常に fn が付く macOS で「物理 ctrl+→」と同一イベントにし、OS のスペース
+# 移動ショートカットに一致させるため。
+# ※ action-shell + action-keys の同時発火は chord の multi-action 機能が必要
+#   （akira-toriyama/chord で実装、未リリース）。未対応バイナリでは action-keys
+#   が無視され facet のみ動く。
+[[bindings]]
+name = "space-right + facet tree"
+input = "ctrl + fn - right"
+action-shell = "facet --view=tree --loading=2000"
+action-keys = "ctrl + fn - right"
+
+# doc: スペース左へ移動しつつ facet tree 表示（ctrl+←）
+# 上の space-right と同じ仕組み（fn 明記の理由・ループしない理由は同上）。
+[[bindings]]
+name = "space-left + facet tree"
+input = "ctrl + fn - left"
+action-shell = "facet --view=tree --loading=2000"
+action-keys = "ctrl + fn - left"
+
+
 # ---- 未定義キー効果音フォールバック ----
 # 4 修飾子セット (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) で実バインド済みの
 # キー以外を押すと効果音を鳴らす。chord v0.2.0 PR5 の `[[fallbacks]]` +
