@@ -258,6 +258,16 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 
 新規追加する場合は `run_once_` ではなく **`run_onchange_` を既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap 用。
 
+#### 家訓: `.tmpl` / chord config を動かすときの影響範囲
+
+- **`.tmpl` 自体は read-only**: `run_onchange_after_chord-validate.sh.tmpl` は chord config を `include` で読んで `chord --validate` するだけで、**他リポへ書き込まないので副作用は出ない**。`verify-chord-validate.yml` も apply target を `~/.config/chord` に絞っている。「`.tmpl` 編集で他リポが壊れる」心配は不要。
+- **chord config パスは 4 箇所が同じファイルを指す**ので、リネーム/移動は同時に直す（PR #108 の `.tmpl` 廃止後、PR #123 で古参照を踏んだ実績あり）:
+  1. `chezmoi/run_onchange_after_chord-validate.sh.tmpl` の `{{ include "dot_config/chord/private_config.toml" | sha256sum }}`
+  2. `.github/workflows/verify-chord-validate.yml` の `paths:` フィルタ
+  3. `.github/workflows/verify-chord-doc.yml` の `paths:` フィルタ
+  4. `scripts/gen-chord-doc.py` の `CONFIG`
+- **config 文法は released chord と歩調を合わせる**: `verify-chord-validate.yml` は brew tap (`akira-toriyama/tap`) の **released** chord を install して strict 検証する。config の文法が released 版を追い越すと CI が落ちる。tap が追いつくまでは §5.10 の手元 build を使うか、文法変更と tap release を揃える。
+
 ### 5.8 よく使うコマンド早見表
 
 ```sh
@@ -311,7 +321,7 @@ sleep 1
 #    `/opt/homebrew/opt/chord` は現バージョンへの symlink (例: ../Cellar/chord/0.5.0)
 #    なので version 数字を埋め込まずに済む。
 CHORD_APP="$(brew --prefix chord)/Chord.app"
-NEW=/Volumes/workspace/github.com/akira-toriyama/chord/.build/release/chord
+NEW="$(ghq root)/github.com/akira-toriyama/chord/.build/release/chord"
 cp "$CHORD_APP/Contents/MacOS/chord" "$CHORD_APP/Contents/MacOS/chord.bak"
 cp "$NEW" "$CHORD_APP/Contents/MacOS/chord"
 
