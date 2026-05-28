@@ -361,12 +361,20 @@ chord --doctor
 
 `~/.config` を編集 → `chezmoi re-add` → **`chezmoi apply` を忘れて push** すると、「リポは新しいのに自分のマシンは古い」「run_onchange の検証ゲート（chord-validate 等）が未実行のまま push」といった事故になる。これを防ぐため [`.githooks/pre-push`](../.githooks/pre-push) が push 前に `chezmoi --source ./chezmoi verify` を実行し、source ↔ live に乖離があれば push を止める（`chezmoi status` の "R" 保留でも止まる）。
 
+#### 有効化（`core.hooksPath` の設定）
+
+git は **clone 同梱の hook/設定を自動では有効化しない**（悪意あるリポを clone した瞬間にコードが走るのを防ぐセキュリティ仕様）。そのため `core.hooksPath` は次の経路で自動設定する:
+
+- **新 PC**: `install.sh` が clone 直後に設定（§3.5）。
+- **それ以外の clone（ghq / 手動 `git clone` 等）**: [`chezmoi/run_onchange_after_enable-git-hooks.sh`](../chezmoi/run_onchange_after_enable-git-hooks.sh) が **`chezmoi apply` のたび**に `CHEZMOI_SOURCE_DIR` から「いま使っている clone」の repo root を特定し、best-effort で設定する。`chezmoi source-path` が指す = 実際に push する clone なので確実に当たる。
+
+手動でやるなら（上記が走る前に効かせたい等）:
 ```sh
-# 有効化（リポ追跡下の .githooks/ を hooks パスに）
 git config core.hooksPath .githooks
 ```
 
-- **新 PC では `install.sh` が自動設定**（clone 直後の §3.5）。既存 clone では上記を一度だけ手で実行。
+その他:
+
 - **迂回**: どうしても乖離のまま push する場合のみ `git push --no-verify`。
 - chezmoi 未導入環境（CI / bootstrap 途中）ではフックは何もせず通す（`command -v chezmoi` で skip）。
 - **注意**: chezmoi 全体の乖離を見るので、dotfile 以外（`docs/` や `*.nix` だけ）の push でも保留中の chezmoi 差分があると止まる。その場合は先に `chezmoi apply` するか `--no-verify`。
