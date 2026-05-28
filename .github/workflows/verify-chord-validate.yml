@@ -19,13 +19,13 @@ on:
   push:
     branches: [main]
     paths:
-      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - chezmoi/dot_config/chord/private_config.toml
       - chezmoi/run_onchange_after_chord-validate.sh.tmpl
       - .github/workflows/verify-chord-validate.yml
   pull_request:
     branches: [main]
     paths:
-      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - chezmoi/dot_config/chord/private_config.toml
       - chezmoi/run_onchange_after_chord-validate.sh.tmpl
       - .github/workflows/verify-chord-validate.yml
   workflow_dispatch:
