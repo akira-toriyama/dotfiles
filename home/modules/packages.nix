@@ -31,11 +31,14 @@
     tart
 
     # === homebrew drift 運用 helper ===
-    # `add-homebrew --name=foo --desc="..."` で homebrew.nix の brews/casks に
-    # 1 行追記する (cask/formula 自動判定)。drift 詳細レポート
-    # (system/modules/scripts/check-homebrew-drift.sh) の「宣言:」行から案内される。
-    # source は system/modules/scripts/add-homebrew.sh (単一ソース)。
+    # add-homebrew: homebrew.nix の brews/casks(+tap) に 1 行追記 (cask/formula 自動判定)。
+    #   末尾で homebrew-drift-check を呼んで md 再生成 + 通知まで自動。
+    # homebrew-drift-check: drift を再チェックして md 再生成 + 通知 (launchd と同一 source)。
+    #   詳細 md の「削除/install」コマンドに `&& homebrew-drift-check` で chain される。
+    # source はいずれも system/modules/scripts/*.sh (単一ソース)。
     (writeShellScriptBin "add-homebrew"
       (builtins.readFile ../../system/modules/scripts/add-homebrew.sh))
+    (writeShellScriptBin "homebrew-drift-check"
+      (builtins.readFile ../../system/modules/scripts/check-homebrew-drift.sh))
   ];
 }
