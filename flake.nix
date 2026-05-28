@@ -23,17 +23,24 @@
       # `darwinConfigurations.default` 用に実行時の user 名を決定する。
       # 優先順:
       #   1. FLAKE_USER 環境変数 (会社 PC 等で明示指定したい場合)
-      #   2. USER 環境変数 (通常はこれで OK、新 PC でも自動追従)
-      #   3. フォールバック "tommy" (env 無し時の互換、評価エラー回避)
+      #   2. SUDO_USER 環境変数 (sudo darwin-rebuild で USER=root 化される問題回避)
+      #   3. USER 環境変数 (通常はこれで OK、新 PC でも自動追従)
+      #   4. フォールバック "tommy" (env 無し時の互換、評価エラー回避)
       # ※ getEnv 利用のため `--impure` フラグが必須。install.sh で付与する。
+      # ※ "root" は users.users.root と衝突するので明示的に弾く。
       detectUser =
         let
           fromFlakeUser = builtins.getEnv "FLAKE_USER";
+          fromSudoUser = builtins.getEnv "SUDO_USER";
           fromUser = builtins.getEnv "USER";
+          pickNonRoot = v: if v != "" && v != "root" then v else "";
+          chosen =
+            if fromFlakeUser != "" then fromFlakeUser
+            else if pickNonRoot fromSudoUser != "" then fromSudoUser
+            else if pickNonRoot fromUser != "" then fromUser
+            else "tommy";
         in
-        if fromFlakeUser != "" then fromFlakeUser
-        else if fromUser != "" then fromUser
-        else "tommy";
+        chosen;
 
       # 1ホスト分の darwinSystem を組み立てる共通工場。
       # username が specialArgs に注入され、host module で users.users.${username} と
