@@ -19,9 +19,11 @@
     # === カスタム tap brew はユーザー方針で原則 drop（新PC で WM スタック再考）===
     # 例外: omniwm は cask だが barutsrb/tap 由来のため tap だけ宣言が要る。
     taps = [
+      "felixkratz/formulae"  # borders 等のカスタム tap
       "barutsrb/tap"   # omniwm (Niri-inspired tiling WM by BarutSRB) を解決するため
     ];
     brews = [
+      "felixkratz/formulae/borders"  # A window border system for macOS
       "terminal-notifier" # macOS 通知 CLI。launchd-drift.nix の drift 検知通知で使用
     ];
 

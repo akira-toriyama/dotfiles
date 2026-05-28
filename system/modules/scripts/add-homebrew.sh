@@ -90,9 +90,9 @@ else
 fi
 
 echo
-echo "次:"
+echo "次 (eval 確認 → 差分確認。zsh でそのまま貼れるよう行末コメント無し):"
 echo "  cd \"$FLAKE_DIR\""
-echo "  nix flake check --no-build --impure   # eval 確認"
+echo "  nix flake check --no-build --impure"
 echo "  git add system/modules/homebrew.nix && git diff --cached"
 
 # 宣言を反映したので drift を再チェック (md 再生成 + 通知)。
