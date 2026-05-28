@@ -1,22 +1,22 @@
 name: Verify chord doc sync
 
-# chezmoi/dot_config/chord/private_config.toml.tmpl を単一ソースとし、
+# chezmoi/dot_config/chord/private_config.toml を単一ソースとし、
 # docs/chord.md のショートカット表がそこから生成された状態と一致するかを検証する。
 on:
-  # chord ソースは rebuild にしか存在しないため main は除外。
-  # 過去 main に登録目的で workflow YAML を push した際 paths 自己トリガで
-  # main 上に存在しないソースを読みに行って失敗した経緯 (098c801)。
+  # chord 設定 / docs/chord.md / gen-chord-doc.py が変わったときだけ doc 同期を検証。
+  # rebuild ブランチは main へ統合済みで、chord ソースは main 上の
+  # private_config.toml が単一ソース (PR #108 で .tmpl 廃止)。
   push:
     branches: [main]
     paths:
-      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - chezmoi/dot_config/chord/private_config.toml
       - docs/chord.md
       - scripts/gen-chord-doc.py
       - .github/workflows/verify-chord-doc.yml
   pull_request:
     branches: [main]
     paths:
-      - chezmoi/dot_config/chord/private_config.toml.tmpl
+      - chezmoi/dot_config/chord/private_config.toml
       - docs/chord.md
       - scripts/gen-chord-doc.py
   workflow_dispatch:
