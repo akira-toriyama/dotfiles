@@ -7,18 +7,23 @@
 #   - brew: 双方向 (未宣言 install / 未 install 宣言) の両方検出
 #           ※ install 側は `brew leaves` を使い deps を除外、top-level のみ比較
 #   - mas:  bootstrapBrewOverride で masApps が常に {} になるため対象外
-#   - 通知本文には最初の「未宣言 cask」の brew description を添える
+#   - 通知: summary だけ。詳細 (brew info description + 対応候補) は
+#           /tmp/homebrew-drift-latest.txt に書き出し、通知クリックで
+#           code で開く (-execute "code ...")。
 #   - flake パスは ghq → $HOME/dotfiles → $DOTFILES_FLAKE_DIR の順で解決
 #   - 通知は terminal-notifier (brew formula、homebrew.nix の brews で宣言)
-#     osascript の display notification は macOS 15 で Script Editor 経由に
-#     なり banner 抑止されがちなため不採用。
+#     osascript の display notification は macOS 15 で banner 抑止される
+#     ことが多く不採用。
 #   - -group homebrew-drift 固定で「通知センターに常に最新 1 件」運用
-#   - 出力は /tmp/homebrew-drift.log にも残る (launchd の StandardOutPath)
+#   - 実行ログ (起動毎の append): /tmp/homebrew-drift.log
+#   - 詳細レポート (実行毎の overwrite): /tmp/homebrew-drift-latest.txt
 set -eu
 
 # 「明示的に未宣言（破棄方針）」相当の cask は通知から除外する。
 # homebrew.nix 末尾コメントの破棄方針リストとは別管理。両方を更新する想定。
 IGNORE_EXTRA_CASKS="google-japanese-ime karabiner-elements"
+
+DETAIL_FILE="/tmp/homebrew-drift-latest.txt"
 
 # launchd 環境は PATH がほぼ空。Homebrew + Nix の bin を明示注入する。
 PATH="/opt/homebrew/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/bin:/bin"
@@ -51,12 +56,10 @@ declared_brews=$(
 # 実 install 側
 installed_casks=$(brew list --cask 2>/dev/null | sort || true)
 # brew leaves = top-level (依存だけで入った formula は除外)。
-# 宣言に無い leaves が出ても、それは「明示 install してまだ宣言してない」もの。
 installed_brews=$(brew leaves 2>/dev/null | sort || true)
 
-# diff (POSIX: comm を使う)
+# diff
 extra_casks_raw=$(comm -13 <(echo "$declared_casks") <(echo "$installed_casks") | grep -v '^$' || true)
-# IGNORE_EXTRA_CASKS を除外
 extra_casks=$extra_casks_raw
 for ignore in $IGNORE_EXTRA_CASKS; do
   extra_casks=$(echo "$extra_casks" | grep -v "^${ignore}$" || true)
@@ -65,43 +68,123 @@ missing_casks=$(comm -23 <(echo "$declared_casks") <(echo "$installed_casks") | 
 extra_brews=$(comm -13 <(echo "$declared_brews") <(echo "$installed_brews") | grep -v '^$' || true)
 missing_brews=$(comm -23 <(echo "$declared_brews") <(echo "$installed_brews") | grep -v '^$' || true)
 
-# stderr/log にも残す
-{
-  [ -n "$extra_casks" ]   && printf '[未宣言 cask]\n%s\n' "$extra_casks"
-  [ -n "$missing_casks" ] && printf '[未 install cask]\n%s\n' "$missing_casks"
-  [ -n "$extra_brews" ]   && printf '[未宣言 brew]\n%s\n' "$extra_brews"
-  [ -n "$missing_brews" ] && printf '[未 install brew]\n%s\n' "$missing_brews"
-} || true
-
 if [ -z "$extra_casks$missing_casks$extra_brews$missing_brews" ]; then
   echo "[$(date)] no drift"
+  # 古い詳細レポートは残してても誤解を招くので消す
+  rm -f "$DETAIL_FILE"
   exit 0
 fi
 
-# 通知本文を組み立て (空行除去 + 1 行サマリ化)
-summary=""
-[ -n "$extra_casks" ]   && summary="$summary 未宣言 cask: $(echo "$extra_casks" | tr '\n' ' ')"
-[ -n "$missing_casks" ] && summary="$summary / 未 install cask: $(echo "$missing_casks" | tr '\n' ' ')"
-[ -n "$extra_brews" ]   && summary="$summary / 未宣言 brew: $(echo "$extra_brews" | tr '\n' ' ')"
-[ -n "$missing_brews" ] && summary="$summary / 未 install brew: $(echo "$missing_brews" | tr '\n' ' ')"
+# 件数
+count_lines() { if [ -z "$1" ]; then echo 0; else echo "$1" | wc -l | tr -d ' '; fi; }
+n_ec=$(count_lines "$extra_casks")
+n_mc=$(count_lines "$missing_casks")
+n_eb=$(count_lines "$extra_brews")
+n_mb=$(count_lines "$missing_brews")
 
-# 最初の「未宣言 cask」だけ brew info の description を添える (なぜ入れたかのヒント)
-first_extra=$(echo "$extra_casks" | head -n1)
-if [ -n "$first_extra" ]; then
-  desc=$(brew info --cask "$first_extra" --json=v2 2>/dev/null | jq -r '.casks[0].desc // empty' 2>/dev/null || true)
-  [ -n "$desc" ] && summary="$summary - 例: $first_extra → $desc"
-fi
+# subtitle: 件数サマリ
+subtitle_parts=""
+[ "$n_ec" -gt 0 ] && subtitle_parts="${subtitle_parts}未宣言 cask ${n_ec} / "
+[ "$n_mc" -gt 0 ] && subtitle_parts="${subtitle_parts}未 install cask ${n_mc} / "
+[ "$n_eb" -gt 0 ] && subtitle_parts="${subtitle_parts}未宣言 brew ${n_eb} / "
+[ "$n_mb" -gt 0 ] && subtitle_parts="${subtitle_parts}未 install brew ${n_mb} / "
+subtitle="${subtitle_parts% / }件 drift"
+
+# 詳細レポート (= 通知クリックで開く先) を組み立て
+# brew info で description を取得 (失敗時は空、time-out 短めで)
+get_desc_cask() {
+  brew info --cask "$1" --json=v2 2>/dev/null | jq -r '.casks[0].desc // empty' 2>/dev/null || true
+}
+get_desc_brew() {
+  brew info --formula "$1" --json=v2 2>/dev/null | jq -r '.formulae[0].desc // empty' 2>/dev/null || true
+}
+
+{
+  echo "homebrew drift detected at $(date '+%Y-%m-%d %H:%M:%S')"
+  echo "flake: $FLAKE_DIR"
+  echo
+  echo "概要: $subtitle"
+  echo
+  echo "============================================================"
+
+  if [ "$n_ec" -gt 0 ]; then
+    echo
+    echo "■ 未宣言 cask (${n_ec} 件) — install 済だが homebrew.nix に無い"
+    echo "------------------------------------------------------------"
+    while IFS= read -r name; do
+      [ -z "$name" ] && continue
+      desc=$(get_desc_cask "$name")
+      echo "・$name"
+      [ -n "$desc" ] && echo "    desc: $desc"
+      echo "    対応候補:"
+      echo "      [A] homebrew.nix の casks に \"$name\" を追記 → 宣言化"
+      echo "      [B] brew uninstall --cask $name → 削除"
+    done <<< "$extra_casks"
+  fi
+
+  if [ "$n_mc" -gt 0 ]; then
+    echo
+    echo "■ 未 install cask (${n_mc} 件) — 宣言済だが install されてない"
+    echo "------------------------------------------------------------"
+    while IFS= read -r name; do
+      [ -z "$name" ] && continue
+      desc=$(get_desc_cask "$name")
+      echo "・$name"
+      [ -n "$desc" ] && echo "    desc: $desc"
+      echo "    対応候補:"
+      echo "      [A] brew install --cask $name → install"
+      echo "      [B] homebrew.nix の casks から削除 → 宣言取り消し"
+    done <<< "$missing_casks"
+  fi
+
+  if [ "$n_eb" -gt 0 ]; then
+    echo
+    echo "■ 未宣言 brew (${n_eb} 件) — install 済だが homebrew.nix に無い"
+    echo "------------------------------------------------------------"
+    while IFS= read -r name; do
+      [ -z "$name" ] && continue
+      desc=$(get_desc_brew "$name")
+      echo "・$name"
+      [ -n "$desc" ] && echo "    desc: $desc"
+      echo "    対応候補:"
+      echo "      [A] homebrew.nix の brews に \"$name\" を追記 → 宣言化"
+      echo "      [B] brew uninstall $name → 削除"
+      echo "      [C] home.packages (Nix) で同等品があれば brew 側 uninstall"
+    done <<< "$extra_brews"
+  fi
+
+  if [ "$n_mb" -gt 0 ]; then
+    echo
+    echo "■ 未 install brew (${n_mb} 件) — 宣言済だが install されてない"
+    echo "------------------------------------------------------------"
+    while IFS= read -r name; do
+      [ -z "$name" ] && continue
+      desc=$(get_desc_brew "$name")
+      echo "・$name"
+      [ -n "$desc" ] && echo "    desc: $desc"
+      echo "    対応候補:"
+      echo "      [A] brew install $name → install"
+      echo "      [B] homebrew.nix の brews から削除 → 宣言取り消し"
+    done <<< "$missing_brews"
+  fi
+
+  echo
+  echo "============================================================"
+  echo "再チェック: launchctl kickstart -p gui/\$UID/org.nixos.homebrew-drift"
+  echo "実行ログ: tail -30 /tmp/homebrew-drift.log"
+} > "$DETAIL_FILE"
 
 # 通知。terminal-notifier 未導入なら log だけ残して exit (新 PC 初日対策)。
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier \
     -group "homebrew-drift" \
     -title "homebrew drift" \
-    -subtitle "system/modules/homebrew.nix を更新" \
-    -message "$summary" \
+    -subtitle "$subtitle" \
+    -message "クリックで詳細を開く (code $DETAIL_FILE)" \
+    -execute "/opt/homebrew/bin/code $DETAIL_FILE" \
     -sound Pop \
     >/dev/null 2>&1 || true
-  echo "[$(date)] notified: $summary"
+  echo "[$(date)] notified: $subtitle (詳細: $DETAIL_FILE)"
 else
-  echo "[$(date)] terminal-notifier not found, drift logged only: $summary"
+  echo "[$(date)] terminal-notifier not found, drift logged only: $subtitle (詳細: $DETAIL_FILE)"
 fi
