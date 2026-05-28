@@ -17,22 +17,25 @@
 #     display notification は macOS 15 で banner 抑止されがちなため不採用。
 #   - -group homebrew-drift 固定で「通知センターに常に最新 1 件」運用
 #   - 実行ログ (append): /tmp/homebrew-drift.log
-#   - 詳細レポート (overwrite): /tmp/homebrew-drift-latest.txt
+#   - 詳細レポート (overwrite, Markdown): /tmp/homebrew-drift-latest.md
 set -eu
 
 # 「明示的に未宣言（破棄方針）」相当の cask は通知から除外する。
 # homebrew.nix 末尾コメントの破棄方針リストとは別管理。両方を更新する想定。
 IGNORE_EXTRA_CASKS="google-japanese-ime karabiner-elements"
 
-DETAIL_FILE="/tmp/homebrew-drift-latest.txt"
+DETAIL_FILE="/tmp/homebrew-drift-latest.md"
+# 詳細レポートの「宣言:」行が指す helper。FLAKE_DIR 解決後に絶対パス化する。
+ADD_SH=""
+
+# Nix (home.packages) が置く per-user profile の bin。
+#   - ここに同名があれば「brew と Nix の二重 install」と判定する
+#   - add-homebrew (writeShellScriptBin) もここに入るので PATH にも含める
+NIX_PROFILE_BIN="/etc/profiles/per-user/$(id -un)/bin"
 
 # launchd 環境は PATH がほぼ空。Homebrew + Nix の bin を明示注入する。
-PATH="/opt/homebrew/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/bin:/bin"
+PATH="/opt/homebrew/bin:${NIX_PROFILE_BIN}:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/bin:/bin"
 export PATH
-
-# Nix (home.packages) が置く per-user profile の bin。ここに同名があれば
-# 「brew と Nix の二重 install」と判定する。
-NIX_PROFILE_BIN="/etc/profiles/per-user/$(id -un)/bin"
 
 FLAKE_DIR="${DOTFILES_FLAKE_DIR:-}"
 if [ -z "$FLAKE_DIR" ] && command -v ghq >/dev/null 2>&1; then
@@ -44,6 +47,20 @@ fi
 if [ -z "$FLAKE_DIR" ] || [ ! -e "$FLAKE_DIR/flake.nix" ]; then
   echo "[$(date)] flake not found, skipping"
   exit 0
+fi
+
+# add-homebrew / homebrew-drift-check は Nix (writeShellScriptBin) で PATH に乗る。
+# 未配置の新 PC では repo の実体パスにフォールバック。
+if command -v add-homebrew >/dev/null 2>&1; then
+  ADD_SH="add-homebrew"
+else
+  ADD_SH="$FLAKE_DIR/system/modules/scripts/add-homebrew.sh"
+fi
+# RECHECK = drift 再チェック (md 再生成 + 通知)。削除/install コマンドに chain する。
+if command -v homebrew-drift-check >/dev/null 2>&1; then
+  RECHECK="homebrew-drift-check"
+else
+  RECHECK="$FLAKE_DIR/system/modules/scripts/check-homebrew-drift.sh"
 fi
 
 echo "[$(date)] checking drift against $FLAKE_DIR"
@@ -119,87 +136,104 @@ get_desc_brew() {
   brew info --formula "$1" --json=v2 2>/dev/null | jq -r '.formulae[0].desc // empty' 2>/dev/null || true
 }
 
+# Markdown コードフェンス用ヘルパ (sh コマンドを ```sh ... ``` で囲む)。
+# バッククォートは literal 出力が目的なので SC2016 を抑止。
+# shellcheck disable=SC2016
+fence() { printf '```sh\n%s\n```\n' "$1"; }
+
 {
-  echo "homebrew drift detected at $(date '+%Y-%m-%d %H:%M:%S')"
-  echo "flake: $FLAKE_DIR"
+  echo "# homebrew drift"
   echo
-  echo "概要: $subtitle"
+  echo "- 検知: $(date '+%Y-%m-%d %H:%M:%S')"
+  echo "- flake: \`$FLAKE_DIR\`"
+  echo "- 概要: **$subtitle**"
   echo
 
   if [ "$n_dup" -gt 0 ]; then
-    echo "============================================================"
-    echo "■ Nix と brew で二重 install (${n_dup} 件)"
-    echo "  home.packages (Nix) に同名があるので brew 側を消すのが正。"
-    echo "  ↓ そのまま貼って実行 (Nix 版が残る):"
-    echo "------------------------------------------------------------"
+    echo "## Nix と brew で二重 install (${n_dup} 件)"
+    echo
+    echo "> home.packages (Nix) に同名あり → **brew 側を消す** (Nix 版が残る)。下を貼るだけ。"
+    echo
     while IFS= read -r name; do
       [ -z "$name" ] && continue
       desc=$(get_desc_brew "$name")
-      echo "・$name${desc:+  ($desc)}"
-      echo "    brew uninstall $name"
+      echo "- **$name**${desc:+ — $desc}"
+      fence "brew uninstall $name && $RECHECK"
+      echo
     done <<< "$dup_brews"
     echo
   fi
 
   if [ "$n_ub" -gt 0 ]; then
-    echo "============================================================"
-    echo "■ 未宣言 brew (${n_ub} 件) — brew のみ。宣言化 or 削除を判断"
-    echo "------------------------------------------------------------"
+    echo "## 未宣言 brew (${n_ub} 件) — brew のみ"
+    echo
+    echo "> 宣言化 (Nix に取り込む) か 削除 かを判断。"
+    echo
     while IFS= read -r name; do
       [ -z "$name" ] && continue
       desc=$(get_desc_brew "$name")
-      echo "・$name${desc:+  ($desc)}"
-      echo "    宣言: homebrew.nix の brews に  \"$name\"  を追記"
-      echo "    削除: brew uninstall $name"
+      echo "### $name${desc:+ — $desc}"
+      echo "- 宣言 (実行後に自動で再チェック+通知)"
+      fence "$ADD_SH --name=\"$name\" --desc=\"$desc\""
+      echo "- 削除"
+      fence "brew uninstall $name && $RECHECK"
+      echo
     done <<< "$undeclared_brews"
     echo
   fi
 
   if [ "$n_ec" -gt 0 ]; then
-    echo "============================================================"
-    echo "■ 未宣言 cask (${n_ec} 件) — install 済だが homebrew.nix に無い"
-    echo "------------------------------------------------------------"
+    echo "## 未宣言 cask (${n_ec} 件) — install 済だが homebrew.nix に無い"
+    echo
     while IFS= read -r name; do
       [ -z "$name" ] && continue
       desc=$(get_desc_cask "$name")
-      echo "・$name${desc:+  ($desc)}"
-      echo "    宣言: homebrew.nix の casks に  \"$name\"  を追記"
-      echo "    削除: brew uninstall --cask $name"
+      echo "### $name${desc:+ — $desc}"
+      echo "- 宣言 (実行後に自動で再チェック+通知)"
+      fence "$ADD_SH --name=\"$name\" --desc=\"$desc\""
+      echo "- 削除"
+      fence "brew uninstall --cask $name && $RECHECK"
+      echo
     done <<< "$extra_casks"
     echo
   fi
 
   if [ "$n_mc" -gt 0 ]; then
-    echo "============================================================"
-    echo "■ 未 install cask (${n_mc} 件) — 宣言済だが install されてない"
-    echo "------------------------------------------------------------"
+    echo "## 未 install cask (${n_mc} 件) — 宣言済だが install されてない"
+    echo
     while IFS= read -r name; do
       [ -z "$name" ] && continue
       desc=$(get_desc_cask "$name")
-      echo "・$name${desc:+  ($desc)}"
-      echo "    install: brew install --cask $name"
-      echo "    宣言取消: homebrew.nix の casks から削除"
+      echo "### $name${desc:+ — $desc}"
+      echo "- install"
+      fence "brew install --cask $name && $RECHECK"
+      echo "- 宣言取消: \`homebrew.nix\` の casks から該当行を削除"
+      echo
     done <<< "$missing_casks"
     echo
   fi
 
   if [ "$n_mb" -gt 0 ]; then
-    echo "============================================================"
-    echo "■ 未 install brew (${n_mb} 件) — 宣言済だが install されてない"
-    echo "------------------------------------------------------------"
+    echo "## 未 install brew (${n_mb} 件) — 宣言済だが install されてない"
+    echo
     while IFS= read -r name; do
       [ -z "$name" ] && continue
       desc=$(get_desc_brew "$name")
-      echo "・$name${desc:+  ($desc)}"
-      echo "    install: brew install $name"
-      echo "    宣言取消: homebrew.nix の brews から削除"
+      echo "### $name${desc:+ — $desc}"
+      echo "- install"
+      fence "brew install $name && $RECHECK"
+      echo "- 宣言取消: \`homebrew.nix\` の brews から該当行を削除"
+      echo
     done <<< "$missing_brews"
     echo
   fi
 
-  echo "============================================================"
-  echo "再チェック: launchctl kickstart -p gui/\$UID/org.nixos.homebrew-drift"
-  echo "実行ログ: tail -30 /tmp/homebrew-drift.log"
+  echo "---"
+  echo
+  echo "- 手動で再チェック (md 再生成 + 通知)"
+  fence "$RECHECK"
+  echo "- 実行ログ"
+  fence "tail -30 /tmp/homebrew-drift.log"
 } > "$DETAIL_FILE"
 
 # 通知。terminal-notifier 未導入なら log だけ残して exit (新 PC 初日対策)。
@@ -208,7 +242,7 @@ if command -v terminal-notifier >/dev/null 2>&1; then
     -group "homebrew-drift" \
     -title "homebrew drift" \
     -subtitle "$subtitle" \
-    -message "クリックで詳細を開く (code $DETAIL_FILE)" \
+    -message "クリックで詳細 (.md) を開く" \
     -execute "/opt/homebrew/bin/code $DETAIL_FILE" \
     -sound Pop \
     >/dev/null 2>&1 || true
