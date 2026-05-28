@@ -58,16 +58,16 @@ flowchart TD
 
 ## GitHub / CI
 
-- **作業ブランチは `main` 一本** (2026-05-27 に `rebuild` を統合・削除。CI も main 単発)。
-- **コミットは論理単位ごとに即 push**（`git push origin main`、auto-push 方針）。
-- **コミットメッセージは gitmoji + Conventional Commits**: `:sparkles: feat(nix): ...` / `:memo: docs(roadmap): ...` / `:fire: fix(...): ...`。`git log -n 20` でスタイルを確認してから書く。
+- **`main` は唯一の永続ブランチ**（2026-05-27 に `rebuild` を統合・削除。CI も main へ単発）。作業は短命な feature ブランチを切り、**PR 経由で `main` に squash-merge** する（直 push はしない）。
+- **フロー**: `git checkout -b <type>/<topic>` → 論理単位で commit → `git push -u origin <branch>` → `gh pr create` → CI green → `gh pr merge --squash`（`--auto` 可）。実例は [docs/operations.md](docs/operations.md)。
+- **コミットメッセージは gitmoji + Conventional Commits**: `:sparkles: feat(nix): ...` / `:memo: docs(roadmap): ...` / `:bug: fix(...): ...`。`git log -n 20` でスタイルを確認してから書く。
 - **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
   - `shellcheck` — `install.sh` 静的解析
   - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞強制
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
-- **CI green を確認してから push の次の作業へ**。失敗したら**新規コミットで修正**（`--amend` は使わない）。
-- **PR/--force push は禁止**。ユーザー明示指示があった場合のみ。
+- **CI green を確認してからマージ**。失敗したら**新規コミットで修正**（push 済みへの `--amend` は使わない）。
+- **`--force` push / 履歴改変は禁止**（ユーザー明示指示がある場合のみ）。
 
 ## シークレット取扱（YOU MUST）
 
@@ -96,6 +96,7 @@ flowchart TD
 - `system.defaults` は **ByHost ドメイン（`-currentHost`）には書けない**。Display 配置や一部 Finder 詳細は activationScripts で `defaults -currentHost write` を使う以外手がない。
 - macOS の **TCC/sandbox で保護されたアプリ**（Mail / Safari / Calendar 等）の defaults は switch が成功しても無音で適用されない。AI は「修正」追加で深追いしない。
 - chezmoi run スクリプトは **`run_onchange_` 既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap でのみ使う。
+- chord config パス（`dot_config/chord/private_config.toml`）は `.tmpl` の `{{ include }}`・`verify-chord-*.yml` の `paths:`・`gen-chord-doc.py` の **4 箇所**が指す。リネーム時は同時更新（PR #123 で古参照を踏んだ）。config 文法を released chord より先行させると `verify-chord-validate.yml`（tap の chord で strict 検証）が落ちる。`.tmpl` 自体は read-only で他リポに副作用なし。詳細 → [docs/operations.md §5.7](docs/operations.md)。
 - 編集を許したい AI/ユーザー共有ファイル（例: `~/.claude/settings.json`）は home.file に直接書かず **`mkOutOfStoreSymlink`** で逃がす（直書きは Nix store immutable で AI 編集できなくなる）。
 
 ## よく使うコマンド（Claude が推測できないもの）
