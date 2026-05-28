@@ -29,5 +29,13 @@
     # install.sh の一発再現を確認できる (GitHub Actions の macos-15 runner も
     # 中身は Tart)。手元再現テストの起点。
     tart
+
+    # === homebrew drift 運用 helper ===
+    # `add-homebrew --name=foo --desc="..."` で homebrew.nix の brews/casks に
+    # 1 行追記する (cask/formula 自動判定)。drift 詳細レポート
+    # (system/modules/scripts/check-homebrew-drift.sh) の「宣言:」行から案内される。
+    # source は system/modules/scripts/add-homebrew.sh (単一ソース)。
+    (writeShellScriptBin "add-homebrew"
+      (builtins.readFile ../../system/modules/scripts/add-homebrew.sh))
   ];
 }

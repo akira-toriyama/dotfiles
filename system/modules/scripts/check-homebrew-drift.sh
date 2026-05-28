@@ -25,14 +25,17 @@ set -eu
 IGNORE_EXTRA_CASKS="google-japanese-ime karabiner-elements"
 
 DETAIL_FILE="/tmp/homebrew-drift-latest.txt"
+# 詳細レポートの「宣言:」行が指す helper。FLAKE_DIR 解決後に絶対パス化する。
+ADD_SH=""
+
+# Nix (home.packages) が置く per-user profile の bin。
+#   - ここに同名があれば「brew と Nix の二重 install」と判定する
+#   - add-homebrew (writeShellScriptBin) もここに入るので PATH にも含める
+NIX_PROFILE_BIN="/etc/profiles/per-user/$(id -un)/bin"
 
 # launchd 環境は PATH がほぼ空。Homebrew + Nix の bin を明示注入する。
-PATH="/opt/homebrew/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/bin:/bin"
+PATH="/opt/homebrew/bin:${NIX_PROFILE_BIN}:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/bin:/bin"
 export PATH
-
-# Nix (home.packages) が置く per-user profile の bin。ここに同名があれば
-# 「brew と Nix の二重 install」と判定する。
-NIX_PROFILE_BIN="/etc/profiles/per-user/$(id -un)/bin"
 
 FLAKE_DIR="${DOTFILES_FLAKE_DIR:-}"
 if [ -z "$FLAKE_DIR" ] && command -v ghq >/dev/null 2>&1; then
@@ -44,6 +47,14 @@ fi
 if [ -z "$FLAKE_DIR" ] || [ ! -e "$FLAKE_DIR/flake.nix" ]; then
   echo "[$(date)] flake not found, skipping"
   exit 0
+fi
+
+# add-homebrew は Nix (home.packages の writeShellScriptBin) で PATH に乗る。
+# 未配置の新 PC では repo の実体パスにフォールバック。
+if command -v add-homebrew >/dev/null 2>&1; then
+  ADD_SH="add-homebrew"
+else
+  ADD_SH="$FLAKE_DIR/system/modules/scripts/add-homebrew.sh"
 fi
 
 echo "[$(date)] checking drift against $FLAKE_DIR"
@@ -149,7 +160,7 @@ get_desc_brew() {
       [ -z "$name" ] && continue
       desc=$(get_desc_brew "$name")
       echo "・$name${desc:+  ($desc)}"
-      echo "    宣言: homebrew.nix の brews に  \"$name\"  を追記"
+      echo "    宣言: $ADD_SH --name=\"$name\" --desc=\"$desc\""
       echo "    削除: brew uninstall $name"
     done <<< "$undeclared_brews"
     echo
@@ -163,7 +174,7 @@ get_desc_brew() {
       [ -z "$name" ] && continue
       desc=$(get_desc_cask "$name")
       echo "・$name${desc:+  ($desc)}"
-      echo "    宣言: homebrew.nix の casks に  \"$name\"  を追記"
+      echo "    宣言: $ADD_SH --name=\"$name\" --desc=\"$desc\""
       echo "    削除: brew uninstall --cask $name"
     done <<< "$extra_casks"
     echo
