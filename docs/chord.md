@@ -80,6 +80,8 @@ private_config.toml の `# doc:` 行＋`[[bindings]]` を編集 →
 | `Ctrl + H` | Backspace | * |
 | `Ctrl + D` | 前方削除（Forward Delete） | * |
 | `Ctrl + J` | Return | * |
+| `Ctrl + Fn + right` | スペース右へ移動しつつ facet tree 表示（ctrl+→） | * |
+| `Ctrl + Fn + left` | スペース左へ移動しつつ facet tree 表示（ctrl+←） | * |
 
 <!-- END AUTO-GENERATED -->
 
