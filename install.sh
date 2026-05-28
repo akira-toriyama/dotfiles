@@ -87,6 +87,10 @@ if [ ! -d "$REPO_DIR/.git" ]; then
 fi
 cd "$REPO_DIR"
 
+# 3.5 git hooks を有効化（pre-push で chezmoi の apply 忘れ push を防ぐ）。
+# .githooks/ はリポ追跡下なので clone した全環境で同じフックが効く。詳細 docs/operations.md §5.11
+git config core.hooksPath .githooks
+
 # 4. nix-darwin 適用（brew/cask/mas/CLI/defaults を一括導入）
 # --impure: flake.nix の detectUser が $USER (or $FLAKE_USER) を builtins.getEnv で
 #           読むので必須。sudo 越しに USER/FLAKE_USER を伝搬する。
