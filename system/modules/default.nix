@@ -6,5 +6,6 @@
   imports = [
     ./homebrew.nix
     ./defaults.nix
+    ./launchd-drift.nix
   ];
 }

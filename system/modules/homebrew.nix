@@ -21,7 +21,9 @@
     taps = [
       "barutsrb/tap"   # omniwm (Niri-inspired tiling WM by BarutSRB) を解決するため
     ];
-    brews = [ ];
+    brews = [
+      "terminal-notifier" # macOS 通知 CLI。launchd-drift.nix の drift 検知通知で使用
+    ];
 
     casks = [
       # 1Password 8 デスクトップ。SSH エージェント / op CLI 連携の前提
