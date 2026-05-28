@@ -24,6 +24,9 @@
     name = username;
     home = "/Users/${username}";
   };
+  # nix-darwin master の最近の assertion で root.home が明示必要に。
+  # 既定の /var/root を明示するだけで eval が通る (上流要請の最小準拠)。
+  users.users.root.home = "/var/root";
   system.primaryUser = username;
 
   nix.enable = false;
