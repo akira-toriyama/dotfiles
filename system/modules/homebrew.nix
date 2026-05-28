@@ -22,6 +22,33 @@
       "barutsrb/tap"   # omniwm (Niri-inspired tiling WM by BarutSRB) を解決するため
     ];
     brews = [
+      # === DriftBot 検知分 (要レビュー: コメント書き直し / 適切なグループへ移動 / 不要なら削除) ===
+      "acsandmann/tap/rift"  # Tiling window manager for macOS  # TODO: review
+      "act"  # Run your GitHub Actions locally  # TODO: review
+      "akira-toriyama/tap/chord"  # Global keyboard + mouse hotkey daemon for macOS  # TODO: review
+      "akira-toriyama/tap/facet"  # Workspace + window manager for macOS — tree sidebar & TS3-style grid  # TODO: review
+      "akira-toriyama/tap/ws-tabs"  # Translucent workspace + window tab panel for the rift window manager  # TODO: review
+      "asdf"  # Extendable version manager with support for Ruby, Node.js, Erlang & more  # TODO: review
+      "cliclick"  # Tool for emulating mouse and keyboard events  # TODO: review
+      "cmake"  # Cross-platform make  # TODO: review
+      "direnv"  # Load/unload environment variables based on $PWD  # TODO: review
+      "f2"  # Command-line batch renaming tool  # TODO: review
+      "felixkratz/formulae/borders"  # A window border system for macOS  # TODO: review
+      "gifski"  # Highest-quality GIF encoder based on pngquant  # TODO: review
+      "git-cliff"  # Highly customizable changelog generator  # TODO: review
+      "gperf"  # Perfect hash function generator  # TODO: review
+      "hudochenkov/sshpass/sshpass"  # ?  # TODO: review
+      "jackielii/tap/skhd-zig"  # ?  # TODO: review
+      "koekeishiya/formulae/krp"  # Utility to adjust keyrepeat settings for MacOS.  # TODO: review
+      "koekeishiya/formulae/yabai"  # A tiling window manager for macOS based on binary space partitioning.  # TODO: review
+      "ninja"  # Small build system for use with gyp or CMake  # TODO: review
+      "node"  # Open-source, cross-platform JavaScript runtime environment  # TODO: review
+      "pipx"  # Execute binaries from Python packages in isolated environments  # TODO: review
+      "shellcheck"  # Static analysis and lint tool, for (ba)sh scripts  # TODO: review
+      "sleepwatcher"  # Monitors sleep, wakeup, and idleness of a Mac  # TODO: review
+      "trash"  # CLI tool that moves files or folder to the trash  # TODO: review
+      "watchman"  # Watch files and take action when they change  # TODO: review
+      "yt-dlp"  # Feature-rich command-line audio/video downloader  # TODO: review
       "terminal-notifier" # macOS 通知 CLI。launchd-drift.nix の drift 検知通知で使用
     ];
 
