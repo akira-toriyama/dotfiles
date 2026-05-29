@@ -1,7 +1,7 @@
 #!/bin/bash
 # homebrew.nix の brews / casks に 1 行宣言を追記する。
 # cask か formula(brew) かは brew info で自動判定 (formula 優先)。
-# drift 詳細レポート (check-homebrew-drift.sh) の「宣言:」行から呼ばれる想定。
+# drift 詳細レポート (check-dotfiles-drift.sh) の「宣言:」行から呼ばれる想定。
 #
 # tap formula/cask (owner/repo/name 形式) の場合は taps にも自動で追記する
 # (nix-darwin homebrew は宣言された tap からしか解決しないため)。
@@ -99,8 +99,8 @@ echo "  git add system/modules/homebrew.nix && git diff --cached"
 # nix eval は dirty working tree を見るので、追記分が即 declared 扱いになる。
 echo
 echo "→ drift 再チェック (md 再生成 + 通知)"
-if command -v homebrew-drift-check >/dev/null 2>&1; then
-  homebrew-drift-check >/dev/null 2>&1 || true
+if command -v dotfiles-drift-check >/dev/null 2>&1; then
+  dotfiles-drift-check >/dev/null 2>&1 || true
 else
-  "$FLAKE_DIR/system/modules/scripts/check-homebrew-drift.sh" >/dev/null 2>&1 || true
+  "$FLAKE_DIR/system/modules/scripts/check-dotfiles-drift.sh" >/dev/null 2>&1 || true
 fi

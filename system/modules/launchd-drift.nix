@@ -1,16 +1,17 @@
 { username, ... }:
 
 {
-  # homebrew.nix の宣言 ↔ 実 install を毎日 1 回チェックする LaunchAgent。
-  # drift があれば macOS 通知 (terminal-notifier) を出すだけ。自動修正はしない。
-  # スクリプト本体は ./scripts/check-homebrew-drift.sh (Nix store にコピーされる)。
-  # 手動実行は: bash <repo>/system/modules/scripts/check-homebrew-drift.sh
-  launchd.user.agents.homebrew-drift = {
+  # dotfiles の各種 drift (homebrew 宣言↔実 install / chezmoi source↔live / git 未push・
+  # 滞留未commit) を毎日 1 回チェックし、差分があれば macOS 通知 (terminal-notifier) を
+  # 1 件出すだけの LaunchAgent。自動修正はしない。
+  # スクリプト本体は ./scripts/check-dotfiles-drift.sh (Nix store にコピーされる)。
+  # 手動実行は: dotfiles-drift-check (または bash <repo>/system/modules/scripts/check-dotfiles-drift.sh)
+  launchd.user.agents.dotfiles-drift = {
     serviceConfig = {
-      Label = "org.nixos.homebrew-drift";
+      Label = "org.nixos.dotfiles-drift";
       ProgramArguments = [
         "/bin/bash"
-        "${./scripts/check-homebrew-drift.sh}"
+        "${./scripts/check-dotfiles-drift.sh}"
       ];
       # 毎日 09:00 に起動。ログイン時は走らせない (RunAtLoad = false)。
       StartCalendarInterval = [{
@@ -18,8 +19,8 @@
         Minute = 0;
       }];
       RunAtLoad = false;
-      StandardOutPath = "/tmp/homebrew-drift.log";
-      StandardErrorPath = "/tmp/homebrew-drift.log";
+      StandardOutPath = "/tmp/dotfiles-drift.log";
+      StandardErrorPath = "/tmp/dotfiles-drift.log";
     };
   };
 
@@ -34,8 +35,8 @@
     if [ ! -f "$HINT_FLAG" ] && [ -x /opt/homebrew/bin/terminal-notifier ]; then
       echo "[notifyPermissionHint] first-run hint を表示します"
       sudo -u ${username} /opt/homebrew/bin/terminal-notifier \
-        -group "homebrew-drift-setup" \
-        -title "homebrew-drift セットアップ" \
+        -group "dotfiles-drift-setup" \
+        -title "dotfiles-drift セットアップ" \
         -subtitle "通知許可をお願いします" \
         -message "System Settings → 通知 → terminal-notifier を ON にしてください" \
         -sound Pop || true
