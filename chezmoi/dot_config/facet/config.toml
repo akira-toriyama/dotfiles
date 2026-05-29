@@ -29,7 +29,7 @@
 # Default for a fresh `curl` install: "tree" (the always-on-top
 # sidebar — facet's primary surface; the grid is a TS3-style
 # overview you summon on demand with `facet --view=grid`).
-default_view = "tree"
+default-view = "tree"
 
 
 # -----------------------------------------------------------------
@@ -63,10 +63,6 @@ cols = 5
 #   "up"   — label above each cell (Mission Control / TS3 style).
 #   "down" — label below each cell (Stage Manager / dock style).
 label-position = "up"
-
-# Workspace label font size in points. Clamped 8..32. The label
-# band height tracks this so larger labels reserve more space.
-label-size = 15
 
 # Background ScreenCaptureKit refresh cadence (seconds) that keeps
 # grid-view thumbnails warm so `--view=grid` paints immediately
@@ -110,7 +106,7 @@ thumbnail-refresh-seconds = 4
 hide_method = "anchor"
 
 [tree]
-preview_mode = "mirror"
+preview-mode = "mirror"
 
 # -----------------------------------------------------------------
 # Per-native-Space workspaces  [space.N]
