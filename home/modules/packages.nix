@@ -30,15 +30,16 @@
     # 中身は Tart)。手元再現テストの起点。
     tart
 
-    # === homebrew drift 運用 helper ===
+    # === dotfiles drift 運用 helper ===
     # add-homebrew: homebrew.nix の brews/casks(+tap) に 1 行追記 (cask/formula 自動判定)。
-    #   末尾で homebrew-drift-check を呼んで md 再生成 + 通知まで自動。
-    # homebrew-drift-check: drift を再チェックして md 再生成 + 通知 (launchd と同一 source)。
-    #   詳細 md の「削除/install」コマンドに `&& homebrew-drift-check` で chain される。
+    #   末尾で dotfiles-drift-check を呼んで md 再生成 + 通知まで自動。
+    # dotfiles-drift-check: drift (homebrew/chezmoi/git) を再チェックして md 再生成 + 通知
+    #   (launchd-drift.nix と同一 source)。詳細 md の「削除/install」コマンドに
+    #   `&& dotfiles-drift-check` で chain される。
     # source はいずれも system/modules/scripts/*.sh (単一ソース)。
     (writeShellScriptBin "add-homebrew"
       (builtins.readFile ../../system/modules/scripts/add-homebrew.sh))
-    (writeShellScriptBin "homebrew-drift-check"
-      (builtins.readFile ../../system/modules/scripts/check-homebrew-drift.sh))
+    (writeShellScriptBin "dotfiles-drift-check"
+      (builtins.readFile ../../system/modules/scripts/check-dotfiles-drift.sh))
   ];
 }
