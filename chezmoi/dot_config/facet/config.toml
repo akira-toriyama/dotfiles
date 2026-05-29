@@ -153,3 +153,8 @@ preview-mode = "mirror"
 3 = "WS5-3"
 4 = "WS5-4"
 5 = "WS5-5"
+
+[layout]
+inner-gap = 12
+outer-gap = 12
+outer-gap-left = 520
