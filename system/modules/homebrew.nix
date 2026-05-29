@@ -55,6 +55,7 @@
       "transmission"        # BitTorrent
       "warp"                # ターミナル（任意）
       "zed"                 # エディタ（vscode と棲み分けの可能性）
+      "monodraw"            # ASCII アート / テキスト図エディタ
 
       # 明示的に未宣言（破棄方針）:
       #   google-japanese-ime  ← azookey に置換済。cleanup=zap 化で消える
