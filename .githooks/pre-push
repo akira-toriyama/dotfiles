@@ -1,5 +1,11 @@
 #!/bin/sh
 # pre-push guard — chezmoi の source ↔ live が乖離していたら push を止める。
+# ただし *この push が chezmoi/ を変更する時だけ* 検査する (over-guard 回避)。
+#
+# なぜスコープを絞るか: 公開されるのは commit 済み source。守るべきは「chezmoi/ を
+# 含む push を未 apply のまま出す」事故。chezmoi/ に無関係な push (nix/ や docs/ のみ)
+# まで止めると、facet 等の開発中ツールが live を書き換えて生む常時乖離に巻き込まれ、
+# 関係ない作業まで push できなくなる。よって push 範囲が chezmoi/ を触る時だけ verify。
 #
 # 防ぐ事故: 「~/.config を直接編集 → chezmoi re-add → chezmoi apply を忘れて
 # git push」。apply 忘れは「リポは新しいのに自分のマシンは古い」「検証ゲート
@@ -17,6 +23,18 @@ set -eu
 command -v chezmoi >/dev/null 2>&1 || exit 0
 
 repo_root=$(git rev-parse --show-toplevel)
+
+# この push が chezmoi/ を変更しないなら検査不要。短命 feature ブランチ → main
+# 運用 (CLAUDE.md) 前提で origin/main を基点に変更ファイルを見る。基点が取れない
+# 時 (origin/main 無し等) は安全側に倒して verify する。
+range_base=$(git merge-base origin/main HEAD 2>/dev/null || true)
+if [ -n "$range_base" ]; then
+    if git diff --name-only "$range_base..HEAD" 2>/dev/null | grep -q '^chezmoi/'; then
+        : # chezmoi/ を含む push → verify へ進む
+    else
+        exit 0 # chezmoi/ を触らない push → 検査スキップ
+    fi
+fi
 
 if chezmoi --source "$repo_root/chezmoi" verify; then
     exit 0
