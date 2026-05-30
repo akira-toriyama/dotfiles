@@ -24,7 +24,6 @@
     ];
     brews = [
       "felixkratz/formulae/borders"  # A window border system for macOS
-      "terminal-notifier" # macOS 通知 CLI。launchd-drift.nix の drift 検知通知で使用
     ];
 
     casks = [
