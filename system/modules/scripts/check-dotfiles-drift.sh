@@ -14,14 +14,27 @@
 #        ※ unpushed: commit したのに origin に無い (= 新 Mac で再現できない)
 #        ※ uncommitted: STALE_DAYS 日以上触られていない時だけ通知 (作業中のノイズ回避)
 #
+# 設計方針 (全ての「新 PC で再現できない」穴をこの check でカバーはしない):
+#   - 「source が綺麗に再現できるか」は CI の switch-smoke が別途実証する。本 check は
+#     その CI が原理的に見られない「live にあるが source に無い」穴だけを担当する。
+#   - 静的に分かる穴 (モジュール配線忘れ = orphan 等) は CI 側で弾く (マージ前ブロック)。
+#   - あえて検知しない / できない穴 (accept・defer):
+#       ⑤ masApps        : mas 上流バグで凍結中の既知ギャップ
+#       ⑥ 1Password 参照  : テンプレに op:// が無いうちは対象外 (参照追加時に resolver 検討)
+#       ⑦ 管理外 GUI 設定 : 追跡是非は意図問題 → chezmoi add する運用規律で対応
+#       未宣言の手動 defaults: どれを再現したいかは意図問題で原理的に検知不能
+#         (defaults は「宣言済キーが実 live と一致するか」の逆監査のみ担当する)
+#
 # 通知:
-#   - terminal-notifier で件数サマリを 1 件だけ。詳細 (description + 対応コマンド) は
-#     /tmp/dotfiles-drift-latest.md に書き出し、通知クリックで code が **新規ウィンドウ**
-#     (`code -n`) で開く。
-#   - 悪い状態が続く限り毎回 (= 毎朝 9:00 の起動ごとに) 通知する。重複抑止はしない:
-#     dotfiles/ が壊れている間は毎日リマインドが欲しいという運用方針。banner は数秒で
-#     消えるが -group 指定で通知センターでは最新 1 件に置き換わる。md は毎回最新に更新。
-#   - drift が解消したら md・hash を削除し、残っていた通知も -remove で消す。
+#   - osascript の display dialog で 画面中央にウィンドウ を出す。通知許可ゲートが無い
+#     (アプリ自身のダイアログ = TCC 対象外) ので、環境構築だけで機能する
+#     (terminal-notifier 方式で要った「通知許可を手動 ON」の人手が不要になる)。
+#   - 件数サマリを表示し、「詳細を開く」で詳細 (description + 対応コマンド) を
+#     /tmp/dotfiles-drift-latest.md から code の新規ウィンドウ (`code -n`) で開く。
+#   - 悪い状態が続く限り毎回 (= 毎朝 9:00 の起動ごとに) 出す。重複抑止はしない:
+#     dotfiles/ が壊れている間は毎日リマインドが欲しいという運用方針。timeout 無し =
+#     押すまで残る。md は毎回最新に更新。
+#   - drift が解消したら md を削除する。
 #   - flake パスは ghq → $HOME/dotfiles → $DOTFILES_FLAKE_DIR の順で解決
 #   - 実行ログ (append): /tmp/dotfiles-drift.log (launchd の Std{Out,Err}Path)
 set -eu
@@ -41,7 +54,6 @@ IGNORE_EXTRA_CASKS="google-japanese-ime karabiner-elements"
 # 縮める / 未コミットを別カテゴリで即通知する等を検討する。
 STALE_DAYS=3
 
-GROUP="dotfiles-drift"
 DETAIL_FILE="/tmp/dotfiles-drift-latest.md"
 # 詳細レポートの「宣言:」行が指す helper。switch 済み環境で使う前提なので bare 名。
 ADD_SH="add-homebrew"
@@ -161,7 +173,6 @@ total=$(( n_ec + n_mc + n_dup + n_ub + n_mb + n_cz + n_unpushed + n_stale ))
 if [ "$total" -eq 0 ]; then
   echo "[$(date)] no drift"
   rm -f "$DETAIL_FILE" "$HOME/.local/state/dotfiles/drift-notified.sha"
-  command -v terminal-notifier >/dev/null 2>&1 && terminal-notifier -remove "$GROUP" >/dev/null 2>&1 || true
   exit 0
 fi
 
@@ -327,22 +338,29 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
 
 # ============================================================
 # 通知。
-#   - terminal-notifier 未導入なら log だけ残して exit (新 PC 初日対策)。
-#   - 悪い状態が続く限り起動ごとに通知 (重複抑止なし)。-group で最新 1 件に置き換わる。
-#   - クリックで code が新規ウィンドウ (-n) で詳細 md を開く。
+#   - osascript の display dialog で画面中央にウィンドウを出す。通知許可ゲートが無い
+#     (アプリ自身のダイアログ = TCC 対象外) ため、環境構築だけで機能する。
+#   - LaunchAgent は gui/<uid> セッションで動くので dialog を描画できる。画面ロック中 /
+#     ログイン前はセッションが有効になった時に出る (launchd の catch-up)。
+#   - 「詳細を開く」で code が新規ウィンドウ (-n) で詳細 md を開く。timeout 無し =
+#     押すまで残る。GUI セッションが無い文脈 (CI / ssh 等) では出せず log だけ残す。
+#   - subtitle は固定文字列 + 件数のみ (外部入力なし) なので dialog 文字列に直に埋める。
 # ============================================================
-if command -v terminal-notifier >/dev/null 2>&1; then
-  # 悪い状態が続く限り、起動ごと (= 毎朝 9:00) に必ず通知する。重複抑止はしない。
-  # -group 指定で通知センターでは最新 1 件に置き換わる。
-  terminal-notifier \
-    -group "$GROUP" \
-    -title "dotfiles drift" \
-    -subtitle "$subtitle" \
-    -message "🤖 詳細を開く" \
-    -execute "/opt/homebrew/bin/code -n $DETAIL_FILE" \
-    -sound Pop \
-    >/dev/null 2>&1 || true
-  echo "[$(date)] notified: $subtitle (詳細: $DETAIL_FILE)"
+if command -v osascript >/dev/null 2>&1; then
+  dialog_msg="${subtitle}
+
+「詳細を開く」で対応コマンド付きレポートを表示します。"
+  btn=$(osascript <<OSA 2>/dev/null
+display dialog "${dialog_msg}" with title "⚠ dotfiles drift" buttons {"閉じる", "詳細を開く"} default button "詳細を開く" with icon caution
+OSA
+) || true
+  case "$btn" in
+    *"詳細を開く"*)
+      /opt/homebrew/bin/code -n "$DETAIL_FILE" >/dev/null 2>&1 \
+        || open "$DETAIL_FILE" >/dev/null 2>&1 || true
+      ;;
+  esac
+  echo "[$(date)] notified (dialog): $subtitle (詳細: $DETAIL_FILE)"
 else
-  echo "[$(date)] terminal-notifier not found, drift logged only: $subtitle (詳細: $DETAIL_FILE)"
+  echo "[$(date)] osascript not found, drift logged only: $subtitle (詳細: $DETAIL_FILE)"
 fi
