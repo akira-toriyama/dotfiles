@@ -18,10 +18,9 @@
 #   - terminal-notifier で件数サマリを 1 件だけ。詳細 (description + 対応コマンド) は
 #     /tmp/dotfiles-drift-latest.md に書き出し、通知クリックで code が **新規ウィンドウ**
 #     (`code -n`) で開く。
-#   - 重複抑止: drift 内容の hash を記録し、**同じ drift は一度しか通知しない**
-#     (内容が変われば再通知)。macOS の banner は数秒で通知センターから消えるため
-#     「表示中か」での判定は不安定 → 内容 hash で判定する。週末に同じ drift が続いても
-#     初回 1 回だけ。md は毎回最新に更新するので後でクリックすれば最新が開く。
+#   - 悪い状態が続く限り毎回 (= 毎朝 9:00 の起動ごとに) 通知する。重複抑止はしない:
+#     dotfiles/ が壊れている間は毎日リマインドが欲しいという運用方針。banner は数秒で
+#     消えるが -group 指定で通知センターでは最新 1 件に置き換わる。md は毎回最新に更新。
 #   - drift が解消したら md・hash を削除し、残っていた通知も -remove で消す。
 #   - flake パスは ghq → $HOME/dotfiles → $DOTFILES_FLAKE_DIR の順で解決
 #   - 実行ログ (append): /tmp/dotfiles-drift.log (launchd の Std{Out,Err}Path)
@@ -37,8 +36,6 @@ STALE_DAYS=3
 
 GROUP="dotfiles-drift"
 DETAIL_FILE="/tmp/dotfiles-drift-latest.md"
-# 通知済み drift の内容 hash。reboot で消えないよう /tmp でなく state dir に置く。
-NOTIFIED_HASH_FILE="$HOME/.local/state/dotfiles/drift-notified.sha"
 # 詳細レポートの「宣言:」行が指す helper。switch 済み環境で使う前提なので bare 名。
 ADD_SH="add-homebrew"
 RECHECK="dotfiles-drift-check"
@@ -156,7 +153,7 @@ fi
 total=$(( n_ec + n_mc + n_dup + n_ub + n_mb + n_cz + n_unpushed + n_stale ))
 if [ "$total" -eq 0 ]; then
   echo "[$(date)] no drift"
-  rm -f "$DETAIL_FILE" "$NOTIFIED_HASH_FILE"
+  rm -f "$DETAIL_FILE" "$HOME/.local/state/dotfiles/drift-notified.sha"
   command -v terminal-notifier >/dev/null 2>&1 && terminal-notifier -remove "$GROUP" >/dev/null 2>&1 || true
   exit 0
 fi
@@ -324,28 +321,21 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
 # ============================================================
 # 通知。
 #   - terminal-notifier 未導入なら log だけ残して exit (新 PC 初日対策)。
-#   - 既に同 group の通知が通知センターに残っていれば再通知しない (-list で判定)。
+#   - 悪い状態が続く限り起動ごとに通知 (重複抑止なし)。-group で最新 1 件に置き換わる。
 #   - クリックで code が新規ウィンドウ (-n) で詳細 md を開く。
 # ============================================================
 if command -v terminal-notifier >/dev/null 2>&1; then
-  # drift 内容の hash (検知時刻の行は除外して安定化)。同一なら再通知しない。
-  cur_hash=$(grep -v '検知:' "$DETAIL_FILE" | shasum | awk '{print $1}')
-  prev_hash=$(cat "$NOTIFIED_HASH_FILE" 2>/dev/null || true)
-  if [ "$cur_hash" = "$prev_hash" ]; then
-    echo "[$(date)] 同一 drift を通知済みのため再通知スキップ: $subtitle (md は更新済: $DETAIL_FILE)"
-  else
-    terminal-notifier \
-      -group "$GROUP" \
-      -title "dotfiles drift" \
-      -subtitle "$subtitle" \
-      -message "🤖 詳細を開く" \
-      -execute "/opt/homebrew/bin/code -n $DETAIL_FILE" \
-      -sound Pop \
-      >/dev/null 2>&1 || true
-    mkdir -p "$(dirname "$NOTIFIED_HASH_FILE")"
-    echo "$cur_hash" > "$NOTIFIED_HASH_FILE"
-    echo "[$(date)] notified: $subtitle (詳細: $DETAIL_FILE)"
-  fi
+  # 悪い状態が続く限り、起動ごと (= 毎朝 9:00) に必ず通知する。重複抑止はしない。
+  # -group 指定で通知センターでは最新 1 件に置き換わる。
+  terminal-notifier \
+    -group "$GROUP" \
+    -title "dotfiles drift" \
+    -subtitle "$subtitle" \
+    -message "🤖 詳細を開く" \
+    -execute "/opt/homebrew/bin/code -n $DETAIL_FILE" \
+    -sound Pop \
+    >/dev/null 2>&1 || true
+  echo "[$(date)] notified: $subtitle (詳細: $DETAIL_FILE)"
 else
   echo "[$(date)] terminal-notifier not found, drift logged only: $subtitle (詳細: $DETAIL_FILE)"
 fi
