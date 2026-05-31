@@ -1,3 +1,10 @@
+---
+title: dotfiles 用語集
+tags: [glossary, macos, nix, chezmoi]
+repo: dotfiles
+aliases: []
+---
+
 # 用語集 — dotfiles のユビキタス言語
 
 dotfiles を構成する各パーツの **正規の呼び名** をまとめた規範ドキュメント。
@@ -102,7 +109,7 @@ flowchart TD
 ## ビルド / 適用
 
 ### `flake.nix`
-リポジトリ直下の Nix flake エントリ。nix-darwin / home-manager / nix-homebrew
+リポジトリ直下の Nix flake エントリ。[[nix-darwin]] / [[home-manager]] / nix-homebrew
 を組合せる。
 - **Don't call it:** nix entry, ニックスエントリ
 
@@ -121,7 +128,7 @@ switch ...` で呼ぶ。
 - **Don't call it:** preview, dry-run, プレビュー
 
 ### `chezmoi apply`
-chezmoi 管理ファイルを `$HOME` に書き出す **実適用**。
+[[chezmoi]] 管理ファイルを `$HOME` に書き出す **実適用**。
 - **Don't call it:** sync, deploy, 適用
 
 ### `chezmoi re-add`
@@ -135,13 +142,13 @@ chezmoi 管理ファイルを `$HOME` に書き出す **実適用**。
 ## chezmoi 規約
 
 ### `executable_` prefix
-**chezmoi 配下のスクリプトに +x を再現するための prefix**。CI が強制
+**[[chezmoi]] 配下のスクリプトに +x を再現するための prefix**。CI が強制
 （[`.github/workflows/ci.yml`](../.github/workflows/ci.yml)）。`run_*` と
 `.chezmoiscripts/` 配下は例外（chezmoi 自身が実行するので prefix 不要）。
 - **Don't call it:** exec prefix, x prefix, 実行プレフィックス
 
 ### `private_` prefix
-**chezmoi で権限 600 を再現する prefix**。secret ファイルに必須。
+**[[chezmoi]] で権限 600 を再現する prefix**。secret ファイルに必須。
 - **Don't call it:** secret prefix, restricted prefix, 機密プレフィックス
 
 ### `encrypted_` prefix
@@ -149,17 +156,17 @@ chezmoi 管理ファイルを `$HOME` に書き出す **実適用**。
 - **Don't call it:** crypt prefix, secure prefix
 
 ### `.tmpl` + `onepasswordRead`
-chezmoi テンプレに secret を **参照** として埋め込む正規パターン。
+[[chezmoi]] テンプレに secret を **参照** として埋め込む正規パターン。
 リテラル値は書かない。前提: `op signin` 済み。
 - **Don't call it:** secret template, op template, シークレットテンプレ
 
 ### `run_once_` / `run_onchange_`
-chezmoi の **scripts 発火ポリシー**。`run_onchange_` が既定（idempotent）。
+[[chezmoi]] の **scripts 発火ポリシー**。`run_onchange_` が既定（idempotent）。
 `run_once_` は本当に一度きりの bootstrap でのみ使う。
 - **Don't call it:** init script, setup hook, 初期化スクリプト
 
 ### `mkOutOfStoreSymlink`
-**AI / ユーザーが直接編集する dotfile** を nix store 外へ逃がす home-manager
+**AI / ユーザーが直接編集する dotfile** を nix store 外へ逃がす [[home-manager]]
 イディオム。直書きすると `/nix/store` は immutable なので編集できない。
 - 適用例: `~/.claude/settings.json`
 - **Don't call it:** writable symlink, out-of-store link, 書き換え可能リンク
