@@ -2,6 +2,17 @@
 
 個人 macOS 環境の dotfiles（aarch64-darwin / user: `tommy`）。
 スタック: **nix-darwin + home-manager + chezmoi + 1Password**。
+
+## 用語
+
+このリポジトリで使う正規語彙は [`docs/glossary.md`](docs/glossary.md) に従う
+— 所有レイヤー（`nix-darwin` / `home-manager` / `chezmoi` / `1Password`）、
+chezmoi prefix（`executable_` / `private_` / `encrypted_` / `run_once_` /
+`run_onchange_`）、ビルド / 適用コマンド（`darwin-rebuild build/switch` /
+`chezmoi diff/apply/re-add`）、配布（`install.sh` / `aarch64-darwin`）、
+運用（`main` / `feature branch` / `pre-push hook`）など。`Don't call it:`
+側の同義語は使わない。用語の追加・改名はコード変更と **同一 PR で** この
+ファイルへ反映する。
 詳細: [docs/reproduction-architecture.md](docs/reproduction-architecture.md) /
 進捗: [docs/roadmap.md](docs/roadmap.md) /
 環境素材: [docs/system-inventory.md](docs/system-inventory.md) /
