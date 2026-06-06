@@ -4,7 +4,7 @@
 #
 # 修飾子 4 セット (ZMK 物理 chord) は [input-aliases] で論理名化し、
 # `input = "$ULTRA_LL - c"` のように `$prefix` で参照する
-# (chord の [input-aliases] 機能、akira-toriyama/chord PR #4)。
+# (chord の [input-aliases] 機能、akira-toriyama/chord v0.6.0+)。
 #   ULTRA_LL   = rctrl + ralt + rshift   (RALT+RSHIFT+RCTRL, RGUI なし)
 #   MIRACLE_LM = rctrl + rcmd + rshift   (RGUI+RSHIFT+RCTRL, RALT なし)
 #   MEGA_RM    = rctrl + rcmd + ralt     (RGUI+RALT +RCTRL,  RSHIFT なし)
@@ -12,11 +12,14 @@
 # 論理名は chord 自身が解決するので `gen-chord-doc.py` も [input-aliases]
 # テーブルを直接読めば docs/chord.md のショートカット表を作れる。
 #
-# chord (akira-toriyama/chord) の TOML 文法:
+# chord (akira-toriyama/chord) の TOML 文法 (v0.9.0 時点):
 #   • input  = "<mods> - <key>"   ※ key は標準名 or `keycode-<decimal>`
-#   • action-keys  = "<mods> - <key>"
+#   • action-keys  = "<mods> - <key>" or 配列 ["c1", "c2", ...] (chord 0.9.0+)
 #   • action-shell = "<command>"  ※ /bin/zsh -l -c で実行 → $HOME 等 env 展開可
 #   • apps         = ["<bundle-id-or-glob>", ...]  省略時は全アプリ
+#   • action-shell + action-keys は同一 binding に併記可能 (PR #8)。
+#     shell が先に発火 (fire-and-forget) → 直後に keys を post。元イベントは
+#     consume、再送分は synthetic タグ付きで matcher に再入しない。
 #   • 同じ input が複数ある場合は document 順で最初に apps が match した
 #     binding が発火（first-match-wins）。
 
@@ -25,11 +28,16 @@
 passthrough-unmatched = true
 # 全アプリで chord を無効化する bundle id（glob 可）。
 exclude-apps = []
+# 矢印 / ナビ系キーは macOS が常に fn を付与する。`input = "ctrl - right"`
+# が物理 ctrl+→ にそのまま一致するよう、fn の有無を無視する relaxation
+# (chord 0.8.0+ default = true)。false にする実害はほぼ無いので default 維持。
+fn-auto-arrows = true
 
 
 # =====================================================================
 # Aliases — chord の [action-aliases] 機能 (v0.6.0+)で shell-action を DRY 化。
 # `@name` で参照。$HOME は zsh -l -c が実行時展開する。
+# chord 0.9.0+ では `@name(arg)` の引数形 ({{1}}, {{2}} placeholder) も可。
 # =====================================================================
 
 [action-aliases]
@@ -38,8 +46,8 @@ play-undef = 'afplay "$HOME/.local/share/sounds/undefined_key.wav"'
 
 # =====================================================================
 # Input aliases — chord の [input-aliases] 機能で modifier セットを論理名化。
-# `$prefix` で参照 (v0.6.0+、no @ prefix と区別)。built-in modifier (cmd / ctrl / ...) と
-# 名前衝突する alias は load 時 reject される。case-insensitive。
+# `$prefix` で参照 (v0.6.0+、`@` 前置の action-alias と区別)。built-in modifier
+# (cmd / ctrl / ...) と名前衝突する alias は load 時 reject される。case-insensitive。
 # =====================================================================
 
 [input-aliases]
@@ -52,6 +60,15 @@ WONDER_RR  = "rcmd + ralt + rshift"
 # =====================================================================
 # Bindings — 各 binding 直前の `# doc: <動作>` は docs/chord.md の
 # ショートカット表生成の唯一ソース（scripts/gen-chord-doc.py が読む）。
+#
+# スタイル方針 (chord CLAUDE.md "config.toml grammar additions" 参照):
+# - **self-contained 形を default で選ぶ**。各 [[bindings]] が input / apps /
+#   action-* を全部書く形。下の tab-left / tab-right も per-app sugar ではなく
+#   self-contained の 2 行ずつ。理由: per-app の hoist 利得は input 1 行ぶんと
+#   小さい (chord Issue #64 で deprecation 検討中)。
+# - **hoist sugar は payoff が大きい時のみ**: [[remap]] / [[sequence]] /
+#   [[fallbacks]] inputs[] は使う。下の j-layer と fallbacks 4 mod set は
+#   そちらに統一済み。
 # =====================================================================
 
 # ---- ULTRA_LL レイヤ（ZMK 右側 ALT+SHIFT+CTRL チョード） ----
@@ -120,6 +137,14 @@ action-shell = "rift-cli execute mission-control show-all"
 
 
 # ---- emacs / readline 風 Ctrl+key remap ----
+# TODO: gen-chord-doc.py が [[remap]] を解釈できるようになったら、
+# 下の 7 行は次の 1 ブロックに圧縮できる (chord 0.8.0+ の [[remap]] sugar):
+#   [[remap]]
+#   name = "emacs-readline"
+#   modifiers = "ctrl"
+#   map = { b = "left", f = "right", p = "up", n = "down",
+#           h = "backspace", d = "forward_delete", j = "return" }
+# 現状は self-contained 形で残す (docs/chord.md からの脱落を避けるため)。
 
 # doc: ← Left
 [[bindings]]
@@ -168,8 +193,12 @@ action-keys = "return"
 # macOS は矢印キーに常に fn (NSEventModifierFlagFunction / maskSecondaryFn) を
 # 付与する。chord の matcher は未言及カテゴリの modifier 不在を要求し、fn は
 # 完全一致 (Models.swift `self.contains(.fn) == event.contains(.fn)`) なので、
-# 物理 ctrl+→ にマッチさせるには input 側にも fn を明記する必要がある。
-# fn を書かない `ctrl - right` は実イベント (ctrl+fn+right) と一致せず発火しない。
+# 物理 ctrl+→ にマッチさせるには本来 input 側にも fn を明記する必要がある。
+# ただし chord 0.8.0+ の [options] fn-auto-arrows = true (default) により
+# 矢印 / ナビ系のキーに限り fn の有無を無視する relaxation が入っているため、
+# 下の binding は `ctrl + fn - right` ではなく `ctrl - right` でも動く。
+# 明示的に書いている理由は「fn を意識した binding」だと grep して読みやすくする
+# ためで、`fn-auto-arrows = false` に切り替えても動くようにしておく保険。
 # bare `right` は KeyCodes で 0x7C（右矢印）に解決される（mouse 扱いは
 # `mouse.right` の時だけ）。
 #
@@ -182,10 +211,9 @@ action-keys = "return"
 # ctrl+→ を再送してスペース右移動。元イベントは consume、再送分は synthetic
 # タグ付きなので matcher に再入せずループしない。出力側にも fn を明記するのは、
 # 矢印に常に fn が付く macOS で「物理 ctrl+→」と同一イベントにし、OS のスペース
-# 移動ショートカットに一致させるため。
-# ※ action-shell + action-keys の同時発火は chord の multi-action 機能が必要
-#   （akira-toriyama/chord で実装、未リリース）。未対応バイナリでは action-keys
-#   が無視され facet のみ動く。
+# 移動ショートカットに一致させるため (input 側の fn-auto-arrows 緩和とは別軸)。
+# multi-action (shell + keys) は chord PR #8 で本流入り、本セッションの daemon
+# でそのまま動く。
 [[bindings]]
 name = "space-right + facet tree"
 input = "ctrl + fn - right"
@@ -201,58 +229,51 @@ action-shell = "facet --view=tree --loading=2000"
 action-keys = "ctrl + fn - left"
 
 
-# ---- 未定義キー効果音フォールバック ----
+# =====================================================================
+# 未定義キー効果音フォールバック (chord 0.8.0+ の inputs[] sugar で 1 行化)
+# =====================================================================
 # 4 修飾子セット (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) で実バインド済みの
-# キー以外を押すと効果音を鳴らす。chord v0.2.0 PR5 の `[[fallbacks]]` +
-# `*` ワイルドカードで実装。[[bindings]] が全 miss した時だけ [[fallbacks]]
-# が評価されるので、既存バインドとの誤爆は発生しない。
-# 音は 1 種共通（旧 skhd 時代の運用と同じ）。アセットは dotfiles 管轄、
+# キー以外を押すと効果音を鳴らす。chord v0.2.0 の `[[fallbacks]]` + `*` ワイル
+# ドカード + chord 0.8.0+ の `inputs = [...]` 配列で 4 entry → 1 entry に圧縮。
+# [[bindings]] が全 miss した時だけ [[fallbacks]] が評価されるので、既存
+# バインドとの誤爆は発生しない。
+# 音は 1 種共通 (旧 skhd 時代の運用と同じ)。アセットは dotfiles 管轄、
 # `@play-undef` (上の [action-aliases]) 経由で参照する。
-# `# doc:` は付けない（README ショートカット表に出さない＝負のバインド扱い）。
+# `# doc:` は付けない (README ショートカット表に出さない＝負のバインド扱い)。
 
 [[fallbacks]]
-name = "ULTRA_LL undefined feedback"
-input = "$ULTRA_LL - *"
-action-shell = "@play-undef"
-
-[[fallbacks]]
-name = "MIRACLE_LM undefined feedback"
-input = "$MIRACLE_LM - *"
-action-shell = "@play-undef"
-
-[[fallbacks]]
-name = "MEGA_RM undefined feedback"
-input = "$MEGA_RM - *"
-action-shell = "@play-undef"
-
-[[fallbacks]]
-name = "WONDER_RR undefined feedback"
-input = "$WONDER_RR - *"
+name = "undefined feedback (4 modsets)"
+inputs = ["$ULTRA_LL - *", "$MIRACLE_LM - *", "$MEGA_RM - *", "$WONDER_RR - *"]
 action-shell = "@play-undef"
 
 
 # =====================================================================
-# v2.1 stateful bindings (chord >= 0.4.0)
-# action-set-var / when-var / hold-while-timeout は dfb5f74 で本流入り。
-# 古い chord バイナリでは "missing-action" warning で drop される。
+# ULTRA_LL j-layer (chord 0.7.0+ の [[sequence]] sugar で 3 行化)
 # =====================================================================
+# 旧形 (v2.1 state-var を 3 binding で手書き):
+#   [[bindings]] input = "$ULTRA_LL - j"  action-set-var = "jlayer"  hold-while-timeout = 1500
+#   [[bindings]] input = "$ULTRA_LL - k"  when-var = "jlayer"  action-keys = "return"
+#   [[bindings]] input = "$ULTRA_LL - l"  when-var = "jlayer"  action-keys = "backspace"
+#
+# chord 0.7.0+ の [[sequence]] sugar が同じものを下の 1 ブロックに展開する。
+# parse 時に prefix binding (action-set-var = "_seq_j-layer" + hold-while-timeout)
+# + 子 binding 群 (when-var で gate) に desugar される。matcher / Controller は
+# 展開後しか見ない (新 runtime 概念は無い)。
+#
+# `# doc:` は付けない (children は arm を経由した時しか発火しないので
+# top-level ショートカットとしては正確に表現できない)。
 
-# ---- ULTRA_LL j-layer (1500ms inactivity timeout) ----
+[[sequence]]
+name = "j-layer"
+prefix = "$ULTRA_LL - j"
+timeout-ms = 1500
 
-[[bindings]]
-name = "ULTRA_LL + j → arm j-layer"
-input = "$ULTRA_LL - j"
-action-set-var = "jlayer"
-hold-while-timeout = 1500
+  [[sequence.bindings]]
+  name = "j-layer: k → Enter"
+  input = "k"
+  action-keys = "return"
 
-[[bindings]]
-name = "ULTRA_LL + k → Enter (in j-layer)"
-input = "$ULTRA_LL - k"
-when-var = "jlayer"
-action-keys = "return"
-
-[[bindings]]
-name = "ULTRA_LL + l → Backspace (in j-layer)"
-input = "$ULTRA_LL - l"
-when-var = "jlayer"
-action-keys = "backspace"
+  [[sequence.bindings]]
+  name = "j-layer: l → Backspace"
+  input = "l"
+  action-keys = "backspace"
