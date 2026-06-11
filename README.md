@@ -7,9 +7,11 @@
 sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 ```
 
-`install.sh` の流れ: Xcode CLT → Determinate Nix → リポジトリ clone →
+`install.sh` の流れ: Xcode CLT → **workspace volume (case-sensitive APFS) 作成** → Determinate Nix → リポジトリ clone →
 `darwin-rebuild switch`（brew/cask/mas/CLI/macOS defaults を nix-darwin の宣言通りに一括適用）→
 `chezmoi apply`（手編集 dotfile / VSCode 拡張 / Claude 設定）。詳細設計は [docs/reproduction-architecture.md](docs/reproduction-architecture.md)。
+
+workspace volume は `/Volumes/workspace` に作られ、ghq の clone 先 (`GHQ_ROOT`) として home-manager から参照される。macOS デフォルト APFS は case-insensitive なため Linux 由来コードと相性が悪い問題への対処。既に case-sensitive な `/Volumes/workspace` があれば skip される (冪等)。
 
 ### 完全自動化したい場合
 
