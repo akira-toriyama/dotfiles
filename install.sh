@@ -5,6 +5,7 @@
 #
 # 流れ:
 #   1. Xcode Command Line Tools
+#   1.5. workspace volume (case-sensitive APFS) を内蔵 SSD に追加
 #   2. Determinate Nix インストール
 #   3. このリポジトリを ~/dotfiles へ clone
 #   4. (sudo) darwin-rebuild switch  ← brew/cask/mas/CLI/defaults を宣言通り一括適用
@@ -58,6 +59,28 @@ if ! xcode-select -p >/dev/null 2>&1; then
   xcode-select --install || true
   echo "インストール完了後に再実行してください。" >&2
   exit 1
+fi
+
+# 1.5 workspace volume (case-sensitive APFS) を内蔵 SSD に追加。
+# macOS デフォルト APFS は case-insensitive で Linux 由来のコードと相性が悪い
+# (Foo.ts と foo.ts が同一視されて import 解決が壊れる / git の case-only
+# rename 差分が空になる等)。Mac dev 専用領域 /Volumes/workspace を
+# case-sensitive APFS として用意し、ghq の clone 先 (home-manager 側で
+# GHQ_ROOT=/Volumes/workspace 宣言) はここに固定する。
+# Container は `/` から逆引き → hostname / 内蔵 SSD のサイズによらず安定。
+# quota / reserve 未指定 → APFS dynamic space sharing をフル活用 (容量は
+# Container 全体と共有)。Determinate Nix インストールより前で sudo を取り、
+# 認証失敗 / Container 不在を fast-fail させる。
+if diskutil info /Volumes/workspace 2>/dev/null | grep -q 'Case-sensitive'; then
+  echo "==> workspace volume 既存 (case-sensitive) → skip"
+else
+  echo "==> workspace volume (case-sensitive APFS) を作成"
+  WORKSPACE_CONTAINER=$(diskutil info / | awk -F': *' '/APFS Container:/ {gsub(/[[:space:]]+$/, "", $2); print $2; exit}')
+  if [ -z "$WORKSPACE_CONTAINER" ]; then
+    echo "✘ APFS Container 検出失敗 (diskutil info / 出力を確認)" >&2
+    exit 1
+  fi
+  sudo diskutil apfs addVolume "$WORKSPACE_CONTAINER" "Case-sensitive APFS" workspace
 fi
 
 # 2. Nix (Determinate Systems インストーラ)
