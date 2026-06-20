@@ -2,24 +2,16 @@
 # 編集は ~/.config/chord/config.toml を直接編集 → `chezmoi re-add` で取り込み。
 # eventfx 等と同じ「直接編集 → re-add」運用。
 #
-# 修飾子 4 セット (ZMK 物理 chord) は [input-aliases] で論理名化し、
-# `input = "$ULTRA_LL - c"` のように `$prefix` で参照する
-# (chord の [input-aliases] 機能、akira-toriyama/chord v0.6.0+)。
-#   ULTRA_LL   = rctrl + ralt + rshift   (RALT+RSHIFT+RCTRL, RGUI なし)
-#   MIRACLE_LM = rctrl + rcmd + rshift   (RGUI+RSHIFT+RCTRL, RALT なし)
-#   MEGA_RM    = rctrl + rcmd + ralt     (RGUI+RALT +RCTRL,  RSHIFT なし)
-#   WONDER_RR  = rcmd  + ralt + rshift   (RGUI+RALT +RSHIFT, RCTRL なし)
-# 論理名は chord 自身が解決するので `gen-chord-doc.py` も [input-aliases]
-# テーブルを直接読めば docs/chord.md のショートカット表を作れる。
+# canon の 4 thumb 層 (LL/LM/RM/RR) + X_1 は vendor-HID v-key 化済み。
+# keyboard が `&vkey <id>` を送り、chord は [v-key-aliases] で id を論理名化、
+# `input = "TU_LL_C"` のように bare 参照（$ 不要 = 完結トリガー、f13 と同列）。
+# apps/when-var 等は通常 binding と全く同じく効く。id 採番は下記 [v-key-aliases]。
 #
-# chord (akira-toriyama/chord) の TOML 文法 (v0.9.0 時点):
+# chord (akira-toriyama/chord) の TOML 文法:
 #   • input  = "<mods> - <key>"   ※ key は標準名 or `keycode-<decimal>`
-#   • action-keys  = "<mods> - <key>" or 配列 ["c1", "c2", ...] (chord 0.9.0+)
+#   • action-keys  = "<mods> - <key>"
 #   • action-shell = "<command>"  ※ /bin/zsh -l -c で実行 → $HOME 等 env 展開可
 #   • apps         = ["<bundle-id-or-glob>", ...]  省略時は全アプリ
-#   • action-shell + action-keys は同一 binding に併記可能 (PR #8)。
-#     shell が先に発火 (fire-and-forget) → 直後に keys を post。元イベントは
-#     consume、再送分は synthetic タグ付きで matcher に再入しない。
 #   • 同じ input が複数ある場合は document 順で最初に apps が match した
 #     binding が発火（first-match-wins）。
 
@@ -28,16 +20,11 @@
 passthrough-unmatched = true
 # 全アプリで chord を無効化する bundle id（glob 可）。
 exclude-apps = []
-# 矢印 / ナビ系キーは macOS が常に fn を付与する。`input = "ctrl - right"`
-# が物理 ctrl+→ にそのまま一致するよう、fn の有無を無視する relaxation
-# (chord 0.8.0+ default = true)。false にする実害はほぼ無いので default 維持。
-fn-auto-arrows = true
 
 
 # =====================================================================
 # Aliases — chord の [action-aliases] 機能 (v0.6.0+)で shell-action を DRY 化。
 # `@name` で参照。$HOME は zsh -l -c が実行時展開する。
-# chord 0.9.0+ では `@name(arg)` の引数形 ({{1}}, {{2}} placeholder) も可。
 # =====================================================================
 
 [action-aliases]
@@ -45,30 +32,151 @@ play-undef = 'afplay "$HOME/.local/share/sounds/undefined_key.wav"'
 
 
 # =====================================================================
-# Input aliases — chord の [input-aliases] 機能で modifier セットを論理名化。
-# `$prefix` で参照 (v0.6.0+、`@` 前置の action-alias と区別)。built-in modifier
-# (cmd / ctrl / ...) と名前衝突する alias は load 時 reject される。case-insensitive。
+# v-key aliases — canon `&vkey <id>` の id を論理名化（[input-aliases] の v-key 版）。
+# `input = "TU_LL_C"` のように bare 参照（$ 不要 = 完結トリガー）。id は keymap の
+# `&vkey <id>` と一致（採番 LL=0x10+n / LM=0x30+n / RM=0x50+n / RR=0x70+n /
+# VK_X1=0x01、n=QWERTY 位置 0..29）。real-key 名と衝突する alias は load 時 reject。
+# ⚠ 単一ソース生成の対象（別フェーズで gen script + CI 照合に移行）。手編集で
+#   keymap とドリフトさせないこと。
 # =====================================================================
 
-[input-aliases]
-ULTRA_LL   = "rctrl + ralt + rshift"
-MIRACLE_LM = "rctrl + rcmd + rshift"
-MEGA_RM    = "rctrl + rcmd + ralt"
-WONDER_RR  = "rcmd + ralt + rshift"
+[v-key-aliases]
+# DEFAULT 単体 X_1
+VK_X1 = 0x01
+# T_LL_LAYER (base 0x10)
+TU_LL_Q = 0x10
+TU_LL_W = 0x11
+TU_LL_E = 0x12
+TU_LL_R = 0x13
+TU_LL_T = 0x14
+TU_LL_Y = 0x15
+TU_LL_U = 0x16
+TU_LL_I = 0x17
+TU_LL_O = 0x18
+TU_LL_P = 0x19
+TU_LL_A = 0x1A
+TU_LL_S = 0x1B
+TU_LL_D = 0x1C
+TU_LL_F = 0x1D
+TU_LL_G = 0x1E
+TU_LL_H = 0x1F
+TU_LL_J = 0x20
+TU_LL_K = 0x21
+TU_LL_L = 0x22
+TU_LL_X1 = 0x23
+TU_LL_Z = 0x24
+TU_LL_X = 0x25
+TU_LL_C = 0x26
+TU_LL_V = 0x27
+TU_LL_B = 0x28
+TU_LL_N = 0x29
+TU_LL_M = 0x2A
+TU_LL_X2 = 0x2B
+TU_LL_X3 = 0x2C
+TU_LL_X4 = 0x2D
+# T_LM_LAYER (base 0x30)
+TU_LM_Q = 0x30
+TU_LM_W = 0x31
+TU_LM_E = 0x32
+TU_LM_R = 0x33
+TU_LM_T = 0x34
+TU_LM_Y = 0x35
+TU_LM_U = 0x36
+TU_LM_I = 0x37
+TU_LM_O = 0x38
+TU_LM_P = 0x39
+TU_LM_A = 0x3A
+TU_LM_S = 0x3B
+TU_LM_D = 0x3C
+TU_LM_F = 0x3D
+TU_LM_G = 0x3E
+TU_LM_H = 0x3F
+TU_LM_J = 0x40
+TU_LM_K = 0x41
+TU_LM_L = 0x42
+TU_LM_X1 = 0x43
+TU_LM_Z = 0x44
+TU_LM_X = 0x45
+TU_LM_C = 0x46
+TU_LM_V = 0x47
+TU_LM_B = 0x48
+TU_LM_N = 0x49
+TU_LM_M = 0x4A
+TU_LM_X2 = 0x4B
+TU_LM_X3 = 0x4C
+TU_LM_X4 = 0x4D
+# T_RM_LAYER (base 0x50)
+TU_RM_Q = 0x50
+TU_RM_W = 0x51
+TU_RM_E = 0x52
+TU_RM_R = 0x53
+TU_RM_T = 0x54
+TU_RM_Y = 0x55
+TU_RM_U = 0x56
+TU_RM_I = 0x57
+TU_RM_O = 0x58
+TU_RM_P = 0x59
+TU_RM_A = 0x5A
+TU_RM_S = 0x5B
+TU_RM_D = 0x5C
+TU_RM_F = 0x5D
+TU_RM_G = 0x5E
+TU_RM_H = 0x5F
+TU_RM_J = 0x60
+TU_RM_K = 0x61
+TU_RM_L = 0x62
+TU_RM_X1 = 0x63
+TU_RM_Z = 0x64
+TU_RM_X = 0x65
+TU_RM_C = 0x66
+TU_RM_V = 0x67
+TU_RM_B = 0x68
+TU_RM_N = 0x69
+TU_RM_M = 0x6A
+TU_RM_X2 = 0x6B
+TU_RM_X3 = 0x6C
+TU_RM_X4 = 0x6D
+# T_RR_LAYER (base 0x70)
+TU_RR_Q = 0x70
+TU_RR_W = 0x71
+TU_RR_E = 0x72
+TU_RR_R = 0x73
+TU_RR_T = 0x74
+TU_RR_Y = 0x75
+TU_RR_U = 0x76
+TU_RR_I = 0x77
+TU_RR_O = 0x78
+TU_RR_P = 0x79
+TU_RR_A = 0x7A
+TU_RR_S = 0x7B
+TU_RR_D = 0x7C
+TU_RR_F = 0x7D
+TU_RR_G = 0x7E
+TU_RR_H = 0x7F
+TU_RR_J = 0x80
+TU_RR_K = 0x81
+TU_RR_L = 0x82
+TU_RR_X1 = 0x83
+TU_RR_Z = 0x84
+TU_RR_X = 0x85
+TU_RR_C = 0x86
+TU_RR_V = 0x87
+TU_RR_B = 0x88
+TU_RR_N = 0x89
+TU_RR_M = 0x8A
+TU_RR_X2 = 0x8B
+TU_RR_X3 = 0x8C
+TU_RR_X4 = 0x8D
+# ist (ble_hid_host_receiver) トラックボールボタン (band 0xA0..0xBF) — canon/vkey-aliases.toml と一致
+IST_BTN5 = 0xA0
+IST_BTN6 = 0xA1
+IST_TILT_L = 0xA2
+IST_TILT_R = 0xA3
 
 
 # =====================================================================
 # Bindings — 各 binding 直前の `# doc: <動作>` は docs/chord.md の
 # ショートカット表生成の唯一ソース（scripts/gen-chord-doc.py が読む）。
-#
-# スタイル方針 (chord CLAUDE.md "config.toml grammar additions" 参照):
-# - **self-contained 形を default で選ぶ**。各 [[bindings]] が input / apps /
-#   action-* を全部書く形。下の tab-left / tab-right も per-app sugar ではなく
-#   self-contained の 2 行ずつ。理由: per-app の hoist 利得は input 1 行ぶんと
-#   小さい (chord Issue #64 で deprecation 検討中)。
-# - **hoist sugar は payoff が大きい時のみ**: [[remap]] / [[sequence]] /
-#   [[fallbacks]] inputs[] は使う。下の j-layer と fallbacks 4 mod set は
-#   そちらに統一済み。
 # =====================================================================
 
 # ---- ULTRA_LL レイヤ（ZMK 右側 ALT+SHIFT+CTRL チョード） ----
@@ -76,75 +184,67 @@ WONDER_RR  = "rcmd + ralt + rshift"
 # doc: タブを左へ（Chrome: Ctrl+Shift+Tab）
 [[bindings]]
 name = "tab-left (Chrome)"
-input = "$ULTRA_LL - c"
+input = "TU_LL_C"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl + shift - tab"
 
 # doc: タブを左へ（VS Code: Cmd+Shift+[）
 [[bindings]]
 name = "tab-left (VS Code)"
-input = "$ULTRA_LL - c"
+input = "TU_LL_C"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ["
 
 # doc: タブを右へ（Chrome: Ctrl+Tab）
 [[bindings]]
 name = "tab-right (Chrome)"
-input = "$ULTRA_LL - v"
+input = "TU_LL_V"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl - tab"
 
 # doc: タブを右へ（VS Code: Cmd+Shift+]）
 [[bindings]]
 name = "tab-right (VS Code)"
-input = "$ULTRA_LL - v"
+input = "TU_LL_V"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ]"
 
 # doc: 前のウィンドウへ（rift フォーカス）
 [[bindings]]
 name = "rift focus prev"
-input = "$ULTRA_LL - d"
+input = "TU_LL_D"
 action-shell = "rift-cli execute window prev"
 
 # doc: 次のウィンドウへ（rift フォーカス）
 [[bindings]]
 name = "rift focus next"
-input = "$ULTRA_LL - f"
+input = "TU_LL_F"
 action-shell = "rift-cli execute window next"
 
 # doc: AltTab 起動（全スペース。旧 cmd+ctrl+tab）
 [[bindings]]
 name = "alttab all-spaces"
-input = "$ULTRA_LL - a"
+input = "TU_LL_A"
 action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=1"
 
 # doc: AltTab 起動（現スペース。旧 alt+tab）
 [[bindings]]
 name = "alttab current-space"
-input = "$ULTRA_LL - s"
+input = "TU_LL_S"
 action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=0"
 
 
 # ---- ZMK 単押し専用キー ----
 
 # doc: Mission Control（全ワークスペースをグリッド表示）
-# X_1 = ZMK の L 右隣（HID 0x53 = kp_1 として届く）。
+# X_1 = ZMK の L 右隣。DEFAULT 単押しは &vkey 0x01 として届く（[v-key-aliases] VK_X1=0x01）。
 [[bindings]]
 name = "rift mission-control show-all"
-input = "kp_1"
+input = "VK_X1"
 action-shell = "rift-cli execute mission-control show-all"
 
 
 # ---- emacs / readline 風 Ctrl+key remap ----
-# TODO: gen-chord-doc.py が [[remap]] を解釈できるようになったら、
-# 下の 7 行は次の 1 ブロックに圧縮できる (chord 0.8.0+ の [[remap]] sugar):
-#   [[remap]]
-#   name = "emacs-readline"
-#   modifiers = "ctrl"
-#   map = { b = "left", f = "right", p = "up", n = "down",
-#           h = "backspace", d = "forward_delete", j = "return" }
-# 現状は self-contained 形で残す (docs/chord.md からの脱落を避けるため)。
 
 # doc: ← Left
 [[bindings]]
@@ -193,12 +293,8 @@ action-keys = "return"
 # macOS は矢印キーに常に fn (NSEventModifierFlagFunction / maskSecondaryFn) を
 # 付与する。chord の matcher は未言及カテゴリの modifier 不在を要求し、fn は
 # 完全一致 (Models.swift `self.contains(.fn) == event.contains(.fn)`) なので、
-# 物理 ctrl+→ にマッチさせるには本来 input 側にも fn を明記する必要がある。
-# ただし chord 0.8.0+ の [options] fn-auto-arrows = true (default) により
-# 矢印 / ナビ系のキーに限り fn の有無を無視する relaxation が入っているため、
-# 下の binding は `ctrl + fn - right` ではなく `ctrl - right` でも動く。
-# 明示的に書いている理由は「fn を意識した binding」だと grep して読みやすくする
-# ためで、`fn-auto-arrows = false` に切り替えても動くようにしておく保険。
+# 物理 ctrl+→ にマッチさせるには input 側にも fn を明記する必要がある。
+# fn を書かない `ctrl - right` は実イベント (ctrl+fn+right) と一致せず発火しない。
 # bare `right` は KeyCodes で 0x7C（右矢印）に解決される（mouse 扱いは
 # `mouse.right` の時だけ）。
 #
@@ -211,9 +307,10 @@ action-keys = "return"
 # ctrl+→ を再送してスペース右移動。元イベントは consume、再送分は synthetic
 # タグ付きなので matcher に再入せずループしない。出力側にも fn を明記するのは、
 # 矢印に常に fn が付く macOS で「物理 ctrl+→」と同一イベントにし、OS のスペース
-# 移動ショートカットに一致させるため (input 側の fn-auto-arrows 緩和とは別軸)。
-# multi-action (shell + keys) は chord PR #8 で本流入り、本セッションの daemon
-# でそのまま動く。
+# 移動ショートカットに一致させるため。
+# ※ action-shell + action-keys の同時発火は chord の multi-action 機能が必要
+#   （akira-toriyama/chord で実装、未リリース）。未対応バイナリでは action-keys
+#   が無視され facet のみ動く。
 [[bindings]]
 name = "space-right + facet tree"
 input = "ctrl + fn - right"
@@ -229,51 +326,62 @@ action-shell = "facet --view=tree --loading=2000"
 action-keys = "ctrl + fn - left"
 
 
-# =====================================================================
-# 未定義キー効果音フォールバック (chord 0.8.0+ の inputs[] sugar で 1 行化)
-# =====================================================================
-# 4 修飾子セット (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) で実バインド済みの
-# キー以外を押すと効果音を鳴らす。chord v0.2.0 の `[[fallbacks]]` + `*` ワイル
-# ドカード + chord 0.8.0+ の `inputs = [...]` 配列で 4 entry → 1 entry に圧縮。
-# [[bindings]] が全 miss した時だけ [[fallbacks]] が評価されるので、既存
-# バインドとの誤爆は発生しない。
-# 音は 1 種共通 (旧 skhd 時代の運用と同じ)。アセットは dotfiles 管轄、
-# `@play-undef` (上の [action-aliases]) 経由で参照する。
-# `# doc:` は付けない (README ショートカット表に出さない＝負のバインド扱い)。
+# ---- 未定義 v-key 効果音フォールバック ----
+# 実バインド済みの v-key 以外を押すと効果音を鳴らす。`input = "v-key"` は任意の
+# vkey にマッチする wildcard（keyboard 用 `*` の vkey 版、fallback 専用）。
+# [[bindings]] が全 miss した時だけ評価されるので誤爆しない。音は 1 種共通、
+# `@play-undef` 経由。`# doc:` は付けない（負のバインド扱い）。
 
 [[fallbacks]]
-name = "undefined feedback (4 modsets)"
-inputs = ["$ULTRA_LL - *", "$MIRACLE_LM - *", "$MEGA_RM - *", "$WONDER_RR - *"]
+name = "undefined v-key feedback"
+input = "v-key"
 action-shell = "@play-undef"
 
 
 # =====================================================================
-# ULTRA_LL j-layer (chord 0.7.0+ の [[sequence]] sugar で 3 行化)
+# v2.1 stateful bindings (chord >= 0.4.0)
+# action-set-var / when-var / hold-while-timeout は dfb5f74 で本流入り。
+# 古い chord バイナリでは "missing-action" warning で drop される。
 # =====================================================================
-# 旧形 (v2.1 state-var を 3 binding で手書き):
-#   [[bindings]] input = "$ULTRA_LL - j"  action-set-var = "jlayer"  hold-while-timeout = 1500
-#   [[bindings]] input = "$ULTRA_LL - k"  when-var = "jlayer"  action-keys = "return"
-#   [[bindings]] input = "$ULTRA_LL - l"  when-var = "jlayer"  action-keys = "backspace"
-#
-# chord 0.7.0+ の [[sequence]] sugar が同じものを下の 1 ブロックに展開する。
-# parse 時に prefix binding (action-set-var = "_seq_j-layer" + hold-while-timeout)
-# + 子 binding 群 (when-var で gate) に desugar される。matcher / Controller は
-# 展開後しか見ない (新 runtime 概念は無い)。
-#
-# `# doc:` は付けない (children は arm を経由した時しか発火しないので
-# top-level ショートカットとしては正確に表現できない)。
 
-[[sequence]]
-name = "j-layer"
-prefix = "$ULTRA_LL - j"
-timeout-ms = 1500
+# ---- ULTRA_LL j-layer (1500ms inactivity timeout) ----
 
-  [[sequence.bindings]]
-  name = "j-layer: k → Enter"
-  input = "k"
-  action-keys = "return"
+[[bindings]]
+name = "ULTRA_LL + j → arm j-layer"
+input = "TU_LL_J"
+action-set-var = "jlayer"
+hold-while-timeout = 1500
 
-  [[sequence.bindings]]
-  name = "j-layer: l → Backspace"
-  input = "l"
-  action-keys = "backspace"
+[[bindings]]
+name = "ULTRA_LL + k → Enter (in j-layer)"
+input = "TU_LL_K"
+when-var = "jlayer"
+action-keys = "return"
+
+[[bindings]]
+name = "ULTRA_LL + l → Backspace (in j-layer)"
+input = "TU_LL_L"
+when-var = "jlayer"
+action-keys = "backspace"
+
+
+# ist (ble_hid_host_receiver) トラックボールボタン → a/b/c/d
+[[bindings]]
+name = "ist btn5 → a"
+input = "IST_BTN5"
+action-keys = "a"
+
+[[bindings]]
+name = "ist btn6 → b"
+input = "IST_BTN6"
+action-keys = "b"
+
+[[bindings]]
+name = "ist tilt-left → c"
+input = "IST_TILT_L"
+action-keys = "c"
+
+[[bindings]]
+name = "ist tilt-right → d"
+input = "IST_TILT_R"
+action-keys = "d"
