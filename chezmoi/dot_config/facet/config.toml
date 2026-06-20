@@ -24,10 +24,10 @@
 #
 #   "tree"  — translucent always-on-top sidebar listing every
 #             workspace and its windows as a tree
-#   "grid"  — full-screen TS3-style overview with DnD between cells
+#   "grid"  — full-screen overview with DnD between cells
 #
 # Default for a fresh `curl` install: "tree" (the always-on-top
-# sidebar — facet's primary surface; the grid is a TS3-style
+# sidebar — facet's primary surface; the grid is a full-screen
 # overview you summon on demand with `facet --view=grid`).
 default-view = "tree"
 
@@ -54,14 +54,20 @@ theme = "terminal"
 [grid]
 
 # Number of columns in the overview grid. The row count is derived
-# from the number of workspaces (e.g. 15 workspaces with cols = 4
-# → 4/4/4/3 rows). Clamped 1..12.
+# from the number of workspaces (e.g. 15 workspaces with cols = 5
+# → 5/5/5 rows). Clamped 1..12. Built-in fallback (when this file
+# is absent entirely) is 4; the install template ships with 5
+# because it's the sweet spot for typical workspace counts.
 cols = 5
 
-# Where the workspace label sits relative to its cell.
+# Where the workspace header sits relative to its cell.
 #
-#   "up"   — label above each cell (Mission Control / TS3 style).
-#   "down" — label below each cell (Stage Manager / dock style).
+#   "up"   — header above each cell (Mission Control style).
+#   "down" — header below each cell (Stage Manager / dock style).
+#
+# The header's size is automatic: it scales with the cell (fewer
+# workspaces → bigger cells → a taller header), so there is no
+# size knob to set.
 label-position = "up"
 
 # Background ScreenCaptureKit refresh cadence (seconds) that keeps
@@ -74,87 +80,277 @@ thumbnail-refresh-seconds = 4
 
 
 # -----------------------------------------------------------------
-# Virtual-workspace behavior (M5 Phase α)
+# Tree-view (sidebar) options
 # -----------------------------------------------------------------
-[workspace]
-
-# How facet hides the windows of a workspace you're not currently
-# looking at. macOS public APIs cannot truly remove a window from
-# the screen, so each method below is a different tradeoff between
-# instant switching, visual cleanliness, and crash safety.
-#
-#   "anchor"   — park each window at a 1×41 px sliver in the
-#                bottom-right corner (rift / AeroSpace's approach).
-#                Instant. No animation. Still appears in Mission
-#                Control (handy if facet crashes — you can pull
-#                windows back). Tiny sliver is visible at the corner.
-#                Recommended default. The 41 px is macOS's enforced
-#                title-bar guarantee — can't go smaller via public APIs.
-#
-#   "minimize" — AX kAXMinimized. Window goes to the Dock with the
-#                genie animation. Cleaner visually but slower; window
-#                vanishes from Mission Control. Crash-safe (recover
-#                from Dock). Best when "really hide this away" matters
-#                more than instant switching.
-#
-# True hide (gone from Mission Control + Cmd-Tab) needs SLS private
-# APIs + SIP off, which lives in the separate `facet-x` binary
-# (deep-core, M6+). The `facet` binary you're configuring here stays
-# inside macOS's public-API contract.
-#
-# Unknown values clamp to "anchor".
-hide_method = "anchor"
-
 [tree]
+
+# How the hover-preview overlay of a non-active workspace window
+# is sized and placed.
+#
+#   "popover" — small thumbnail anchored next to the source row,
+#               auto-sized to image aspect (capped ~320x220) and
+#               auto-flipped to the row's left if the right side
+#               would overflow. Always on-screen regardless of
+#               where the window actually lives.
+#               Recommended default.
+#
+#   "mirror"  — full-size preview at the window's *would-be*
+#               on-screen frame: the spot it will occupy once you
+#               switch to its workspace. facet computes this from
+#               the pre-park position (float), the tile slot (bsp),
+#               or the full display (stack) — NOT the 1x41 corner
+#               sliver the window is currently parked in.
+#
+# Unknown values clamp to "popover".
 preview-mode = "mirror"
+
+
+# -----------------------------------------------------------------
+# Tiling gaps
+# -----------------------------------------------------------------
+[layout]
+
+# Startup layout mode every workspace begins in. Layout mode is
+# otherwise session-only (set live with `facet workspace --layout=NAME`
+# and lost on restart), so this is the seed each launch — and each
+# native macOS Space's independent catalog — starts every workspace
+# from.
+#
+#   "float"           — facet tiles nothing; windows keep the size and
+#                       position their app gives them (the default).
+#   "bsp"             — binary space partition (auto-tile, splits).
+#   "stack"           — one window fills the screen; others stacked
+#                       behind, cycled with `facet window --cycle-stack`.
+#   "tall" / "wide" / "monocle" / "centered-master" / "spiral" / "grid"
+#                     — stateless layout engines.
+#
+# Unknown / unset clamps to "float" (a typo can't break tiling). To
+# tile by default, set this to "bsp"; per-workspace tweaks are still
+# done live via the CLI.
+default = "tall"
+
+# Spacing for tiled windows, in points. Everything here defaults to 0
+# — windows tile flush, edge-to-edge (facet's behaviour before gaps
+# existed) — so leaving this section out changes nothing. Applies to
+# every layout (bsp / stack / tall / wide / grid / centered-master /
+# spiral / monocle); floating windows are never touched.
+#
+#   inner-gap — space between two adjacent windows (single value).
+#   outer-gap — distance from the screen edges. `outer-gap` sets all
+#               four edges at once; outer-gap-top / -bottom / -left /
+#               -right override an individual edge (each falls back to
+#               outer-gap, then 0). Stacks on top of the menu bar /
+#               Dock that facet already avoids.
+#
+# inner and outer don't compound at the border: a window's screen-edge
+# side stays exactly its outer-gap, the gap between two windows is
+# exactly inner-gap. Integer points; all clamp to [0, 1000] so a typo
+# can't make windows vanish.
+#
+# Example — even gaps with extra room on the left (e.g. to park the
+# tree panel there, out of the tiled area):
+#   inner-gap = 8
+#   outer-gap = 8
+#   outer-gap-left = 260
+inner-gap = 12
+outer-gap = 12
+# outer-gap-top = 0
+# outer-gap-bottom = 0
+outer-gap-left = 400
+# outer-gap-right = 0
+
+
+# -----------------------------------------------------------------
+# Window-move animation  [animation]
+# -----------------------------------------------------------------
+# Animate geometry transitions instead of snapping. Covered today: the
+# workspace switch (windows slide as a directional filmstrip — leave one
+# edge, enter from the opposite; index delta picks the direction) and
+# retile / layout change (windows reflow in place, resizing as they go).
+# Pure public AX (no private APIs, no SIP changes). macOS "Reduce motion"
+# (System Settings > Accessibility > Display) is honoured: when it's on,
+# transitions jump regardless of the settings below.
+
+[animation]
+# enabled — master switch. Default true. Set false for instant jumps.
+enabled = true
+# curve — easing / feel. One of:
+#   none   — no animation (same as enabled = false)
+#   cubic  — ease-out, no overshoot (default)
+#   spring — slight overshoot then settle (bouncy / premium)
+#   silky  — ease both ends, longer; smooth and unhurried
+#   snappy — fast, crisp deceleration, no overshoot
+#   random — pick one of the above per transition
+# Unknown values fall back to cubic.
+# curve = "cubic"
+# duration-ms — override the slide length (ms, clamped [80, 800]). When
+# unset, each curve uses its own natural default (cubic 280 / spring 420
+# / silky 420 / snappy 220).
+# duration-ms = 280
+
+
+# -----------------------------------------------------------------
+# Window override rules  [[exclude]]
+# -----------------------------------------------------------------
+# facet uses an ALLOWLIST (yabai / AeroSpace style): a window is only
+# tiled when it's positively confirmed a standard window — AX role
+# AXWindow + subrole AXStandardWindow, at the normal window-server
+# level. Everything else (tool-tips, pop-ups, menus, sheets, dialogs,
+# palettes, XPC helper windows) is automatically kept OUT of the
+# tiling layout — no rule needed. So you usually need NOTHING here.
+#
+# These rules are the OVERRIDE layer for the cases the heuristic gets
+# wrong for your taste:
+#
+#   action = "float"  — a standard window you'd rather NOT tile (keep
+#                       it tracked + shown in the tree, just floating).
+#   action = "ignore" — drop a window entirely (never managed, never
+#                       shown). For stray windows still slipping in.
+#   action = "manage" — FORCE-tile a window the allowlist floated /
+#                       ignored — for an app that mislabels a real
+#                       window (non-standard subrole). The escape hatch.
+#
+# Each `[[exclude]]` is one rule. Keys WITHIN a rule are ANDed (all
+# must match); multiple rules are ORed (first match wins, top to
+# bottom). Match keys (all optional, omit = don't care):
+#
+#   app        — regex against the app's bundle id (e.g.
+#                "^com\.apple\.finder$"). Substring search unless you
+#                anchor with ^…$.
+#   title      — regex against the window title. "^$" matches an
+#                unnamed (empty-title) window.
+#   role       — exact AX role     (e.g. "AXWindow").
+#   subrole    — exact AX subrole  (e.g. "AXDialog").
+#   max_width  — match windows no wider than this (points).
+#   max_height — match windows no taller than this (points).
+#
+# action defaults to "float". A rule with no match key is ignored (it
+# would match nothing). A bad regex simply never matches — it can't
+# break the other rules.
+#
+[[exclude]]
+app = "com.apple.systempreferences"
+action = "float"
+
+# Recommended: Chrome's transient AXUnknown windows (link hovercards,
+# autofill drop-downs, download shelf) aren't real windows; the
+# allowlist conservatively floats them so they flicker into the tree.
+# Drop them outright.
+[[exclude]]
+app = "com.google.Chrome"
+subrole = "AXUnknown"
+action = "ignore"
+
+# More examples — uncomment / adapt as needed:
+#
+# [[exclude]]                       # drop a specific app's popups
+# app = "^com\\.example\\.app$"
+# title = "^$"
+# action = "ignore"
+#
+# [[exclude]]                       # float any AX dialog-subrole window
+# subrole = "AXDialog"
+# action = "float"
+
+
+# -----------------------------------------------------------------
+# Workspace behavior (no keys — informational only)
+# -----------------------------------------------------------------
+# How hiding works (fixed behaviour):
+# facet parks the windows of a workspace you're not looking at at a
+# 1×41 px sliver in the bottom-right corner. Instant, no animation,
+# and the windows still appear in Mission Control so you can recover
+# them if facet ever crashes. 41 px is macOS's enforced title-bar
+# minimum; true hide (gone from Mission Control + Cmd-Tab) isn't
+# possible via public APIs, and facet stays inside that contract.
+
+# Tiling (M5 Phase γ) is opt-in per workspace via the CLI; no
+# config key. Each WS starts at `[layout] default` (see above) and
+# can be changed live with:
+#
+#     facet workspace --focus=1
+#     facet workspace --layout=bsp     # this WS now auto-tiles BSP
+#     facet workspace --layout=stack   # or single-window stack mode
+#
+# Other tiling-related verbs:
+#     facet workspace --retile             # recompute + reapply layout
+#     facet window --toggle-float          # exclude window from layout
+#     facet window --toggle-orientation    # rotate parent split (bsp)
+#     facet window --cycle-stack=next|prev # rotate stack focus
+#
+# Frozen scope: bsp / stack / float. master_stack / scrolling /
+# traditional are out (see docs/architecture.md "Phase γ frozen
+# decisions"). System dialogs / sheets / floating palettes get
+# auto-floated on first sight via AX role detection — your
+# manual `--toggle-float` is always authoritative once set.
+#
+# Per-WS mode is *runtime* state (not persisted in config) — set
+# `[layout] default` above to control what every WS starts at.
 
 # -----------------------------------------------------------------
 # Per-native-Space workspaces  [space.N]
 # -----------------------------------------------------------------
-# Each native macOS Space keeps its own independent set of facet
-# workspaces. `N` is the native Space's position in Mission Control
-# order (1-based, user Spaces only — fullscreen Spaces don't count).
-# Inside a section, `index = "name"` works exactly like [workspace].
-# A native Space WITHOUT a [space.N] section falls back to the
-# global [workspace] above. Edits take effect on facet restart.
+# facet keeps an INDEPENDENT set of workspaces for each native macOS
+# Space. Switch native Spaces (Mission Control / Ctrl+arrow) and the
+# tree shows that Space's own facet workspaces; a window stays in the
+# Space it was opened on (facet never moves windows across Spaces).
 #
-# Note: the mapping is by Mission Control position, so reordering
-# Spaces in Mission Control re-points these sections (cosmetic only
-# — windows stay scoped to their real Space).
+# `[space.N]` gives the Nth native Space (Mission Control order,
+# 1-based, user Spaces only — fullscreen Spaces don't count) its own
+# workspace names / count. The body is `index = "name"`, identical
+# to a `[workspace]` mapping. Edits take effect on restart.
+#
+# Two modes, decided by whether ANY [space.N] section exists:
+#   - NO [space.N] anywhere → every native Space is managed with the
+#     default 5 workspaces. Zero config, just works.
+#   - ANY [space.N] present → OPT-IN. facet manages ONLY the Spaces
+#     that have a section. A Space without one is left completely
+#     untouched: no facet workspaces, windows stay as-is, and the
+#     facet panel is hidden on that desktop.
+#
+# Caveat: the mapping is by Mission Control position. Reordering your
+# Spaces re-points these sections (names/counts only — your windows
+# stay correctly scoped to their real Space).
+#
+#   [space.1]            # 1st native Space — managed, 3 workspaces
+#   1 = "dev"
+#   2 = "build"
+#   3 = "logs"
+#
+#   [space.2]            # 2nd native Space — managed, 2 workspaces
+#   1 = "mail"
+#   2 = "chat"
+#
+#   # 3rd+ native Spaces: no section -> facet hands-off (panel hidden)
 
 [space.1]
-1 = "WS1-1"
-2 = "WS1-2"
-3 = "WS1-3"
+1 = { name = "Dev" }
+2 = { name = "Web" }
+3 = { name = "Notes" }
 
 [space.2]
-1 = "WS2-1"
-2 = "WS2-2"
-3 = "WS2-3"
-4 = "WS2-4"
+1 = { name = "Code" }
+2 = { name = "Build" }
+3 = { name = "Logs" }
+4 = { name = "Test" }
 
 [space.3]
-1 = "WS3-1"
-2 = "WS3-2"
-3 = "WS3-3"
-4 = "WS3-4"
-5 = "WS3-5"
+1 = { name = "Mail" }
+2 = { name = "Chat" }
+3 = { name = "Cal" }
+4 = { name = "Tasks" }
+5 = { name = "Docs" }
 
 [space.4]
-1 = "WS4-1"
-2 = "WS4-2"
-3 = "WS4-3"
-4 = "WS4-4"
-5 = "WS4-5"
+1 = { name = "Browse" }
+2 = { name = "Read" }
+3 = { name = "Music" }
+4 = { name = "Video" }
+5 = { name = "Misc" }
 
 [space.5]
-1 = "WS5-1"
-2 = "WS5-2"
-3 = "WS5-3"
-4 = "WS5-4"
-5 = "WS5-5"
-
-[layout]
-inner-gap = 12
-outer-gap = 12
-outer-gap-left = 520
+1 = { name = "Tmp" }
+2 = { name = "Spike" }
+3 = { name = "Sandbox" }
+4 = { name = "Junk" }
+5 = { name = "Scratch" }

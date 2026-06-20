@@ -1,0 +1,47 @@
+# halo — active-window border. Source-of-truth config template.
+# Copy to ~/.config/halo/config.toml and edit. halo only READS it.
+# Unknown / malformed keys keep their default, so a typo can't break the
+# ring. ([border] header is optional/cosmetic — keys are read flat.)
+
+[border]
+# Effect palette layered on the ring (mirrors facet's [border] effect):
+#   off | neon | cyber | vapor | kawaii | rainbow | random
+effect = "rainbow"
+# Soft outward glow.
+glow = true
+# Ring line width in points.
+width = 3
+# Resting color when effect = off (#RRGGBB).
+color = "#39C5C8"
+
+# Animation (all optional):
+# rainbow rotates its hue over color-cycle-ms; for the other effects set
+# cycle-colors = true to loop them through their own flash palette.
+color-cycle-ms = 1000
+cycle-colors = false
+# Set both (max > min) to make the width "breathe" over color-cycle-ms.
+# min-width = 2
+# max-width = 5
+
+# Geometry / scope:
+corner-radius = 10
+pad = 4            # gap between window edge and ring
+min-size = 80      # ignore windows smaller than this (drops tiny popups)
+[exclude]
+apps = []          # bundle-id globs to never ring, e.g. ["com.apple.finder", "*chrome*"]
+
+[shake]
+# Focus-shake: a quick horizontal jiggle of the focused window on focus
+# change. Moves the real window via AX (needs Accessibility). Restores
+# the exact origin, so neighbours are unaffected. shake = false → off.
+shake = true
+shake-amplitude = 3      # peak horizontal swing in points
+shake-duration-ms = 250   # total shake duration
+
+[sound]
+sound = "/System/Library/Sounds/Pop.aiff"
+sound-volume = 0.5
+
+# [pets]
+# line-pets = ["chomp", "ghost"] 
+# pet-lap-seconds = 20
