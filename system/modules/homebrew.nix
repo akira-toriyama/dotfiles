@@ -23,6 +23,9 @@
       "barutsrb/tap"   # omniwm (Niri-inspired tiling WM by BarutSRB) を解決するため
     ];
     brews = [
+      "git-cliff"  # Highly customizable changelog generator
+      "gifski"  # Highest-quality GIF encoder based on pngquant
+      "cliclick"  # Tool for emulating mouse and keyboard events
       "felixkratz/formulae/borders"  # A window border system for macOS
     ];
 
