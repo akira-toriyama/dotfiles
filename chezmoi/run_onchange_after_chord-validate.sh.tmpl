@@ -13,7 +13,10 @@ set -eu
 CFG="$HOME/.config/chord/config.toml"
 command -v chord >/dev/null 2>&1 || exit 0
 
-if ! chord --validate --config "$CFG"; then
-    echo "chord --validate failed for $CFG" >&2
+# chord CLI のフラグは domain 配下へ移行 (`chord config --validate`)。新 CLI は
+# 既定パス ~/.config/chord/config.toml のみ検証 (path/--config 引数は非対応)。
+# CFG は既定パスと同一なので等価。
+if ! chord config --validate; then
+    echo "chord config --validate failed for $CFG" >&2
     exit 1
 fi

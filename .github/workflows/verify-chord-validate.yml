@@ -51,8 +51,10 @@ jobs:
         # 確認も兼ねる）。
         run: chezmoi --source ./chezmoi apply ~/.config/chord
 
-      - name: chord --validate --strict
+      - name: chord config --validate --strict
         # warning / drop / undefined-alias が 1 件でもあれば exit 1。
-        # 上の apply で配置した実体に対して strict を別途回し、hook (非 strict)
-        # では拾えない typo 系の静かな drop を確実に弾く。
-        run: chord --validate --strict "$HOME/.config/chord/config.toml"
+        # 上の apply で配置した実体 (~/.config/chord/config.toml = chord の既定
+        # 探索先) に対して strict を別途回し、hook (非 strict) では拾えない typo
+        # 系の静かな drop を確実に弾く。chord CLI はフラグが domain 配下へ移行
+        # (`chord config --validate`); 既定パスのみ検証 (path 引数は非対応)。
+        run: chord config --validate --strict
