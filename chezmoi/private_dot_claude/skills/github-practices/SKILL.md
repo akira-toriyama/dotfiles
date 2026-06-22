@@ -17,6 +17,10 @@ description: Use when creating or configuring GitHub features on your own (emmet
   https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
 - **composite action を作るとき** → 「Creating a composite action」を読む。
   https://docs.github.com/en/actions/tutorials/create-actions/create-a-composite-action
+- **issue を作成するとき**（Claude が依頼されて書く場合を含む）→ 「Creating an issue」を読む。
+  https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-an-issue
+  - **タイトルは commit と同じ流儀**: 先頭に gitmoji を付ける（例 `:sparkles: ...`）。GitHub は issue/PR タイトルでも `:emoji:` ショートコードをレンダリングする。gitmoji の選び方は CLAUDE.md「Commits」節と同じ（固定対応表は持たない）。
+  - **subject も body も英語**。body を書く時は後半に `---（和訳）` 区切りを置き、subject と body の和訳を付ける（subject だけなら和訳不要）。commit 規約と同一。
 - **プルリクエストを出すとき** → 「Creating a pull request」を読む。
   https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request
 - **リリースを作るとき** → 「Managing releases in a repository」を読む。
