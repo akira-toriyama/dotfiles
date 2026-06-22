@@ -18,6 +18,17 @@
     jq      # JSON CLI
     mas     # Mac App Store CLI（masApps 宣言と独立して `mas search` 等で使える）
 
+    # === Claude Code を快適にする CLI ===
+    # Claude Code CLI（headless `claude -p` も含む）。claude-maint.nix の月次保守ジョブが
+    # launchd から呼ぶため、再現可能に Nix で宣言する（mise の node global ではなく）。
+    # nix store は immutable なので自己アップデータは空振り＝版は flake で一元管理。
+    # 更新は `nix flake update` 時。VSCode 拡張 anthropic.claude-code とは別物（あれは拡張）。
+    claude-code
+    # ripgrep / fd: Claude Code が Bash で多用する高速検索・ファイル探索。
+    # 特に rg は非対話 PATH に無く `rg ...` が落ちていたので宣言して常用可能にする。
+    ripgrep
+    fd
+
     # === コンテナ stack（docker CLI + macOS 上の Linux VM 提供 colima）===
     docker
     docker-compose
