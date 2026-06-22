@@ -39,7 +39,7 @@ shake-amplitude = 3      # peak horizontal swing in points
 shake-duration-ms = 250   # total shake duration
 
 [sound]
-sound = "/System/Library/Sounds/Pop.aiff"
+sound = "~/.local/share/sounds/window_focused.wav"
 sound-volume = 0.5
 
 # [pets]

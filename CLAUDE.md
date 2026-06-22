@@ -75,7 +75,7 @@ flowchart TD
 - **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
   - `shellcheck` — `install.sh` 静的解析
-  - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞強制
+  - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞 + 自作 command（`~/.claude/commands/`）の `my-` 接頭辞を強制
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
 - **CI green を確認してからマージ**。失敗したら**新規コミットで修正**（push 済みへの `--amend` は使わない）。
 - **`--force` push / 履歴改変は禁止**（ユーザー明示指示がある場合のみ）。

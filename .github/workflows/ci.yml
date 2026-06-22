@@ -138,6 +138,35 @@ jobs:
           fi
           echo "✅ executable_ 規約 OK"
 
+  # 規約チェック: ~/.claude/commands/ 配下 (= 自作 slash command) は my- 接頭辞。
+  # built-in / plugin の command は別の場所に住むため、この dir のファイルは
+  # 定義上すべて自作 → 全 *.md を対象に my- 始まりを強制する。
+  convention-command-prefix:
+    name: convention / my- command prefix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check self-made commands have my- prefix
+        run: |
+          set -e
+          dir=chezmoi/private_dot_claude/commands
+          violations=$(
+            find "$dir" -type f -name '*.md' 2>/dev/null | while IFS= read -r f; do
+              base=$(basename "$f")
+              # chezmoi 属性 prefix を剥いでから slash command 名を判定
+              name=${base#private_}; name=${name#dot_}; name=${name#readonly_}
+              if [[ "$name" != my-* ]]; then
+                echo "$f"
+              fi
+            done
+          )
+          if [ -n "$violations" ]; then
+            echo "::error::self-made command under commands/ without my- prefix:"
+            echo "$violations" | sed 's/^/  - /'
+            exit 1
+          fi
+          echo "✅ my- command prefix 規約 OK"
+
   # chezmoi テンプレートのレンダリング検証（構文エラー早期検出）
   chezmoi-templates:
     name: chezmoi templates render
