@@ -8,6 +8,3 @@
 
 # 索引本体（常時ロードされる横断 house 挙動の核。archive は絶対しない）
 CLAUDE.md
-
-# 索引メンテ用コマンド（使用頻度は低いが索引運用の要）
-commands/my-add-trigger.md
