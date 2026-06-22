@@ -18,6 +18,7 @@
     builtins.elem (lib.getName pkg) [
       "1password-cli"
       "tart"  # macOS/Linux VM on Apple Silicon (Apple Virtualization framework 利用)
+      "claude-code"  # Claude Code CLI (claude-maint.nix の月次保守ジョブが headless 利用)
     ];
 
   users.users.${username} = {

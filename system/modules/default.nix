@@ -7,5 +7,6 @@
     ./homebrew.nix
     ./defaults.nix
     ./launchd-drift.nix
+    ./claude-maint.nix
   ];
 }
