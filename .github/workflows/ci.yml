@@ -53,6 +53,14 @@ jobs:
       - name: Install Nix (Determinate)
         uses: DeterminateSystems/nix-installer-action@main
 
+      - name: Make way for nix-homebrew (remove preinstalled Homebrew)
+        # GitHub の macos ランナーは /opt/homebrew を preinstall するが、
+        # イメージ更新 (20260610 → 20260623) で git checkout でなくなり、
+        # nix-homebrew (autoMigrate=true) の移管が
+        # "/opt/homebrew does not looks like a Homebrew checkout" で失敗する。
+        # CI では preinstalled brew を退け、nix-homebrew にクリーンに入れさせる。
+        run: sudo rm -rf /opt/homebrew /usr/local/Homebrew /usr/local/bin/brew
+
       - name: darwin-rebuild switch (CI variant, masApps 空)
         run: sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#ci --show-trace
 
