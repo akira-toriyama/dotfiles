@@ -1,9 +1,9 @@
 ---
 name: github-practices
-description: Use when creating or configuring GitHub features on your own (emmett-lathrop-brown) repositories — new repository setup, Actions workflows, reusable/composite actions, pull requests, releases, Dependabot, GitHub Pages. Each item points to the official GitHub doc to read first. For work or other people's repos, respect their conventions instead.
+description: Use when creating or configuring GitHub features on your own (akira-toriyama) repositories — new repository setup, Actions workflows, reusable/composite actions, pull requests, releases, Dependabot, GitHub Pages. Each item points to the official GitHub doc to read first. For work or other people's repos, respect their conventions instead.
 ---
 
-# GitHub の要所トリガー（自分 = emmett の repo 作業時）
+# GitHub の要所トリガー（自分 = akira の repo 作業時）
 
 外部 / 仕事の repo では相手の慣習を尊重。以下は**自分の repo を作る・設定する時**に「まず公式 docs を読む」索引。
 

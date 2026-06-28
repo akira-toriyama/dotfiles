@@ -1,4 +1,4 @@
-# emmett-lathrop-brown のリポジトリに対して
+# akira-toriyama のリポジトリに対して
 
 ## Commits message style
 
@@ -15,7 +15,7 @@
   - 開始時: 該当 issue を `gh issue view <N>` で読み、現在地を把握してから着手。
   - 中断時: issue のチェックを更新し、必要なら「次は X から」を 1 行残す。
 
-# emmett-lathrop-brown 以外のリポジトリに対して
+# akira-toriyama 以外のリポジトリに対して
 
 ## Rule
 
