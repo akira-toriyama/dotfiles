@@ -16,17 +16,14 @@
       cleanup = "none";   # 未宣言の既存 brew/cask を消さない（フェーズ4 まで温存）
     };
 
-    # === カスタム tap brew はユーザー方針で原則 drop（新PC で WM スタック再考）===
-    # 例外: omniwm は cask だが barutsrb/tap 由来のため tap だけ宣言が要る。
-    taps = [
-      "felixkratz/formulae"  # borders 等のカスタム tap
-      "barutsrb/tap"   # omniwm (Niri-inspired tiling WM by BarutSRB) を解決するため
-    ];
+    # WM スタックは新PC でドロップ決定（t-e77z C-5）。borders / omniwm を落とした
+    # ため、それ専用のカスタム tap（felixkratz/formulae・barutsrb/tap）も不要になり
+    # 削除した。残りの brew は WM と無関係なユーティリティのみ。
+    taps = [ ];
     brews = [
       "git-cliff"  # Highly customizable changelog generator
       "gifski"  # Highest-quality GIF encoder based on pngquant
       "cliclick"  # Tool for emulating mouse and keyboard events
-      "felixkratz/formulae/borders"  # A window border system for macOS
     ];
 
     casks = [
@@ -37,38 +34,32 @@
       # 常用 GUI（ユーザー選択）
       "appcleaner"          # アンインストーラ
       "azookey"             # 日本語 IME（google-japanese-ime の置き換え先）
-      "fsnotes"             # ノート
       "google-chrome"       # ブラウザ
       "the-unarchiver"      # 解凍
-      "visual-studio-code"  # エディタ
+      "visual-studio-code"  # エディタ（主力。zed は統合して drop）
       "vlc"                 # メディア
 
-      # === inventory「維持」確定組（追加）===
+      # === inventory「維持」確定組 ===
       "popclip"             # テキスト操作（単体で標準動作、karabiner 連携は廃止）
       "alt-tab"             # Cmd-Tab 強化（単体動作、karabiner 連携は廃止）
-      "raycast"             # ランチャー
       "font-hack-nerd-font" # プロンプト/ターミナル用 Nerd Font
 
-      # === inventory 後の追加分 / 任意・要判断分（現に導入済 → 新PC 再現で欠落しないよう宣言）===
-      # 不要と判明したものは1行消すだけで cleanup=zap 時に消える
-      "flashspace"          # Space 切替 UI
-      "linearmouse"         # マウス挙動カスタム（速度/加速）
-      "omniwm"              # WM（用途要再確認）
-      "via"                 # キーボード(QMK/VIA) マッピング GUI
+      # === 任意・現に導入済（新PC 再現で欠落しないよう宣言）===
+      "linearmouse"         # マウス挙動カスタム（速度/加速。WM 非該当のため維持）
+      "via"                 # キーボード(QMK/VIA) マッピング GUI（自作キーボード用）
       "transmission"        # BitTorrent
-      "warp"                # ターミナル（任意）
-      "zed"                 # エディタ（vscode と棲み分けの可能性）
       "monodraw"            # ASCII アート / テキスト図エディタ
-
-      # 明示的に未宣言（破棄方針）:
-      #   google-japanese-ime  ← azookey に置換済。cleanup=zap 化で消える
-      #   karabiner-elements   ← 新PC では使わない方針(設定 chezmoi/dot_config/karabiner も削除)
     ];
 
-    # mas 7.0.0 で macOS 15+ の "Unrecognized command: 'get'" バグが解消
-    # → 凍結解除（commit より前に brew upgrade mas を済ませること）。
-    masApps = {
-      "EdgeView 3" = 1580323719; # 画像ビューア（旧 EdgeView 2 は不採用）
-    };
+    # 明示的に未宣言（破棄方針 / cleanup=zap 化で実体が消える）:
+    #   google-japanese-ime  ← azookey に置換済
+    #   karabiner-elements   ← 新PC では使わない方針（remapping は手放す, t-e77z）
+    #   raycast / warp / fsnotes / zed ← GUI コールドスイープで未使用と判明し drop (t-e77z)
+    #   omniwm / flashspace / borders  ← WM スタック drop (t-e77z C-5)
+
+    # mas は macOS 15+ の get バグ（mas 1.8.6）で凍結中。EdgeView は「不要」判断で
+    # 宣言を撤去したため、現状 masApps は空。再開時は brew の mas を 7.0.0+ にしてから
+    # 必要な id を足す。
+    masApps = { };
   };
 }
