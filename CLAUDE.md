@@ -130,12 +130,17 @@ chezmoi add <path>                                                              
 op read "op://Vault/Item/field"
 ```
 
-## Roadmap board (GitHub Projects)
+## Roadmap board / task tracker
 
-この repo の issue は集約 Project「roadmap」(akira-toriyama #5・
-https://github.com/users/akira-toriyama/projects/5)で管理。Claude もこれに従う:
+dotfiles の作業タスク（バックログ・設計メモ・引き継ぎ）の**正本は furrow + private repo
+[`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**（label `dotfiles`）。
+`furrow ls -l dotfiles`（着手候補 = ready / in-progress）/ `furrow show <id>` / 起票は
+`furrow add "…" -l dotfiles`。運用ルールの正典は
+[`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)、
+全 repo 共通の作法は global `~/.claude/CLAUDE.md` の Workflow 節（furrow source を使う・
+着手前に projects 最新化・PR 本文に `SetStatus-task:` footer）。
 
-- 新規 issue は **Inbox** 既定。off-board の open issue を残さない(迷子を作らない)。
-- Status(single-select): `Inbox → Backlog → Ready → In Progress → Done` / `Icebox`=someday。Ready は 2〜3(WIP)。
-- PR 本文に `Closes #N` を必ず書く → merge で issue 自動 close → 自動 Done。
-- 詳細は Project の README。
+issue 運用（集約 Project「roadmap」#5・Inbox/Status フロー・`Closes #N`）は family 共通ポリシー
+の名残で、**task の正本は furrow に移行済み**。**Project #5 / 残 open issue は手動 mirror 扱い**
+（破壊しない）。dotfiles の PR は furrow task を `SetStatus-task:` footer で閉じる
+（`.github/workflows/task-status.yml` は fleet 同期済）。
