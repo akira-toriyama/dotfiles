@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# git-stale-check — warn (one line) when the cwd's git repo is behind its upstream.
+#
+# The behind check is LOCAL and instant (compares HEAD to the last-fetched
+# remote-tracking ref). The `git fetch` that refreshes that ref is THROTTLED
+# (~600s/repo) and runs DETACHED in the background, so this never blocks the
+# shell prompt or a Claude session. Silent when: not a git repo / no upstream /
+# detached HEAD. Always exits 0 (advisory only, never an error).
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/git-stale-check). Wired from the zsh
+# chpwd hook (humans) and the Claude SessionStart hook (agents). The warning is
+# printed to STDOUT on purpose so it lands in the agent's session-start context.
+# See furrow t-5rgs.
+set -u
+
+# 0) must be inside a work tree (else silent)
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$repo_root" ] || exit 0
+
+# 1) must have an upstream (skips detached HEAD / no-upstream silently)
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null) || exit 0
+[ -n "$upstream" ] || exit 0
+
+# 2) throttled, backgrounded fetch — refreshes the remote-tracking ref so the
+#    LOCAL check below is current on a later invocation. Keyed per repo.
+throttle_secs=600
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/git-stale-check"
+key=${repo_root//\//_}            # pure-bash, no subprocess (chpwd hot path)
+stamp="$cache_dir/${key:-root}"
+now=$(date +%s)
+last=0
+[ -f "$stamp" ] && last=$(cat "$stamp" 2>/dev/null || printf 0)
+case "$last" in *[!0-9]*|'') last=0 ;; esac
+if [ "$(( now - last ))" -ge "$throttle_secs" ]; then
+  if mkdir -p "$cache_dir" 2>/dev/null; then
+    printf '%s' "$now" >"$stamp" 2>/dev/null || true
+  fi
+  # detach: subshell + background so neither prompt nor agent session waits
+  ( git -C "$repo_root" fetch --quiet >/dev/null 2>&1 & ) >/dev/null 2>&1
+fi
+
+# 3) local behind-count (no network) against the last-known upstream ref
+behind=$(git rev-list --count 'HEAD..@{upstream}' 2>/dev/null) || exit 0
+case "$behind" in ''|0) exit 0 ;; esac
+
+printf '⚠️  git-stale-check: %s is %s commit(s) behind %s — run: git pull --rebase\n' \
+  "${repo_root##*/}" "$behind" "$upstream"
+exit 0
