@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script for ~/.claude/settings.json.
+#
+# chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
+# file. We ensure exactly ONE thing: a SessionStart hook that runs
+# git-stale-check (so an agent sees a behind-warning in its opening context —
+# furrow t-5rgs ③). Everything else (permissions, plugins, env, other hooks) is
+# passed through untouched.
+#
+# Idempotent: if the hook is already present we emit the input unchanged, so the
+# file does not drift and the user's / Claude's own edits are preserved. The
+# command is stored literally as `$HOME/...` and shell-expands when the hook
+# runs, so it stays correct per machine.
+#
+# Fail-safe: with no jq, or on unparseable input, we pass stdin through verbatim
+# rather than risk corrupting a security-relevant file.
+set -u
+
+# shellcheck disable=SC2016  # $HOME must stay literal — Claude expands it at hook run
+cmd='$HOME/.local/bin/git-stale-check'
+
+input=$(cat)
+[ -n "$input" ] || input='{}'
+
+if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/null 2>&1; then
+  printf '%s' "$input"
+  exit 0
+fi
+
+printf '%s\n' "$input" | jq --arg cmd "$cmd" '
+  def present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
+  if present then .
+  else
+      (.hooks //= {})
+    | (.hooks.SessionStart //= [])
+    | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $cmd } ] } ])
+  end
+'
