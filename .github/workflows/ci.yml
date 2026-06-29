@@ -88,7 +88,9 @@ jobs:
           cat /tmp/installed_casks.txt
           echo "--- 期待リストとの照合 ---"
           fail=0
-          for c in 1password appcleaner azookey fsnotes google-chrome the-unarchiver visual-studio-code vlc popclip alt-tab raycast font-hack-nerd-font flashspace linearmouse omniwm via transmission warp zed; do
+          # ⚠️ この期待リストは system/modules/homebrew.nix の casks と手動同期すること
+          #    （cask を増減したら両方直す。drift すると本ジョブが false fail する）
+          for c in 1password appcleaner azookey google-chrome the-unarchiver visual-studio-code vlc popclip alt-tab font-hack-nerd-font linearmouse via transmission; do
             if grep -qx "$c" /tmp/installed_casks.txt; then
               echo "  ✓ $c"
             else
