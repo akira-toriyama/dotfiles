@@ -10,9 +10,9 @@
 ## Workflow（タスク管理）
 
 - **タスク管理は furrow + `projects` repo に一本化**（GitHub issue ではない）。`projects` は全 repo 横断の private tracker（GitHub Projects #5 のローカル正本）。実体は plain text（`.furrow/index.json` + `bodies/<id>.md`）。**運用ルールの正典は [`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)** —— ここはその薄いポインタ。
-- **furrow は開発活発 → install 版でなく clone した source を使う**（install 版は stale 化・古い id 採番で並行 add が衝突した実績）。source = `…/github.com/akira-toriyama/furrow`、`go run ./cmd/furrow <args>`（or `go build -o /tmp/furrow-dev ./cmd/furrow`）。
+- **furrow は開発活発 → install 版でなく clone した source を使う**（install 版は stale 化・古い id 採番で並行 add が衝突した実績）。source = `…/github.com/akira-toriyama/furrow`。**使う時は `furrow` コマンド**（dotfiles の Nix wrapper＝`packages.nix`。呼ぶたび clone を incremental build して PATH のどこからでも・**呼び出し元の cwd で実行**＝下記 pointer が効く。常に source 反映で stale 化しない）。**furrow 自身を開発する時**だけ source dir で `go run ./cmd/furrow <args>`（uncommitted を試すため）。
 - **着手前に `projects` を最新化**: tracker は共有 checkout なので、読む前に fetch→behind なら pull（古い body で判断する事故を防ぐ）。
-- **全タスクに repo ラベル必須**（`furrow add … -l <repo>`、bare な repo 名。無いと exit 2）。tracker 自身の作業は `-l projects`。
+- **全タスクに repo ラベル必須**（`furrow add … -l <repo>`、bare な repo 名。無いと exit 2）。tracker 自身の作業は `-l projects`。**ただし `.furrow-pointer.toml` を持つ code repo の中では自動**：`add` は repo ラベルを union（明示 `-l` は追加）、`ls/next/revisit` はそのラベルで自動 scope（banner を stderr に表示、`-l ''` で全件）。
 - **進捗の正本はそのタスク body 一本**。「どこまで終わったか／次に何をするか」は `projects/.furrow/bodies/<id>.md` のチェックリストに記録し、**memory やブランチ上のファイルに複製しない**（2重管理＝剥離を避ける）。
 - **1 セッションで完結しなくてよい**。1 回に詰め込んで急ぐより、論理単位で区切って body に進捗を残し次セッションへ継ぐ方を優先する（品質 > 一気の完了。中断は失敗でなく既定運用）。継続に要る情報は body に集約する（↑の正本一本に同じ）。
 - セッションの作法:
