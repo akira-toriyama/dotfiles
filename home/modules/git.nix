@@ -33,6 +33,16 @@
       core.ignorecase = false;
       # ghq の clone 先。env の GHQ_ROOT が優先するが faithful 再現として残す。
       ghq.root = "/Volumes/workspace/";
+
+      # merge 済みで remote が消えたブランチの残骸を local に溜めない。fetch の
+      # たびに削除された remote-tracking ref を自動 prune する（repo は
+      # delete_branch_on_merge=true なので merge で remote branch が消え、次の
+      # fetch でこの prune が効き、対応する local が `[gone]` として検出可能になる）。
+      fetch.prune = true;
+      # upstream が gone（＝merge 後に remote が消えた）の local ブランチを一括削除
+      # する 1 コマンド `git prune-gone`。squash merge は fast-forward でないため
+      # -D で消す。remote 側は上記 delete_branch_on_merge + fetch.prune が面倒を見る。
+      alias.prune-gone = "!git fetch --prune >/dev/null 2>&1; git branch -vv | grep ': gone]' | awk '{print $1}' | while read -r b; do git branch -D \"$b\"; done";
     };
 
     # グローバル無視パターン（旧 ~/.config/git/ignore 相当）。
