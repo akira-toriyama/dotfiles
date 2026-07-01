@@ -34,7 +34,7 @@ jobs:
   validate:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install chord + chezmoi from brew
         # chezmoi は runner image に既存だが念のため明示。
