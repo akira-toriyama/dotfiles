@@ -52,5 +52,24 @@
       (builtins.readFile ../../system/modules/scripts/add-homebrew.sh))
     (writeShellScriptBin "dotfiles-drift-check"
       (builtins.readFile ../../system/modules/scripts/check-dotfiles-drift.sh))
+
+    # furrow: 開発中の source を常に最新ビルドして PATH のどこからでも叩くラッパ。
+    # brew/go install のスナップショットは stale 化するので、呼ぶたびに source が
+    # 変わっていれば incremental build（~/.cache に出力）して exec する。
+    # ・build go は ${pkgs.go} で内部固定（mise の dev go を汚さない）
+    # ・(cd src) を subshell に閉じて cwd を保つ＝呼び出し元のディレクトリで実行され、
+    #   そこの .furrow-pointer.toml 発見が効く
+    # ・出力は一時ファイル→atomic mv（並行起動でも壊れた binary を exec しない）
+    (writeShellScriptBin "furrow" ''
+      set -eu
+      src=/Volumes/workspace/github.com/akira-toriyama/furrow
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/furrow"
+      bin="$cache/furrow"
+      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+        mkdir -p "$cache"
+        ( cd "$src" && GOTOOLCHAIN=local ${pkgs.go}/bin/go build -o "$bin.tmp.$$" ./cmd/furrow && mv -f "$bin.tmp.$$" "$bin" ) >&2
+      fi
+      exec "$bin" "$@"
+    '')
   ];
 }

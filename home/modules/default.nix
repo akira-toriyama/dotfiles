@@ -7,6 +7,7 @@
     ./zsh.nix
     ./packages.nix
     ./mise.nix
+    ./furrow.nix
   ];
 
   home.username = username;
