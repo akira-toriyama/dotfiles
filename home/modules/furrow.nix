@@ -23,7 +23,7 @@
   #                              では `-l <repo>` を明示する。
   #   [[board]].auto_filter … true=ls/next/revisit を label で自動フィルタ（既定 true・
   #                            明示）。false=ボード全部を表示しつつ add は label でタグ付け。
-  #                            PR2 で scope banner は廃止＝フィルタは静か（stdout は純データ）。
+  #                            furrow v2 で scope banner は廃止＝フィルタは静か（stdout は純データ）。
   #
   # 優先順位（furrow の discovery）: FURROW_DIR > local `.furrow/`
   #   > per-repo `.furrow-pointer.toml` > **この global 既定ボード** > `furrow init`。
