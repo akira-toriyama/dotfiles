@@ -1,7 +1,8 @@
 { pkgs, ... }:
 
 {
-  # home-manager 管理のユーザーパッケージ（CLI）。
+  # home-manager 管理のユーザーパッケージ（**非ランタイムの CLI**）。
+  # 言語ランタイム（go/node/python/deno 等）は mise に一元化（home/modules/mise.nix の方針）。
   # cask / GUI / カスタム tap は nix-darwin の homebrew モジュール側で管理する。
   home.packages = with pkgs; [
     # === secret / GitHub 基盤（フェーズ2）===
