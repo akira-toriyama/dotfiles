@@ -21,6 +21,7 @@
     # 削除した。残りの brew は WM と無関係なユーティリティのみ。
     taps = [ ];
     brews = [
+      "go"  # Open source programming language to build simple/reliable/efficient software
       "git-cliff"  # Highly customizable changelog generator
       "gifski"  # Highest-quality GIF encoder based on pngquant
       "cliclick"  # Tool for emulating mouse and keyboard events
