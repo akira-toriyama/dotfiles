@@ -21,7 +21,7 @@ jobs:
     name: create GitHub Release from tag
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # tag annotation の本文を読むため全履歴を取得
           fetch-depth: 0
