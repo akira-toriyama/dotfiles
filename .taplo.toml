@@ -1,0 +1,12 @@
+# chezmoi/ mirrors live ~/.config files byte-for-byte, so it is excluded
+# from taplo entirely:
+#   * `#:schema` directives there point at sidecars the app generates NEXT
+#     TO THE LIVE FILE at runtime (facet writes config.schema.json on
+#     launch) — never committed here, so schema lint can't resolve them.
+#   * fmt-normalizing a mirror would diff it against the live file and
+#     surface as chezmoi drift (and taplo 0.7.0's formatter panics on the
+#     wand config anyway).
+# Quality gates for these files live upstream (each app repo runs the
+# fleet taplo on its canonical config.toml) and at runtime (--validate /
+# clamp-to-default parsing).
+exclude = ["chezmoi/**"]

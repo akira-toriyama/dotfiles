@@ -19,6 +19,15 @@
     jq      # JSON CLI
     mas     # Mac App Store CLI（masApps 宣言と独立して `mas search` 等で使える）
 
+    # === 開発 util（t-e77z B-4: 未宣言 brew の仕分け宣言）===
+    # xcodes: Xcode の版管理・install CLI（Swift 開発の複数 Xcode 運用）
+    xcodes
+    # aria2: 分割/再開ダウンローダ。xcodes が aria2c を見つけると
+    # Xcode DL をこれ経由で高速化するため、xcodes とセットで宣言
+    aria2
+    # git-filter-repo: git history 書き換え（repo 移行・秘密の除去などで随時使用）
+    git-filter-repo
+
     # === Claude Code を快適にする CLI ===
     # Claude Code CLI（headless `claude -p` も含む）。claude-maint.nix の月次保守ジョブが
     # launchd から呼ぶため、再現可能に Nix で宣言する（mise の node global ではなく）。
