@@ -38,6 +38,23 @@
     # 特に rg は非対話 PATH に無く `rg ...` が落ちていたので宣言して常用可能にする。
     ripgrep
     fd
+    # yq-go (バイナリ名 yq): YAML 版 jq。GitHub Actions workflow 等の YAML を
+    # 確実にパース・編集する（Python 版 `yq` ではなく mikefarah の Go 版）。
+    yq-go
+    # actionlint: GitHub Actions workflow の静的チェック。push して CI が落ちる前に
+    # ローカルで定義ミスを検出する。
+    actionlint
+    # xcbeautify: xcodebuild / swift build ログの整形。Swift repo のビルドエラーを
+    # 機械的に拾いやすくする。
+    xcbeautify
+    # shellcheck: シェルスクリプトの lint。system/modules/scripts/*.sh 等を
+    # 書いた際の自己検証に使う。
+    shellcheck
+    # ast-grep (バイナリ名 ast-grep / sg): 構文木ベースのコード検索・書き換え。
+    # テキスト置換 (rg + sed) では危険な一括リファクタを構造的に安全に行う。
+    ast-grep
+    # hyperfine: コマンドベンチマーク。自作 CLI の性能比較を体感でなく数字で出す。
+    hyperfine
 
     # === コンテナ stack（docker CLI + macOS 上の Linux VM 提供 colima）===
     docker
