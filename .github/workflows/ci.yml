@@ -18,7 +18,7 @@ jobs:
     name: nix flake check (eval only)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install Nix (Determinate)
         uses: DeterminateSystems/nix-installer-action@main
@@ -33,7 +33,7 @@ jobs:
     name: darwin-rebuild build (macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install Nix (Determinate)
         uses: DeterminateSystems/nix-installer-action@main
@@ -48,7 +48,7 @@ jobs:
     name: darwin-rebuild switch smoke (macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install Nix (Determinate)
         uses: DeterminateSystems/nix-installer-action@main
@@ -110,7 +110,7 @@ jobs:
     name: shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Run shellcheck on install.sh
         uses: ludeeus/action-shellcheck@master
@@ -125,7 +125,7 @@ jobs:
     name: convention / executable_ prefix
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check shebang scripts under chezmoi/ have executable_ prefix
         run: |
           set -e
@@ -155,7 +155,7 @@ jobs:
     name: convention / my- command prefix
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check self-made commands have my- prefix
         run: |
           set -e
@@ -182,7 +182,7 @@ jobs:
     name: chezmoi templates render
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install chezmoi
         run: |
