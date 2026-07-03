@@ -79,7 +79,7 @@ flowchart TD
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
 - **CI green を確認してからマージ**。失敗したら**新規コミットで修正**（push 済みへの `--amend` は使わない）。
 - **`--force` push / 履歴改変は禁止**（ユーザー明示指示がある場合のみ）。
-- **push は pre-push フック（[.githooks/pre-push](.githooks/pre-push)）が `chezmoi verify` で apply 忘れを検知して止める**。乖離（`chezmoi status` の `R` 含む）があれば `chezmoi apply` してから push する。緊急時のみ `git push --no-verify`。詳細 → [docs/operations.md §5.11](docs/operations.md)。
+- **push 時、pre-push フック（[.githooks/pre-push](.githooks/pre-push)）は chezmoi/ を触る push で `chezmoi verify` を実行し、乖離があれば警告するが止めない（warn-only、2026-07-03〜。Claude 主導運用のため）**。気づいたら `chezmoi apply` で live を追従する。恒久ゲートは CI（darwin build/switch smoke + chezmoi apply + templates render）と main のブランチ保護が担う。詳細 → [docs/operations.md §5.11](docs/operations.md)。
 
 ## シークレット取扱（YOU MUST）
 
@@ -97,6 +97,7 @@ flowchart TD
 2. **`switch` は sudo パスワード入力が要るので、コマンドを提示してユーザーに実行させる**（このセッションからは sudo を直接呼ばない）。
 3. **生成パイプラインを再導入しない**。設定は静的ファイルとして表現する。
 4. **破壊的 git 操作を避ける**: `--force` push / 履歴改変 / `--amend`（push 済みコミットへ）はユーザー明示指示なしに禁止。
+5. **この repo は Claude 主導運用（2026-07-03〜）**: 通常の git / gh / chezmoi / PR 操作（branch 作成・commit・push・PR open/merge・`chezmoi diff/apply`）は都度ユーザー確認を取らず実行してよい。例外は上のルールが押さえる: ① `darwin-rebuild switch`（sudo）はルール 2 のとおりコマンド提示してユーザーに実行させる ② 破壊的 git はルール 4 のとおりユーザー明示指示時のみ ③ 検証ゲート（ルール 1）は「聞く」のでなく「自分で通す」。
 
 ## 既知の落とし穴（読まずに「修正」を試みない）
 
