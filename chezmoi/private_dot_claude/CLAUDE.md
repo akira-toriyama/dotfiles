@@ -31,6 +31,20 @@
 - 読み方: `# branch.ab +A -B`=ahead/behind ／ `# stash <N>` は非ゼロ時のみ（無ければ 0、別途 `git stash list` 不要）／ 行頭 `1/2/u/?/!`=dirty 種別。大 repo は `--untracked-files=no`。
 - 条件待ち（ログ行/port/HTTP/プロセス）は until+sleep を書かず **condition-wait skill**（wait4x）、macOS アプリの GUI 検証は **macos-gui-verify skill**（peekaboo）。
 
+## Claude Code を助ける自作 CLI（いつ使うか）
+
+これらは akira-toriyama 製で、この機械では常に PATH に居る（dotfiles `packages.nix` の
+source-build wrapper＝呼ぶたび変更検知で rebuild）。**作って終わりにせず、下の状況では
+既定でこれらに手を伸ばす**（生ログ／手書きループより先に）。source は次節「自作 CLI は source」に従う。
+
+- **pare** — 長くなりがちな Bash 出力の切り詰め。blind `| tail` はエラー中盤を落とすので、
+  代わりに `<cmd> 2>&1 | pare`（head+error-match+tail を予算内に。full は `--tee FILE`）。
+  `set -o pipefail` 併用。既定 8KB・`--head/--tail/--match/--context` で調整。
+- **cifail** — CI 失敗の要点抽出。生 run ログを漁らず `cifail`（cwd の remote/現 branch から推定。
+  `--pr N` / `--branch B` / `--run ID` / `--json`）。job ゼロの失敗 run（workflow 文法エラー等）も拾う。
+- **furrow** — タスク管理（↑ Workflow 節が正典）。
+- 条件待ち・GUI 検証は自作でなく adopt 済（wait4x / peekaboo、↑ Repo 現在地節の bullet）。
+
 ## 自作アプリ・自作 CLI は source を使う（brew 版は使わない）
 
 - **akira-toriyama の自作アプリ / CLI（furrow・cifail・jig 等）は、その repo の clone（`…/github.com/akira-toriyama/<repo>` の source）で使う。自分のマシンでは brew 版（cask/formula）を入れない・使わない。** 理由 = source なら常に最新・コードを読める・デバッグ出力を足して即リビルドできる・`git log` で挙動を追える（brew はリリース時点の stale スナップショット）。
