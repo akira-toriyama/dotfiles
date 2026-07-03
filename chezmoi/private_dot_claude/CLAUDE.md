@@ -20,6 +20,17 @@
   - 中断時: body のチェックを更新し、必要なら「次は X から」を 1 行残す。
 - **code repo の PR 本文に footer を1行**: `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`（PR open→in-progress / merge→`<lane>` 適用。lane 省略で参照のみ。非ブロッキング）。
 
+## Repo 現在地ワンショット（セッション途中の把握用）
+
+- branch / ahead-behind / dirty / 直近 commit / worktree / stash を 1 ターンで:
+
+  ```sh
+  git status --porcelain=v2 --branch --show-stash; echo ---; git log --format='%h|%cs|%s' -5; echo ---; git worktree list --porcelain
+  ```
+
+- 読み方: `# branch.ab +A -B`=ahead/behind ／ `# stash <N>` は非ゼロ時のみ（無ければ 0、別途 `git stash list` 不要）／ 行頭 `1/2/u/?/!`=dirty 種別。大 repo は `--untracked-files=no`。
+- 条件待ち（ログ行/port/HTTP/プロセス）は until+sleep を書かず **condition-wait skill**（wait4x）、macOS アプリの GUI 検証は **macos-gui-verify skill**（peekaboo）。
+
 # akira-toriyama 以外のリポジトリに対して
 
 ## Rule

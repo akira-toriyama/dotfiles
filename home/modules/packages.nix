@@ -55,6 +55,10 @@
     ast-grep
     # hyperfine: コマンドベンチマーク。自作 CLI の性能比較を体感でなく数字で出す。
     hyperfine
+    # wait4x: 宣言的な条件待ち（tcp/http/exec 等、timeout つき・exit 124=timeout）。
+    # until+sleep の手書きループ撲滅（projects t-v1t1）。使い方の正典は
+    # ~/.claude/skills/condition-wait/SKILL.md（exec の footgun 3 点もそこに記載）。
+    wait4x
 
     # === コンテナ stack（docker CLI + macOS 上の Linux VM 提供 colima）===
     docker

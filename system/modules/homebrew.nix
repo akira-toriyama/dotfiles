@@ -19,12 +19,19 @@
     # WM スタックは新PC でドロップ決定（t-e77z C-5）。borders / omniwm を落とした
     # ため、それ専用のカスタム tap（felixkratz/formulae・barutsrb/tap）も不要になり
     # 削除した。残りの brew は WM と無関係なユーティリティのみ。
-    taps = [ ];
+    taps = [
+      # steipete/tap: peekaboo（openclaw/Peekaboo の公式配布 tap）用
+      "steipete/tap"
+    ];
     brews = [
       # go は mise 管理へ移行（home/modules/mise.nix）。dev runtime は mise に一元化。
       "git-cliff"  # Highly customizable changelog generator
       "gifski"  # Highest-quality GIF encoder based on pngquant
       "cliclick"  # Tool for emulating mouse and keyboard events
+      # peekaboo: macOS AX ツリー JSON dump + UI 操作 CLI（Claude Code の GUI 検証自走用、
+      # projects t-c0s2）。nixpkgs に無く公式配布が tap のため brew 側で宣言。
+      # 使い方の正典は ~/.claude/skills/macos-gui-verify/SKILL.md（TCC 前提もそこに記載）。
+      "steipete/tap/peekaboo"
     ];
 
     casks = [
