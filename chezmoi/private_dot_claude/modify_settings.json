@@ -2,15 +2,22 @@
 # chezmoi modify_ script for ~/.claude/settings.json.
 #
 # chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
-# file. We ensure exactly ONE thing: a SessionStart hook that runs
-# git-stale-check (so an agent sees a behind-warning in its opening context —
-# furrow t-5rgs ③). Everything else (permissions, plugins, env, other hooks) is
-# passed through untouched.
+# file. We ensure exactly TWO things and pass everything else (the permissions
+# the user accumulates interactively, plugins, env, other hooks) through
+# untouched:
+#   1. a SessionStart hook that runs git-stale-check (so an agent sees a
+#      behind-warning in its opening context — furrow t-5rgs ③)
+#   2. read-only git allowlist entries for the repo-state one-shot recipe
+#      documented in the global CLAUDE.md「Repo 現在地ワンショット」 so those
+#      commands never prompt (projects t-v1t1). Seeding them here — rather than
+#      only in the live file — is what makes them reproduce on a new Mac.
+#      Scope is deliberately read-only (status / log / worktree list); no
+#      mutating git verbs are granted.
 #
-# Idempotent: if the hook is already present we emit the input unchanged, so the
-# file does not drift and the user's / Claude's own edits are preserved. The
-# command is stored literally as `$HOME/...` and shell-expands when the hook
-# runs, so it stays correct per machine.
+# Idempotent: the hook and each allow entry are added only if absent (the allow
+# merge is a set-union), so re-apply never duplicates and the user's own edits
+# survive. The hook command is stored literally as `$HOME/...` and shell-expands
+# when the hook runs, so it stays correct per machine.
 #
 # Fail-safe: with no jq, or on unparseable input, we pass stdin through verbatim
 # rather than risk corrupting a security-relevant file.
@@ -28,11 +35,18 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
 fi
 
 printf '%s\n' "$input" | jq --arg cmd "$cmd" '
-  def present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
-  if present then .
-  else
-      (.hooks //= {})
-    | (.hooks.SessionStart //= [])
-    | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $cmd } ] } ])
-  end
+  def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
+
+  ( if hook_present then .
+    else
+        (.hooks //= {})
+      | (.hooks.SessionStart //= [])
+      | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $cmd } ] } ])
+    end )
+  | (.permissions //= {})
+  | (.permissions.allow //= [])
+  | .permissions.allow += ( [ "Bash(git status:*)"
+                            , "Bash(git log:*)"
+                            , "Bash(git worktree list:*)"
+                            ] - .permissions.allow )
 '
