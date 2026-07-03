@@ -102,5 +102,22 @@
       fi
       exec "$bin" "$@"
     '')
+
+    # pare: same always-fresh-from-source wrapper as furrow, for pare's manual-
+    # pipe adoption phase (tuning defaults before any auto-apply hook). pare is a
+    # pure stdin→stdout filter, so the (cd src) subshell only scopes the build;
+    # the exec runs in the caller's cwd. Rebuilds only when cmd/internal/go.*
+    # change; atomic mv so a concurrent invocation never execs a half-built bin.
+    (writeShellScriptBin "pare" ''
+      set -eu
+      src=/Volumes/workspace/github.com/akira-toriyama/pare
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/pare"
+      bin="$cache/pare"
+      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+        mkdir -p "$cache"
+        ( cd "$src" && GOTOOLCHAIN=local ${pkgs.go}/bin/go build -o "$bin.tmp.$$" ./cmd/pare && mv -f "$bin.tmp.$$" "$bin" ) >&2
+      fi
+      exec "$bin" "$@"
+    '')
   ];
 }
