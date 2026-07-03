@@ -39,7 +39,7 @@ git status
 git checkout -b chore/sync-chord-config
 git add chezmoi/dot_config/chord/private_config.toml
 git commit -m ":memo: chore(dotfiles): chord 設定を source に反映"
-git push -u origin chore/sync-chord-config   # pre-push フックが chezmoi verify で apply 忘れを検知（§5.11）
+git push -u origin chore/sync-chord-config   # pre-push フックが chezmoi verify で乖離を警告（warn-only、§5.11）
 gh pr create --title "..." --body "..."
 gh pr merge --auto --squash
 ```
@@ -51,7 +51,7 @@ gh pr merge --auto --squash
 - `chezmoi apply` しても **git の差分は消えない**（apply は source→live の同期で、commit ではない）
 - `git commit` しても **`chezmoi status` の "R" は消えない**（commit は source を履歴に刻むだけ）
 
-両方やって初めてクリーン。**②③で実体を編集したら必ず apply してから push**（apply 忘れは §5.11 の pre-push フックが止める）。
+両方やって初めてクリーン。**②③で実体を編集したら必ず apply してから push**（apply 忘れは §5.11 の pre-push フックが警告する＝warn-only。乖離ゼロの恒久保証は CI）。
 
 </details>
 
@@ -357,9 +357,11 @@ chord --doctor
 
 正規 tap release が出たら `brew upgrade chord && chord --resign` で本来の運用に戻る。
 
-### 5.11 pre-push フック（apply 忘れ防止）
+### 5.11 pre-push フック（apply 忘れ warn-only 通知）
 
-`~/.config` を編集 → `chezmoi re-add` → **`chezmoi apply` を忘れて push** すると、「リポは新しいのに自分のマシンは古い」「run_onchange の検証ゲート（chord-validate 等）が未実行のまま push」といった事故になる。これを防ぐため [`.githooks/pre-push`](../.githooks/pre-push) が push 前に `chezmoi --source ./chezmoi verify` を実行し、source ↔ live に乖離があれば push を止める（`chezmoi status` の "R" 保留でも止まる）。
+`~/.config` を編集 → `chezmoi re-add` → **`chezmoi apply` を忘れて push** すると、「リポは新しいのに自分のマシンは古い」「run_onchange の検証ゲート（chord-validate 等）が未実行のまま push」といった事故になり得る。これに気づけるよう [`.githooks/pre-push`](../.githooks/pre-push) が push 前に `chezmoi --source ./chezmoi verify` を実行し、source ↔ live に乖離があれば**警告する（`chezmoi status` の "R" 保留も検知）**。
+
+**warn-only（2026-07-03〜）**: 以前は乖離で push を止めていたが、この repo は Claude Code 主導で運用するため「止めない（常に通す・警告のみ）」に緩めた。理由 = source 編集→apply→push の Claude 主導フローでは apply 忘れ型事故が起きにくく、facet 等 開発中ツールの恒常 drift で無関係な chezmoi/ push まで止まる誤発火（PR #185 で `--no-verify` を強いた）の摩擦が実害だったため。乖離ゼロの恒久保証は CI（darwin build/switch smoke + `chezmoi apply` + templates render）と main のブランチ保護が担う。ローカル live の追従は警告を見て `chezmoi apply` で。
 
 #### 有効化（`core.hooksPath` の設定）
 
@@ -375,9 +377,9 @@ git config core.hooksPath .githooks
 
 その他:
 
-- **迂回**: どうしても乖離のまま push する場合のみ `git push --no-verify`。
+- **警告のみ**: 乖離があっても push は止まらない（warn-only）。警告文も出したくない時だけ `git push --no-verify` でフック自体を skip。
 - chezmoi 未導入環境（CI / bootstrap 途中）ではフックは何もせず通す（`command -v chezmoi` で skip）。
-- **注意**: chezmoi 全体の乖離を見るので、dotfile 以外（`docs/` や `*.nix` だけ）の push でも保留中の chezmoi 差分があると止まる。その場合は先に `chezmoi apply` するか `--no-verify`。
+- **スコープ**: 検査するのは chezmoi/ を触る push だけ（`docs/` や `*.nix` のみの push は verify せず即通す）。旧仕様の「全乖離で無関係な push まで止まる」問題は解消済み。
 
 </details>
 
