@@ -31,6 +31,14 @@
 - 読み方: `# branch.ab +A -B`=ahead/behind ／ `# stash <N>` は非ゼロ時のみ（無ければ 0、別途 `git stash list` 不要）／ 行頭 `1/2/u/?/!`=dirty 種別。大 repo は `--untracked-files=no`。
 - 条件待ち（ログ行/port/HTTP/プロセス）は until+sleep を書かず **condition-wait skill**（wait4x）、macOS アプリの GUI 検証は **macos-gui-verify skill**（peekaboo）。
 
+## 自作アプリ・自作 CLI は source を使う（brew 版は使わない）
+
+- **akira-toriyama の自作アプリ / CLI（furrow・cifail・jig 等）は、その repo の clone（`…/github.com/akira-toriyama/<repo>` の source）で使う。自分のマシンでは brew 版（cask/formula）を入れない・使わない。** 理由 = source なら常に最新・コードを読める・デバッグ出力を足して即リビルドできる・`git log` で挙動を追える（brew はリリース時点の stale スナップショット）。
+- CLI は dotfiles の `packages.nix` に source-build ラッパ（呼ぶたび変更検知で rebuild）があるものはそれを使う（↑ furrow の節と同じ仕組み）。**`brew install` しないこと** —— PATH は `/opt/homebrew/bin` が nix profile より前なので、brew 版があると wrapper を shadow する。入れなければ shadow は起きない（現に furrow/cifail は wrapper のみ）。
+- GUI アプリは自分が開発者なので通常どおり Xcode / ビルド成果物を動かす（cask を自分では入れない）。
+- **brew tap/cask の位置づけ** = 他人・他マシン・再現性のための配布。自分のマシンでは source が正。
+- これは Claude Code 自身にも適用: furrow/cifail 等を叩くときは wrapper/source を使う。
+
 # akira-toriyama 以外のリポジトリに対して
 
 ## Rule
