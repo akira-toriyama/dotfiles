@@ -87,7 +87,11 @@
     # furrow: 開発中の source を常に最新ビルドして PATH のどこからでも叩くラッパ。
     # brew/go install のスナップショットは stale 化するので、呼ぶたびに source が
     # 変わっていれば incremental build（~/.cache に出力）して exec する。
-    # ・build go は ${pkgs.go} で内部固定（mise の dev go を汚さない）
+    # ・build go は PATH の go（＝mise 管理の toolchain。方針「言語は mise」）。
+    #   継承した GOROOT を env -u で打ち消し go に自己解決させる — mise は GOROOT を
+    #   export するので、これが無いと別 version の go(例 nix go)を使ったとき
+    #   「compile version が go tool version と不一致」で build が死ぬ。go 不在の
+    #   context でのみ ${pkgs.go} に fallback（GOROOT 打ち消しは fallback でも有効）。
     # ・(cd src) を subshell に閉じて cwd を保つ＝呼び出し元のディレクトリで実行され、
     #   そこの .furrow-pointer.toml 発見が効く
     # ・出力は一時ファイル→atomic mv（並行起動でも壊れた binary を exec しない）
@@ -98,7 +102,8 @@
       bin="$cache/furrow"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        ( cd "$src" && GOTOOLCHAIN=local ${pkgs.go}/bin/go build -o "$bin.tmp.$$" ./cmd/furrow && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/furrow && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
@@ -115,7 +120,8 @@
       bin="$cache/pare"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        ( cd "$src" && GOTOOLCHAIN=local ${pkgs.go}/bin/go build -o "$bin.tmp.$$" ./cmd/pare && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/pare && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
@@ -131,7 +137,8 @@
       bin="$cache/cifail"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        ( cd "$src" && GOTOOLCHAIN=local ${pkgs.go}/bin/go build -o "$bin.tmp.$$" ./cmd/cifail && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/cifail && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
