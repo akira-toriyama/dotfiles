@@ -30,6 +30,7 @@
 
 - 読み方: `# branch.ab +A -B`=ahead/behind ／ `# stash <N>` は非ゼロ時のみ（無ければ 0、別途 `git stash list` 不要）／ 行頭 `1/2/u/?/!`=dirty 種別。大 repo は `--untracked-files=no`。
 - 条件待ち（ログ行/port/HTTP/プロセス）は until+sleep を書かず **condition-wait skill**（wait4x）、macOS アプリの GUI 検証は **macos-gui-verify skill**（peekaboo）。
+- コマンド出力が多い/長いときは blind `| tail` でなく **`2>&1 | pare`**（head + tail + エラー行を byte 予算内に残す＝中盤のエラーを落とさない。既定 8KiB）。PATH 常駐は furrow と同じ nix wrapper（`packages.nix`。`brew install akira-toriyama/tap/pare` でも可）。フル保存は `--tee FILE`、上流の exit code が要るときは `set -o pipefail`。詳細: https://github.com/akira-toriyama/pare
 
 # akira-toriyama 以外のリポジトリに対して
 
