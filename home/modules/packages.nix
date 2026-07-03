@@ -102,5 +102,21 @@
       fi
       exec "$bin" "$@"
     '')
+
+    # cifail: furrow と同型の source-build ラッパ（開発中の source を常に最新ビルド）。
+    # cifail は呼び出し元 cwd の git origin から owner/repo を導出するので、
+    # (cd src) は build 用の subshell に閉じ、exec は呼び出し元 cwd のまま実行する
+    # ＝ どの repo checkout の中からでも `cifail` がその repo を対象にできる。
+    (writeShellScriptBin "cifail" ''
+      set -eu
+      src=/Volumes/workspace/github.com/akira-toriyama/cifail
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/cifail"
+      bin="$cache/cifail"
+      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+        mkdir -p "$cache"
+        ( cd "$src" && GOTOOLCHAIN=local ${pkgs.go}/bin/go build -o "$bin.tmp.$$" ./cmd/cifail && mv -f "$bin.tmp.$$" "$bin" ) >&2
+      fi
+      exec "$bin" "$@"
+    '')
   ];
 }
