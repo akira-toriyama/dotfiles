@@ -20,6 +20,12 @@
   programs.git = {
     enable = true;
 
+    # Git LFS。filter.lfs.*（clean/smudge/process/required）を宣言的に生成し
+    # git-lfs 本体も home profile に載せる。~/.config/git/config は Nix store の
+    # read-only symlink なので `git lfs install --global` が書けない（Permission
+    # denied）。それをこの1行で解消する（imperative install は不要）。
+    lfs.enable = true;
+
     # settings は git config をそのまま写したフリーフォーム attrset。
     # 新しい home-manager では旧 userName / userEmail / extraConfig が
     # この settings.* に統合された（旧名は deprecation 警告になる）。
