@@ -1,21 +1,20 @@
 #!/bin/sh
-# pre-push guard — chezmoi の source ↔ live が乖離していたら push を止める。
-# ただし *この push が chezmoi/ を変更する時だけ* 検査する (over-guard 回避)。
+# pre-push notice — chezmoi の source ↔ live に乖離があれば **警告** する
+# (warn-only)。以前は push を止めていたが、この repo は Claude Code 主導で
+# 運用するため 2026-07-03 に「止めない」へ緩めた。
 #
-# なぜスコープを絞るか: 公開されるのは commit 済み source。守るべきは「chezmoi/ を
-# 含む push を未 apply のまま出す」事故。chezmoi/ に無関係な push (nix/ や docs/ のみ)
-# まで止めると、facet 等の開発中ツールが live を書き換えて生む常時乖離に巻き込まれ、
-# 関係ない作業まで push できなくなる。よって push 範囲が chezmoi/ を触る時だけ verify。
+# なぜ warn-only か:
+#   - source を編集 → chezmoi apply → push という Claude 主導フローでは、人間の
+#     「~/.config 直編集 → re-add → apply 忘れ」型の事故が起きにくい。
+#   - facet 等 開発中ツールが live を書き換えて生む恒常 drift で、無関係な chezmoi/
+#     push まで止まる誤発火 (false positive) の摩擦が実害だった (PR #185 で --no-verify
+#     を強いた実績)。止めずに「apply 忘れかも」の気づきだけ残す方が総合的に良い。
+#   - 恒久ゲートは CI (darwin build/switch smoke + chezmoi apply + templates render) と
+#     main のブランチ保護が担う。ローカル live の追従は各自 chezmoi apply で。
 #
-# 防ぐ事故: 「~/.config を直接編集 → chezmoi re-add → chezmoi apply を忘れて
-# git push」。apply 忘れは「リポは新しいのに自分のマシンは古い」「検証ゲート
-# (chord-validate 等) が未実行のまま push」を招く。
-#
-# 判定: chezmoi verify は live が target state と一致しないと非0を返す
-# (run_onchange の保留 = chezmoi status の "R" でも非0)。--source でこのリポに
-# 固定し、グローバル設定に依存せず fresh clone でも同じ挙動にする。
-#
-# 抜け道: どうしても乖離のまま push したいときは `git push --no-verify`。
+# スコープ: この push が chezmoi/ を変更する時だけ検査する (無関係な nix/docs の
+# push では黙って通す)。判定は chezmoi verify (source ↔ live 不一致、run_onchange
+# 保留 = chezmoi status "R" でも非0)。--source でこのリポに固定し fresh clone でも同挙動。
 # chezmoi 未導入 (CI / bootstrap 途中) では何もせず通す。
 
 set -eu
@@ -40,9 +39,9 @@ if chezmoi --source "$repo_root/chezmoi" verify; then
     exit 0
 fi
 
-echo "✗ pre-push 中止: chezmoi の source ↔ live に乖離があります。" >&2
-echo "  apply 忘れの可能性。次で確認・解消してから push してください:" >&2
-echo "    chezmoi status        # 乖離一覧" >&2
-echo "    chezmoi apply -v      # live に反映 + run_onchange 検証 (R を消す)" >&2
-echo "  どうしても push する場合のみ: git push --no-verify" >&2
-exit 1
+# 乖離検知。warn-only: push は止めない (exit 0)。
+echo "⚠ pre-push notice: chezmoi の source ↔ live に乖離あり (push は継続)。" >&2
+echo "  apply 忘れなら次で追従できます (今回の push はブロックしません):" >&2
+echo "    chezmoi status        # 乖離一覧 (run_onchange 保留 R も)" >&2
+echo "    chezmoi apply -v      # live に反映 + run_onchange 検証" >&2
+exit 0
