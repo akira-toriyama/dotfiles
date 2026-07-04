@@ -47,6 +47,7 @@ source-build wrapper＝呼ぶたび変更検知で rebuild）。**作って終�
 
 ## 自作アプリ・自作 CLI は source を使う（brew 版は使わない）
 
+- **起動者で機構が分かれる（Claude と共有する前提の認識）**: **GUI アプリ = ほぼ人間（開発者本人）が起動する** → Xcode / ビルド成果物を動かす（署名・TCC が絡むので「呼ぶたび rebuild」な wrapper には載せない）。**CLI = 主に Claude Code が叩く道具**（furrow・pare・cifail 等）→ `packages.nix` の source-build wrapper で always-latest。**どちらも brew/cask の stale スナップショットは使わない**（機構は違えど哲学は同じ。詳細は下）。
 - **akira-toriyama の自作アプリ / CLI（furrow・cifail・jig 等）は、その repo の clone（`…/github.com/akira-toriyama/<repo>` の source）で使う。自分のマシンでは brew 版（cask/formula）を入れない・使わない。** 理由 = source なら常に最新・コードを読める・デバッグ出力を足して即リビルドできる・`git log` で挙動を追える（brew はリリース時点の stale スナップショット）。
 - CLI は dotfiles の `packages.nix` に source-build ラッパ（呼ぶたび変更検知で rebuild）があるものはそれを使う（↑ furrow の節と同じ仕組み）。**`brew install` しないこと** —— PATH は `/opt/homebrew/bin` が nix profile より前なので、brew 版があると wrapper を shadow する。入れなければ shadow は起きない（現に furrow/cifail は wrapper のみ）。
 - GUI アプリは自分が開発者なので通常どおり Xcode / ビルド成果物を動かす（cask を自分では入れない）。
