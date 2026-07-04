@@ -30,6 +30,11 @@ on:
       - .github/workflows/verify-chord-validate.yml
   workflow_dispatch:
 
+# Least privilege, made explicit — closes zizmor's excessive-permissions
+# finding ahead of the fleet-wide zizmor gate (akira-toriyama/.github t-qbp1).
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: macos-15
