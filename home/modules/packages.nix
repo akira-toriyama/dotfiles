@@ -84,6 +84,45 @@
     (writeShellScriptBin "dotfiles-drift-check"
       (builtins.readFile ../../system/modules/scripts/check-dotfiles-drift.sh))
 
+    # ghq-get-mine: GitHub 上の自分の active(非 archived)repo を GHQ_ROOT
+    # (/Volumes/workspace) へ ghq レイアウトで一括 SSH clone。clone 済みは
+    # no-op(冪等・-u なし = 既存 working copy 不可侵)。新 repo 作成後の追従や
+    # 新 Mac ブートストラップ (install.sh §6.5) で実行。fork・private は含み
+    # archived は除外。前提 = gh 認証 (or GITHUB_TOKEN) + GitHub への SSH 疎通。
+    # 未整備なら 1 行 warn で fail-fast(SSH の 1Password 整備は projects t-eep4)。
+    (writeShellScriptBin "ghq-get-mine" ''
+      set -eu
+      # pipefail はグローバルには効かせない: 前段の `ssh -T | grep` は ssh -T が
+      # 正常時でも exit 1(GitHub does not provide shell access)を返し、grep 一致
+      # での成功判定が pipefail だと ssh の非 0 に潰される。終端 fetch のみ変数捕捉で
+      # 守る(下記)。
+      if ! ${pkgs.gh}/bin/gh auth status >/dev/null 2>&1; then
+        echo "✘ gh 未認証。gh auth login するか GITHUB_TOKEN を設定して再実行" >&2
+        exit 1
+      fi
+      if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -T git@github.com 2>&1 \
+          | grep -q "successfully authenticated"; then
+        echo "✘ GitHub への SSH 認証が未整備(~/.ssh の鍵 / agent を確認して再実行)" >&2
+        exit 1
+      fi
+      root="$(${pkgs.ghq}/bin/ghq root)"
+      if [ "$root" != "/Volumes/workspace" ]; then
+        echo "✘ ghq root が /Volumes/workspace でない ($root)。darwin-rebuild switch 済みか確認" >&2
+        exit 1
+      fi
+      # repo 一覧は一旦変数へ捕捉する。`gh … | ghq get` の直パイプだと終端 ghq の
+      # exit code しか見ず、gh が実行時失敗(5xx / rate limit / token 失効)して空
+      # stdout を吐いても ghq が空入力を no-op で exit 0 → 「1 件も clone せず成功」を
+      # 返し warn も出ない。変数捕捉なら set -e が command-substitution の失敗で中断する。
+      repos="$(${pkgs.gh}/bin/gh repo list akira-toriyama --no-archived --limit 200 \
+        --json nameWithOwner --jq '.[].nameWithOwner')"
+      if [ -z "$repos" ]; then
+        echo "✘ gh repo list が空を返した(GitHub API 不調の疑い)。再実行してください" >&2
+        exit 1
+      fi
+      printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P
+    '')
+
     # furrow: 開発中の source を常に最新ビルドして PATH のどこからでも叩くラッパ。
     # brew/go install のスナップショットは stale 化するので、呼ぶたびに source が
     # 変わっていれば incremental build（~/.cache に出力）して exec する。
