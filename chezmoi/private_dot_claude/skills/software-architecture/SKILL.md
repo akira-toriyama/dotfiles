@@ -28,6 +28,20 @@ The value is realized at three distinct moments — if none is plausible you may
 2. **Backend swap** — a new adapter starts as a stub and grows in phases without breaking any view; retiring the old one is a one-module swap *because views only know the port*.
 3. **Multiple views over one state** — each view is a facet of the same model; new views plug in without touching Core or Adapter.
 
+## UI toolkit: default to the highest level, confine the escape hatches
+
+Which UI framework the **View** layer imports is an architectural choice, not a per-view whim. Default to the **highest-level toolkit** (on macOS, SwiftUI) and treat the lower-level one (AppKit) as an **escape hatch confined to a small, named set of essential floors** — the places the high-level toolkit genuinely can't reach:
+
+- **IME / text-input core** — marked-text (composition) interception and pre-commit key routing (Return / Esc / arrows) the high-level field doesn't expose.
+- **A focus-preserving non-activating panel shell** — a floating window that takes key + input without stealing the frontmost app / menu bar (and popups overflowing their parent). The *shell* is low-level; its contents are hosted high-level views.
+- **Selectable rich-text rendering** — continuous selection + copy with inline decoration (code pills, table / quote rules) where the high-level text primitive is mutually exclusive with selection.
+
+Discipline that keeps the boundary from eroding:
+
+- **Treat any *perceived* need for the low-level toolkit outside those floors as "probably possible in the high-level one" — prove it with a spike / MRE before widening.** Floors grow by evidence, never by convenience. (Mirrors "crossing a layer ⇒ a missing port": reaching for the low-level toolkit ⇒ prove no high-level path first.)
+- **The escape is the *mechanism* only, never the chrome.** Color / font / layout / data / error state stay high-level even for a floored widget; the low-level part is the irreducible engine (text-view core, window shell), nothing more.
+- **Keep the authoritative floor list in project canon, not in the methodology.** The *shape* — a few essential floors, verify before widening — is stable; the exact list moves as the platform and any shared UI library evolve. Pin it where the UI migration is tracked and reference it.
+
 ## Ports & Adapters
 
 A **port** is a protocol in Core expressing one *axis* of external capability (e.g. a backend port = state queries + mutating commands + an event stream; a separate capture/secondary-resource port).
@@ -111,16 +125,17 @@ Architecture is also what you refuse to build:
 
 1. Three layers — Core (pure) / Adapter (one backend axis each) / View (GUI-only). Crossing a layer ⇒ a missing port.
 2. Everything points inward at Core's protocols; backend types never leave their adapter; convert at the seam.
-3. Keep a port even with one impl — it's the test seam.
-4. Split ports by backend axis; keep them framework-neutral (wrap in the view).
-5. Treat changeable external contracts (grammar, wire format, snapshots) as ports with a pure translator.
-6. Defer use-case and view-model layers via YAGNI; record the exact trigger; freeze until it fires.
-7. Place code by testability; ship a value type with its first consumer.
-8. Model OS notifications as a neutral domain-event stream crossing adapter→core.
-9. One serialization authority per mutable subsystem, all access through it, runtime-enforced, acyclic cross-actor edges; cross domains by value snapshots.
-10. Alternative projections stay pure (`project`, `resolve→Plan`), degrade exactly, gate behind a predicate; views render the computed result only.
-11. Name and defend a hard capability boundary; out-of-bounds features are forks, not options.
-12. Keep a Clean-Arch/DDD mapping table + glossary so intent and language survive a cold reopen.
+3. View layer defaults to the highest-level UI toolkit (SwiftUI); confine the lower-level one (AppKit) to a few named essential floors — verify before widening, keep the authoritative list in project canon.
+4. Keep a port even with one impl — it's the test seam.
+5. Split ports by backend axis; keep them framework-neutral (wrap in the view).
+6. Treat changeable external contracts (grammar, wire format, snapshots) as ports with a pure translator.
+7. Defer use-case and view-model layers via YAGNI; record the exact trigger; freeze until it fires.
+8. Place code by testability; ship a value type with its first consumer.
+9. Model OS notifications as a neutral domain-event stream crossing adapter→core.
+10. One serialization authority per mutable subsystem, all access through it, runtime-enforced, acyclic cross-actor edges; cross domains by value snapshots.
+11. Alternative projections stay pure (`project`, `resolve→Plan`), degrade exactly, gate behind a predicate; views render the computed result only.
+12. Name and defend a hard capability boundary; out-of-bounds features are forks, not options.
+13. Keep a Clean-Arch/DDD mapping table + glossary so intent and language survive a cold reopen.
 
 ## Canonical references
 
