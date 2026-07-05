@@ -15,6 +15,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege, made explicit — closes zizmor's excessive-permissions
+# finding ahead of the fleet-wide zizmor gate (akira-toriyama/.github t-qbp1).
+permissions:
+  contents: read
+
 jobs:
   # ── 軽量チェック（Linux・毎 PR/push で必ず走る = PR の実質ゲート）────────────
   # nix の評価チェック。--no-build で darwin 固有のビルドはせず eval のみ。
@@ -25,7 +30,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
 
       - name: nix flake check --no-build
         run: nix flake check --no-build --show-trace
@@ -38,7 +43,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Run shellcheck on install.sh
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # master
         with:
           scandir: '.'
           additional_files: 'install.sh'
@@ -148,7 +153,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
 
       - name: nix-darwin build (default host alias)
         run: nix run nix-darwin/master#darwin-rebuild -- build --flake .#default --show-trace
@@ -164,7 +169,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
 
       - name: Make way for nix-homebrew (remove preinstalled Homebrew)
         # GitHub の macos ランナーは /opt/homebrew を preinstall するが、
@@ -236,9 +241,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fail if any required job failed or was cancelled
+        # needs は信頼済みコンテキストだが、zizmor template-injection を避けるため
+        # run: に直接展開せず env 経由で渡す (#193 の INPUT_TAG と同方針)。
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
         run: |
           echo "A required upstream job failed:"
-          echo '${{ toJSON(needs) }}'
+          echo "$NEEDS_JSON"
           exit 1
       - run: echo "All required jobs passed or were intentionally skipped."

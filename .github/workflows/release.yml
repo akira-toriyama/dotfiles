@@ -28,9 +28,14 @@ jobs:
 
       - name: 解決した tag 名
         id: tag
+        # 経由 env で受ける: `${{ github.event.inputs.tag }}` を run: に直接展開すると
+        # 悪意ある tag 入力で shell injection になる（zizmor template-injection）。
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "name=$INPUT_TAG" >> "$GITHUB_OUTPUT"
           else
             echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
