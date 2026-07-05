@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # 毎日 15:00 UTC = 00:00 JST。cold な再現検証を定期実行し upstream drift
+    # (flake.lock 不変でも nix-darwin/master・cask tap・substituter が動いた等) を拾う。
+    - cron: '0 15 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -17,8 +21,8 @@ permissions:
   contents: read
 
 jobs:
+  # ── 軽量チェック（Linux・毎 PR/push で必ず走る = PR の実質ゲート）────────────
   # nix の評価チェック。--no-build で darwin 固有のビルドはせず eval のみ。
-  # Linux runner で十分速く取れる構造検証。
   nix-flake-check:
     name: nix flake check (eval only)
     runs-on: ubuntu-latest
@@ -30,85 +34,6 @@ jobs:
 
       - name: nix flake check --no-build
         run: nix flake check --no-build --show-trace
-
-  # macOS 実機相当(arm64)で darwin-rebuild build を回し、Determinate Nix 環境で
-  # flake が活性化可能かを End-to-end に近い形で証明する。
-  # switch はしない(非破壊)。本機の動作は影響を受けない。
-  darwin-build:
-    name: darwin-rebuild build (macOS)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
-
-      - name: nix-darwin build (default host alias)
-        run: nix run nix-darwin/master#darwin-rebuild -- build --flake .#default --show-trace
-
-  # 実 switch によるスモークテスト。新PCで install.sh を回した時の挙動を
-  # macos-latest runner で再現する(masApps だけ App Store サインイン不要のため空)。
-  # runner は ephemeral なので副作用 OK。
-  darwin-switch-smoke:
-    name: darwin-rebuild switch smoke (macOS)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
-
-      - name: Make way for nix-homebrew (remove preinstalled Homebrew)
-        # GitHub の macos ランナーは /opt/homebrew を preinstall するが、
-        # イメージ更新 (20260610 → 20260623) で git checkout でなくなり、
-        # nix-homebrew (autoMigrate=true) の移管が
-        # "/opt/homebrew does not looks like a Homebrew checkout" で失敗する。
-        # CI では preinstalled brew を退け、nix-homebrew にクリーンに入れさせる。
-        run: sudo rm -rf /opt/homebrew /usr/local/Homebrew /usr/local/bin/brew
-
-      - name: darwin-rebuild switch (CI variant, masApps 空)
-        run: sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#ci --show-trace
-
-      - name: Verify CLI on PATH（home.packages 経由）
-        # GitHub Actions の step shell は login shell ではないので
-        # /etc/zshenv 経由の nix path がロードされない。明示的に追加する。
-        run: |
-          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
-          for c in docker docker-compose colima op gh chezmoi ghq jq mas; do
-            path=$(which "$c" || true)
-            if [ -n "$path" ]; then
-              echo "  ✓ $c -> $path"
-            else
-              echo "  ✗ $c (not found)"; exit 1
-            fi
-          done
-
-      - name: Verify casks installed
-        # macos-latest には /usr/local/bin/brew (旧 x86) と /opt/homebrew/bin/brew
-        # (arm64・nix-darwin が使う方) の両方があり PATH 先頭の brew が違うのを引くと
-        # 別の Caskroom を見て missing 判定になる。明示的に Apple Silicon 側を使う。
-        run: |
-          /opt/homebrew/bin/brew list --cask | sort > /tmp/installed_casks.txt
-          echo "--- installed casks (Apple Silicon brew) ---"
-          cat /tmp/installed_casks.txt
-          echo "--- 期待リストとの照合 ---"
-          fail=0
-          # ⚠️ この期待リストは system/modules/homebrew.nix の casks と手動同期すること
-          #    （cask を増減したら両方直す。drift すると本ジョブが false fail する）
-          for c in 1password appcleaner azookey google-chrome the-unarchiver visual-studio-code vlc popclip alt-tab font-hack-nerd-font linearmouse via transmission; do
-            if grep -qx "$c" /tmp/installed_casks.txt; then
-              echo "  ✓ $c"
-            else
-              echo "  ✗ $c (missing)"
-              fail=1
-            fi
-          done
-          exit $fail
-
-      - name: chezmoi apply (dot_claude / VSCode 拡張 / 他)
-        run: |
-          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
-          chezmoi --source ./chezmoi apply --verbose
 
   # シェルスクリプトの静的解析（install.sh のみ。.tmpl は chezmoi 構文が混ざるので除外）
   shellcheck:
@@ -209,3 +134,120 @@ jobs:
             echo "::endgroup::"
           done < <(find . -path ./.git -prune -o -name '*.tmpl' -print | grep -v '^./.git/')
           exit $failed
+
+  # ── フル再現検証（macOS・cold・重い）─────────────────────────────────────────
+  # Opt 1': PR では走らせず(if 参照)、merge 後の main push / nightly / 手動でのみ。
+  # 「install.sh が新 Mac で cold bootstrap を通す」保証の enforce がこの2ジョブ。
+  # ★ キャッシュは意図的に使わない ── warm cache は cold fetchability
+  #   (消えた substituter / fixed-output の hash drift / 死んだ cask tap / 404 flake input)
+  #   の検証を痩せさせる。速度は「頻度を下げる」(per-PR から外す) で稼ぐ。
+  # ★ build(.#default) と switch(.#ci) は別 attr(username/masApps が違う)なので両方要る。
+
+  # macOS 実機相当(arm64)で darwin-rebuild build を回し、flake が活性化可能かを
+  # End-to-end に近い形で証明する。switch はしない(非破壊)。
+  darwin-build:
+    name: darwin-rebuild build (macOS)
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
+
+      - name: nix-darwin build (default host alias)
+        run: nix run nix-darwin/master#darwin-rebuild -- build --flake .#default --show-trace
+
+  # 実 switch によるスモークテスト。新PCで install.sh を回した時の挙動を
+  # macos-latest runner で再現する(masApps だけ App Store サインイン不要のため空)。
+  # runner は ephemeral なので副作用 OK。
+  darwin-switch-smoke:
+    name: darwin-rebuild switch smoke (macOS)
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
+
+      - name: Make way for nix-homebrew (remove preinstalled Homebrew)
+        # GitHub の macos ランナーは /opt/homebrew を preinstall するが、
+        # イメージ更新 (20260610 → 20260623) で git checkout でなくなり、
+        # nix-homebrew (autoMigrate=true) の移管が
+        # "/opt/homebrew does not looks like a Homebrew checkout" で失敗する。
+        # CI では preinstalled brew を退け、nix-homebrew にクリーンに入れさせる。
+        run: sudo rm -rf /opt/homebrew /usr/local/Homebrew /usr/local/bin/brew
+
+      - name: darwin-rebuild switch (CI variant, masApps 空)
+        run: sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#ci --show-trace
+
+      - name: Verify CLI on PATH（home.packages 経由）
+        # GitHub Actions の step shell は login shell ではないので
+        # /etc/zshenv 経由の nix path がロードされない。明示的に追加する。
+        run: |
+          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
+          for c in docker docker-compose colima op gh chezmoi ghq jq mas; do
+            path=$(which "$c" || true)
+            if [ -n "$path" ]; then
+              echo "  ✓ $c -> $path"
+            else
+              echo "  ✗ $c (not found)"; exit 1
+            fi
+          done
+
+      - name: Verify casks installed（flake から自動導出 = drift しない）
+        # 期待リストは homebrew.nix を単一ソースに flake config から導出する。
+        # 手書きリストは drift する実績あり (obsidian/monodraw が欠落し under-verify した)。
+        # Apple Silicon 側 brew を明示 (PATH 先頭が旧 x86 brew を引くと別 Caskroom を見て
+        # missing 誤判定になる)。
+        run: |
+          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
+          nix eval --impure --json ".#darwinConfigurations.ci.config.homebrew.casks" \
+            | jq -r '.[] | if type=="string" then . else .name end' | sort > /tmp/expected_casks.txt
+          echo "--- 期待 casks（flake 由来・単一ソース）---"; cat /tmp/expected_casks.txt
+          /opt/homebrew/bin/brew list --cask | sort > /tmp/installed_casks.txt
+          echo "--- installed casks (Apple Silicon brew) ---"; cat /tmp/installed_casks.txt
+          missing=$(comm -23 /tmp/expected_casks.txt /tmp/installed_casks.txt)
+          if [ -n "$missing" ]; then
+            echo "::error::declared cask(s) not installed:"
+            echo "$missing" | sed 's/^/  - /'
+            exit 1
+          fi
+          echo "✅ 全 declared cask が install 済み"
+
+      - name: chezmoi apply (dot_claude / VSCode 拡張 / 他)
+        run: |
+          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
+          chezmoi --source ./chezmoi apply --verbose
+
+  # ── ゲート（branch protection の唯一の必須チェック）──────────────────────────
+  # always() で常に走り全ジョブを needs。macOS が PR で skip されても skip は
+  # 「非 failure」なので緑を通し、必須チェックが deadlock しない (GitHub 公式の
+  # skipped-but-required 回避パターン)。実 failure/cancelled のみ落とす。
+  # ★ branch protection の required status checks は「ci-gate」1本だけにすること。
+  #   個別ジョブを required に残すと、PR で skip された macOS が pending 化し得る。
+  ci-gate:
+    name: ci-gate
+    if: always()
+    needs:
+      - nix-flake-check
+      - shellcheck
+      - convention-executable-prefix
+      - convention-command-prefix
+      - chezmoi-templates
+      - darwin-build
+      - darwin-switch-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any required job failed or was cancelled
+        # needs は信頼済みコンテキストだが、zizmor template-injection を避けるため
+        # run: に直接展開せず env 経由で渡す (#193 の INPUT_TAG と同方針)。
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          echo "A required upstream job failed:"
+          echo "$NEEDS_JSON"
+          exit 1
+      - run: echo "All required jobs passed or were intentionally skipped."
