@@ -19,6 +19,7 @@
   - 開始時: `furrow next -r <repo>`（or `furrow show <id>`）で現在地を把握してから着手。
   - 中断時: body のチェックを更新し、必要なら「次は X から」を 1 行残す。
 - **code repo の PR 本文に footer を1行**: `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`（PR open→in-progress / merge→`<lane>` 適用。lane 省略で参照のみ。非ブロッキング）。
+- **遠慮なく task 化する（取りこぼさない・暗黙にしない）**: 不満・仕様の曖昧・やる/やらない判断・気づいた罠やツール案は、記憶や口頭でなく task に上げる（曖昧は「仕様確認」自体を task 化して詰まりを先に解く）。body 一項目で足りるものは body へ。詳細規約は [`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md) の「何を task にするか」節。
 
 ## Repo 現在地ワンショット（セッション途中の把握用）
 
@@ -47,6 +48,7 @@ source-build wrapper＝呼ぶたび変更検知で rebuild）。**作って終�
 
 ## 自作アプリ・自作 CLI は source を使う（brew 版は使わない）
 
+- **起動者で機構が分かれる（Claude と共有する前提の認識）**: **GUI アプリ = ほぼ人間（開発者本人）が起動する** → Xcode / ビルド成果物を動かす（署名・TCC が絡むので「呼ぶたび rebuild」な wrapper には載せない）。**CLI = 主に Claude Code が叩く道具**（furrow・pare・cifail 等）→ `packages.nix` の source-build wrapper で always-latest。**どちらも brew/cask の stale スナップショットは使わない**（機構は違えど哲学は同じ。詳細は下）。
 - **akira-toriyama の自作アプリ / CLI（furrow・cifail・jig 等）は、その repo の clone（`…/github.com/akira-toriyama/<repo>` の source）で使う。自分のマシンでは brew 版（cask/formula）を入れない・使わない。** 理由 = source なら常に最新・コードを読める・デバッグ出力を足して即リビルドできる・`git log` で挙動を追える（brew はリリース時点の stale スナップショット）。
 - CLI は dotfiles の `packages.nix` に source-build ラッパ（呼ぶたび変更検知で rebuild）があるものはそれを使う（↑ furrow の節と同じ仕組み）。**`brew install` しないこと** —— PATH は `/opt/homebrew/bin` が nix profile より前なので、brew 版があると wrapper を shadow する。入れなければ shadow は起きない（現に furrow/cifail は wrapper のみ）。
 - GUI アプリは自分が開発者なので通常どおり Xcode / ビルド成果物を動かす（cask を自分では入れない）。
