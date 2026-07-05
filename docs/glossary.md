@@ -180,6 +180,16 @@ switch ...` で呼ぶ。
 状態を維持する。
 - **Don't call it:** setup, bootstrap script, セットアップ
 
+### `ghq-get-mine`
+**自リポジトリ一括 clone コマンド**。GitHub 上の akira-toriyama の active
+（非 archived）repo を `GHQ_ROOT`（`/Volumes/workspace`）へ ghq レイアウトで
+SSH clone する。冪等（clone 済みは no-op）。install.sh §6.5 と日常の新 repo
+追従で使う。
+- 所在: [`home/modules/packages.nix`](../home/modules/packages.nix)
+  （`writeShellScriptBin`）/ 運用手順は
+  [operations.md §5.12](operations.md)
+- **Don't call it:** clone-all, repo 一括取得スクリプト, ghq sync
+
 ### `aarch64-darwin`
 唯一のサポート arch。flake はこの platform をターゲットする。
 - **Don't call it:** apple silicon, m1/m2, arm mac
