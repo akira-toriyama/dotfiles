@@ -308,6 +308,9 @@ chezmoi chattr +template <path>                                # .tmpl 化
 # 1Password
 op signin                                                      # まず最初に
 op read "op://Vault/Item/field"
+
+# リポジトリ
+ghq-get-mine                                                   # 自リポジトリ(active)を workspace へ一括 clone（冪等・§5.12）
 ```
 
 ### 5.9 トラブルシュート定番
@@ -380,6 +383,23 @@ git config core.hooksPath .githooks
 - **警告のみ**: 乖離があっても push は止まらない（warn-only）。警告文も出したくない時だけ `git push --no-verify` でフック自体を skip。
 - chezmoi 未導入環境（CI / bootstrap 途中）ではフックは何もせず通す（`command -v chezmoi` で skip）。
 - **スコープ**: 検査するのは chezmoi/ を触る push だけ（`docs/` や `*.nix` のみの push は verify せず即通す）。旧仕様の「全乖離で無関係な push まで止まる」問題は解消済み。
+
+### 5.12 自リポジトリ一括 clone（ghq-get-mine）
+
+GitHub 上の自分の active（非 archived）repo を `/Volumes/workspace` へ
+ghq レイアウトで一括 SSH clone するコマンド。fork・private を含む。
+
+```sh
+ghq-get-mine
+```
+
+- **いつ**: 新 repo を作った後の追従 / 新 Mac では install.sh §6.5 が自動実行
+  （対話モードのみ、CI は skip）
+- **冪等**: clone 済み repo は no-op（`-u` は付けない = working copy 不可侵）
+- **前提**: gh 認証（or `GITHUB_TOKEN`）+ GitHub への SSH 疎通。未整備なら
+  1 行 warn で fail-fast → 整備後に再実行すれば欠けた分だけ補完される
+- 実体: [home/modules/packages.nix](../home/modules/packages.nix) の
+  `writeShellScriptBin`
 
 </details>
 

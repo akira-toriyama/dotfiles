@@ -11,6 +11,7 @@
 #   4. (sudo) darwin-rebuild switch  ← brew/cask/mas/CLI/defaults を宣言通り一括適用
 #   5. (任意) 1Password.app をサインインし、op CLI 連携を有効化
 #   6. chezmoi apply  ← dot_claude/settings.json や VSCode 拡張 install など
+#   6.5. (対話モードのみ) ghq-get-mine で自リポジトリを workspace へ一括 clone
 #
 # 環境変数 / 引数:
 #   CI=true もしくは `--non-interactive`  ... 対話プロンプトを抑止し、CI で完走させる
@@ -185,6 +186,17 @@ fi
 echo "==> chezmoi apply（dot_claude / run_onchange 各種）"
 PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH" \
   chezmoi --source "$REPO_DIR/chezmoi" apply --verbose
+
+# 6.5 自リポジトリを workspace へ一括 clone（ghq レイアウト）。
+# ghq-get-mine は §4 の switch で /etc/profiles/per-user/$USER/bin に入る。
+# gh / SSH 認証が未整備でも install.sh 全体は止めない（fail-fast + 後で
+# ghq-get-mine を再実行すれば冪等に補完される）。CI は clone する意味がなく
+# SSH 認証も無いので skip。
+if [ "$NON_INTERACTIVE" != "1" ]; then
+  echo "==> 自リポジトリを一括 clone (ghq-get-mine)"
+  PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH" \
+    ghq-get-mine || echo "⚠ ghq-get-mine 失敗。gh auth login / SSH 鍵整備後に再実行してください" >&2
+fi
 
 echo
 echo "✓ 完了。新しいターミナルを開いて環境が揃っていることを確認してください。"
