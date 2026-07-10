@@ -167,12 +167,6 @@ TU_RR_M = 0x8A
 TU_RR_X2 = 0x8B
 TU_RR_X3 = 0x8C
 TU_RR_X4 = 0x8D
-# ist (ble_hid_host_receiver) トラックボールボタン (band 0xA0..0xBF) — canon/vkey-aliases.toml と一致
-IST_BTN5 = 0xA0
-IST_BTN6 = 0xA1
-IST_TILT_L = 0xA2
-IST_TILT_R = 0xA3
-
 
 # =====================================================================
 # Bindings — 各 binding 直前の `# doc: <動作>` は docs/chord.md の
@@ -363,25 +357,3 @@ name = "ULTRA_LL + l → Backspace (in j-layer)"
 input = "TU_LL_L"
 when-var = "jlayer"
 action-keys = "backspace"
-
-
-# ist (ble_hid_host_receiver) トラックボールボタン → a/b/c/d
-[[bindings]]
-name = "ist btn5 → a"
-input = "IST_BTN5"
-action-keys = "a"
-
-[[bindings]]
-name = "ist btn6 → b"
-input = "IST_BTN6"
-action-keys = "b"
-
-[[bindings]]
-name = "ist tilt-left → c"
-input = "IST_TILT_L"
-action-keys = "c"
-
-[[bindings]]
-name = "ist tilt-right → d"
-input = "IST_TILT_R"
-action-keys = "d"
