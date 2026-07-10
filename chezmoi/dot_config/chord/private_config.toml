@@ -314,7 +314,7 @@ action-keys = "return"
 [[bindings]]
 name = "space-right + facet tree"
 input = "ctrl + fn - right"
-action-shell = "facet --view=tree --loading=2000"
+action-shell = "facet --view tree --loading 5000"
 action-keys = "ctrl + fn - right"
 
 # doc: スペース左へ移動しつつ facet tree 表示（ctrl+←）
@@ -322,7 +322,7 @@ action-keys = "ctrl + fn - right"
 [[bindings]]
 name = "space-left + facet tree"
 input = "ctrl + fn - left"
-action-shell = "facet --view=tree --loading=2000"
+action-shell = "facet --view tree --loading 5000"
 action-keys = "ctrl + fn - left"
 
 
