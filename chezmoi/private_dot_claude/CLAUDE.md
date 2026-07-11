@@ -41,6 +41,9 @@ source-build wrapper＝呼ぶたび変更検知で rebuild）。**作って終�
 - **pare** — 長くなりがちな Bash 出力の切り詰め。blind `| tail` はエラー中盤を落とすので、
   代わりに `<cmd> 2>&1 | pare`（head+error-match+tail を予算内に。full は `--tee FILE`）。
   `set -o pipefail` 併用。既定 8KB・`--head/--tail/--match/--context` で調整。
+  **test 実行は `<runner> 2>&1 | pare --profile test`**（失敗 assertion ブロックを丸ごと保持・
+  成功は畳む。汎用 pare は多行 assertion の expected/actual を落とすが profile は残す。
+  go test / swift test / vitest / jest / pytest）。
 - **cifail** — CI 失敗の要点抽出。生 run ログを漁らず `cifail`（cwd の remote/現 branch から推定。
   `--pr N` / `--branch B` / `--run ID` / `--json`）。job ゼロの失敗 run（workflow 文法エラー等）も拾う。
 - **furrow** — タスク管理（↑ Workflow 節が正典）。
