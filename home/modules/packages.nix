@@ -181,5 +181,22 @@
       fi
       exec "$bin" "$@"
     '')
+
+    # revpost: furrow と同型の source-build ラッパ。findings JSON（native / reviewdog
+    # rdjson・rdjsonl）を pipe して anchor 検証済みの inline PR review を一括投稿する
+    # CLI（422 根絶）。target は明示引数 `owner/repo#N` で cwd 非依存・auth は gh を
+    # 再利用 — (cd src) は build 用 subshell に閉じる（他 wrapper と同じ atomic mv）。
+    (writeShellScriptBin "revpost" ''
+      set -eu
+      src=/Volumes/workspace/github.com/akira-toriyama/revpost
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/revpost"
+      bin="$cache/revpost"
+      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+        mkdir -p "$cache"
+        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/revpost && mv -f "$bin.tmp.$$" "$bin" ) >&2
+      fi
+      exec "$bin" "$@"
+    '')
   ];
 }
