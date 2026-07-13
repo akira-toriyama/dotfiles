@@ -2,7 +2,7 @@
 # chezmoi modify_ script for ~/.claude/settings.json.
 #
 # chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
-# file. We ensure exactly TWO things and pass everything else (the permissions
+# file. We ensure exactly THREE things and pass everything else (the permissions
 # the user accumulates interactively, plugins, env, other hooks) through
 # untouched:
 #   1. a SessionStart hook that runs git-stale-check (so an agent sees a
@@ -13,14 +13,25 @@
 #      only in the live file — is what makes them reproduce on a new Mac.
 #      Scope is deliberately read-only (status / log / worktree list); no
 #      mutating git verbs are granted.
+#   3. rundiff's PreToolUse hook, merged from `rundiff hook print --json` —
+#      rundiff auto-wraps a recognized test command (`go test ./...` →
+#      `rundiff -- go test ./...`) so an agent gets only the delta from the
+#      previous run plus the file-level fixed/new claim, without having to
+#      remember the prefix (projects t-mcep ②).
+#      The snippet is READ FROM rundiff, never copied here: rundiff owns the
+#      target list, so its permission entries cannot drift out of sync with the
+#      commands it actually rewrites. The hook it registers is itself guarded
+#      (`command -v rundiff`), so an uninstalled rundiff is a no-op rather than
+#      an error on every Bash call.
 #
-# Idempotent: the hook and each allow entry are added only if absent (the allow
+# Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
-# survive. The hook command is stored literally as `$HOME/...` and shell-expands
-# when the hook runs, so it stays correct per machine.
+# survive. The SessionStart hook command is stored literally as `$HOME/...` and
+# shell-expands when the hook runs, so it stays correct per machine.
 #
 # Fail-safe: with no jq, or on unparseable input, we pass stdin through verbatim
-# rather than risk corrupting a security-relevant file.
+# rather than risk corrupting a security-relevant file. Likewise, if rundiff is
+# absent or prints something that is not JSON, we simply skip step 3.
 set -u
 
 # shellcheck disable=SC2016  # $HOME must stay literal — Claude expands it at hook run
@@ -34,7 +45,7 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-printf '%s\n' "$input" | jq --arg cmd "$cmd" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
 
   ( if hook_present then .
@@ -49,4 +60,43 @@ printf '%s\n' "$input" | jq --arg cmd "$cmd" '
                             , "Bash(git log:*)"
                             , "Bash(git worktree list:*)"
                             ] - .permissions.allow )
-'
+')
+
+# 3. rundiff PreToolUse hook. `rundiff hook print --json` emits the mergeable
+# object { hooks: { PreToolUse: [...] }, permissions: { allow: [...] } }; we
+# union it in. The handler is keyed on its command+args pair, so re-applying
+# after a rundiff upgrade that changes neither is a no-op, and a change to
+# either replaces nothing — it adds the new handler, and the stale one is the
+# user's to remove (this script never deletes what it did not write).
+#
+# The 5 s timeout rundiff prints is meant for an installed binary; here rundiff
+# runs through the nix source-build wrapper, whose first call after a source
+# change rebuilds. Give it room: a timed-out hook is fail-open (the command runs
+# unwrapped), but it is noisy, and a rebuild happens exactly when the tool is
+# being worked on.
+if command -v rundiff >/dev/null 2>&1 \
+  && snippet=$(rundiff hook print --json 2>/dev/null) \
+  && printf '%s' "$snippet" | jq -e '.hooks.PreToolUse[0].hooks[0].command' >/dev/null 2>&1; then
+  merged=$(printf '%s\n' "$out" | jq --argjson add "$snippet" '
+    ($add.hooks.PreToolUse[0].hooks[0] | .timeout = 30) as $h
+    | ( if ( [ (.hooks.PreToolUse // [])[]?.hooks[]?
+               | select(.command == $h.command and ((.args // []) == ($h.args // []))) ] | length ) > 0
+        then .
+        else
+            (.hooks //= {})
+          | (.hooks.PreToolUse //= [])
+          | (.hooks.PreToolUse += [ { matcher: "Bash", hooks: [ $h ] } ])
+        end )
+    | (.permissions //= {})
+    | (.permissions.allow //= [])
+    | .permissions.allow += ( ($add.permissions.allow // []) - .permissions.allow )
+  ') || merged=''
+  # Only adopt the merge if it produced valid JSON: a broken settings.json costs
+  # the user their whole permission allowlist, and skipping the hook costs a
+  # no-op. The asymmetry decides.
+  if [ -n "$merged" ] && printf '%s' "$merged" | jq -e . >/dev/null 2>&1; then
+    out=$merged
+  fi
+fi
+
+printf '%s\n' "$out"

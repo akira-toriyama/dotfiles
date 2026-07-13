@@ -165,6 +165,27 @@
       exec "$bin" "$@"
     '')
 
+    # rundiff: furrow/pare と同型の source-build ラッパ。rundiff は pare の時間方向の
+    # 姉妹ツール（前回実行との差分だけ返すコマンドラッパ）で、Claude Code の PreToolUse
+    # hook（`rundiff hook rewrite`）から **Bash 呼び出しのたびに** 起動されるため、
+    # 起動は軽くなければならない: find -newer の変更検知は数十 ms で、変更が無ければ
+    # ビルドは走らない。cwd 依存（キャッシュキー = argv + cwd + git branch）なので、
+    # (cd src) は build 用 subshell に閉じ、exec は呼び出し元 cwd のまま実行する。
+    (writeShellScriptBin "rundiff" ''
+      set -eu
+      src=/Volumes/workspace/github.com/akira-toriyama/rundiff
+      # ビルド成果物は `rundiff-bin/` に置く: `~/.cache/rundiff/` は rundiff 自身の
+      # baseline キャッシュ（キー名のファイル群）なので、そこにバイナリを混ぜない。
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/rundiff-bin"
+      bin="$cache/rundiff"
+      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+        mkdir -p "$cache"
+        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/rundiff && mv -f "$bin.tmp.$$" "$bin" ) >&2
+      fi
+      exec "$bin" "$@"
+    '')
+
     # cifail: furrow と同型の source-build ラッパ（開発中の source を常に最新ビルド）。
     # cifail は呼び出し元 cwd の git origin から owner/repo を導出するので、
     # (cd src) は build 用の subshell に閉じ、exec は呼び出し元 cwd のまま実行する
