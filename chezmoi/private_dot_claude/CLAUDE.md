@@ -21,6 +21,34 @@
 - **code repo の PR 本文に footer を1行**: `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`（PR open→in-progress / merge→`<lane>` 適用。lane 省略で参照のみ。非ブロッキング）。
 - **遠慮なく task 化する（取りこぼさない・暗黙にしない）**: 不満・仕様の曖昧・やる/やらない判断・気づいた罠やツール案は、記憶や口頭でなく task に上げる（曖昧は「仕様確認」自体を task 化して詰まりを先に解く）。body 一項目で足りるものは body へ。詳細規約は [`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md) の「何を task にするか」節。
 
+## 開発ポリシー（全 repo 共通）
+
+- **品質 > 速度**: 時間がかかっても高品質な選択をする。
+- **lint / test で防げることは Claude が人力でやらない**: 機械的に検出できる規約・
+  回帰は lint ルールや test に落とし込む（無ければ足すことを検討する）。Claude は
+  自動化で防げないもの（設計判断・命名・仕様の曖昧さ・認識ズレ等）のフォローに注力する。
+- **破壊的変更 OK**: 自分の repo では breaking change を恐れない（互換レイヤーを
+  残して劣化させるより、綺麗に壊して major で出す）。
+- **glossary.md**: 開発する repo に用語集 `glossary.md` が無ければ作り、随時更新する。
+  目的 = ユーザーと Claude Code の認識ズレ防止。用語の追加・改名はコード変更と
+  **同一 PR** で反映。Pages 化 tooling = [glossary-site](https://github.com/akira-toriyama/glossary-site)。
+- **Claude が自力で検証・デバッグを完結できる形を優先する**（設計原則）:
+  headless で検証できる CLI / ログ経路を用意し、GUI しか確認手段がない状態を避ける。
+  verbose ログ・デバッグ出力は恐れず足す。
+- **調査時**: 関連アプリ・ライブラリの clone、ドキュメントのダウンロードは自由に行ってよい。
+- **検証環境**: Tart VM での検証 OK（作成・破棄も自由）。
+- **配布**: [GitHub Packages](https://github.com/akira-toriyama?tab=packages) への追加 OK。
+
+## Mac アプリ（Swift）
+
+- **UI は SwiftUI ＋ [Sill](https://github.com/akira-toriyama/sill) をベースとする**
+  （Sill = 共通 theming 基盤 Palette / PaletteKit / Effects）。**AppKit は基本的に使用禁止**
+  — SwiftUI で届かない essential floor に限る（判断基準は software-architecture skill）。
+- **不足パーツは Sill へ PR を検討**: アプリ側に one-off で足す前に、共通化して
+  Sill に上げられないかを先に考える。
+- **OS サポートは最新 macOS のみターゲット**: 古い OS 向けの availability 分岐や
+  workaround は書かない（たまたま動く分には構わない）。
+
 ## Repo 現在地ワンショット（セッション途中の把握用）
 
 - branch / ahead-behind / dirty / 直近 commit / worktree / stash を 1 ターンで:
