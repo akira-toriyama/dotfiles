@@ -23,6 +23,9 @@
       # dev go（furrow の `go run`/`go test` 等）。build go は別管理＝packages.nix の
       # furrow ラッパが `${pkgs.go}` を内部固定で使う（PATH には出さない）。
       go = "latest";
+      # rundiff の adapter fixture（cargo test キャプチャ）等で使う。↑方針の
+      # とおり言語ランタイムは mise（cargo/rustc とも mise 管理）。
+      rust = "latest";
     };
   };
 }
