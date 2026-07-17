@@ -35,7 +35,8 @@
     ];
 
     casks = [
-      "claude-code"  # Terminal-based AI coding assistant
+      # Claude Code CLI は mise の npm backend へ集約（home/modules/mise.nix）。cask は
+      # upgrade=false で自己更新も空振りし版が遅れるため、この cask 宣言は撤去した。
       "obsidian"  # Knowledge base that works on top of a local folder of plain text Markdown files
       # 1Password 8 デスクトップ。SSH エージェント / op CLI 連携の前提
       "1password"
