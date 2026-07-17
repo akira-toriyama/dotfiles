@@ -29,11 +29,9 @@
     git-filter-repo
 
     # === Claude Code を快適にする CLI ===
-    # Claude Code CLI（headless `claude -p` も含む）。claude-maint.nix の月次保守ジョブが
-    # launchd から呼ぶため、再現可能に Nix で宣言する（mise の node global ではなく）。
-    # nix store は immutable なので自己アップデータは空振り＝版は flake で一元管理。
-    # 更新は `nix flake update` 時。VSCode 拡張 anthropic.claude-code とは別物（あれは拡張）。
-    claude-code
+    # Claude Code CLI 本体は mise の npm backend へ移設（home/modules/mise.nix）。npm 自己
+    # 更新で最新に張り付くため（旧: Nix pkg + cask の二重宣言＋宣言外の node global＝3系統
+    # 並存で最古の Nix 版が shadow され動かなかった）。ここは Claude が Bash で多用する周辺 CLI。
     # ripgrep / fd: Claude Code が Bash で多用する高速検索・ファイル探索。
     # 特に rg は非対話 PATH に無く `rg ...` が落ちていたので宣言して常用可能にする。
     ripgrep
@@ -59,11 +57,6 @@
     # until+sleep の手書きループ撲滅（projects t-v1t1）。使い方の正典は
     # ~/.claude/skills/condition-wait/SKILL.md（exec の footgun 3 点もそこに記載）。
     wait4x
-
-    # === コンテナ stack（docker CLI + macOS 上の Linux VM 提供 colima）===
-    docker
-    docker-compose
-    colima  # docker CLI を動かす実行基盤(Lightweight Linux VM)。drop すると docker が無効化
 
     # === 再現テスト基盤（roadmap Phase 6: 新 PC install.sh 自動検証）===
     # Tart: Apple Silicon ネイティブの macOS/Linux 仮想化。
