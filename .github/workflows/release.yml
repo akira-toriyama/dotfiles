@@ -25,6 +25,9 @@ jobs:
         with:
           # tag annotation の本文を読むため全履歴を取得
           fetch-depth: 0
+          # git only READS the tag annotation; the release is created via the
+          # gh API token, never git push — drop the checkout token. t-yaxa
+          persist-credentials: false
 
       - name: 解決した tag 名
         id: tag
@@ -41,8 +44,12 @@ jobs:
           fi
 
       - name: tag annotation を notes に展開
+        # steps.tag.outputs.name も run: へ直接展開せず env 経由で渡す
+        # (zizmor template-injection、上の INPUT_TAG と同方針)。t-yaxa
+        env:
+          TAG: ${{ steps.tag.outputs.name }}
         run: |
-          tag="${{ steps.tag.outputs.name }}"
+          tag="$TAG"
           # annotated tag なら本文を取得、lightweight tag なら commit message を fallback
           notes=$(git tag -l "$tag" --format='%(contents)')
           if [ -z "$notes" ]; then
@@ -55,8 +62,10 @@ jobs:
       - name: 既存 Release があれば skip、無ければ作成
         env:
           GH_TOKEN: ${{ github.token }}
+          # env 経由で受ける (zizmor template-injection、上と同方針)。t-yaxa
+          TAG: ${{ steps.tag.outputs.name }}
         run: |
-          tag="${{ steps.tag.outputs.name }}"
+          tag="$TAG"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "::notice::Release $tag は既に存在するため skip"
             exit 0

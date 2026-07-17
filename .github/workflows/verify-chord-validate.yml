@@ -40,6 +40,9 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Verify-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
 
       - name: Install chord + chezmoi from brew
         # chezmoi は runner image に既存だが念のため明示。

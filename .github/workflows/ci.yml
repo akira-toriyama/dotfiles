@@ -28,6 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
 
       - name: Install Nix (Determinate)
         uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
@@ -41,6 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
 
       - name: Run shellcheck on install.sh
         uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # master
@@ -56,6 +62,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
       - name: Check shebang scripts under chezmoi/ have executable_ prefix
         run: |
           set -e
@@ -86,6 +95,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
       - name: Check self-made commands have my- prefix
         run: |
           set -e
@@ -113,6 +125,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
 
       - name: Install chezmoi
         run: |
@@ -151,6 +166,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
 
       - name: Install Nix (Determinate)
         uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
@@ -167,6 +185,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
 
       - name: Install Nix (Determinate)
         uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c # main
