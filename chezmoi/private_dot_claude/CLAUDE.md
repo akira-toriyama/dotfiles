@@ -36,7 +36,10 @@
   headless で検証できる CLI / ログ経路を用意し、GUI しか確認手段がない状態を避ける。
   verbose ログ・デバッグ出力は恐れず足す。
 - **調査時**: 関連アプリ・ライブラリの clone、ドキュメントのダウンロードは自由に行ってよい。
-- **検証環境**: Tart VM での検証 OK（作成・破棄も自由）。
+- **検証環境**: Tart VM での検証 OK（作成・破棄も自由）。**VM の中では全操作 OK** —
+  sudo・TCC/AX の許可付与・システム設定の変更まで、確認を取らず実行してよい
+  （壊しても捨てて作り直せるのが VM の存在理由）。ホスト側の sudo は対象外
+  （dotfiles の `darwin-rebuild switch` 等は従来どおりユーザーに実行してもらう）。
 - **配布**: [GitHub Packages](https://github.com/akira-toriyama?tab=packages) への追加 OK。
 
 ## Mac アプリ（Swift）
