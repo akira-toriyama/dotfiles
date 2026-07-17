@@ -2,8 +2,8 @@
 
 ## Commits message style
 
-- **gitmoji + Conventional Commits**。**commit の type が git-cliff 経由で release の semver と notes を駆動する**（gitmoji は装飾で版に影響しない）。
-- 版を動かす type: `feat`→minor ／ `fix`・`perf`・`revert`→patch ／ breaking（`!` or `BREAKING CHANGE:`）→major ／ `docs`・`chore` 等→bump なし。
+- **gitmoji-driven**（エンジン = 自作 [glyph](https://github.com/akira-toriyama/glyph)。lint も semver も notes も glyph）。**先頭の `:code:` が type**＝release の semver と notes を駆動する。形式は `<:gitmoji:>[(<scope>)][!] <subject>`（Conventional の `<type>` 語は退役。legacy `<type>(scope)!:` token は lint が accept-and-ignore するので旧履歴はそのまま通る）。
+- 版を動かす gitmoji: `:boom:`・`!`・`BREAKING CHANGE:` footer→major（非抑制） ／ `:sparkles:`→minor（唯一の minor） ／ 出荷挙動を変える code（`:bug:` `:zap:` `:lock:` `:arrow_up:` 等）→patch ／ 内部・meta（`:memo:` `:recycle:` `:wrench:` 等）→bump なし。全75 code の機械正本は `glyph rules`（`--md` で表）。unknown code は lint hard error。
 - subject も body も英語。body を書く時は後半に `---（和訳）` 区切りで subject と body の和訳を付ける（subject だけなら不要）。
 - **全文（厳格仕様・例つき）**: https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md
 
