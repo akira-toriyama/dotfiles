@@ -31,6 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Verify-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
