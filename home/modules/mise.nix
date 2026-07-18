@@ -26,18 +26,10 @@
       # rundiff の adapter fixture（cargo test キャプチャ）等で使う。↑方針の
       # とおり言語ランタイムは mise（cargo/rustc とも mise 管理）。
       rust = "latest";
-
-      # Claude Code CLI 本体 — npm backend で宣言（node/npm 依存）。この形にする理由:
-      # ① 主力ツールで currency が要る（毎日出る）。npm install は書き込み可なので
-      #    claude 自身の自己アップデータが効き、"latest" 宣言＋自己更新で常に最新に
-      #    張り付く。Nix store は immutable・cask も upgrade=false で、どちらも自己更新が
-      #    空振りして構造的に版が遅れる（実測 Nix 2.1.141 / cask 2.1.197 / npm 2.1.212）。
-      # ② それでも再現可能: install ステップ自体が宣言されるので、新 Mac でも
-      #    darwin-rebuild switch → mise install で入る。旧来の「node global へ手 npm i -g」
-      #    （宣言外＝再現しない）と Nix pkg / cask 二重宣言を、この 1 本に集約して置換した。
-      # claude-maint.nix の launchd 月次ジョブは mise shim（~/.local/share/mise/shims/claude）
-      # 経由でこれを引く（launchd PATH に shims が入っている）。
-      "npm:@anthropic-ai/claude-code" = "latest";
+      # 注: Claude Code CLI (claude) はここ(mise)では入れない。cask/mise-npm/nix は
+      # いずれも自己更新が構造的に効かず版が遅れるため、公式 native installer に一本化
+      # （起動時/定期に自己更新して最新に張り付く）。実体は
+      # chezmoi/run_onchange_after_install-claude-code.sh、~/.local/bin/claude に入る。
     };
   };
 }

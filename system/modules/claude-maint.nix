@@ -12,8 +12,8 @@
   #
   # 手動実行: bash <repo>/system/modules/scripts/claude-maint.sh [--dry-run]
   #
-  # 前提: claude CLI (mise の npm backend で宣言, home/modules/mise.nix。launchd PATH の
-  #   ~/.local/share/mise/shims 経由で解決) / gh が auth 済 / dotfiles に
+  # 前提: claude CLI (公式 native installer で導入, chezmoi/run_onchange_after_install-claude-code.sh。
+  #   launchd PATH の ~/.local/bin 経由で解決) / gh が auth 済 / dotfiles に
   #   chezmoi/private_dot_claude (or dot_claude) が commit 済であること。
   launchd.user.agents.claude-maint = {
     serviceConfig = {

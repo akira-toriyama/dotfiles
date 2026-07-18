@@ -35,8 +35,9 @@
     ];
 
     casks = [
-      # Claude Code CLI は mise の npm backend へ集約（home/modules/mise.nix）。cask は
-      # upgrade=false で自己更新も空振りし版が遅れるため、この cask 宣言は撤去した。
+      # Claude Code CLI は cask/mise/nix いずれも自己更新が効かず版が遅れるため、
+      # 公式 native installer 経由に一本化（chezmoi/run_onchange_after_install-claude-code.sh。
+      # ~/.local/bin/claude が起動時/定期に自己更新して最新へ張り付く）。
       "obsidian"  # Knowledge base that works on top of a local folder of plain text Markdown files
       # 1Password 8 デスクトップ。SSH エージェント / op CLI 連携の前提
       "1password"

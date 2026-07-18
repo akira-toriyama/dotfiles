@@ -34,7 +34,7 @@ DRY_RUN=0
 
 # --- launchd は PATH がほぼ空。必要な bin を明示注入する (drift script と同方針)。----
 NIX_PROFILE_BIN="/etc/profiles/per-user/$(id -un)/bin"
-PATH="/opt/homebrew/bin:${NIX_PROFILE_BIN}:${HOME}/.local/share/mise/shims:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/bin:/bin"
+PATH="/opt/homebrew/bin:${NIX_PROFILE_BIN}:${HOME}/.local/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/bin:/bin"
 export PATH
 
 LOG_PREFIX="[$(date '+%F %T')] claude-maint:"
