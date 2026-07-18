@@ -9,6 +9,11 @@ description: Use when creating or configuring GitHub features on your own (akira
 
 - **新しいリポジトリを作成するとき** → 「Best practices for repositories」を読む。
   https://docs.github.com/en/repositories/creating-and-managing-repositories/best-practices-for-repositories
+  - **その repo が TS/React のとき（発火条件）** → house の TS/React/lint 規約は
+    現状 vista の project CLAUDE.md にしか無い。**2 つ目の TS/React repo が生まれた
+    ＝横断 skill（`ts-react-dev` 仮）へ切り出す合図**。furrow `t-x12w` を icebox から
+    出すか判断する。抽出が済めばこの項目は用済み（**撤去タイミングは `t-x12w` の
+    DoD 側で管理**——二重管理を避けるため詳細は書かない）。
 - **GitHub Actions のワークフローを作る/設定するとき** → 「Writing workflows」を読む。
   https://docs.github.com/en/actions/writing-workflows
 - **Actions のセキュリティを固めるとき（secrets / permissions / action の SHA ピン留め）** → 「Secure use reference」を読む。
