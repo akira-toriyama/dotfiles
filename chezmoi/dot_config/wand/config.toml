@@ -960,8 +960,8 @@ action-cmd  = "open -na 'Google Chrome'"
 name = "Move to Trash"
 icon = "SF:trash"
 tint = "systemRed"
-action-type = "ax"
-action-verb = "AXDelete"
+action-type = "shell"
+action-cmd = "osascript -e 'tell application \"Finder\" to delete (selection as alias list)'"
 
 # Multi-colour palette — `tint-colors = [...]` applies SF Symbol's
 # hierarchical / multicolor palette. Wins over a single `tint`.

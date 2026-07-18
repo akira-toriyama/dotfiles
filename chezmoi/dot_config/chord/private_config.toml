@@ -168,10 +168,20 @@ TU_RR_X2 = 0x8B
 TU_RR_X3 = 0x8C
 TU_RR_X4 = 0x8D
 
+# IST
+IST_BTN5 = 0xA0
+IST_BTN6 = 0xA1
+IST_TILT_L = 0xA2
+IST_TILT_R = 0xA3
+
 # =====================================================================
 # Bindings — 各 binding 直前の `# doc: <動作>` は docs/chord.md の
 # ショートカット表生成の唯一ソース（scripts/gen-chord-doc.py が読む）。
 # =====================================================================
+
+[[bindings]]
+input = "IST_BTN5"
+action-shell = "echo \"$(date '+%T') IST_BTN5\" >> /tmp/ist-vkey-test.log"
 
 # ---- ULTRA_LL レイヤ（ZMK 右側 ALT+SHIFT+CTRL チョード） ----
 
