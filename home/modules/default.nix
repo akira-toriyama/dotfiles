@@ -17,7 +17,9 @@
   # nix-darwin の set-environment が作る PATH には /opt/homebrew/bin が無く、
   # chord 等が叩く `/bin/zsh -l -c` で brew 製コマンド (facet / rift-cli 等) が
   # command-not-found になる。hm-session-vars.sh 経由で全 shell に効かせる。
-  home.sessionPath = [ "/opt/homebrew/bin" "/opt/homebrew/sbin" ];
+  # ~/.local/bin: 公式 native installer が入れる claude 本体の場所（自己更新もここを更新）。
+  # home.sessionPath は double-quoted で書き出されるので $HOME は shell 展開される。
+  home.sessionPath = [ "/opt/homebrew/bin" "/opt/homebrew/sbin" "$HOME/.local/bin" ];
 
   # ghq の clone 先を case-sensitive APFS Volume に固定。
   # install.sh の §1.5 で作成される。$GHQ_ROOT は ghq が `git config ghq.root`
