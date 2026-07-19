@@ -239,9 +239,13 @@ jobs:
       - name: Verify CLI on PATH（home.packages 経由）
         # GitHub Actions の step shell は login shell ではないので
         # /etc/zshenv 経由の nix path がロードされない。明示的に追加する。
+        # ★ このリストは home/modules/packages.nix の宣言に追従させること。
+        #   手書きリストは drift する: #212 が docker/docker-compose/colima を
+        #   drop した際ここが未追従で、brew 6 修正後の初 smoke が落ちた
+        #   (07-06〜18 は switch が先に死んでいて検出不能だった)。
         run: |
           export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
-          for c in docker docker-compose colima op gh chezmoi ghq jq mas; do
+          for c in op gh chezmoi ghq jq mas; do
             path=$(which "$c" || true)
             if [ -n "$path" ]; then
               echo "  ✓ $c -> $path"
