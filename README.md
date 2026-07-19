@@ -55,16 +55,14 @@
   Fine-grained tokens → `dotfiles bootstrap` を **Regenerate** し、新しい値で
   1Password の同名 item を更新してから使う
 
-#### 4. sudo チケットを作る
-
-- 同じターミナルで `sudo -v`
-
-### 実行（ここから先はパスワード入力・GUI 操作ゼロ・無人で完走）
+### 実行
 
 ```sh
 sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 ```
 
+- **パスワード入力は先頭の `sudo -v` の 1 回だけ**（貼り付け直後に聞かれる）。
+  それ以降はパスワード入力・GUI 操作ゼロで無人完走する
 - **`✓ 完了` は全 phase + 事後条件検証を通過した時だけ出る**
   （スキップ・失敗があれば必ず FAILED / PARTIAL になる）
 
