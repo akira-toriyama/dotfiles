@@ -113,7 +113,16 @@
         echo "✘ gh repo list が空を返した(GitHub API 不調の疑い)。再実行してください" >&2
         exit 1
       fi
-      printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P
+      # ghq root = volume root のため、ghq の walker が macOS の root 所有システム dir
+      # (.Spotlight-V100 / .Trashes / .fseventsd) を repo 処理ごとに踏んで warning を
+      # 吐く（35 repo × 3 行 = 105 行がログを汚した。t-q77q）。既知 3 パターンだけを
+      # stderr から filter する — 他の stderr(clone/exists 進捗・実エラー)は素通し・
+      # streaming 維持・pipeline 終端は ghq のままなので exit code も従来どおり。
+      # ※ GHQ_ROOT のサブディレクトリ移設は却下: 全 clone のパス churn に加え、
+      #   Claude Code の project slug(= cwd パス由来)が全滅し memory 同期が壊れる。
+      ghq_noise='/(\.Spotlight-V100|\.Trashes|\.fseventsd): Permission denied'
+      printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P \
+        2> >(grep -vE "$ghq_noise" >&2 || :)
     '')
 
     # link-claude-memory: ~/.claude/projects/<slug>/memory（全 slug）を ghq clone した
@@ -185,6 +194,11 @@
     #   export するので、これが無いと別 version の go(例 nix go)を使ったとき
     #   「compile version が go tool version と不一致」で build が死ぬ。go 不在の
     #   context でのみ ${pkgs.go} に fallback（GOROOT 打ち消しは fallback でも有効）。
+    # ・GOTOOLCHAIN は primary=local（mise go は "latest" 宣言なので floor を満たす前提。
+    #   無断 toolchain DL をしない＝決定的）、fallback=auto（nixpkgs の go は pin が
+    #   古くなり得て、go.mod floor 未満だと local ではハードエラー。switch 直後〜
+    #   mise ツール導入前の窓で rundiff が PreToolUse hook から全 Bash 呼び出しを
+    #   道連れにした実績 t-7t0w。auto なら必要 toolchain を自動取得して build 続行）。
     # ・(cd src) を subshell に閉じて cwd を保つ＝呼び出し元のディレクトリで実行され、
     #   そこの .furrow-pointer.toml 発見が効く
     # ・出力は一時ファイル→atomic mv（並行起動でも壊れた binary を exec しない）
@@ -195,8 +209,8 @@
       bin="$cache/furrow"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/furrow && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/furrow && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
@@ -213,8 +227,8 @@
       bin="$cache/pare"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/pare && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/pare && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
@@ -234,8 +248,8 @@
       bin="$cache/rundiff"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/rundiff && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/rundiff && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
@@ -251,8 +265,8 @@
       bin="$cache/cifail"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/cifail && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/cifail && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
@@ -268,8 +282,8 @@
       bin="$cache/revpost"
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; else gobuild=${pkgs.go}/bin/go; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN=local "$gobuild" build -o "$bin.tmp.$$" ./cmd/revpost && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/revpost && mv -f "$bin.tmp.$$" "$bin" ) >&2
       fi
       exec "$bin" "$@"
     '')
