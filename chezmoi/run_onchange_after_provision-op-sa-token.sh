@@ -14,7 +14,11 @@ if [ -s "$TOKEN_FILE" ]; then
   exit 0
 fi
 
-if ! command -v op >/dev/null 2>&1 || ! op account get >/dev/null 2>&1; then
+# Guard must be non-interactive: `op account get` with no account opens /dev/tty
+# and prompts "add an account manually? [Y/n]" even with stdout/stderr redirected
+# (stdin </dev/null does NOT prevent it — measured on Tart VM 2026-07-19), which
+# deadlocks unattended runs (install.sh). `op whoami` fails fast without prompting.
+if ! command -v op >/dev/null 2>&1 || ! op whoami >/dev/null 2>&1; then
   echo "op-sa provisioning: op not available/signed in yet — skipping (rerun chezmoi apply after op signin)" >&2
   exit 0
 fi
