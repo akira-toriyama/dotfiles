@@ -24,6 +24,10 @@
 - `~/.ssh/config` に **IdentityAgent 行がある**ことを確認する
   - 無ければ、1Password の設定画面が示す snippet の内容でファイルを作る
   - これが無いと ssh は素の macOS agent（鍵ゼロ）を向いてしまう
+  - このファイルの正本は chezmoi（`chezmoi/private_dot_ssh/private_config`）。
+    ここで手作りするのはワンライナー前に SSH 承認を済ませるための仮置きで、
+    install 中の `chezmoi apply` 以降は宣言が enforce する（1Password は読者に徹し、
+    アプリの「自動編集」ボタンは使わない — 使うと drift になり `chezmoi verify` が警告する）
 - 動作確認として次を 1 回実行し、承認ダイアログで「**すべてのアプリで承認する**」を選んで認証する
 
   ```sh
