@@ -104,6 +104,21 @@ flowchart TD
 - **Don't call it:** 1pass, op cli（cli 単体を指す時のみ可）, シークレット
   ストア
 
+### Service Account (`op-sa`)
+**無人・agent 用の 1Password 機械アカウント**（`claude-automation`）。
+[[Automation vault]] のみ read-only。wrapper
+[`op-sa`](../chezmoi/dot_local/bin/executable_op-sa) が token を注入して
+biometric なしで `op read` を通す。token はグローバル export しない
+（使う瞬間だけ注入）。人間の対話は従来の `op`（app 統合 + Touch ID）。
+- **Don't call it:** bot account, automation token, SA トークン（token
+  自体を指す時のみ可）
+
+### Automation vault
+**[[Service Account (`op-sa`)]] が読める唯一の vault**。Claude の無人作業に
+要る secret だけを選んで入れる（Personal vault は仕様上 SA に付与不可）。
+中身の追加・削除は自由（SA の vault アクセス自体は immutable）。
+- **Don't call it:** bot vault, claude vault, 自動化保管庫
+
 ---
 
 ## ビルド / 適用

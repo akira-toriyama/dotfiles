@@ -1,0 +1,19 @@
+#!/bin/sh
+# op-sa: run op as the claude-automation Service Account (unattended, no biometric).
+# Reads only the Automation vault (read-only). Use for agent/unattended reads:
+#   op-sa read "op://Automation/<item>/<field>"
+# Human/interactive reads keep using plain `op` (app integration + Touch ID).
+# Token file is provisioned by run_onchange_after_provision-op-sa-token.sh.
+# Rate limit (Individual plan): 1,000 requests/day account-wide — don't loop on this.
+set -eu
+
+TOKEN_FILE="$HOME/.config/op/claude-sa-token"
+
+if [ ! -r "$TOKEN_FILE" ] || [ ! -s "$TOKEN_FILE" ]; then
+  echo "op-sa: token file missing or empty: $TOKEN_FILE" >&2
+  echo "op-sa: provision it with:" >&2
+  echo '  op read --out-file ~/.config/op/claude-sa-token "op://Personal/claude-sa-token/credential" && chmod 600 ~/.config/op/claude-sa-token' >&2
+  exit 1
+fi
+
+OP_SERVICE_ACCOUNT_TOKEN=$(cat "$TOKEN_FILE") exec op "$@"
