@@ -103,5 +103,12 @@
         hostModule = ./system/hosts/generic.nix;
         extraModules = [ bootstrapBrewOverride ];
       };
+
+      # install.sh が locked nix-darwin から darwin-rebuild を起動するための passthrough。
+      # `nix run nix-darwin/master#darwin-rebuild` は実行時に master を解決する rolling
+      # 参照で、pin×rolling の不安定（brew 5.1.11 事故と同型）+ 未認証 api.github.com
+      # 403 リスクがあった。ここを経由すれば flake.lock の nix-darwin が使われる。
+      packages.aarch64-darwin.darwin-rebuild =
+        nix-darwin.packages.aarch64-darwin.darwin-rebuild;
     };
 }

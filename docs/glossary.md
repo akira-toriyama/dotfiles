@@ -177,8 +177,22 @@ switch ...` で呼ぶ。
 
 ### `install.sh`
 **新規 macOS の最終目標**: このスクリプト 1 つで同等環境を再現できる
-状態を維持する。
+状態を維持する。**stage 1**（無人・パスワード/GUI ゼロ: CLT → workspace volume →
+Nix → clone → switch → chezmoi → 事後条件検証）と **stage 2**（在席・
+`--phase2`: 1Password agent の SSH 確認 → ghq-get-mine → claude-memory link →
+事後条件検証）の 2 段階。`✓ 完了` は stage 2 でしか出ない。
 - **Don't call it:** setup, bootstrap script, セットアップ
+
+### `stage 1` / `stage 2`
+install.sh の実行区分。分離理由 = 1Password ロック中の SSH 署名は GUI
+ダイアログを出す（実機実証）ため、clone 以降を在席実行に隔離する。
+- **Don't call it:** phase A/B, 前半/後半, part 1/2（フラグ名だけ `--phase2`）
+
+### `summary.txt`
+install.sh の各 run が `~/.dotfiles-install/<run-id>/` に残す機械可読サマリ
+（result / failed / last_phase / log 位置）。LLM・人間はまずこれを読む。
+`latest` symlink が最新 run を指す。
+- **Don't call it:** report, result.txt, ログ本体
 
 ### `ghq-get-mine`
 **自リポジトリ一括 clone コマンド**。GitHub 上の akira-toriyama の active

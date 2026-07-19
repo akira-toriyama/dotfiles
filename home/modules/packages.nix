@@ -116,6 +116,36 @@
       printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P
     '')
 
+    # link-claude-memory: ~/.claude/projects/<home-slug>/memory を ghq clone した
+    # claude-memory repo への symlink にする（clone が単一ソース・Claude パスは link）。
+    # 旧実装は chezmoi run_onchange だったが、chezmoi apply(install.sh stage 1) は
+    # clone(stage 2) より先に走る上、run_onchange は exit 0 を「実行済み」と記録して
+    # 二度と再実行しない = 新 Mac では構造的に link されなかった（t-8qqz）。
+    # clone の後(install.sh --phase2 / 手動)に呼ぶ冪等コマンドとしてここに置く。
+    (writeShellScriptBin "link-claude-memory" ''
+      set -eu
+      slug=$(printf '%s' "$HOME" | tr / -)          # /Users/tommy -> -Users-tommy
+      mem="$HOME/.claude/projects/$slug/memory"
+      clone="$(${pkgs.ghq}/bin/ghq root)/github.com/akira-toriyama/claude-memory"
+      if [ -L "$mem" ] && [ "$(readlink "$mem")" = "$clone" ]; then
+        echo "claude-memory 既に link 済み ($mem -> $clone) → skip"
+        exit 0
+      fi
+      # 実ディレクトリ（symlink でない）は壊さない（in-place .git の既存機。
+      # uniform 化 = ghq へ mv して link し直す移行は事故防止のため手動に委ねる）
+      if [ -e "$mem" ] && [ ! -L "$mem" ]; then
+        echo "✘ $mem は実ディレクトリ → 保護のため何もしない（手動で ghq へ mv して再実行）" >&2
+        exit 1
+      fi
+      if [ ! -d "$clone/.git" ]; then
+        echo "✘ claude-memory の clone が無い ($clone)。ghq-get-mine を先に実行" >&2
+        exit 1
+      fi
+      mkdir -p "$(dirname "$mem")"
+      ln -sfn "$clone" "$mem"
+      echo "linked $mem -> $clone"
+    '')
+
     # furrow: 開発中の source を常に最新ビルドして PATH のどこからでも叩くラッパ。
     # brew/go install のスナップショットは stale 化するので、呼ぶたびに source が
     # 変わっていれば incremental build（~/.cache に出力）して exec する。
