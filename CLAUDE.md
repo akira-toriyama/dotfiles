@@ -134,9 +134,10 @@ op read "op://Vault/Item/field"
 ## Roadmap board / task tracker
 
 dotfiles の作業タスク（バックログ・設計メモ・引き継ぎ）の**正本は furrow + private repo
-[`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**（label `dotfiles`）。
-`furrow ls -l dotfiles`（着手候補 = ready / in-progress）/ `furrow show <id>` / 起票は
-`furrow add "…" -l dotfiles`。運用ルールの正典は
+[`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**（帰属は一級の
+repos フィールド `akira-toriyama/dotfiles`。ラベルは純粋タグ — repos-pivot 以降 `-l <repo>` は廃止）。
+`furrow ls -r dotfiles`（着手候補 = ready / in-progress）/ `furrow show <id>` / 起票は
+`furrow add "…" -r dotfiles`（この checkout 内なら global 既定ボードが repo を auto 付与）。運用ルールの正典は
 [`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)、
 全 repo 共通の作法は global `~/.claude/CLAUDE.md` の Workflow 節（furrow source を使う・
 着手前に projects 最新化・PR 本文に `SetStatus-task:` footer）。
