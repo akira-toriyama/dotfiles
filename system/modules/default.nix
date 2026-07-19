@@ -6,6 +6,7 @@
   imports = [
     ./homebrew.nix
     ./defaults.nix
+    ./power.nix
     ./launchd-drift.nix
     ./claude-maint.nix
   ];
