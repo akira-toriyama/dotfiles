@@ -430,13 +430,22 @@ run_clone_phases() {
   else
     df_check_fail V5b-gh "gh 未認証（GH_TOKEN を export するか gh auth login 後に --phase2 で再実行）"
   fi
-  # V7: claude-memory link（「完了」の定義に含まれる）
-  slug=$(printf '%s' "$HOME" | tr / -)
-  mem="$HOME/.claude/projects/$slug/memory"
-  if [ -L "$mem" ] && [ -e "$mem" ]; then
-    df_check_ok V7-claude-memory "-> $(readlink "$mem")"
+  # V7: claude-memory link（「完了」の定義に含まれる）。memory は per-project なので
+  # clone の projects/ に居る全 slug が生きた symlink であることを確認する（t-tnc9）
+  v7_bad="" v7_n=0
+  for v7_d in "$WORKSPACE_ROOT/github.com/$GITHUB_USERNAME/claude-memory/projects"/*/; do
+    [ -d "$v7_d" ] || continue
+    v7_n=$((v7_n + 1))
+    v7_slug=$(basename "$v7_d")
+    v7_mem="$HOME/.claude/projects/$v7_slug/memory"
+    { [ -L "$v7_mem" ] && [ -e "$v7_mem" ]; } || v7_bad="$v7_bad $v7_slug"
+  done
+  if [ "$v7_n" -eq 0 ]; then
+    df_check_fail V7-claude-memory "clone に projects/<slug> が 1 つも無い（claude-memory の layout を確認）"
+  elif [ -n "$v7_bad" ]; then
+    df_check_fail V7-claude-memory "生きた symlink でない slug:$v7_bad（link-claude-memory を確認）"
   else
-    df_check_fail V7-claude-memory "$mem が生きた symlink でない（link-claude-memory を確認）"
+    df_check_ok V7-claude-memory "全 $v7_n slug link 済み"
   fi
 }
 
