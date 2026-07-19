@@ -192,16 +192,19 @@ switch ...` で呼ぶ。
 
 ### `install.sh`
 **新規 macOS の最終目標**: このスクリプト 1 つで同等環境を再現できる
-状態を維持する。**stage 1**（無人・パスワード/GUI ゼロ: CLT → workspace volume →
-Nix → clone → switch → chezmoi → 事後条件検証）と **stage 2**（在席・
-`--phase2`: 1Password agent の SSH 確認 → ghq-get-mine → claude-memory link →
-事後条件検証）の 2 段階。`✓ 完了` は stage 2 でしか出ない。
+状態を維持する。**単一ステージ・無人一気通貫**（CLT → workspace volume → Nix(.pkg)
+→ clone → switch → chezmoi → SSH gate → ghq-get-mine → claude-memory link →
+事後条件検証）。GUI 操作（FDA 付与・1Password サインイン/agent ON/鍵承認・
+自動ロックタイマー OFF）は**事前準備に front-load** する。`✓ 完了` は全 phase +
+検証を通過した時だけ出る。
 - **Don't call it:** setup, bootstrap script, セットアップ
 
-### `stage 1` / `stage 2`
-install.sh の実行区分。分離理由 = 1Password ロック中の SSH 署名は GUI
-ダイアログを出す（実機実証）ため、clone 以降を在席実行に隔離する。
-- **Don't call it:** phase A/B, 前半/後半, part 1/2（フラグ名だけ `--phase2`）
+### `--phase2`
+install.sh の**リカバリ入口**。SSH gate（1Password）起因の失敗を直した後、
+導入系 phase（CLT/Nix/switch）を再評価せず、sudoers drop-in の self-heal →
+事後条件検証（システム層）→ clone 以降（SSH gate → ghq-get-mine → link →
+clone 検証）を実行する。通常経路ではない（通常はワンライナー再実行 = 冪等）。
+- **Don't call it:** stage 2, 後半モード, 対話モード
 
 ### `summary.txt`
 install.sh の各 run が `~/.dotfiles-install/<run-id>/` に残す機械可読サマリ
