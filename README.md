@@ -51,9 +51,10 @@
 - 権限は **All repositories / Metadata: Read-only** で足りる
 - 用途: `ghq-get-mine` の repo 一覧取得と clone 完全性検証（gh API）
 - 無い場合は序盤の P1-ghtoken gate で即 fail する（長い処理が走ってから死なない）
-- token は **30 日期限**。切れていたら GitHub → Settings → Developer settings →
+- token は**無期限**（切れる心配は無い。実測 2026-07-20: 期限ヘッダ無し）。
+  万一 revoke / rotate した場合は GitHub → Settings → Developer settings →
   Fine-grained tokens → `dotfiles bootstrap` を **Regenerate** し、新しい値で
-  1Password の同名 item を更新してから使う
+  1Password の同名 item を更新する
 
 ### 実行
 
