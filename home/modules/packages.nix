@@ -113,7 +113,16 @@
         echo "✘ gh repo list が空を返した(GitHub API 不調の疑い)。再実行してください" >&2
         exit 1
       fi
-      printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P
+      # ghq root = volume root のため、ghq の walker が macOS の root 所有システム dir
+      # (.Spotlight-V100 / .Trashes / .fseventsd) を repo 処理ごとに踏んで warning を
+      # 吐く（35 repo × 3 行 = 105 行がログを汚した。t-q77q）。既知 3 パターンだけを
+      # stderr から filter する — 他の stderr(clone/exists 進捗・実エラー)は素通し・
+      # streaming 維持・pipeline 終端は ghq のままなので exit code も従来どおり。
+      # ※ GHQ_ROOT のサブディレクトリ移設は却下: 全 clone のパス churn に加え、
+      #   Claude Code の project slug(= cwd パス由来)が全滅し memory 同期が壊れる。
+      ghq_noise='/(\.Spotlight-V100|\.Trashes|\.fseventsd): Permission denied'
+      printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P \
+        2> >(grep -vE "$ghq_noise" >&2 || :)
     '')
 
     # link-claude-memory: ~/.claude/projects/<slug>/memory（全 slug）を ghq clone した
