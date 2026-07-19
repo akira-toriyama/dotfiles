@@ -186,8 +186,9 @@ switch ...` で呼ぶ。
 
 ### `--phase2`
 install.sh の**リカバリ入口**。SSH gate（1Password）起因の失敗を直した後、
-前段 phase を再評価せず clone 以降（SSH gate → ghq-get-mine → link → 検証）
-だけを実行する。通常経路ではない（通常はワンライナー再実行 = 冪等）。
+導入系 phase（CLT/Nix/switch）を再評価せず、sudoers drop-in の self-heal →
+事後条件検証（システム層）→ clone 以降（SSH gate → ghq-get-mine → link →
+clone 検証）を実行する。通常経路ではない（通常はワンライナー再実行 = 冪等）。
 - **Don't call it:** stage 2, 後半モード, 対話モード
 
 ### `summary.txt`

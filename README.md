@@ -10,9 +10,15 @@
 2. **1Password.app を手動インストール** → **iPhone の QR でサインイン**（Secret Key 手打ち不要）→
    設定 → 開発者 → **SSH agent を ON** → セキュリティ → **自動ロックのタイマーを OFF**
    （スリープ時ロックは残す。実行中ロックで clone が止まるのを防ぐ）→
+   **`~/.ssh/config` に IdentityAgent 行があることを確認**（1Password の設定画面が示す
+   snippet。無ければその内容で作る）→
    `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` を 1 回実行し、
    承認ダイアログで「**すべてのアプリで承認する**」+ 認証
-3. ターミナルで `sudo -v`（次のワンライナーと同じターミナルで）
+3. **GitHub fine-grained PAT** を 1Password からコピーし、次のワンライナーと同じ
+   ターミナルで `export GH_TOKEN=<PAT>`（権限は All repositories / **Metadata:
+   Read-only** で足りる。`ghq-get-mine` の repo 一覧と clone 完全性検証が gh API を
+   使うため。無いと序盤の P1-ghtoken gate で即 fail する）
+4. ターミナルで `sudo -v`（次のワンライナーと同じターミナルで）
 
 ### 実行（ここから先はパスワード入力・GUI 操作ゼロ・無人で完走）
 
