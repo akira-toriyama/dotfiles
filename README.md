@@ -51,6 +51,9 @@
 - 権限は **All repositories / Metadata: Read-only** で足りる
 - 用途: `ghq-get-mine` の repo 一覧取得と clone 完全性検証（gh API）
 - 無い場合は序盤の P1-ghtoken gate で即 fail する（長い処理が走ってから死なない）
+- token は **30 日期限**。切れていたら GitHub → Settings → Developer settings →
+  Fine-grained tokens → `dotfiles bootstrap` を **Regenerate** し、新しい値で
+  1Password の同名 item を更新してから使う
 
 #### 4. sudo チケットを作る
 
@@ -84,6 +87,13 @@ sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/
 - `detail/<step>.log` — ノイズの多い step（chezmoi apply 等）の隔離出力
 
 `~/.dotfiles-install/latest` が最新 run を指す。
+
+### `✓ 完了` 後に手で残るもの
+
+- **1Password の自動ロックタイマーを元に戻す**（事前準備 2 で OFF にしたもの。戻さないと無期限で解錠されたままになる）
+- **App Store アプリの手動インストール**（`masApps` 宣言は mas の不具合で凍結中。
+  控えは private の `projects` repo → `docs/machine-docs/masApps-backup-*.txt`）
+- **TCC / アクセシビリティの再付与**（chord の AX daemon 等。付与が要るアプリは起動時に要求してくる）
 
 ### 補足
 
