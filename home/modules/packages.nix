@@ -116,34 +116,65 @@
       printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P
     '')
 
-    # link-claude-memory: ~/.claude/projects/<home-slug>/memory を ghq clone した
-    # claude-memory repo への symlink にする（clone が単一ソース・Claude パスは link）。
+    # link-claude-memory: ~/.claude/projects/<slug>/memory（全 slug）を ghq clone した
+    # claude-memory repo の projects/<slug>/ への symlink にする（clone が単一ソース・
+    # Claude パスは link）。memory は Claude Code のプロジェクト（作業 cwd）単位なので
+    # home slug 1 本の link では他プロジェクトの memory が同期されず初期化で消えた（t-tnc9）。
     # 旧実装は chezmoi run_onchange だったが、chezmoi apply(install.sh stage 1) は
     # clone(stage 2) より先に走る上、run_onchange は exit 0 を「実行済み」と記録して
     # 二度と再実行しない = 新 Mac では構造的に link されなかった（t-8qqz）。
-    # clone の後(install.sh --phase2 / 手動)に呼ぶ冪等コマンドとしてここに置く。
+    # clone の後(install.sh --phase2 / 手動)に呼ぶ冪等コマンド。新プロジェクトで memory が
+    # 生えたら再実行すれば clone へ移送して link する。
     (writeShellScriptBin "link-claude-memory" ''
       set -eu
-      slug=$(printf '%s' "$HOME" | tr / -)          # /Users/tommy -> -Users-tommy
-      mem="$HOME/.claude/projects/$slug/memory"
+      proj="$HOME/.claude/projects"
       clone="$(${pkgs.ghq}/bin/ghq root)/github.com/akira-toriyama/claude-memory"
-      if [ -L "$mem" ] && [ "$(readlink "$mem")" = "$clone" ]; then
-        echo "claude-memory 既に link 済み ($mem -> $clone) → skip"
-        exit 0
-      fi
-      # 実ディレクトリ（symlink でない）は壊さない（in-place .git の既存機。
-      # uniform 化 = ghq へ mv して link し直す移行は事故防止のため手動に委ねる）
-      if [ -e "$mem" ] && [ ! -L "$mem" ]; then
-        echo "✘ $mem は実ディレクトリ → 保護のため何もしない（手動で ghq へ mv して再実行）" >&2
-        exit 1
-      fi
       if [ ! -d "$clone/.git" ]; then
         echo "✘ claude-memory の clone が無い ($clone)。ghq-get-mine を先に実行" >&2
         exit 1
       fi
-      mkdir -p "$(dirname "$mem")"
-      ln -sfn "$clone" "$mem"
-      echo "linked $mem -> $clone"
+      fail=0
+      # ① 移送: 未 link の real dir を clone へ（copy → 検証 → 置換。両側に実体が
+      #   ある slug は推測 merge せず報告だけして続行）
+      for m in "$proj"/*/memory; do
+        [ -e "$m" ] || continue
+        [ -L "$m" ] && continue
+        slug=$(basename "$(dirname "$m")")
+        if [ -e "$clone/projects/$slug" ]; then
+          echo "✘ $slug: local 実 dir と clone 側の両方に実体がある → 手動 merge して再実行" >&2
+          fail=1
+          continue
+        fi
+        mkdir -p "$clone/projects"
+        cp -R "$m" "$clone/projects/$slug"
+        if ! diff -rq "$m" "$clone/projects/$slug" >/dev/null; then
+          echo "✘ $slug: clone への copy 検証に失敗（$m は温存）" >&2
+          fail=1
+          continue
+        fi
+        rm -rf "$m"
+        echo "migrated $slug -> clone（要 commit & push）"
+      done
+      # ② link: clone に居る全 slug を symlink 化
+      for d in "$clone/projects"/*/; do
+        [ -d "$d" ] || continue
+        slug=$(basename "$d")
+        mem="$proj/$slug/memory"
+        target="$clone/projects/$slug"
+        if [ -L "$mem" ] && [ "$(readlink "$mem")" = "$target" ]; then
+          continue
+        fi
+        if [ -e "$mem" ] && [ ! -L "$mem" ]; then
+          echo "✘ $mem が実 dir のまま（①の merge 待ち）→ skip" >&2
+          fail=1
+          continue
+        fi
+        mkdir -p "$proj/$slug"
+        ln -sfn "$target" "$mem"
+        echo "linked $mem -> $target"
+      done
+      [ "$fail" -eq 0 ] && echo "claude-memory link 完了（全 slug）"
+      exit "$fail"
     '')
 
     # furrow: 開発中の source を常に最新ビルドして PATH のどこからでも叩くラッパ。
