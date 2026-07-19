@@ -1,28 +1,32 @@
 #!/bin/sh
-# 新 Mac の環境再現ブートストラップ（2 段階）。
+# 新 Mac の環境再現ブートストラップ（単一ステージ・無人一気通貫）。
 #
-# stage 1（初期化直後・無人。事前準備は「Terminal へフルディスクアクセス付与」と `sudo -v` のみ）:
+# 事前準備（初期化直後・在席。GUI 操作はここに全部front-load する）:
+#   1. システム設定 → プライバシーとセキュリティ → フルディスクアクセス → Terminal ON
+#      （付与後 Terminal を Cmd-Q で再起動）
+#   2. 1Password.app を手動インストール → iPhone の QR でサインイン → 設定 → 開発者 →
+#      SSH agent ON → セキュリティ → 自動ロックのタイマーを OFF（スリープ時ロックは残す）
+#      → `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` を 1 回実行し、
+#      1Password の承認ダイアログで「すべてのアプリで承認する」+ 認証
+#   3. `sudo -v`（このあとのワンライナーと同じターミナルで）
+#
+# 実行（ここから先はパスワード入力・GUI 操作ゼロ。clone と claude-memory link まで完走）:
 #
 #   sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 #
 #   CLT → workspace volume → Determinate Nix(.pkg) → repo clone → darwin-rebuild switch
-#   → chezmoi apply → 事後条件検証。終端は必ず「STAGE1-OK (phase 2 が残っている)」で、
-#   ここで ✓ 完了 とは言わない。
+#   → chezmoi apply → 1Password agent 経由 SSH 確認 → ghq-get-mine → claude-memory link
+#   → 事後条件検証。✓ 完了 は全 phase + 検証を通過した時だけ出る。
 #
-# stage 2（1Password の GUI 操作後・在席で実行）:
+# リカバリ入口（SSH gate で落ちた時など。前段 phase を再評価せず clone 以降だけ実行）:
 #
 #   sh ~/dotfiles/install.sh --phase2
 #
-#   1Password agent 経由の SSH を確認 → ghq-get-mine（全自リポジトリ clone）
-#   → claude-memory link → 事後条件検証。✓ 完了 はここでしか出ない。
-#
-# 2 段階の理由: 1Password がロック中だと SSH 署名が GUI ダイアログを出す（実機実証・
-# t-7h1t）。clone を無人 stage に置くと「実行中 GUI ゼロ」の MUST を破るため、
-# clone 以降を在席の stage 2 に分離する。
+# 同じワンライナーの再実行も安全（全 phase 冪等。導入済み部分は skip される）。
 #
 # 引数:
-#   --phase2       ... stage 2 を実行（stage 1 完了後・1Password サインイン + SSH agent ON 後）
-#   --skip-clone   ... (stage 2) ghq-get-mine を行わない。結果は必ず PARTIAL 止まり
+#   --phase2       ... clone 以降（SSH gate → ghq-get-mine → link → 検証）だけを実行
+#   --skip-clone   ... clone を行わない。結果は必ず PARTIAL 止まり（✓ 完了 は出ない）
 # 環境変数:
 #   BRANCH / REPO_DIR / FLAKE_USER / FLAKE_HOST / DOTFILES_LOG_DIR
 #   DOTFILES_SKIP_FDA_GATE=1 ... FDA preflight を飛ばす（VM 実験用）
@@ -38,11 +42,11 @@ FLAKE_HOST="${FLAKE_HOST:-default}"
 WORKSPACE_ROOT="/Volumes/workspace"
 HM_PATH="/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin"
 
-STAGE=1
+MODE=full
 SKIP_CLONE=0
 for arg in "$@"; do
   case "$arg" in
-    --phase2) STAGE=2 ;;
+    --phase2) MODE=phase2 ;;
     --skip-clone) SKIP_CLONE=1 ;;
     *)
       printf 'install.sh: 未知のオプション: %s (使えるのは --phase2 / --skip-clone のみ)\n' "$arg" >&2
@@ -57,7 +61,7 @@ done
 # - script(1) は pty を強制し nix 出力を ANSI/CR で汚す
 # → FIFO なら本体がトップレベルのまま = set -e / exit / trap がそのまま効く。
 DF_LOG_ROOT="${DOTFILES_LOG_DIR:-$HOME/.dotfiles-install}"
-DF_RUN_ID="$(date +%Y%m%d-%H%M%S)-stage$STAGE"
+DF_RUN_ID="$(date +%Y%m%d-%H%M%S)-$MODE"
 DF_RUN_DIR="$DF_LOG_ROOT/$DF_RUN_ID"
 DF_LOG="$DF_RUN_DIR/install.log"
 DF_EVENTS="$DF_RUN_DIR/events.tsv"
@@ -73,8 +77,8 @@ printf '#ts\ttype\tname\trc\n' >> "$DF_EVENTS"
 ln -sfn "$DF_RUN_ID" "$DF_LOG_ROOT/latest"
 
 # リダイレクト前に実端末へ出す（後段でハングしても在り処が分かる）
-echo "install.sh(stage $STAGE) log: $DF_LOG"
-echo "                     summary: $DF_LOG_ROOT/latest/summary.txt"
+echo "install.sh($MODE) log: $DF_LOG"
+echo "              summary: $DF_LOG_ROOT/latest/summary.txt"
 
 DF_FIFO_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dfinstall.XXXXXX")"
 mkfifo -m 600 "$DF_FIFO_DIR/pipe"
@@ -160,8 +164,6 @@ df_finish() {
     df_verdict=ABORTED; df_rc=99
   elif [ "$DF_STEP_FAILURES" -gt 0 ]; then
     df_verdict=FAILED; df_rc=1
-  elif [ "$STAGE" = 1 ]; then
-    df_verdict=STAGE1-OK
   elif [ "$SKIP_CLONE" = 1 ]; then
     df_verdict=PARTIAL
   else
@@ -173,19 +175,14 @@ df_finish() {
   printf 'RESULT: %s (exit %s)\n' "$df_verdict" "$df_rc"
   awk -F'\t' '($2=="STEP"||$2=="CHECK") && $4!="0"{printf "FAIL %s\n", $3}' "$DF_EVENTS"
   case "$df_verdict" in
-    STAGE1-OK)
-      printf '%s\n' \
-        '' \
-        'stage 1 完了。まだ「✓ 完了」ではない。次の手動操作の後に stage 2 を実行:' \
-        '  1. 1Password.app を起動（switch で cask 導入済み）し、iPhone の QR でサインイン' \
-        '  2. 設定 → 開発者 → SSH agent を ON' \
-        "  3. sh $REPO_DIR/install.sh --phase2" ;;
     OK)
       printf '\n✓ 完了。全 phase + 事後条件検証を通過。新しいターミナルを開いて使用開始。\n' ;;
     PARTIAL)
       printf '\nPARTIAL: --skip-clone のため未完（ghq-get-mine と claude-memory link が残っている）\n' ;;
     *)
-      printf '\nNEXT: 上の FAIL を直し、同じコマンドを再実行（冪等）。詳細: %s\n' "$DF_SUMMARY" ;;
+      printf '\nNEXT: 上の FAIL を直し、同じコマンドを再実行（冪等）。\n'
+      printf '     SSH gate (P-onepassword) 起因なら 1Password の サインイン / SSH agent ON /\n'
+      printf '     鍵承認 を確認して "sh %s/install.sh --phase2" が最短。詳細: %s\n' "$REPO_DIR" "$DF_SUMMARY" ;;
   esac
   printf 'summary: %s\nlog:     %s\n' "$DF_SUMMARY" "$DF_LOG"
 
@@ -195,7 +192,7 @@ df_finish() {
   {
     echo "result=$df_verdict"
     echo "exit_code=$df_rc"
-    echo "stage=$STAGE"
+    echo "mode=$MODE"
     echo "step_failures=$DF_STEP_FAILURES"
     printf 'failed=%s\n' \
       "$(awk -F'\t' '($2=="STEP"||$2=="CHECK") && $4!="0"{printf "%s ", $3}' "$DF_EVENTS")"
@@ -204,7 +201,6 @@ df_finish() {
     echo "run_id=$DF_RUN_ID"
     echo "log=$DF_LOG"
     echo "events=$DF_EVENTS"
-    [ "$df_verdict" = STAGE1-OK ] && echo "next=phase2"
     echo "--- steps ---"
     awk -F'\t' '$2=="STEP"||$2=="CHECK"{printf "%-4s %s rc=%s\n", ($4=="0"?"ok":"FAIL"), $3, $4}' "$DF_EVENTS"
     awk -F'\t' '$2=="STEP" && $4!="0"{print $3}' "$DF_EVENTS" | while IFS= read -r df_f; do
@@ -217,7 +213,7 @@ df_finish() {
     tail -n 40 "$DF_LOG" 2>/dev/null
   } > "$DF_SUMMARY" 2>&1
 
-  printf 'install.sh(stage %s): RESULT %s (exit %s) — %s\n' "$STAGE" "$df_verdict" "$df_rc" "$DF_SUMMARY" >&3
+  printf 'install.sh(%s): RESULT %s (exit %s) — %s\n' "$MODE" "$df_verdict" "$df_rc" "$DF_SUMMARY" >&3
   exit "$df_rc"
 }
 trap df_finish EXIT
@@ -225,23 +221,30 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 # ===== logging prelude ここまで =====
 
-# ── stage 2 ──────────────────────────────────────────────────────────────────
-if [ "$STAGE" = 2 ]; then
+# ── clone 以降（full の終盤 と --phase2 の両方から呼ぶ）───────────────────────────
+run_clone_phases() {
   df_phase onepassword
-  # ssh-add -l はロック中でも成功する偽陽性なので使わない（t-7h1t）。
-  # 実署名で判定する。ロック中なら 1Password が解錠ダイアログを出す —— stage 2 は
-  # 在席実行が前提なのでそれで良い（無人の stage 1 に GUI を出さないための分離）。
+  # ssh-add -l はロック中でも成功する偽陽性なので使わない。実署名で判定する。
+  # agent がロック中だと ssh は GUI 承認待ちで無期限ブロックし得るため、watchdog で
+  # 75 秒に制限する（ConnectTimeout は TCP にしか効かない。timeout(1) は macOS に無い）。
   OP_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
   if [ ! -S "$OP_SOCK" ]; then
-    df_check_fail P2-agent-sock "1Password SSH agent socket が無い。設定 → 開発者 → SSH agent を ON にすること"
+    df_check_fail P-onepassword "1Password SSH agent socket が無い（設定 → 開発者 → SSH agent を ON に）"
     exit 1
   fi
-  df_check_ok P2-agent-sock "agent socket あり"
-  if df_step ssh-github plain sh -c \
-      'ssh -o ConnectTimeout=15 -T git@github.com 2>&1 | grep -q "successfully authenticated"'; then
-    df_check_ok P2-ssh "1Password agent 経由で GitHub 認証成功"
+  gate_out="$DF_RUN_DIR/ssh-gate.out"
+  ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -T git@github.com \
+    > "$gate_out" 2>&1 &
+  gate_pid=$!
+  ( sleep 75; kill "$gate_pid" 2>/dev/null ) &
+  gate_watchdog=$!
+  wait "$gate_pid" 2>/dev/null || :
+  kill "$gate_watchdog" 2>/dev/null || :
+  if grep -q "successfully authenticated" "$gate_out"; then
+    df_check_ok P-onepassword "1Password agent 経由で GitHub 認証成功"
   else
-    df_check_fail P2-ssh "GitHub SSH 認証失敗。1Password のサインイン / SSH agent ON / 鍵の GitHub 登録を確認"
+    df_check_fail P-onepassword "GitHub SSH 認証失敗/タイムアウト（1Password のロック解除・SSH agent ON・鍵承認を確認）"
+    sed 's/^/    | /' "$gate_out" | tail -n 3
     exit 1
   fi
 
@@ -254,7 +257,7 @@ if [ "$STAGE" = 2 ]; then
     df_step link-claude-memory plain env PATH="$HM_PATH:$PATH" link-claude-memory || :
   fi
 
-  df_phase verify2
+  df_phase verify-clone
   # V5a: 自作 CLI ラッパが hardcode する source clone の実在
   v5_missing=""
   for r in furrow pare cifail rundiff revpost projects claude-memory; do
@@ -281,7 +284,7 @@ if [ "$STAGE" = 2 ]; then
       df_check_fail V5b-clone "gh repo list が空。clone 完全性を検証できていない"
     fi
   else
-    df_check_fail V5b-gh "gh 未認証（stage 2 前に gh auth login するか、後で再実行）"
+    df_check_fail V5b-gh "gh 未認証（gh auth login 後に --phase2 で再実行）"
   fi
   # V7: claude-memory link（「完了」の定義に含まれる）
   slug=$(printf '%s' "$HOME" | tr / -)
@@ -291,12 +294,16 @@ if [ "$STAGE" = 2 ]; then
   else
     df_check_fail V7-claude-memory "$mem が生きた symlink でない（link-claude-memory を確認）"
   fi
+}
 
+# ── リカバリ入口: clone 以降だけ ─────────────────────────────────────────────
+if [ "$MODE" = phase2 ]; then
+  run_clone_phases
   DF_REACHED_END=1
   exit 0
 fi
 
-# ── stage 1 ──────────────────────────────────────────────────────────────────
+# ── full run ─────────────────────────────────────────────────────────────────
 
 df_phase pre
 # 再実行 self-heal: 前回 SIGKILL 死などで残った drop-in を除去（この時点では
@@ -325,7 +332,8 @@ fi
 # なので、以降すべての sudo は -n 固定 = プロンプト事象を即時の非ゼロに変換する。
 export SUDO_ASKPASS=/usr/bin/false
 if ! sudo -n true 2>/dev/null; then
-  df_say "✘ sudo チケットが無い。先に \`sudo -v\` を実行し、同じターミナルで再実行すること"
+  df_check_fail P1-sudo "sudo チケットが無い"
+  df_say "  先に \`sudo -v\` を実行し、同じターミナルで再実行すること"
   exit 1
 fi
 
@@ -501,7 +509,7 @@ df_step chezmoi-apply quiet env \
   PATH="$HM_PATH:$PATH" \
   chezmoi --source "$REPO_DIR/chezmoi" apply --verbose || :
 
-df_phase verify1
+df_phase verify-system
 # 「終わった」を主張する前に事実を確認する。/etc/profiles/per-user/$USER/bin に
 # コマンドが揃うのは useUserPackages 由来で activation 中断でも起きる＝証拠にならない
 # （2026-07-18 の誤診の元）。以下は home-manager activation の実走を直接見る。
@@ -582,5 +590,8 @@ if [ -x /opt/homebrew/bin/brew ]; then
 else
   df_check_fail V6-brew "/opt/homebrew/bin/brew が無い"
 fi
+
+# ── clone 以降（事前準備で 1Password が生きていればここまで無人で完走する）────────
+run_clone_phases
 
 DF_REACHED_END=1
