@@ -151,18 +151,50 @@ jobs:
           exit $failed
 
   # ── フル再現検証（macOS・cold・重い）─────────────────────────────────────────
-  # Opt 1': PR では走らせず(if 参照)、merge 後の main push / nightly / 手動でのみ。
+  # Opt 1'': 通常 PR では走らせず、merge 後の main push / nightly / 手動で実行。
+  # ただし flake 入力・nix モジュールを触る PR は activation を壊し得る
+  # (2026-07-06〜18 の brew 6 skew を 13 夜見逃した実績、t-8qqz/t-j09q) ので、
+  # flake-changes 判定で PR でも実行して merge 前に検出する。
   # 「install.sh が新 Mac で cold bootstrap を通す」保証の enforce がこの2ジョブ。
   # ★ キャッシュは意図的に使わない ── warm cache は cold fetchability
   #   (消えた substituter / fixed-output の hash drift / 死んだ cask tap / 404 flake input)
   #   の検証を痩せさせる。速度は「頻度を下げる」(per-PR から外す) で稼ぐ。
   # ★ build(.#default) と switch(.#ci) は別 attr(username/masApps が違う)なので両方要る。
 
+  # PR が flake 入力・nix モジュールを触ったかの判定。checkout 不要 (PR files API)。
+  # push/schedule では skip され、darwin ジョブ側の `!cancelled() && (非PR || hit)`
+  # 条件が従来どおり無条件実行に解決する。
+  flake-changes:
+    name: detect flake-affecting changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      hit: ${{ steps.diff.outputs.hit }}
+    steps:
+      - name: Check changed files via PR files API
+        id: diff
+        # zizmor template-injection 対策: 参照はすべて env 経由 (#193 と同方針)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          files=$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename')
+          hit=false
+          if printf '%s\n' "$files" | grep -qE '^(flake\.(nix|lock)$|system/|home/)'; then
+            hit=true
+          fi
+          echo "hit=$hit" >> "$GITHUB_OUTPUT"
+          printf 'hit=%s\nchanged files:\n%s\n' "$hit" "$files"
+
   # macOS 実機相当(arm64)で darwin-rebuild build を回し、flake が活性化可能かを
   # End-to-end に近い形で証明する。switch はしない(非破壊)。
   darwin-build:
     name: darwin-rebuild build (macOS)
-    if: github.event_name != 'pull_request'
+    needs: [flake-changes]
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.flake-changes.outputs.hit == 'true') }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
@@ -181,7 +213,8 @@ jobs:
   # runner は ephemeral なので副作用 OK。
   darwin-switch-smoke:
     name: darwin-rebuild switch smoke (macOS)
-    if: github.event_name != 'pull_request'
+    needs: [flake-changes]
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.flake-changes.outputs.hit == 'true') }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
@@ -206,9 +239,13 @@ jobs:
       - name: Verify CLI on PATH（home.packages 経由）
         # GitHub Actions の step shell は login shell ではないので
         # /etc/zshenv 経由の nix path がロードされない。明示的に追加する。
+        # ★ このリストは home/modules/packages.nix の宣言に追従させること。
+        #   手書きリストは drift する: #212 が docker/docker-compose/colima を
+        #   drop した際ここが未追従で、brew 6 修正後の初 smoke が落ちた
+        #   (07-06〜18 は switch が先に死んでいて検出不能だった)。
         run: |
           export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
-          for c in docker docker-compose colima op gh chezmoi ghq jq mas; do
+          for c in op gh chezmoi ghq jq mas; do
             path=$(which "$c" || true)
             if [ -n "$path" ]; then
               echo "  ✓ $c -> $path"
@@ -257,6 +294,7 @@ jobs:
       - convention-executable-prefix
       - convention-command-prefix
       - chezmoi-templates
+      - flake-changes
       - darwin-build
       - darwin-switch-smoke
     runs-on: ubuntu-latest
@@ -272,3 +310,40 @@ jobs:
           echo "$NEEDS_JSON"
           exit 1
       - run: echo "All required jobs passed or were intentionally skipped."
+
+  # ── 赤 main の強制可視化（t-j09q）────────────────────────────────────────────
+  # schedule/push の failure は PR の視界に入らず、2026-07-06〜18 の 13 夜連続
+  # failure を見逃した。main が赤くなったら固定タイトルの issue に集約して
+  # 通知を発生させる（issue の新規作成/コメントはデフォルトで通知が飛ぶ）。
+  notify-red-main:
+    name: notify red main
+    if: always() && github.event_name != 'pull_request' && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    needs:
+      - nix-flake-check
+      - shellcheck
+      - convention-executable-prefix
+      - convention-command-prefix
+      - chezmoi-templates
+      - darwin-build
+      - darwin-switch-smoke
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create or comment on the red-main issue
+        # zizmor template-injection 対策: 参照はすべて env 経由 (#193 と同方針)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          title="CI red on main"
+          num=$(gh issue list --repo "$REPO" --state open \
+            --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          body="\`$EVENT\` run failed: $RUN_URL"
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --repo "$REPO" --body "$body"
+          else
+            gh issue create --repo "$REPO" --title "$title" --body "$body"
+          fi
