@@ -16,9 +16,9 @@
 #      ワンライナーと同じターミナルで `export GH_TOKEN=<PAT>`
 #      （ghq-get-mine の repo 一覧取得と clone 完全性検証が gh API を使うため。無いと
 #      ✓ 完了 に到達できないので P1-ghtoken で即 fail する）
-#   4. `sudo -v`（このあとのワンライナーと同じターミナルで）
 #
-# 実行（ここから先はパスワード入力・GUI 操作ゼロ。clone と claude-memory link まで完走）:
+# 実行（パスワードはワンライナー先頭の sudo -v で 1 回だけ。以降は入力・GUI ゼロで
+# clone と claude-memory link まで完走）:
 #
 #   sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 #
