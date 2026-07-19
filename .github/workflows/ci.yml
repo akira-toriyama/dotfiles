@@ -183,7 +183,7 @@ jobs:
         run: |
           files=$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename')
           hit=false
-          if printf '%s\n' "$files" | grep -qE '^(flake\.(nix|lock)$|system/|home/)'; then
+          if printf '%s\n' "$files" | grep -qE '^(flake\.(nix|lock)$|system/|home/|\.github/workflows/ci\.yml$)'; then
             hit=true
           fi
           echo "hit=$hit" >> "$GITHUB_OUTPUT"
@@ -236,23 +236,39 @@ jobs:
       - name: darwin-rebuild switch (CI variant, masApps 空)
         run: sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#ci --show-trace
 
-      - name: Verify CLI on PATH（home.packages 経由）
+      - name: Verify CLI on PATH（flake から自動導出 = drift しない）
         # GitHub Actions の step shell は login shell ではないので
         # /etc/zshenv 経由の nix path がロードされない。明示的に追加する。
-        # ★ このリストは home/modules/packages.nix の宣言に追従させること。
-        #   手書きリストは drift する: #212 が docker/docker-compose/colima を
-        #   drop した際ここが未追従で、brew 6 修正後の初 smoke が落ちた
-        #   (07-06〜18 は switch が先に死んでいて検出不能だった)。
+        # 期待リストは casks 検証と同じく flake config を単一ソースに導出する:
+        # home.packages の各 store path（switch 済みなので realize 済み）の bin/* を
+        # 列挙し、全 binary が PATH で解決できることを確認。手書きリストは drift する
+        # 実績あり (#212 が docker/docker-compose/colima を drop した際ここが未追従で、
+        # brew 6 修正後の初 smoke が落ちた。07-06〜18 は switch が先に死んでいて検出不能)。
+        # 導出が空になる縮退（eval 変更や user 名変更）も明示 fail で検出する。
         run: |
           export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
-          for c in op gh chezmoi ghq jq mas; do
-            path=$(which "$c" || true)
-            if [ -n "$path" ]; then
-              echo "  ✓ $c -> $path"
-            else
-              echo "  ✗ $c (not found)"; exit 1
-            fi
-          done
+          nix eval --impure --json ".#darwinConfigurations.ci.config.home-manager.users.runner.home.packages" \
+            --apply "map (p: p.outPath)" | jq -r '.[]' > /tmp/hm_pkgs.txt
+          fail=0 n=0
+          while IFS= read -r p; do
+            [ -d "$p/bin" ] || continue
+            for b in "$p"/bin/*; do
+              [ -e "$b" ] || continue
+              c=$(basename "$b")
+              n=$((n + 1))
+              if path=$(which "$c" 2>/dev/null); then
+                echo "  ✓ $c -> $path"
+              else
+                echo "  ✗ $c (not found on PATH)"; fail=1
+              fi
+            done
+          done < /tmp/hm_pkgs.txt
+          if [ "$n" -eq 0 ]; then
+            echo "::error::home.packages から binary を 1 つも導出できていない（eval 縮退の疑い）"
+            exit 1
+          fi
+          echo "checked $n binaries"
+          exit "$fail"
 
       - name: Verify casks installed（flake から自動導出 = drift しない）
         # 期待リストは homebrew.nix を単一ソースに flake config から導出する。
