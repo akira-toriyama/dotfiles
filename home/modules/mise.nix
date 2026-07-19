@@ -12,16 +12,17 @@
   # 【方針】言語ランタイム（go / node / python / deno / rust 等）は **mise に一元化**する。
   # ・per-project の版切替は mise の本領。nix `home.packages` は非ランタイムの CLI 用、
   #   homebrew は GUI/cask + nixpkgs 未収録の例外 CLI 用（言語ランタイムは置かない）。
-  # ・go の build 用トグルは別物: packages.nix の furrow ラッパが `${pkgs.go}` を内部固定で
-  #   使う（PATH 非公開）。ここ(mise)の go は手元の dev go（`go run`/`go test` 等）。
+  # ・source-build ラッパ（packages.nix の furrow/pare/rundiff 等）の build go も
+  #   ここで宣言する mise の go（PATH の go）が primary。mise 未導入の窓でだけ
+  #   `${pkgs.go}` に fallback（GOTOOLCHAIN=auto で floor 不足も自動回復。t-7t0w/t-cgcp）。
   programs.mise = {
     enable = true;
     globalConfig.tools = {
       node = "lts";
       python = "3.13";
       deno = "latest";
-      # dev go（furrow の `go run`/`go test` 等）。build go は別管理＝packages.nix の
-      # furrow ラッパが `${pkgs.go}` を内部固定で使う（PATH には出さない）。
+      # dev go（`go run`/`go test`）兼 source-build ラッパの primary build go。
+      # "latest" 宣言なので各 repo の go.mod floor を満たす前提（↑ヘッダの方針）。
       go = "latest";
       # rundiff の adapter fixture（cargo test キャプチャ）等で使う。↑方針の
       # とおり言語ランタイムは mise（cargo/rustc とも mise 管理）。
