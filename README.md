@@ -36,7 +36,8 @@
 
 #### 3. GitHub PAT を環境変数に入れる
 
-- 1Password に保存してある **fine-grained PAT** をコピーし、次のワンライナーと同じターミナルで実行する
+- 1Password の item **`dotfiles bootstrap`**（Personal vault・fine-grained PAT）の credential を
+  コピーし、次のワンライナーと同じターミナルで実行する
 
   ```sh
   export GH_TOKEN=<PAT>
