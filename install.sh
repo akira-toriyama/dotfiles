@@ -6,8 +6,9 @@
 #      （付与後 Terminal を Cmd-Q で再起動）
 #   2. 1Password.app を手動インストール → iPhone の QR でサインイン → 設定 → 開発者 →
 #      SSH agent ON → セキュリティ → 自動ロックのタイマーを OFF（スリープ時ロックは残す）
-#      → ~/.ssh/config に IdentityAgent 行があることを確認（1Password が設定画面で示す
-#        snippet。無ければその内容で作る。これが無いと ssh は素の macOS agent(鍵ゼロ)を向く）
+#      → ~/.ssh/config を chezmoi 正本そのままで置く（README の curl ワンライナー =
+#        raw の chezmoi/private_dot_ssh/private_config を取得して 600 で保存。
+#        これが無いと ssh は素の macOS agent(鍵ゼロ)を向く）
 #      → `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` を 1 回実行し、
 #      1Password の承認ダイアログで「すべてのアプリで承認する」+ 認証
 #   3. GitHub fine-grained PAT（All repositories / Metadata: Read-only で足りる。t-8f19）を
