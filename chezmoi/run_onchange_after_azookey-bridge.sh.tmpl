@@ -1,0 +1,28 @@
+#!/bin/sh
+# azooKey いい感じ変換ブリッジ (azookey-bridge) のビルドと launchd 常駐。
+# - fm-predict.swift を swiftc でコンパイル (FoundationModels 直叩き CLI)
+# - LaunchAgent を bootout → bootstrap で入れ替え (RunAtLoad で即起動)
+#
+# macOS + swiftc がある環境のみ動作。fresh bootstrap / CI Linux では何もしない。
+# Apple Intelligence が無効だと fm-predict は exit 3 を返し、Ctrl+S 側には
+# エラーとして見える (ブリッジ自体は起動し続ける)。
+#
+# 再実行トリガ (run_onchange_ の規約: include した内容の hash が変わったとき):
+# bridge py sha256: {{ include "dot_local/share/azookey-bridge/executable_azookey-bridge.py" | sha256sum }}
+# fm-predict sha256: {{ include "dot_local/share/azookey-bridge/fm-predict.swift" | sha256sum }}
+# plist sha256: {{ include "private_Library/LaunchAgents/com.akira-toriyama.azookey-bridge.plist.tmpl" | sha256sum }}
+
+set -eu
+
+command -v swiftc >/dev/null 2>&1 || exit 0
+[ "$(uname)" = "Darwin" ] || exit 0
+
+dir="$HOME/.local/share/azookey-bridge"
+swiftc -O -o "$dir/fm-predict" "$dir/fm-predict.swift"
+
+label="com.akira-toriyama.azookey-bridge"
+plist="$HOME/Library/LaunchAgents/$label.plist"
+uid="$(id -u)"
+
+launchctl bootout "gui/$uid/$label" 2>/dev/null || true
+launchctl bootstrap "gui/$uid" "$plist"

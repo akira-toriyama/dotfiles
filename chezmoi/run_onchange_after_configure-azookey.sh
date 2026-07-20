@@ -20,3 +20,10 @@ prefix="${domain}.preference"
 
 defaults write "$domain" "${prefix}.input_style" -data 22637573746f6d22 || true
 defaults write "$domain" "${prefix}.typeHalfSpace" -bool true || true
+
+# いい感じ変換 (MagicConversion): ローカル FM ブリッジ経由 (azookey-bridge、
+# launchd 常駐 127.0.0.1:8787)。upstream プロンプト修正が出るまでのつなぎ。
+# aiBackend = JSON 文字列 "OpenAI API" の Data (0x22... = "OpenAI API")。
+# API キーは Keychain 保存だが azooKey は空でも送信するため設定不要。
+defaults write "$domain" "${prefix}.OpenAiApiEndpoint" "http://127.0.0.1:8787/v1/chat/completions" || true
+defaults write "$domain" "${prefix}.aiBackend" -data 224f70656e41492041504922 || true
