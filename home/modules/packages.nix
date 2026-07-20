@@ -1,5 +1,54 @@
 { pkgs, ... }:
 
+let
+  # sourceBuiltCLI: 自作 Go CLI を「呼ぶたびに source から最新ビルド」する wrapper。
+  # brew/go install のスナップショットは stale 化するので、cmd/internal/go.* が binary
+  # より新しければ incremental build（~/.cache へ）して exec する。
+  #
+  # 6 本が名前以外バイト単位で同一だったので 1 箇所に畳んだ。コピーだったころ、
+  # clone 不在ガード（下記）を glyph だけに足して残り 5 本が取り残される事故が起きている
+  # ——共通の性質は共通の場所に置く。
+  #
+  # ・build go は PATH の go（＝mise 管理の toolchain。方針「言語は mise」）。
+  #   継承した GOROOT を env -u で打ち消し go に自己解決させる — mise は GOROOT を
+  #   export するので、これが無いと別 version の go(例 nix go)を使ったとき
+  #   「compile version が go tool version と不一致」で build が死ぬ。go 不在の
+  #   context でのみ ${pkgs.go} に fallback（GOROOT 打ち消しは fallback でも有効）。
+  # ・GOTOOLCHAIN は primary=local（mise go は "latest" 宣言なので floor を満たす前提。
+  #   無断 toolchain DL をしない＝決定的）、fallback=auto（nixpkgs の go は pin が
+  #   古くなり得て、go.mod floor 未満だと local ではハードエラー。switch 直後〜
+  #   mise ツール導入前の窓で rundiff が PreToolUse hook から全 Bash 呼び出しを
+  #   道連れにした実績 t-7t0w。auto なら必要 toolchain を自動取得して build 続行）。
+  # ・(cd src) を subshell に閉じて cwd を保つ＝呼び出し元のディレクトリで実行され、
+  #   そこの git origin / .furrow-pointer.toml 等の発見が効く。
+  # ・出力は一時ファイル→atomic mv（並行起動でも壊れた binary を exec しない）。
+  sourceBuiltCLI = { name, cacheDir ? name }: pkgs.writeShellScriptBin name ''
+    set -eu
+    src=/Volumes/workspace/github.com/akira-toriyama/${name}
+    cache="''${XDG_CACHE_HOME:-$HOME/.cache}/${cacheDir}"
+    bin="$cache/${name}"
+    # clone が無い機械（別 Mac・bootstrap 前・/Volumes/workspace 未マウント）でも
+    # wrapper は PATH に居てしまう。素通しすると下の (cd "$src") が失敗し set -eu が
+    # 生の `cd: ... No such file or directory` のまま非 0 を返す。これは
+    # `command -v <tool>` を可用性の判定に使う呼び出し側——glyph の commit-msg hook、
+    # rundiff の PreToolUse hook——を全て欺く: コマンドは在るのに必ず失敗する。
+    if [ ! -d "$src" ]; then
+      if [ -x "$bin" ]; then
+        echo "⚠ ${name} の clone が無い ($src)。前回ビルドの $bin で続行 — source 追従が止まっており stale の可能性あり" >&2
+        exec "$bin" "$@"
+      fi
+      # exit 0 で成功を装わない: script 中の `${name} ...` が pass に見える。
+      echo "✘ ${name} の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+      exit 127
+    fi
+    if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+      mkdir -p "$cache"
+      if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+      ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/${name} && mv -f "$bin.tmp.$$" "$bin" ) >&2
+    fi
+    exec "$bin" "$@"
+  '';
+in
 {
   # home-manager 管理のユーザーパッケージ（**非ランタイムの CLI**）。
   # 言語ランタイム（go/node/python/deno 等）は mise に一元化（home/modules/mise.nix の方針）。
@@ -201,36 +250,14 @@
     # ・(cd src) を subshell に閉じて cwd を保つ＝呼び出し元のディレクトリで実行され、
     #   そこの .furrow-pointer.toml 発見が効く
     # ・出力は一時ファイル→atomic mv（並行起動でも壊れた binary を exec しない）
-    (writeShellScriptBin "furrow" ''
-      set -eu
-      src=/Volumes/workspace/github.com/akira-toriyama/furrow
-      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/furrow"
-      bin="$cache/furrow"
-      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
-        mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/furrow && mv -f "$bin.tmp.$$" "$bin" ) >&2
-      fi
-      exec "$bin" "$@"
-    '')
+    (sourceBuiltCLI { name = "furrow"; })
 
     # pare: same always-fresh-from-source wrapper as furrow, for pare's manual-
     # pipe adoption phase (tuning defaults before any auto-apply hook). pare is a
     # pure stdin→stdout filter, so the (cd src) subshell only scopes the build;
     # the exec runs in the caller's cwd. Rebuilds only when cmd/internal/go.*
     # change; atomic mv so a concurrent invocation never execs a half-built bin.
-    (writeShellScriptBin "pare" ''
-      set -eu
-      src=/Volumes/workspace/github.com/akira-toriyama/pare
-      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/pare"
-      bin="$cache/pare"
-      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
-        mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/pare && mv -f "$bin.tmp.$$" "$bin" ) >&2
-      fi
-      exec "$bin" "$@"
-    '')
+    (sourceBuiltCLI { name = "pare"; })
 
     # rundiff: furrow/pare と同型の source-build ラッパ。rundiff は pare の時間方向の
     # 姉妹ツール（前回実行との差分だけ返すコマンドラッパ）で、Claude Code の PreToolUse
@@ -238,37 +265,13 @@
     # 起動は軽くなければならない: find -newer の変更検知は数十 ms で、変更が無ければ
     # ビルドは走らない。cwd 依存（キャッシュキー = argv + cwd + git branch）なので、
     # (cd src) は build 用 subshell に閉じ、exec は呼び出し元 cwd のまま実行する。
-    (writeShellScriptBin "rundiff" ''
-      set -eu
-      src=/Volumes/workspace/github.com/akira-toriyama/rundiff
-      # ビルド成果物は `rundiff-bin/` に置く: `~/.cache/rundiff/` は rundiff 自身の
-      # baseline キャッシュ（キー名のファイル群）なので、そこにバイナリを混ぜない。
-      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/rundiff-bin"
-      bin="$cache/rundiff"
-      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
-        mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/rundiff && mv -f "$bin.tmp.$$" "$bin" ) >&2
-      fi
-      exec "$bin" "$@"
-    '')
+    (sourceBuiltCLI { name = "rundiff"; cacheDir = "rundiff-bin"; })
 
     # cifail: furrow と同型の source-build ラッパ（開発中の source を常に最新ビルド）。
     # cifail は呼び出し元 cwd の git origin から owner/repo を導出するので、
     # (cd src) は build 用の subshell に閉じ、exec は呼び出し元 cwd のまま実行する
     # ＝ どの repo checkout の中からでも `cifail` がその repo を対象にできる。
-    (writeShellScriptBin "cifail" ''
-      set -eu
-      src=/Volumes/workspace/github.com/akira-toriyama/cifail
-      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/cifail"
-      bin="$cache/cifail"
-      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
-        mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/cifail && mv -f "$bin.tmp.$$" "$bin" ) >&2
-      fi
-      exec "$bin" "$@"
-    '')
+    (sourceBuiltCLI { name = "cifail"; })
 
     # glyph: furrow と同型の source-build ラッパ。commit 規約（gitmoji → semver →
     # notes）の正本 CLI で、これが PATH に居ないと規約違反は push して CI が回るまで
@@ -276,37 +279,16 @@
     # と CI 再実行 1 往復）。commit 前に `glyph lint --range origin/main..HEAD`。
     # cifail と同じく呼び出し元 cwd の git を読む（--range / --stdin いずれも）ので、
     # (cd src) は build 用 subshell に閉じ exec は呼び出し元 cwd のまま実行する。
-    # `glyph hook install` が書く commit-msg hook もこの wrapper を PATH 越しに呼ぶ
-    # ＝ wrapper が無い間 hook は warn して pass する（no-op）ので、これが hook を
-    # 実効化する前提でもある。
-    (writeShellScriptBin "glyph" ''
-      set -eu
-      src=/Volumes/workspace/github.com/akira-toriyama/glyph
-      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/glyph"
-      bin="$cache/glyph"
-      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
-        mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/glyph && mv -f "$bin.tmp.$$" "$bin" ) >&2
-      fi
-      exec "$bin" "$@"
-    '')
+    # `glyph hook install` が書く commit-msg hook もこの wrapper を PATH 越しに呼ぶ。
+    # ただし hook の graceful degrade は `command -v glyph` で判定するので、wrapper が
+    # nix profile に居る限り常に真＝hook 側は clone の有無を知り得ない。したがって
+    # clone 欠落時に何が起きるかはこの wrapper の責任で、下の分岐が引き受ける。
+    (sourceBuiltCLI { name = "glyph"; })
 
     # revpost: furrow と同型の source-build ラッパ。findings JSON（native / reviewdog
     # rdjson・rdjsonl）を pipe して anchor 検証済みの inline PR review を一括投稿する
     # CLI（422 根絶）。target は明示引数 `owner/repo#N` で cwd 非依存・auth は gh を
     # 再利用 — (cd src) は build 用 subshell に閉じる（他 wrapper と同じ atomic mv）。
-    (writeShellScriptBin "revpost" ''
-      set -eu
-      src=/Volumes/workspace/github.com/akira-toriyama/revpost
-      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/revpost"
-      bin="$cache/revpost"
-      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
-        mkdir -p "$cache"
-        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/revpost && mv -f "$bin.tmp.$$" "$bin" ) >&2
-      fi
-      exec "$bin" "$@"
-    '')
+    (sourceBuiltCLI { name = "revpost"; })
   ];
 }
