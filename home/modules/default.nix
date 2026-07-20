@@ -8,6 +8,7 @@
     ./packages.nix
     ./mise.nix
     ./furrow.nix
+    ./chezmoi.nix
   ];
 
   home.username = username;

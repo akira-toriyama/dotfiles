@@ -1,0 +1,45 @@
+#!/bin/bash
+# Query CLI for ~/zmk-logs (24/7 dongle serial capture; see executable_zmk-log-capture.sh).
+#   zmk-log                 tail -f today's log
+#   zmk-log today           cat today's log
+#   zmk-log find [N]        major events over the last N days (default 3)
+#   zmk-log since "HH:MM"   today's lines since HH:MM
+#   zmk-log around "HH:MM"  today's lines HH:MM +/- 2 min
+#   zmk-log days            list captured days
+# Spec: projects t-6cdr body. Retire with the capture stack when stable (t-x0ak).
+
+LOGDIR="$HOME/zmk-logs"
+TODAY="$LOGDIR/zmk-$(date +%F).log"
+EVENTS='ZOMBIE|ZR-EPISODE|zombie-check|give-up|self-reboot|bounce|latch|refill|Booting Zephyr|ble_hid_host up|disconnected:|bond|berr=[1-9]|err'
+
+case "${1:-}" in
+    ""|tail)
+        exec tail -n 50 -F "$TODAY"
+        ;;
+    today)
+        exec cat "$TODAY"
+        ;;
+    days)
+        ls -1 "$LOGDIR" | grep '^zmk-.*\.log$' | sed 's/^zmk-//; s/\.log$//'
+        ;;
+    find)
+        N="${2:-3}"
+        ls -1 "$LOGDIR"/zmk-*.log 2>/dev/null | tail -n "$N" | xargs cat 2>/dev/null \
+            | grep -E "$EVENTS"
+        ;;
+    since)
+        [ -n "${2:-}" ] || { echo "usage: zmk-log since \"HH:MM\"" >&2; exit 2; }
+        awk -v t="$(date +%F) ${2}" '$0 >= t' "$TODAY"
+        ;;
+    around)
+        [ -n "${2:-}" ] || { echo "usage: zmk-log around \"HH:MM\"" >&2; exit 2; }
+        C=$(date -j -f "%F %H:%M" "$(date +%F) ${2}" +%s) || exit 2
+        FROM=$(date -j -f %s $((C - 120)) '+%F %T')
+        TO=$(date -j -f %s $((C + 120)) '+%F %T')
+        awk -v a="$FROM" -v b="$TO" '$0 >= a && $0 <= b' "$TODAY"
+        ;;
+    *)
+        echo "usage: zmk-log [tail|today|find [N]|since HH:MM|around HH:MM|days]" >&2
+        exit 2
+        ;;
+esac

@@ -38,6 +38,12 @@
 
       # push 時は同名の upstream branch へ（現行 ~/.gitconfig 踏襲）。
       push.default = "current";
+
+      # https 経路の GitHub 認証は gh に委譲。従来は `gh auth setup-git` が
+      # 未管理の ~/.gitconfig（global の読み順で後勝ち＝上書き側）に書いていた
+      # 1 節を宣言に引き取り、実ファイルは削除した（t-pfsd。新 Mac でも
+      # setup-git を叩く必要が無くなる）。
+      credential."https://github.com".helper = "!gh auth git-credential";
       # macOS の case-insensitive FS でも大文字小文字違いを別ファイル扱いに。
       core.ignorecase = false;
       # ghq の clone 先。env の GHQ_ROOT が優先するが faithful 再現として残す。
