@@ -41,7 +41,7 @@ set -eu
 
 # 「明示的に未宣言 (破棄方針)」相当の cask は通知から除外する。
 # homebrew.nix 末尾コメントの破棄方針リストとは別管理。両方を更新する想定。
-IGNORE_EXTRA_CASKS="google-japanese-ime karabiner-elements"
+IGNORE_EXTRA_CASKS="google-japanese-ime"
 
 # git の未コミットは「この日数以上どのファイルも触られていない」時だけ通知する。
 # 作業中 (= 最近編集) は鳴らさず、本当に忘れて放置したものだけ拾うための滞留ゲート。
