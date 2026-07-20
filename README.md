@@ -94,8 +94,6 @@ sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/
 #### install.sh 後（そのまま・再ログイン不要）
 
 - **1Password の自動ロックタイマーを元に戻す**（事前準備 2 で OFF にしたもの。戻さないと無期限で解錠されたままになる）
-- **App Store アプリの手動インストール**（`masApps` 宣言は mas の不具合で凍結中。
-  控えは private の `projects` repo → `docs/machine-docs/masApps-backup-*.txt`）
 - **TCC / アクセシビリティの再付与**（chord の AX daemon 等。付与が要るアプリは起動時に要求してくる）
 
 #### ログアウト → 再ログイン後
