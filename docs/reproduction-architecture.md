@@ -108,6 +108,36 @@ chezmoi apply                                              # dotfile
 - **chezmoi を最後**にする（`op signin` 済みでないと秘密テンプレートが失敗するため）。
 - 実装は [install.sh](../install.sh) の §1.5 を参照（冪等: 既に case-sensitive 領域があれば skip）。
 
+### 3.1 無人実行の前提条件（変更時は必ずここを見る）
+
+`install.sh` は単一ステージの**無人**一気通貫で、`clone` を在席ステージに分けていない。
+その設計が成立する根拠は 1 つだけ:
+
+> **実行中ずっと 1Password が解錠されたままであること。**
+
+SSH gate（`P-onepassword`）が 1Password agent の実署名を要求するため、run 中に
+一度でも施錠されると `✓ 完了` に到達できない。しかも**無人での復帰手段が無い**
+（新 Mac は Touch ID 未登録・システム解錠 無効 = GUI で人がパスワードを打つ以外に無い）。
+したがって「施錠されたら諦める」ではなく「**施錠させない**」でしか守れない。
+
+この前提を破り得る要素と、現在の守り:
+
+| 破る要素 | 守り | 場所 |
+|---|---|---|
+| 1Password の自動ロックタイマー | 事前準備で OFF にさせる | [README](../README.md) 事前準備 2 |
+| 画面オフ → `autolock.onDeviceLock` で施錠 | `caffeinate -dis` を run 全体に張る | [install.sh](../install.sh) logging prelude 直後 |
+| idle system sleep | 同上（`-i` / `-s`） | 同上 |
+
+**注意**: [power.nix](../system/modules/power.nix) の `power.sleep.display = 5` は
+`darwin-switch` の最中に適用される。つまり **run 自身が「5 分放置で画面オフ」を仕込む**。
+端末への出力は HID 入力ではないのでタイマーを戻さず、20 分の switch を挟むと確実に
+画面が消える。2026-07-20 の実測ではこれが原因で `P-onepassword` が落ちた
+（画面オフ 08:06:27 → 1Password 施錠 → gate 08:17:33 で承認プロンプト時間切れ）。
+
+**この前提は commit body にしか書かれておらず（`e2ff5a2` / #219）、同日の別 PR
+（`e74cbbc` / #220、`power.sleep` 導入）が無言で無効化した。**同じ事故を繰り返さないため、
+電源・ロック・スリープ・1Password 設定に触る変更は必ずこの節と突き合わせること。
+
 ---
 
 ## 4. 落とし穴と回避（コミュニティ既知）
