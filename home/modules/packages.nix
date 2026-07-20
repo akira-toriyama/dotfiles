@@ -276,14 +276,28 @@
     # と CI 再実行 1 往復）。commit 前に `glyph lint --range origin/main..HEAD`。
     # cifail と同じく呼び出し元 cwd の git を読む（--range / --stdin いずれも）ので、
     # (cd src) は build 用 subshell に閉じ exec は呼び出し元 cwd のまま実行する。
-    # `glyph hook install` が書く commit-msg hook もこの wrapper を PATH 越しに呼ぶ
-    # ＝ wrapper が無い間 hook は warn して pass する（no-op）ので、これが hook を
-    # 実効化する前提でもある。
+    # `glyph hook install` が書く commit-msg hook もこの wrapper を PATH 越しに呼ぶ。
+    # ただし hook の graceful degrade は `command -v glyph` で判定するので、wrapper が
+    # nix profile に居る限り常に真＝hook 側は clone の有無を知り得ない。したがって
+    # clone 欠落時に何が起きるかはこの wrapper の責任で、下の分岐が引き受ける。
     (writeShellScriptBin "glyph" ''
       set -eu
       src=/Volumes/workspace/github.com/akira-toriyama/glyph
       cache="''${XDG_CACHE_HOME:-$HOME/.cache}/glyph"
       bin="$cache/glyph"
+      # clone が無い機械（別 Mac・bootstrap 前・/Volumes/workspace 未マウント）でも
+      # wrapper は PATH に居てしまう。素通しすると下の (cd "$src") が失敗し set -eu が
+      # 生の `cd: ... No such file or directory` のまま非 0 を返す＝commit-msg hook 越しに
+      # commit が理由不明で止まる（tracked hook を捨てた repo には fallback も無い）。
+      if [ ! -d "$src" ]; then
+        if [ -x "$bin" ]; then
+          echo "⚠ glyph の clone が無い ($src)。前回ビルドの $bin で続行 — source 追従が止まっており stale の可能性あり" >&2
+          exec "$bin" "$@"
+        fi
+        # exit 0 で成功を装わない: script 中の `glyph lint` / `glyph bump` が pass に見える。
+        echo "✘ glyph の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+        exit 127
+      fi
       if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
         mkdir -p "$cache"
         if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
