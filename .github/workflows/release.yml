@@ -1,75 +1,103 @@
 name: release
 
-# `git push origin vX.Y.Z` で発火し、tag annotation を Release notes として
-# GitHub Release を自動作成する。
-# 設計参考: akira-toriyama/facet の release ワークフロー(tag-driven)。
+# glyph rolling-DRAFT release — lint (commit-lint.yml) / PR verdict
+# (version-preview.yml) と同じエンジンで release の semver / notes も駆動する。
+#
+# main への push ごとに `glyph release` が前回 v* tag 以降の squash commit を
+# 歩き、merged PR の individual (pre-squash) commit を分類して次版と grouped
+# notes を算出し、glyph 管理の rolling DRAFT release を upsert する。git tag は
+# 作らない — 人間が draft を Publish した時点で GitHub が target commit に tag を
+# 打つ。none verdict（版を動かす code なし）は exit 1 の soft no-release で、
+# ここで success no-op に畳む。
+#
+# 旧設計（手動 `git push origin vX.Y.Z` → tag annotation を notes 化、facet 参考）
+# は t-4wkm で退役。dotfiles は配布 artifact を持たないため、glyph の Swift 家用
+# reusable（app/binary 必須）ではなく CLI を直接呼ぶ。
+#
+# The pin is a CONCRETE glyph release tag — the install action verifies the
+# binary against that release's checksums + provenance. Bump deliberately
+# (one fleet-sync PR) per adopted glyph release, in lockstep with
+# commit-lint.yml / version-preview.yml.
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'タグ名(例: v0.2.0)'
-        required: true
+      dry_run:
+        description: "Preview only — verdict と notes を出すが GitHub には書かない"
+        type: boolean
+        default: false
+
+# Draft の upsert は直列化する（連続 merge で古い walk が新しい draft を
+# 上書きしないよう、後着を待たせる。cancel はしない — 各 run は冪等）。
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: create GitHub Release from tag
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
-          # tag annotation の本文を読むため全履歴を取得
+          # glyph は tag と range をローカル git から歩くので全履歴が要る
           fetch-depth: 0
-          # git only READS the tag annotation; the release is created via the
-          # gh API token, never git push — drop the checkout token. t-yaxa
+          # release への書き込みは glyph/gh + GH_TOKEN 経由のみ、git push は
+          # しない — checkout token を .git/config に残さない (zizmor artipacked)
           persist-credentials: false
 
-      - name: 解決した tag 名
-        id: tag
-        # 経由 env で受ける: `${{ github.event.inputs.tag }}` を run: に直接展開すると
-        # 悪意ある tag 入力で shell injection になる（zizmor template-injection）。
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_TAG: ${{ github.event.inputs.tag }}
-        run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "name=$INPUT_TAG" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-          fi
+      - name: install glyph
+        uses: akira-toriyama/glyph/.github/actions/install@v0.8.0
+        with:
+          version: v0.8.0
+          token: ${{ github.token }}
 
-      - name: tag annotation を notes に展開
-        # steps.tag.outputs.name も run: へ直接展開せず env 経由で渡す
-        # (zizmor template-injection、上の INPUT_TAG と同方針)。t-yaxa
-        env:
-          TAG: ${{ steps.tag.outputs.name }}
-        run: |
-          tag="$TAG"
-          # annotated tag なら本文を取得、lightweight tag なら commit message を fallback
-          notes=$(git tag -l "$tag" --format='%(contents)')
-          if [ -z "$notes" ]; then
-            notes=$(git log -1 --format=%B "$tag")
-          fi
-          printf '%s\n' "$notes" > /tmp/release_notes.txt
-          echo "--- notes ---"
-          cat /tmp/release_notes.txt
-
-      - name: 既存 Release があれば skip、無ければ作成
+      - name: Compose the verdict and upsert the rolling DRAFT
         env:
           GH_TOKEN: ${{ github.token }}
-          # env 経由で受ける (zizmor template-injection、上と同方針)。t-yaxa
-          TAG: ${{ steps.tag.outputs.name }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          tag="$TAG"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "::notice::Release $tag は既に存在するため skip"
+          set -euo pipefail
+          args=(release --json)
+          if [ "$DRY_RUN" = "true" ]; then
+            args=(release --dry-run --json)
+          fi
+          status=0
+          glyph "${args[@]}" > "$RUNNER_TEMP/verdict.json" 2> "$RUNNER_TEMP/verdict.err" || status=$?
+          cat "$RUNNER_TEMP/verdict.err" >&2
+          if [ "$status" -eq 1 ]; then
+            # soft no-release: 前回 tag 以降に版を動かす code が無い。glyph が
+            # draft 状態を verdict に収束済み（残留 draft は削除）なので完了。
+            reason="$(jq -r '.reason // empty' "$RUNNER_TEMP/verdict.json" 2>/dev/null || true)"
+            echo "::notice::${reason:-no release-worthy changes since the last tag} — nothing to do."
             exit 0
           fi
-          gh release create "$tag" \
-            --title "$tag" \
-            --notes-file /tmp/release_notes.txt
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
+          tag="$(jq -r .tag "$RUNNER_TEMP/verdict.json")"
+          action="$(jq -r .action "$RUNNER_TEMP/verdict.json")"
+          url="$(jq -r '.url // empty' "$RUNNER_TEMP/verdict.json")"
+          if [ "$DRY_RUN" = "true" ]; then
+            {
+              echo "## Dry run: ${tag} (nothing written)"
+              echo
+              echo "the draft action would be: ${action}"
+              echo
+              echo '```'
+              jq -r .body "$RUNNER_TEMP/verdict.json"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "::notice::Draft release ${tag} upserted (unpublished, no tag yet). Review & Publish manually: ${url}"
+          {
+            echo "## Draft release ${tag} upserted (unpublished)"
+            echo
+            echo "Merging more to main grows this draft. Review and Publish"
+            echo "manually (the tag is created at Publish time): ${url}"
+          } >> "$GITHUB_STEP_SUMMARY"
