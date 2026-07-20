@@ -89,15 +89,28 @@ sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/
 
 ### `✓ 完了` 後に手で残るもの
 
+タイミングで 2 グループに分かれる。**まず install.sh 後の作業を済ませ、最後にログアウト → 再ログインして azooKey を有効化**する。
+
+#### install.sh 後（そのまま・再ログイン不要）
+
 - **1Password の自動ロックタイマーを元に戻す**（事前準備 2 で OFF にしたもの。戻さないと無期限で解錠されたままになる）
 - **App Store アプリの手動インストール**（`masApps` 宣言は mas の不具合で凍結中。
   控えは private の `projects` repo → `docs/machine-docs/masApps-backup-*.txt`）
 - **TCC / アクセシビリティの再付与**（chord の AX daemon 等。付与が要るアプリは起動時に要求してくる）
-- **azooKey（日本語 IME）を入力ソースに追加**（cask 導入は自動だが、有効化だけは手動）
-  - システム設定 → キーボード → 入力ソース → **編集（鉛筆）→ `+` → 日本語 → azooKey** を選んで追加
-  - macOS 26 は 3rd party IME の**プログラムからの有効化を成功を装って無視する**設計のため、
-    `install.sh` / `defaults` / TIS API では有効化できない（Tart VM で検証済。task t-1t2e）。
-    ここだけは GUI 操作が必須で自動化から漏れる
+
+#### ログアウト → 再ログイン後
+
+- **azooKey（日本語 IME）を入力ソースとして有効化**（cask による `.app` 導入は自動。有効化は手動）
+  - 手順（[azooKey 公式 README](https://github.com/azooKey/azooKey-Desktop) 準拠）:
+    1. **macOS からログアウト → 再ログイン**
+    2. システム設定 → キーボード → 入力ソースを**編集 → `+` → 日本語 → azooKey → 追加 → 完了**
+    3. メニューバーアイコンから azooKey を選択
+  - **なぜログアウトが要るか**: macOS は `/Library/Input Methods` の IME を**ログイン時にスキャンして登録**する。
+    install.sh 実行中（＝ログイン後）に入った azooKey は、再ログインするまで入力ソースの一覧（手順 2 の `+`）に現れない。
+    アプリを起動しても `TISRegisterInputSource` を呼んでも登録されず、再ログインが唯一の登録契機（実機で確認済）。
+  - **なぜ自動化できないか**: macOS 26 は 3rd party IME の**プログラムからの有効化を「成功」を装って無視する**設計
+    （silent keylogger 対策）。`defaults write AppleEnabledInputSources` も `TISEnableInputSource` も no-op で
+    `install.sh` には組み込めない（Tart VM で検証済。task t-1t2e）。登録も有効化も GUI／ログインセッション依存で、ここだけ自動化から漏れる。
 
 ### 補足
 
