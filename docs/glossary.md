@@ -279,6 +279,15 @@ config 文法を released chord より先行させると `verify-chord-validate.
 - 参照: [`docs/chord.md`](chord.md)
 - **Don't call it:** chord config, hotkey config, ホットキー設定
 
+### `azookey-bridge`
+**azooKey いい感じ変換（変換中 Ctrl+S）を Foundation Models で動かすローカル
+OpenAI 互換ブリッジ**。`~/.local/share/azookey-bridge/`（chezmoi 管理）+
+LaunchAgent `com.akira-toriyama.azookey-bridge`（127.0.0.1:8787 常駐）。
+upstream プロンプト修正（projects t-22se）が出るまでの**つなぎ**。
+- 参照: [`docs/operations.md`](operations.md) §5.13
+- **Don't call it:** claude ブリッジ（初期プロトタイプの名残。既定エンジンは FM）、
+  MagicConversion サーバ
+
 ---
 
 ## 既知の落とし穴の正規語彙

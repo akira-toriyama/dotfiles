@@ -386,6 +386,31 @@ ghq-get-mine
 - 実体: [home/modules/packages.nix](../home/modules/packages.nix) の
   `writeShellScriptBin`
 
+### 5.13 azooKey いい感じ変換ブリッジ（azookey-bridge）
+
+azooKey の「いい感じ変換」（変換中 Ctrl+S）を **Foundation Models
+（Apple Intelligence のオンデバイスモデル、~1 秒/回）** で動かすローカルブリッジ。
+azooKey の「OpenAI API」backend の endpoint を `127.0.0.1:8787` に向け、
+プロンプトを日本語安定化に書き換えてから FM に渡す
+（stock プロンプトは英語指示のみ + 例文支配で、裸の `<ありがとう>` が
+スペイン語化する。指示追加でなく**対例の追加**で直している）。
+
+- 実体: `~/.local/share/azookey-bridge/`（[chezmoi 管理](../chezmoi/dot_local/share/azookey-bridge/)）
+  - `azookey-bridge.py` — OpenAI 互換 HTTP サーバ（stdlib のみ）
+  - `fm-predict.swift` → `fm-predict` — FoundationModels 呼び出し CLI
+    （[run_onchange_after_azookey-bridge.sh.tmpl](../chezmoi/run_onchange_after_azookey-bridge.sh.tmpl)
+    が swiftc でコンパイル + LaunchAgent を bootstrap）
+- 常駐: LaunchAgent `com.akira-toriyama.azookey-bridge`（KeepAlive）。
+  ログ: `~/Library/Logs/azookey-bridge.log`
+- azooKey 側 defaults（endpoint / aiBackend="OpenAI API"）:
+  [run_onchange_after_configure-azookey.sh](../chezmoi/run_onchange_after_configure-azookey.sh)。
+  API キーは azooKey が空でも送信するので不要
+- 前提: Apple Intelligence 有効（無効だと fm-predict が exit 3 →
+  Ctrl+S にエラーが返る）
+- **位置づけ = つなぎ**: 恒久対応は azooKey-Desktop への upstream プロンプト修正
+  （projects t-22se）。リリース後は backend を Foundation Models に戻し、
+  ブリッジ・LaunchAgent・defaults ごと退役させる。検証ログは projects t-85fn
+
 </details>
 
 ---
