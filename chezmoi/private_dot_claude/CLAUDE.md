@@ -99,6 +99,12 @@ source-build wrapper＝呼ぶたび変更検知で rebuild）。**作って終�
 - **cifail** — CI 失敗の要点抽出。生 run ログを漁らず `cifail`（cwd の remote/現 branch から推定。
   `--pr N` / `--branch B` / `--run ID` / `--json`）。job ゼロの失敗 run（workflow 文法エラー等）も拾う。
 - **furrow** — タスク管理（↑ Workflow 節が正典）。
+- **glyph** — commit 規約の正本（gitmoji → semver → notes）。**commit する前に
+  `glyph lint --range origin/main..HEAD`**（1 通なら `--message "<subject>"`）。
+  push してから CI の commit-lint で落ちるのは 1 往復の無駄で、実際に起きている
+  （scope の大文字 1 文字で exit 3）。規約は暗記せず `glyph rules` を引く。
+  repo に commit-msg hook を入れるなら `glyph hook install`（hook は glyph を呼ぶ
+  だけなので規約が動いても drift しない）。
 - 条件待ち・GUI 検証は自作でなく adopt 済（wait4x / peekaboo、↑ Repo 現在地節の bullet）。
 
 ## 自作アプリ・自作 CLI は source を使う（brew 版は使わない）
