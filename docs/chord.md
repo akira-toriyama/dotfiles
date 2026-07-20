@@ -70,8 +70,6 @@ private_config.toml の `# doc:` 行＋`[[bindings]]` を編集 →
 | `TU_LL_V` | タブを右へ（VS Code: Cmd+Shift+]） | com.microsoft.VSCode |
 | `TU_LL_D` | 前のウィンドウへ（rift フォーカス） | * |
 | `TU_LL_F` | 次のウィンドウへ（rift フォーカス） | * |
-| `TU_LL_A` | AltTab 起動（全スペース。旧 cmd+ctrl+tab） | * |
-| `TU_LL_S` | AltTab 起動（現スペース。旧 alt+tab） | * |
 | `VK_X1` | Mission Control（全ワークスペースをグリッド表示） | * |
 | `Ctrl + B` | ← Left | * |
 | `Ctrl + F` | → Right | * |

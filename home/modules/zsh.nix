@@ -36,7 +36,7 @@
   };
 
   # 初手② プロンプト: starship（zsh integration は enable だけで自動 wiring）。
-  # Nerd Font は homebrew.nix の font-hack-nerd-font が受け皿。設定は当面デフォルト、
+  # 設定は当面デフォルト（Nerd Font cask は未使用判断で drop 済み・依存しない）、
   # カスタムしたくなったら programs.starship.settings で宣言的に育てる。
   programs.starship.enable = true;
 }

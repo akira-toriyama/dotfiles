@@ -76,9 +76,8 @@
       #   - autoUpdate=true: cask メタデータが古いと上流 cask 更新直後に
       #     checksum mismatch で brew bundle fetch が失敗する。activation の
       #     度に brew update を強制して fresh metadata を引く。
-      #   - masApps 空: 1Password など App Store サインインが必要な mas は
-      #     bootstrap/CI/VM の文脈ではセットアップできず、`mas 1.8.6` は
-      #     macOS 15+ で `mas get/install` が壊れているため強制空に。
+      #   - masApps 空: App Store サインインが必要な mas install は bootstrap/CI/VM
+      #     の文脈では成立しないため強制空に（現在 MAS アプリ利用ゼロ、宣言も空）。
       bootstrapBrewOverride = { lib, ... }: {
         homebrew.masApps = lib.mkForce { };
         homebrew.onActivation.autoUpdate = lib.mkForce true;

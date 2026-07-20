@@ -17,7 +17,6 @@
     chezmoi # dotfiles 管理本体
     ghq     # リポジトリ管理（go get 風 clone）
     jq      # JSON CLI
-    mas     # Mac App Store CLI（masApps 宣言と独立して `mas search` 等で使える）
 
     # === 開発 util（t-e77z B-4: 未宣言 brew の仕分け宣言）===
     # xcodes: Xcode の版管理・install CLI（Swift 開発の複数 Xcode 運用）
