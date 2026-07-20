@@ -241,6 +241,30 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 # ===== logging prelude ここまで =====
 
+# ── idle sleep 抑止（無人完走の前提条件。実測 2026-07-20 で確立）──────────────────
+# 本 run 自身が仕掛ける自滅を塞ぐ。因果は 4 段:
+#   1. darwin-switch が system/modules/power.nix の power.sleep.display = 5 を適用
+#      （実測 08:01:16 powerd "Sleep timer 0 display timer 5"）
+#   2. 端末への出力は HID 入力ではないので display sleep タイマーを戻さない。
+#      20 分無操作の switch/chezmoi を挟むので 5 分後に画面が消える（実測 08:06:27）
+#   3. 1Password は画面オフを DeviceWentToSleep と解釈して施錠する。README が OFF に
+#      させる `security.autolock.minutes` とは別系統の `security.autolock.onDeviceLock`
+#      （既定 有効）が効くため、事前準備どおり手順を踏んでいても防げない
+#      （実測 08:06:27 "Locked. Reason: Automatic(DeviceWentToSleep)"）
+#   4. 施錠された agent は SSH gate の署名要求に承認プロンプトを出し、無人なので
+#      60 秒で時間切れ → P-onepassword が落ちる（実測 08:17:33 "ssh authorization
+#      prompt timed out"）。gate の 75 秒 watchdog はこれより後なので発火しない
+# 一度ロックされると無人復帰は不可能（Touch ID 未登録・システム解錠 無効の新 Mac では
+# 人間が GUI でパスワードを打つ以外に手が無い）。よって事後リカバリでなく予防で塞ぐ。
+# -w $$ で本スクリプト終了時に自動で落ちる（trap 不要 = SIGKILL 死でも残骸が出ない）。
+if [ -x /usr/bin/caffeinate ]; then
+  /usr/bin/caffeinate -dis -w $$ &
+  df_say "idle sleep 抑止を開始（caffeinate -dis。実行中のみ）"
+else
+  df_say "WARNING: /usr/bin/caffeinate が無い。長い phase 中の画面オフで 1Password が"
+  df_say "         施錠され SSH gate が落ちる可能性がある"
+fi
+
 # ── 共有ヘルパ（full と --phase2 の両方が使う）─────────────────────────────────
 # CLT 判定。/usr/bin/git は shim（実行すると CLT 不在時に GUI ダイアログ）なので
 # 判定に使わない。phase2 でも git を叩く前に必ずこれで確認する。
