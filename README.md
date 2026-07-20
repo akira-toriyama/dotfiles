@@ -93,11 +93,17 @@ sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/
 - **App Store アプリの手動インストール**（`masApps` 宣言は mas の不具合で凍結中。
   控えは private の `projects` repo → `docs/machine-docs/masApps-backup-*.txt`）
 - **TCC / アクセシビリティの再付与**（chord の AX daemon 等。付与が要るアプリは起動時に要求してくる）
-- **azooKey（日本語 IME）を入力ソースに追加**（cask 導入は自動だが、有効化だけは手動）
-  - システム設定 → キーボード → 入力ソース → **編集（鉛筆）→ `+` → 日本語 → azooKey** を選んで追加
-  - macOS 26 は 3rd party IME の**プログラムからの有効化を成功を装って無視する**設計のため、
-    `install.sh` / `defaults` / TIS API では有効化できない（Tart VM で検証済。task t-1t2e）。
-    ここだけは GUI 操作が必須で自動化から漏れる
+- **azooKey（日本語 IME）を入力ソースとして有効化**（cask による `.app` 導入は自動。以降は手動 2 手順）
+  1. **一度ログアウト → ログインし直す**（または再起動）。macOS は `/Library/Input Methods` の
+     IME を**ログイン時にスキャンして登録**するため、`install.sh` 実行中（＝ログイン後）に
+     入った azooKey は再ログインするまで入力ソースの一覧に現れない。アプリを起動しても
+     `TISRegisterInputSource` を呼んでも登録されず、再ログインが唯一の登録契機（実機で確認済）。
+  2. 再ログイン後に **システム設定 → キーボード → 入力ソース → 編集（鉛筆）→ `+` → 日本語 →
+     azooKey → 追加**。この追加はその場で反映され、以降のログアウトは不要。
+  - なぜ自動化できないか: macOS 26 は 3rd party IME の**プログラムからの有効化を「成功」を
+    装って無視する**設計（silent keylogger 対策）。`defaults write AppleEnabledInputSources` も
+    `TISEnableInputSource` も no-op で、`install.sh` には組み込めない（Tart VM で検証済。task t-1t2e）。
+    登録（手順 1）も有効化（手順 2）も GUI／ログインセッション依存で、ここだけ自動化から漏れる。
 
 ### 補足
 
