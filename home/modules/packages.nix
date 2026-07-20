@@ -270,6 +270,28 @@
       exec "$bin" "$@"
     '')
 
+    # glyph: furrow と同型の source-build ラッパ。commit 規約（gitmoji → semver →
+    # notes）の正本 CLI で、これが PATH に居ないと規約違反は push して CI が回るまで
+    # 分からない（t-g6z9 の事故: scope の大文字 1 文字で commit-lint exit 3 → force-push
+    # と CI 再実行 1 往復）。commit 前に `glyph lint --range origin/main..HEAD`。
+    # cifail と同じく呼び出し元 cwd の git を読む（--range / --stdin いずれも）ので、
+    # (cd src) は build 用 subshell に閉じ exec は呼び出し元 cwd のまま実行する。
+    # `glyph hook install` が書く commit-msg hook もこの wrapper を PATH 越しに呼ぶ
+    # ＝ wrapper が無い間 hook は warn して pass する（no-op）ので、これが hook を
+    # 実効化する前提でもある。
+    (writeShellScriptBin "glyph" ''
+      set -eu
+      src=/Volumes/workspace/github.com/akira-toriyama/glyph
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/glyph"
+      bin="$cache/glyph"
+      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+        mkdir -p "$cache"
+        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/glyph && mv -f "$bin.tmp.$$" "$bin" ) >&2
+      fi
+      exec "$bin" "$@"
+    '')
+
     # revpost: furrow と同型の source-build ラッパ。findings JSON（native / reviewdog
     # rdjson・rdjsonl）を pipe して anchor 検証済みの inline PR review を一括投稿する
     # CLI（422 根絶）。target は明示引数 `owner/repo#N` で cwd 非依存・auth は gh を
