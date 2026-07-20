@@ -42,6 +42,27 @@
   （dotfiles の `darwin-rebuild switch` 等は従来どおりユーザーに実行してもらう）。
 - **配布**: [GitHub Packages](https://github.com/akira-toriyama?tab=packages) への追加 OK。
 
+## モデル運用（Fable 5 / Opus 4.8 / Sonnet 5）
+
+前提: メインループのモデルは Claude 自身では切り替えられない（`/model` はユーザー操作）。
+自動切替は**サブエージェント / workflow の層**で行う（エージェントはモデル固定できる）。
+
+- **担当分担**:
+  - **Fable 5 = 単独深考（solo）担当**: 設計判断・難実装の一発書き・絡んだバグの根治。
+    **ファンアウト禁止**（ultracode / workflow を Fable で回さない — 50% 枠が即枯渇する）。
+    effort は xhigh 既定、max は「正しさ最優先・コスト度外視」の時だけ。
+  - **Opus 4.8 = 並列網羅（ultracode）担当**: レビュー・監査・多ファイル移行・エッジケース洗い出し・検証。
+  - **Sonnet 5 = 日常実装・機械的サブエージェント**（列挙・探索・変換など手足の作業）。
+- **自動ルーティング（Claude への指示）**:
+  - **Fable セッションで workflow / サブエージェントを使う時**: 既定継承で全員 Fable にしない。
+    機械的な探索・列挙は `model: sonnet` + `effort: low`、検証・judge は `model: opus`。
+    メイン（Fable）は統括・設計・最終判断のみに使う。
+  - **Opus / Sonnet セッションで Fable 級の深さが要る難所**（設計の芯・Opus で数回失敗した難バグ）に
+    当たったら: `fable-architect` エージェント（model: fable）へ単独委譲する。
+    セッション全体を移すべき規模なら `/model fable` への切替をユーザーに提案。
+  - **検証は常に Opus 側**: Fable で書いたものも、レビュー・検証は ultracode（opus / sonnet
+    サブエージェント）でやる。高い Fable トークンは創造の核心だけに使う。
+
 ## Mac アプリ（Swift）
 
 - **UI は SwiftUI ＋ [Sill](https://github.com/akira-toriyama/sill) をベースとする**
