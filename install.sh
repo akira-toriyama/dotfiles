@@ -258,7 +258,13 @@ trap 'exit 143' TERM
 # 人間が GUI でパスワードを打つ以外に手が無い）。よって事後リカバリでなく予防で塞ぐ。
 # -w $$ で本スクリプト終了時に自動で落ちる（trap 不要 = SIGKILL 死でも残骸が出ない）。
 if [ -x /usr/bin/caffeinate ]; then
-  /usr/bin/caffeinate -dis -w $$ &
+  # fd を FIFO から切り離す（>/dev/null 2>&1）。切り離さないと caffeinate が FIFO の
+  # write 端を掴んだまま install.sh の終了を待ち、install.sh は df_finish の wait(tee)、
+  # tee は FIFO の EOF を待つ三つ巴のデッドロックになる（RESULT は出るが summary.txt が
+  # 書かれず、プロセスが永久に終わらない。実測 2026-07-20 の Tart VM で再現）。
+  # SSH gate の watchdog が同じ理由で同じ対策を取っている（下の「watchdog の fd を
+  # FIFO から切り離す」を参照）。
+  /usr/bin/caffeinate -dis -w $$ >/dev/null 2>&1 &
   df_say "idle sleep 抑止を開始（caffeinate -dis。実行中のみ）"
 else
   df_say "WARNING: /usr/bin/caffeinate が無い。長い phase 中の画面オフで 1Password が"
