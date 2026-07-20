@@ -49,28 +49,11 @@
       "the-unarchiver"      # 解凍
       "visual-studio-code"  # エディタ（主力。zed は統合して drop）
       "vlc"                 # メディア
-
-      # === inventory「維持」確定組 ===
-      "popclip"             # テキスト操作（単体で標準動作、karabiner 連携は廃止）
-      "alt-tab"             # Cmd-Tab 強化（単体動作、karabiner 連携は廃止）
-      "font-hack-nerd-font" # プロンプト/ターミナル用 Nerd Font
-
-      # === 任意・現に導入済（新PC 再現で欠落しないよう宣言）===
-      "linearmouse"         # マウス挙動カスタム（速度/加速。WM 非該当のため維持）
-      "via"                 # キーボード(QMK/VIA) マッピング GUI（自作キーボード用）
-      "transmission"        # BitTorrent
-      "monodraw"            # ASCII アート / テキスト図エディタ
     ];
 
-    # 明示的に未宣言（破棄方針 / cleanup=zap 化で実体が消える）:
-    #   google-japanese-ime  ← azookey に置換済
-    #   karabiner-elements   ← 新PC では使わない方針（remapping は手放す, t-e77z）
-    #   raycast / warp / fsnotes / zed ← GUI コールドスイープで未使用と判明し drop (t-e77z)
-    #   omniwm / flashspace / borders  ← WM スタック drop (t-e77z C-5)
-
-    # mas は macOS 15+ の get バグ（mas 1.8.6）で凍結中。EdgeView は「不要」判断で
-    # 宣言を撤去したため、現状 masApps は空。再開時は brew の mas を 7.0.0+ にしてから
-    # 必要な id を足す。
+    # masApps は未使用（MAS アプリ利用ゼロ。EdgeView は「不要」判断で撤去済み）。
+    # 宣言しても flake.nix の bootstrapBrewOverride（lib.mkForce { }）で live は空に
+    # なる点に注意（App Store 未サインインの bootstrap/CI/VM で switch を落とさないため）。
     masApps = { };
   };
 }
