@@ -73,8 +73,13 @@ sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/
 - SSH gate（1Password）起因の失敗だけを直した後は近道がある:
 
   ```sh
+  export GH_TOKEN=<PAT>   # 別ターミナルなら再 export が要る（下記）
   sh ~/dotfiles/install.sh --phase2
   ```
+
+  - **`--phase2` も P1-ghtoken gate を通る**。`GH_TOKEN` はシェル変数なので、
+    ターミナルを開き直した／再起動した後は消えている。再 export せずに叩くと
+    SSH を直した直後に `P1-ghtoken` で即 fail する（二段の徒労）
 
 ### ログと結果（機械可読）
 
