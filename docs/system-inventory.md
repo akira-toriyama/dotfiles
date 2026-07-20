@@ -3,7 +3,7 @@
 再現したい macOS 環境の **パッケージ / macOS defaults の素材台帳**。
 **nix パッケージ層 / nix-darwin defaults を構築する際の入力**として使う（[reproduction-architecture.md](reproduction-architecture.md) 参照）。
 
-構築方針との対応: zsh=刷新 / ssh=1Password / IME=Azookey予定 / yabai=不採用 / karabiner=マウスのみ採用。
+構築方針との対応: zsh=刷新 / ssh=1Password / IME=Azookey予定 / yabai=不採用 / karabiner=不採用。
 
 ## Homebrew taps
 
@@ -35,13 +35,13 @@
 
 | cask | 用途 | 方針 |
 |---|---|---|
-| alt-tab | ウィンドウ切替 | 維持候補（マウス設定が AltTab 前提） |
+| alt-tab | ウィンドウ切替 | 維持候補 |
 | appcleaner | アンインストーラ | 任意 |
 | font-hack-nerd-font | フォント | 維持候補 |
 | fsnotes | ノート | 任意 |
 | google-chrome | ブラウザ | 維持候補 |
 | google-japanese-ime | IME | **破棄**（Azookey 予定） |
-| karabiner-elements | キー/マウス再マップ | **維持**（マウス設定で必須） |
+| karabiner-elements | キー/マウス再マップ | **破棄**（不採用決定） |
 | raycast | ランチャー | 維持候補 |
 | the-unarchiver | 解凍 | 任意 |
 | transmission | BitTorrent | 任意 |
@@ -58,7 +58,7 @@
 | Dropover | 1355679052 | 任意 |
 | EdgeView 2 | 1206246482 | 任意 |
 | Flashcards | 307840670 | 任意 |
-| **PopClip** | **445189367** | **維持（ユーザー決定）**。karabiner button6 ルールが依存 |
+| **PopClip** | **445189367** | **維持（ユーザー決定）** |
 
 ## VS Code 拡張（要判断: nix/home-manager 管理 or 手動）
 

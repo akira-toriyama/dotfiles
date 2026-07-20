@@ -24,7 +24,7 @@
 | カスタム tap のツール（borders, rift, skhd, krp 等） | **nix-darwin** `homebrew.brews` + `taps` | nixpkgs に無い→ brew 維持 |
 | macOS defaults（Dock/Finder/NSGlobalDomain 等） | **nix-darwin** `system.defaults` / `CustomUserPreferences` | 宣言的に再現。system-inventory が入力 |
 | zsh / starship / git のプログラム設定（DSL あり） | **home-manager** `programs.zsh` / `starship` / `git` | DSL で生成。現 `.zshrc` は刷新（後述） |
-| アプリ固有の手編集 dotfile（karabiner, borders, rift, focusfx, claude） | **chezmoi** | Nix DSL が無い・アプリ所有の生 JSON。現状維持 |
+| アプリ固有の手編集 dotfile（borders, rift, focusfx, claude） | **chezmoi** | Nix DSL が無い・アプリ所有の生 JSON。現状維持 |
 | シークレット（SSH 鍵, PAT, トークン） | **chezmoi + 1Password** `onepasswordRead` テンプレート | リポジトリに置かず apply 時に注入 |
 | 効果音等の不透明アセット（dot_local/share/sounds） | **chezmoi** | バイナリ資産 |
 | LaunchAgent（border-cycle 等） | **chezmoi**（現状の run_onchange 方式）/ システム級は nix-darwin | 既存資産を尊重 |
@@ -49,7 +49,7 @@ dotfiles/                       # 1リポジトリに flake と chezmoi 源を�
 │   └── modules/                #   zsh.nix / git.nix / packages.nix
 ├── chezmoi/                    # ★ chezmoi source root（.chezmoiroot の指す先）
 │   ├── .chezmoiignore  .chezmoi.toml.tmpl
-│   ├── dot_config/{karabiner,borders,rift,focusfx}/...   # 現 dot_config を移動
+│   ├── dot_config/{borders,rift,focusfx}/...   # 現 dot_config を移動
 │   ├── dot_claude/settings.json
 │   ├── dot_local/share/sounds/...
 │   ├── private_dot_ssh/private_id_*.tmpl   # ★ op から注入する秘密
@@ -128,7 +128,7 @@ chezmoi apply                                              # dotfile
 **Nix 化する（現 `dot_Brewfile` から）**
 
 - nixpkgs にある CLI（jq, gh, ghq, direnv, shellcheck, cmake, act, trash 等）→ `home.packages`
-- cask（chrome, raycast, karabiner-elements, vscode 等）→ `homebrew.casks`
+- cask（chrome, raycast, vscode 等）→ `homebrew.casks`（karabiner-elements は不採用で drop）
 - mas → 対象なし（PopClip 等は不要判断で drop。`homebrew.masApps` は未使用）
 - カスタム tap（borders=felixkratz, rift=acsandmann, skhd=jackielii 等）→ `homebrew.brews`+`taps`
 - `sleepwatcher (restart_service)` → `homebrew.brews`（service 扱いの正確な option 名は nix-darwin manual で要確認）
@@ -140,7 +140,7 @@ chezmoi apply                                              # dotfile
 
 **chezmoi に残す（Nix 化しない）**
 
-- `dot_config/{karabiner,borders,rift,focusfx}` … アプリ所有の生設定
+- `dot_config/{borders,rift,focusfx}` … アプリ所有の生設定
 - `dot_claude/settings.json`, `dot_local/share/*`
 - `run_onchange_border-cycle.sh.tmpl`（パッケージ導入ではなく挙動制御）
 - 新規: `private_*.tmpl`（SSH 鍵等を `onepasswordRead` で注入。`known_hosts` は非秘密で平文可）
