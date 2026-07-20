@@ -225,19 +225,6 @@ name = "rift focus next"
 input = "TU_LL_F"
 action-shell = "rift-cli execute window next"
 
-# doc: AltTab 起動（全スペース。旧 cmd+ctrl+tab）
-[[bindings]]
-name = "alttab all-spaces"
-input = "TU_LL_A"
-action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=1"
-
-# doc: AltTab 起動（現スペース。旧 alt+tab）
-[[bindings]]
-name = "alttab current-space"
-input = "TU_LL_S"
-action-shell = "/Applications/AltTab.app/Contents/MacOS/AltTab --show=0"
-
-
 # ---- ZMK 単押し専用キー ----
 
 # doc: Mission Control（全ワークスペースをグリッド表示）

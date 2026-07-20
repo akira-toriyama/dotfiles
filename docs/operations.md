@@ -123,7 +123,8 @@ switch を落とさないため。PR #108 で常用 + bootstrap 共通方針に�
 将来 MAS アプリが必要になったら:
 
 - (a) 手動で App Store からインストール（最も確実）、または
-- (b) Nix 側の `mas`（`home/modules/packages.nix` 経由）で `mas install <id>` を手で叩く
+- (b) `mas` CLI を一時導入して（nixpkgs にあり。利用ゼロのため常設はしていない）
+  `mas install <id>` を手で叩く
 - 宣言的に戻したい場合は `bootstrapBrewOverride` の緩め方（サインイン済み前提の
   構成分離等）の設計から始める
 
