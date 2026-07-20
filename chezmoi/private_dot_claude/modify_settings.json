@@ -23,13 +23,14 @@
 #      commands it actually rewrites. The hook it registers is itself guarded
 #      (`command -v rundiff`), so an uninstalled rundiff is a no-op rather than
 #      an error on every Bash call.
-#   4. model-routing defaults: model "opus[1m]" + effortLevel "xhigh" — the
+#   4. model-routing defaults: model "opus[1m]" + effortLevel "ultracode" — the
 #      「モデル運用」policy in the global CLAUDE.md (Opus 4.8 as the daily main
-#      loop; Fable 5 only via the fable-architect subagent or an explicit
-#      /model switch). Seeded ONLY IF ABSENT (jq //=): /model changes the live
-#      value interactively and re-apply must never fight that — this exists so
-#      a new Mac starts on the cheap-by-default model instead of whatever the
-#      installer picks.
+#      loop, run at ultracode so substantive work fans out by default; Fable 5
+#      only via the fable-architect subagent or an explicit /model switch).
+#      Seeded ONLY IF ABSENT (jq //=): /model and /effort change the live values
+#      interactively and re-apply must never fight that — this exists so a new
+#      Mac starts on the intended model+effort instead of whatever the installer
+#      picks.
 #
 # Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
@@ -68,7 +69,7 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" '
                             , "Bash(git worktree list:*)"
                             ] - .permissions.allow )
   | (.model //= "opus[1m]")
-  | (.effortLevel //= "xhigh")
+  | (.effortLevel //= "ultracode")
 ')
 
 # 3. rundiff PreToolUse hook. `rundiff hook print --json` emits the mergeable
