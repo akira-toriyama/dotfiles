@@ -113,34 +113,19 @@ sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure
 <details>
 <summary><b>3. Mac App Store 限定アプリを追加したい</b></summary>
 
-### 手順
+現在 MAS アプリの利用はゼロで、`homebrew.masApps` 経由の install は使っていない。
 
-```sh
-# 1. App ID を取得
-mas search "App Name"
-# または App Store の "Share Link" から /id1234567890 部分を抜く
+**⚠️ 生きている制約**: `flake.nix` の `bootstrapBrewOverride` が `homebrew.masApps` を
+`lib.mkForce { }` で強制的に空にする（App Store 未サインインの bootstrap/CI/VM で
+switch を落とさないため。PR #108 で常用 + bootstrap 共通方針に統一）。
+**masApps に何を宣言しても live では `{}`** — 「宣言したのに入らない」は不具合ではない。
 
-# 2. system/modules/homebrew.nix の masApps に追記
-#    masApps = {
-#      "EdgeView 3" = 1580323719;
-#      "NewApp"     = 1234567890;
-#    };
+将来 MAS アプリが必要になったら:
 
-# 3. PR ~ merge（セクション 2 と同じフロー）
-```
-
-### ⚠️ 既知の制約（2 段重ね）
-
-1. **`bootstrapBrewOverride` が masApps を強制的に空にする**
-   `flake.nix` の `darwinConfigurations.default` には `lib.mkForce { }` を含む override が適用される（PR #108 で常用 + bootstrap 共通方針に統一）。**masApps に何を宣言しても live では `{}`**。
-2. brew 同梱 `mas 1.8.6` は macOS 15+ で `mas get/install` が壊れていた経緯あり ([CLAUDE.md:67](../CLAUDE.md))。`brew upgrade mas` で 7.x 化すれば解消するが、nix-darwin の homebrew モジュールは内部で brew 同梱 `mas` を呼ぶため迂回しづらい。
-
-そのため実際の install は:
-
-- (a) 手動で App Store からインストール済みにしておく（最も確実）、または
-- (b) Nix 側の `mas`（`home/modules/packages.nix` 経由）で別途 `mas install <id>` を手で叩く
-
-将来 `bootstrapBrewOverride` を緩めるか、nix-darwin の mas 呼び出しが Nix 側を見るようになれば nix-darwin homebrew 経由の install が復活する想定。
+- (a) 手動で App Store からインストール（最も確実）、または
+- (b) Nix 側の `mas`（`home/modules/packages.nix` 経由）で `mas install <id>` を手で叩く
+- 宣言的に戻したい場合は `bootstrapBrewOverride` の緩め方（サインイン済み前提の
+  構成分離等）の設計から始める
 
 </details>
 
@@ -321,7 +306,6 @@ ghq-get-mine                                                   # 自リポジト
 | switch 後の親シェルで PATH 異常に見える | `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` 継承の false positive → **新ターミナル**または `env -i HOME=$HOME /bin/zsh -l -c '...'` |
 | `chezmoi apply` が prompt で止まる | MM 状態 → `--force` で source 優先、または re-add で live 優先 |
 | cask が CI で fail | cask 名タイポ / 廃止 / macOS 要件不一致 → `brew info --cask <name>` で確認 |
-| `mas install` が無音失敗 | brew 同梱 mas のバグ（過去 1.8.6 系で macOS 15+ 不具合）→ Nix 側 `mas`（`home/modules/packages.nix`）経由で叩く |
 | `system.defaults` がアプリに反映されない | TCC/sandbox 保護領域（Mail/Safari/Calendar 等）は switch 成功でも適用されない、深追いしない |
 
 ### 5.10 chord daemon を手元 build で入れ替え（AX 維持）

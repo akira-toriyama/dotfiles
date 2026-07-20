@@ -129,7 +129,7 @@ chezmoi apply                                              # dotfile
 
 - nixpkgs にある CLI（jq, gh, ghq, direnv, shellcheck, cmake, act, trash 等）→ `home.packages`
 - cask（chrome, raycast, karabiner-elements, vscode 等）→ `homebrew.casks`
-- mas（PopClip ほか）→ `homebrew.masApps`
+- mas → 対象なし（PopClip 等は不要判断で drop。`homebrew.masApps` は未使用）
 - カスタム tap（borders=felixkratz, rift=acsandmann, skhd=jackielii 等）→ `homebrew.brews`+`taps`
 - `sleepwatcher (restart_service)` → `homebrew.brews`（service 扱いの正確な option 名は nix-darwin manual で要確認）
 - macOS defaults（system-inventory の表）→ `system.defaults` / `CustomUserPreferences`
