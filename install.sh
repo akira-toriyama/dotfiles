@@ -12,7 +12,7 @@
 #      → `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` を 1 回実行し、
 #      1Password の承認ダイアログで「すべてのアプリで承認する」+ 認証
 #   3. GitHub fine-grained PAT（All repositories / Metadata: Read-only で足りる。t-8f19）を
-#      1Password の item `dotfiles bootstrap`（Personal vault）からコピーし、
+#      1Password の item `DOTFILES_BOOTSTRAP`（Personal vault）からコピーし、
 #      ワンライナーと同じターミナルで `export GH_TOKEN=<PAT>`
 #      （ghq-get-mine の repo 一覧取得と clone 完全性検証が gh API を使うため。無いと
 #      ✓ 完了 に到達できないので P1-ghtoken で即 fail する）
@@ -290,7 +290,7 @@ df_gate_ghtoken() {
     df_check_ok P1-ghtoken "gh auth 済み"
   else
     df_check_fail P1-ghtoken "gh の認証が無い"
-    df_say "  fine-grained PAT を 1Password の item \`dotfiles bootstrap\`（Personal vault）からコピーし、"
+    df_say "  fine-grained PAT を 1Password の item \`DOTFILES_BOOTSTRAP\`（Personal vault）からコピーし、"
     df_say "  \`export GH_TOKEN=<PAT>\` してから再実行すること（事前準備 3）"
     exit 1
   fi
