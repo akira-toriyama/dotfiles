@@ -44,24 +44,47 @@
 
 ## モデル運用（Fable 5 / Opus 4.8 / Sonnet 5）
 
-前提: メインループのモデルは Claude 自身では切り替えられない（`/model` はユーザー操作）。
-自動切替は**サブエージェント / workflow の層**で行う（エージェントはモデル固定できる）。
+**既定 = Opus 4.8 + effort ultracode**（dotfiles の `modify_settings.json` が seed:
+`model: "opus[1m]"` / `effortLevel: "ultracode"`。新しい Mac の初期値。`//=` なので
+対話的な `/model`・`/effort` が常に優先 — dotfiles は既存マシンの値を訂正しない）。
+日常の**メインループは Opus 4.8** を ultracode で回し、substantive な作業は既定でファンアウトする。
+
+前提（誤解しない）: メインループのモデルは Claude 自身では切り替えられない（`/model` は
+ユーザー操作）。そして **タスクの難易度を検知してモデルを自動で切り替える機構は存在しない**
+（フックもしきい値もカウンタも無い）。「難所は自動で Fable」は仕組みでなく、下記の
+**Claude への運用指示** ＝ Claude が気づいて従うかどうかに拠る。過信しない。
 
 - **担当分担**:
+  - **Opus 4.8 = メインループ＋並列網羅（ultracode）担当**: 日常の実装・設計・最終判断、
+    レビュー・監査・多ファイル移行・エッジケース洗い出し・検証。このセッションの主戦力。
+  - **Sonnet 5 = 機械的サブエージェント**（列挙・探索・変換など手足の作業。`effort: low`）。
+    メインループを担うのではなく、workflow の安い stage に使う。
   - **Fable 5 = 単独深考（solo）担当**: 設計判断・難実装の一発書き・絡んだバグの根治。
-    **ファンアウト禁止**（ultracode / workflow を Fable で回さない — 50% 枠が即枯渇する）。
-    effort は xhigh 既定、max は「正しさ最優先・コスト度外視」の時だけ。
-  - **Opus 4.8 = 並列網羅（ultracode）担当**: レビュー・監査・多ファイル移行・エッジケース洗い出し・検証。
-  - **Sonnet 5 = 日常実装・機械的サブエージェント**（列挙・探索・変換など手足の作業）。
-- **自動ルーティング（Claude への指示）**:
-  - **Fable セッションで workflow / サブエージェントを使う時**: 既定継承で全員 Fable にしない。
-    機械的な探索・列挙は `model: sonnet` + `effort: low`、検証・judge は `model: opus`。
-    メイン（Fable）は統括・設計・最終判断のみに使う。
-  - **Opus / Sonnet セッションで Fable 級の深さが要る難所**（設計の芯・Opus で数回失敗した難バグ）に
-    当たったら: `fable-architect` エージェント（model: fable）へ単独委譲する。
-    セッション全体を移すべき規模なら `/model fable` への切替をユーザーに提案。
-  - **検証は常に Opus 側**: Fable で書いたものも、レビュー・検証は ultracode（opus / sonnet
-    サブエージェント）でやる。高い Fable トークンは創造の核心だけに使う。
+    `fable-architect` エージェント（model: fable）経由でのみ使う。**ファンアウト禁止**
+    （Fable が Fable を並列で呼ぶと model scoped 週枠が即枯渇する）。この禁止は
+    `fable-architect` の `tools:` から `Agent` を外して**構造で担保済み**（散文でなく harness が拒否）。
+
+- **Fable の起用条件**（難易度だけで決めない — 枠で決める）:
+  1. **同じ難所で Opus が 2 回失敗したら**（N=2）`fable-architect` へ単独委譲する。
+     失敗カウントは Claude の会話記憶にしか無く、セッション跨ぎ・文脈圧縮で消える
+     （＝一番 Fable が要る「何セッションも溶かした難バグ」ほど残っていない）。だから
+     **失敗は都度その task body に「Opus で N 回失敗（原因）」と書き残す**（正本は body 一本・
+     既存作法に乗るだけ）。ただし書き忘れれば効かない補助輪であり、**主たる引き金は
+     ユーザーの一言「これ Fable で」**（セッション跨ぎの記憶を持つのはユーザー側）。
+  2. **週枠が余っていれば難易度に関わらず使う**。使い残しは純損失。余っているなら敷居を下げる。
+  3. **均等割りにしない・前倒し可**。作業日は週 7 日ないので日割り目標だと構造的に使い残す。
+     **目標 =「約 4 日で Fable 週枠 100%」**。
+  4. **枠が尽きたら Fable は諦めて Opus で粘る**（追加課金に逃げない）。← 上の 1 に優先する。
+- **枠の読み方**: `~/.claude.json` の `cachedUsageUtilization.utilization.limits[]`。
+  `kind=weekly_scoped` かつ `scope.model.display_name=Fable` の `percent`／`resets_at` を見る
+  （残り日数は resets_at から算出）。**キャッシュ注意** — 鮮度は同オブジェクトの `fetchedAtMs`
+  （数十分ずれ得る。敷居の上げ下げには十分だがリアルタイムではない）。
+
+- **Fable セッションで workflow / サブエージェントを使う時**（＝ユーザーが `/model fable` 中）:
+  既定継承で全員 Fable にしない。機械的な探索・列挙は `model: sonnet` + `effort: low`、
+  検証・judge は `model: opus`。メイン（Fable）は統括・設計・最終判断のみ。
+- **検証は常に Opus 側**: Fable で書いたものも、レビュー・検証は ultracode（opus / sonnet
+  サブエージェント）でやる。高い Fable トークンは創造の核心だけに使う。
 
 ## Mac アプリ（Swift）
 
