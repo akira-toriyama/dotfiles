@@ -37,6 +37,12 @@
   適用・配布は「成果物側を読み直して数えること」まで確かめる。確かめていないものは
   確かめていないと書く。この種の再発は散文の記憶では止まらない（実例: 同じ fleet-sync
   dry-run の罠を、memory に明記した翌日に再び踏んだ）ので、↑のとおりゲートに落とす。
+- **共通基盤の変更は確信が持てるまで配らない**: glyph・`.github` の fleet canonical など
+  **全 repo に波及する変更**は、POC・小さく検証を先に踏む（遠回りではない・推奨）。段は
+  **local → POC → `glyph-test` で実弾（両方向）→ カナリア1 repo → フリート**。緑は「配れた」
+  証拠ではない（fleet-sync は dry-run 既定）ので、完了判定は**成果物側を読み直して数える**。
+  **正典は [`.github/docs/fleet-change-policy.md`](https://github.com/akira-toriyama/.github/blob/main/docs/fleet-change-policy.md)**
+  —— ここはその薄いポインタ（機械で強制されている段とそうでない段の一覧もそちら）。
 - **破壊的変更 OK**: 自分の repo では breaking change を恐れない（互換レイヤーを
   残して劣化させるより、綺麗に壊して major で出す）。
 - **glossary.md**: 開発する repo に用語集 `glossary.md` が無ければ作り、随時更新する。
