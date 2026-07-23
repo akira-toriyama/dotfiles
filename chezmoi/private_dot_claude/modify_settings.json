@@ -23,10 +23,17 @@
 #      commands it actually rewrites. The hook it registers is itself guarded
 #      (`command -v rundiff`), so an uninstalled rundiff is a no-op rather than
 #      an error on every Bash call.
-#   4. model-routing defaults: model "opus[1m]" + effortLevel "ultracode" — the
+#   4. model-routing defaults: model "opus[1m]" + effortLevel "xhigh" — the
 #      「モデル運用」policy in the global CLAUDE.md (Opus 4.8 as the daily main
-#      loop, run at ultracode so substantive work fans out by default; Fable 5
-#      only via the fable-architect subagent or an explicit /model switch).
+#      loop; Fable 5 only via the fable-architect subagent or an explicit /model
+#      switch).
+#      NOTE: effortLevel is seeded as "xhigh", NOT "ultracode". "ultracode"
+#      (= xhigh + automatic workflow orchestration) is session-only by design and
+#      is NOT a persistable effortLevel value: Claude Code accepts only
+#      low/medium/high/xhigh here and normalizes "ultracode" to "xhigh" at
+#      startup, so seeding it never produced a persistent ultracode default. Enter
+#      it per session with /effort ultracode — there is no settings key, env var,
+#      or --effort launch flag that persists it (--effort tops out at max).
 #      Seeded ONLY IF ABSENT (jq //=): /model and /effort change the live values
 #      interactively and re-apply must never fight that — this exists so a new
 #      Mac starts on the intended model+effort instead of whatever the installer
@@ -69,7 +76,7 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" '
                             , "Bash(git worktree list:*)"
                             ] - .permissions.allow )
   | (.model //= "opus[1m]")
-  | (.effortLevel //= "ultracode")
+  | (.effortLevel //= "xhigh")
 ')
 
 # 3. rundiff PreToolUse hook. `rundiff hook print --json` emits the mergeable

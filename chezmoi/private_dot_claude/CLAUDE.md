@@ -60,10 +60,14 @@
 
 ## モデル運用（Fable 5 / Opus 4.8 / Sonnet 5）
 
-**既定 = Opus 4.8 + effort ultracode**（dotfiles の `modify_settings.json` が seed:
-`model: "opus[1m]"` / `effortLevel: "ultracode"`。新しい Mac の初期値。`//=` なので
-対話的な `/model`・`/effort` が常に優先 — dotfiles は既存マシンの値を訂正しない）。
-日常の**メインループは Opus 4.8** を ultracode で回し、substantive な作業は既定でファンアウトする。
+**既定 = Opus 4.8 + effort xhigh、ultracode は毎セッション手動**（dotfiles の
+`modify_settings.json` が seed: `model: "opus[1m]"` / `effortLevel: "xhigh"`。新しい Mac の
+初期値。`//=` なので対話的な `/model`・`/effort` が常に優先 — dotfiles は既存マシンの値を訂正しない）。
+**ultracode は恒久化できない**（= xhigh + 自動 workflow orchestration で、Claude Code の仕様上
+セッション限定。`effortLevel` の有効値は low/medium/high/xhigh のみで、`"ultracode"` は起動時に
+`xhigh` へ正規化される。settings キー・env・`--effort` フラグのどれでも恒久 ON にできない —
+`--effort` は max 止まり）。日常の**メインループは Opus 4.8** を回し、substantive な作業を
+ファンアウトさせたいセッションでは開始時に `/effort ultracode` を1回入れる。
 
 前提（誤解しない）: メインループのモデルは Claude 自身では切り替えられない（`/model` は
 ユーザー操作）。そして **タスクの難易度を検知してモデルを自動で切り替える機構は存在しない**
