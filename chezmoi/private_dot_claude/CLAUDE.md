@@ -58,15 +58,19 @@
   （dotfiles の `darwin-rebuild switch` 等は従来どおりユーザーに実行してもらう）。
 - **配布**: [GitHub Packages](https://github.com/akira-toriyama?tab=packages) への追加 OK。
 
-## モデル運用（Fable 5 / Opus 4.8 / Sonnet 5）
+## モデル運用（Fable 5 / 最新 Opus / Sonnet 5）
 
-**既定 = Opus 4.8 + effort xhigh、ultracode は毎セッション手動**（dotfiles の
+**既定 = 最新 Opus + effort xhigh、ultracode は毎セッション手動**（dotfiles の
 `modify_settings.json` が seed: `model: "opus[1m]"` / `effortLevel: "xhigh"`。新しい Mac の
 初期値。`//=` なので対話的な `/model`・`/effort` が常に優先 — dotfiles は既存マシンの値を訂正しない）。
+**`opus[1m]` は版を固定しない alias**（その時点の最新 Opus の 1M context 版に解決される。
+2026-07 現在は Opus 5）。新しい Opus が出れば黙って乗り換わるのが意図した挙動なので、
+**settings にもこの文書にも版番号を書かない** — `claude-opus-4-8` のような具体 ID で pin すると
+世代交代のたびに stale になり、「4.8 を既定にしている」と書いた文書と実体がずれる（実際にずれた）。
 **ultracode は恒久化できない**（= xhigh + 自動 workflow orchestration で、Claude Code の仕様上
 セッション限定。`effortLevel` の有効値は low/medium/high/xhigh のみで、`"ultracode"` は起動時に
 `xhigh` へ正規化される。settings キー・env・`--effort` フラグのどれでも恒久 ON にできない —
-`--effort` は max 止まり）。日常の**メインループは Opus 4.8** を回し、substantive な作業を
+`--effort` は max 止まり）。日常の**メインループは最新 Opus** を回し、substantive な作業を
 ファンアウトさせたいセッションでは開始時に `/effort ultracode` を1回入れる。
 
 前提（誤解しない）: メインループのモデルは Claude 自身では切り替えられない（`/model` は
@@ -75,7 +79,7 @@
 **Claude への運用指示** ＝ Claude が気づいて従うかどうかに拠る。過信しない。
 
 - **担当分担**:
-  - **Opus 4.8 = メインループ＋並列網羅（ultracode）担当**: 日常の実装・設計・最終判断、
+  - **最新 Opus（`opus[1m]`） = メインループ＋並列網羅（ultracode）担当**: 日常の実装・設計・最終判断、
     レビュー・監査・多ファイル移行・エッジケース洗い出し・検証。このセッションの主戦力。
   - **Sonnet 5 = 機械的サブエージェント**（列挙・探索・変換など手足の作業。`effort: low`）。
     メインループを担うのではなく、workflow の安い stage に使う。
