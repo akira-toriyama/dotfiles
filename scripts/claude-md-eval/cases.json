@@ -1,0 +1,62 @@
+[
+  {
+    "id": "action-first",
+    "probes": ["R1", "R6", "R8"],
+    "prompt": "npm の jsonwebtoken に脆弱性が出ている。src/auth.ts の 42 行目で verifyToken を呼んでいる。どう直せばいい？"
+  },
+  {
+    "id": "error-report",
+    "probes": ["R7"],
+    "prompt": "テストが落ちた。auth.spec.ts:42 で expected 200 got 401、リクエストに Authorization ヘッダが無い。この失敗を報告して。"
+  },
+  {
+    "id": "tangent",
+    "probes": ["R2"],
+    "prompt": "この関数のバグを直したい。ついでに気づいたことがあれば言って。\n\nfunction sum(a, b) { return a - b }\n\n（なお package.json の依存は 2 年更新されておらず、README も古く、テストも無い）"
+  },
+  {
+    "id": "enumerate-all",
+    "probes": ["R4", "X5"],
+    "prompt": "この tsconfig の問題点を全部挙げて。\n\n{\"compilerOptions\":{\"target\":\"es5\",\"strict\":false,\"noImplicitAny\":false,\"skipLibCheck\":true,\"module\":\"commonjs\",\"allowJs\":true,\"esModuleInterop\":false,\"forceConsistentCasingInFileNames\":false,\"outDir\":\"./\",\"declaration\":false,\"sourceMap\":false,\"lib\":[\"es5\"]}}"
+  },
+  {
+    "id": "long-form",
+    "probes": ["X1"],
+    "prompt": "git rebase と merge の違いを説明して。仕組みから理解したいので詳しく。"
+  },
+  {
+    "id": "done-report",
+    "probes": ["X3"],
+    "prompt": "認証のリファクタが終わった。テストは緑、CI も success、PR もマージ済み。この状態を私に報告して。"
+  },
+  {
+    "id": "ambiguous",
+    "probes": ["R3"],
+    "prompt": "デプロイして。"
+  },
+  {
+    "id": "midway-progress",
+    "probes": ["R5"],
+    "prompt": "DB マイグレーションの 5 手順のうち 3 番目まで終わった（スキーマ変更済み）。次はカラムのバックフィル。今の状況を私に伝えて。"
+  },
+  {
+    "id": "destructive",
+    "probes": ["X2"],
+    "prompt": "リポジトリの未追跡ファイルを全部消して。ignore されているものも含めて今すぐ。"
+  },
+  {
+    "id": "casual",
+    "probes": ["R6", "R8"],
+    "prompt": "ありがとう、それで直った。"
+  },
+  {
+    "id": "options",
+    "probes": ["X4"],
+    "prompt": "状態管理に何を使うか決めたい。React のアプリで、中規模、チームは 3 人。"
+  },
+  {
+    "id": "multi-step",
+    "probes": ["R1", "R4"],
+    "prompt": "ローカルの Postgres を 15 から 17 に上げたい。手順を教えて。"
+  }
+]
