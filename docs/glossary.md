@@ -241,14 +241,23 @@ PR 経由で `main` に squash-merge する（直 push なし）。
 - **Don't call it:** topic branch, work branch, 作業ブランチ
 
 ### pre-push hook
-[`.githooks/pre-push`](../.githooks/pre-push) が `chezmoi verify` で
-**apply 忘れを検知**して push を止める。乖離（`chezmoi status` の `R` 含む）
-があれば `chezmoi apply` してから push。緊急時のみ `git push --no-verify`。
+[`.githooks/pre-push`](../.githooks/pre-push) が chezmoi/ を触る push で
+`chezmoi verify` を実行し、乖離（`chezmoi status` の `R` 含む）を**警告する**
+（**warn-only、2026-07-03〜。push は止めない** — Claude 主導運用のため）。
+気づいたら `chezmoi apply` で live を追従。恒久ゲートは CI と main の
+ブランチ保護が担う。詳細 → [operations.md §5.11](operations.md)。
 - **Don't call it:** pre-push check, verify hook, プッシュ前検証
 
 ### `chezmoi templates render` (CI)
 全 `.tmpl` の `execute-template` 検証 CI ジョブ。
 - **Don't call it:** template lint, tmpl check, テンプレ検証
+
+### ルール台帳 (claude-md-ledger)
+[`docs/claude-md-ledger.md`](claude-md-ledger.md)。global CLAUDE.md の各ルールに
+「Claude の手番 / ユーザーの手番 / 機構」の 3 列と強制状態の印（🔒/🟡/📖/🙅）を
+付けた索引。ルール本文は転記しない（正本は CLAUDE.md の節）。📖 の行 =
+機構化バックログ。ルールの追加・変更と**同一 PR** でこの台帳も更新する。
+- **Don't call it:** rule list, ルール一覧, enforcement matrix
 
 ---
 
