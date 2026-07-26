@@ -47,6 +47,25 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(judge.metrics("\n\nabc\nlonger line")["first_line_chars"], 3)
 
 
+class TestFireCounts(unittest.TestCase):
+    CASES = {"close": {"fire_regex": "品質担保できる範囲まで"}, "plain": {}}
+
+    def test_counts_per_condition(self):
+        rows = [
+            {"case_id": "close", "condition": "candidate",
+             "response": "品質担保できる範囲まで作業続けました。"},
+            {"case_id": "close", "condition": "candidate", "response": "終わりました。"},
+            {"case_id": "close", "condition": "baseline", "response": "終わりました。"},
+        ]
+        f = judge.fire_counts(rows, self.CASES)
+        self.assertEqual(f[("close", "candidate")], (1, 2))
+        self.assertEqual(f[("close", "baseline")], (0, 1))
+
+    def test_cases_without_fire_regex_are_absent(self):
+        rows = [{"case_id": "plain", "condition": "baseline", "response": "x"}]
+        self.assertEqual(judge.fire_counts(rows, self.CASES), {})
+
+
 def v(winner, cut=False):
     return {"winner": winner, "lost_correctness": cut, "lost_safety": False}
 
@@ -107,6 +126,13 @@ class TestCases(unittest.TestCase):
     def test_every_case_has_a_prompt(self):
         for c in self.cases:
             self.assertTrue(c.get("prompt", "").strip(), c["id"])
+
+    def test_fire_regex_is_not_in_its_own_prompt(self):
+        """A prompt containing the marker would let either arm echo it back,
+        and the fire count would measure the prompt instead of the section."""
+        for c in self.cases:
+            if "fire_regex" in c:
+                self.assertNotRegex(c["prompt"], c["fire_regex"], c["id"])
 
 
 if __name__ == "__main__":

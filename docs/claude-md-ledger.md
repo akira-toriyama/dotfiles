@@ -29,7 +29,7 @@
 | body の和訳 footer（Commits 節） | `---（和訳）` を付ける | — | なし（実測: 和訳無し英語 body を `glyph lint` が exit 0 で通す） | 📖 |
 | furrow 一本化・source 使用（Workflow 節） | wrapper の `furrow` を叩く | — | `packages.nix` の source-build wrapper。brew 版未導入なので shadow は構造的に不発 | 🟡 `brew install` する事故自体は止まらない |
 | 着手前後の `furrow sync`（Workflow 節） | 読む前・書いた後に回す | — | なし | 📖 |
-| repos 帰属・ラベル純タグ・`-l <repo>` 廃止（Workflow 節） | `-r` / auto 導出に乗る | — | global 既定ボード（[furrow.nix](../home/modules/furrow.nix) 生成 config）が repo を auto 付与・auto フィルタ | 🟡 実測では `-l dotfiles` の did-you-mean ガードは発火せず素通り（下記[検証状態](#検証状態)） |
+| repos 帰属・ラベル純タグ・`-l <repo>` 廃止（Workflow 節） | `-r` / auto 導出に乗る | — | global 既定ボード（[furrow.nix](../home/modules/furrow.nix) 生成 config）が repo を auto 付与・auto フィルタ。read 側は did-you-mean ガード（exit 2 + candidates） | 🟡 ガードは「label 実在なら発火しない」設計 — 移行漏れの repo 名 label 13 件で不発だった（t-mztn で掃除・復旧済み、下記[検証状態](#検証状態)）。`add -l <repo>` は今も素通り（furrow 側 lint 案 = t-jbrr） |
 | 進捗の正本は task body 一本（Workflow 節） | body のチェックリストを更新・複製しない | — | なし | 📖 |
 | セッション粒度・中断時の 1 行明言（Workflow 節） | 単位を区切る・希望を書き残す | — | なし | 📖 |
 | PR footer `SetStatus-task:`（Workflow 節） | footer を書く | — | [task-status.yml](../.github/workflows/task-status.yml)（fleet 同期）が lane を自動適用。非ブロッキング | 🟡 footer を**書き忘れても**何も落ちない |
@@ -71,7 +71,7 @@
 強制状態の印は 2026-07-26 に成果物を読む・実測して付けた:
 
 - **読取**: commit-lint.yml / task-status.yml / ci.yml / agents/fable-architect.md / modify_settings.json / furrow.nix / .githooks/pre-push / scripts/claude-md-eval/README.md
-- **実測**: ① glyph の和訳非強制 — 和訳なし英語 body を `glyph lint --message` に通して exit 0。② Stop hook — fixture 9 ケース緑 + 変異検証（hook 無効化で block 系 3 件が fail）+ live 配布後の E2E block。③ brew shadow 不在 — `which furrow cifail pare glyph` が全て nix profile、`/opt/homebrew/bin` に無し。④ **`-l <repo>` ガードは実測では発火しなかった** — `furrow ls -l dotfiles` は既存 label への通常フィルタとして exit 0、`furrow add -l dotfiles --draft` も成功。CLAUDE.md の「did-you-mean ガードが exit 2 で受け止める」とは挙動が異なる（label が実在する場合の差か、原因は未調査 — t-gqd5 body に記録）。
+- **実測**: ① glyph の和訳非強制 — 和訳なし英語 body を `glyph lint --message` に通して exit 0。② Stop hook — fixture 9 ケース緑 + 変異検証（hook 無効化で block 系 3 件が fail）+ live 配布後の E2E block。③ brew shadow 不在 — `which furrow cifail pare glyph` が全て nix profile、`/opt/homebrew/bin` に無し。④ **`-l <repo>` ガード** — 初回実測（2026-07-26）では発火しなかったが、原因は repos-pivot の移行漏れで repo 名 label が 13 task に残存していたこと（ガードは「label 実在なら発火しない」設計 = furrow `app/repo.go` DidYouMeanRepo のコメントに明記）。t-mztn で 13 件を `--rm-label` 掃除後、`furrow ls -l dotfiles` が exit 2 + `candidates: [akira-toriyama/dotfiles]` を返すことを再実測で確認。CLAUDE.md の記載は「データに repo 名 label が無い」不変条件の下で正しい。その不変条件を機械で守る lint は未実装（furrow t-jbrr）。
 - **記載準拠（本台帳では未再検証）**: ultracode の恒久化不能・`/model` がユーザー操作限定である点は CLAUDE.md / modify_settings.json コメントの記載に依る。
 
 ## 運用
