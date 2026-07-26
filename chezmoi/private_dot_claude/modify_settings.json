@@ -2,7 +2,7 @@
 # chezmoi modify_ script for ~/.claude/settings.json.
 #
 # chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
-# file. We ensure exactly FOUR things and pass everything else (the permissions
+# file. We ensure exactly FIVE things and pass everything else (the permissions
 # the user accumulates interactively, plugins, env, other hooks) through
 # untouched:
 #   1. a SessionStart hook that runs git-stale-check (so an agent sees a
@@ -43,6 +43,11 @@
 #      interactively and re-apply must never fight that — this exists so a new
 #      Mac starts on the intended model+effort instead of whatever the installer
 #      picks.
+#   5. a Stop hook that runs claude-work-report-check — validates the
+#      work-request closing template (global CLAUDE.md「作業・task 依頼への
+#      返し方」): a やり残し declaration must carry furrow task ids or 「なし」,
+#      else the stop is blocked for one repair round (furrow t-m2bf). The hook
+#      script itself is fail-open and loop-safe; see its header.
 #
 # Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
@@ -56,6 +61,8 @@ set -u
 
 # shellcheck disable=SC2016  # $HOME must stay literal — Claude expands it at hook run
 cmd='$HOME/.local/bin/git-stale-check'
+# shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
+cmd_stop='$HOME/.local/bin/claude-work-report-check'
 
 input=$(cat)
 [ -n "$input" ] || input='{}'
@@ -65,8 +72,9 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
+  def stop_hook_present: [ (.hooks.Stop // [])[]?.hooks[]?.command ] | any(. == $stop);
 
   ( if hook_present then .
     else
@@ -74,6 +82,12 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" '
       | (.hooks.SessionStart //= [])
       | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $cmd } ] } ])
     end )
+  | ( if stop_hook_present then .
+      else
+          (.hooks //= {})
+        | (.hooks.Stop //= [])
+        | (.hooks.Stop += [ { hooks: [ { type: "command", command: $stop } ] } ])
+      end )
   | (.permissions //= {})
   | (.permissions.allow //= [])
   | .permissions.allow += ( [ "Bash(git status:*)"

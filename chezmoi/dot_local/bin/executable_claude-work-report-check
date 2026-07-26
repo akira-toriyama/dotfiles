@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# claude-work-report-check — Claude Code Stop hook: validate the work-request
+# closing template (global CLAUDE.md「作業・task 依頼への返し方」).
+#
+# WHAT IT ENFORCES: when the final assistant message uses the closing template
+# (the fixed opener 「品質担保できる範囲まで…」 or a 「やり残しは task 化…」
+# line), the やり残し declaration must be VERIFIABLE — at least one furrow task
+# id (t-xxxx) or the literal 「なし」 on that line. Prose alone (「後で task 化
+# します」) cannot be checked with `furrow show`; ids can. On violation we emit
+# {"decision":"block","reason":…} so Claude gets exactly one repair round.
+#
+# WHAT IT CANNOT ENFORCE (scope decision, furrow t-m2bf): firing of the template
+# itself. Whether a turn was a work request needs semantic classification of the
+# conversation — the Stop payload carries no cheap, reliable signal for that.
+# This hook guarantees well-formedness WHEN the template is used, not usage.
+#
+# Loop safety: stop_hook_active=true → always allow (the repair round is
+# single; Claude Code would force-stop after repeated blocks anyway).
+# Fail-open: no jq / unparseable JSON / missing fields → allow. Breaking every
+# session stop costs far more than skipping one check (same asymmetry call as
+# modify_settings.json).
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-work-report-check). Wired
+# from ~/.claude/settings.json hooks.Stop by modify_settings.json (step 5).
+# Tests: scripts/claude-work-report-check-test.sh (run in CI).
+set -u
+
+command -v jq >/dev/null 2>&1 || exit 0
+
+input=$(cat 2>/dev/null) || exit 0
+printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
+
+[ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false')" = "true" ] && exit 0
+
+msg=$(printf '%s' "$input" | jq -r '.last_assistant_message // empty')
+[ -n "$msg" ] || exit 0
+
+# Template detection — two independent markers, either one arms the check:
+#   a) the fixed opening line 「品質担保できる範囲まで」
+#   b) a やり残し declaration line (やり残し + task on the same line)
+# Ordinary conversation ABOUT the workflow can hit (b); the cost is one
+# spurious repair round, bounded by the stop_hook_active guard above.
+armed=0
+if printf '%s' "$msg" | grep -qF '品質担保できる範囲まで'; then
+  armed=1
+elif printf '%s' "$msg" | grep -qiE 'やり残し.*task|task.*やり残し'; then
+  armed=1
+fi
+[ "$armed" -eq 1 ] || exit 0
+
+# The declaration line itself must carry the proof: a furrow id or 「なし」.
+# Scoped to やり残し lines on purpose — a stray 「問題なし」 elsewhere in the
+# message must not satisfy the check. An armed message with NO やり残し line at
+# all (opener present, declaration dropped) is also a violation.
+decl=$(printf '%s' "$msg" | grep -F 'やり残し' || true)
+if [ -n "$decl" ]; then
+  printf '%s' "$decl" | grep -qE 't-[a-z0-9]{3,}' && exit 0
+  printf '%s' "$decl" | grep -qF 'なし' && exit 0
+fi
+
+jq -n '{decision: "block", reason: "正常終了定型の「やり残し」宣言に task ID がありません（global CLAUDE.md「作業・task 依頼への返し方」— ID は furrow show で検証できるが、文だけでは検証できない）。やり残しを furrow で task 化して「やり残しは task 化済: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「なし」と書いてください。直したらそのまま停止してよい。"}'
+exit 0
