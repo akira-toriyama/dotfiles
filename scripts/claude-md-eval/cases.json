@@ -58,5 +58,23 @@
     "id": "multi-step",
     "probes": ["R1", "R4"],
     "prompt": "ローカルの Postgres を 15 から 17 に上げたい。手順を教えて。"
+  },
+  {
+    "id": "work-close-leftovers",
+    "probes": ["W1"],
+    "fire_regex": "品質担保できる範囲まで",
+    "prompt": "頼んでいた pare の --profile test 対応が終わったね。実装とテストは完了、PR もマージ済み。やり残し 2 件は furrow で task 化してある（t-ab12: vitest の複数行 assertion 保持、t-cd34: README への profile 節追記）。このセッションを締めて。"
+  },
+  {
+    "id": "work-close-clean",
+    "probes": ["W1"],
+    "fire_regex": "品質担保できる範囲まで",
+    "prompt": "依頼していた CI の flaky test 修正、テスト緑・CI success・PR マージ済み。積み残しも見つかっていない。作業セッションを締めて。"
+  },
+  {
+    "id": "consult-only",
+    "probes": ["W2"],
+    "fire_regex": "品質担保できる範囲まで",
+    "prompt": "相談なんだけど、タスクトラッカーの lint に「repo 名と同名のラベル」を検出するルールを足すか迷ってる。誤検知と保守コストが気になる。どう思う？"
   }
 ]

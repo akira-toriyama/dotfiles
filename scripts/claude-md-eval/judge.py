@@ -79,6 +79,26 @@ def metrics(text: str) -> dict:
     }
 
 
+def fire_counts(rows: list[dict], cases: dict) -> dict[tuple[str, str], tuple[int, int]]:
+    """Per (case, condition): how many responses matched the case's fire_regex.
+
+    A section whose effect is a fixed template (the work-request closing form)
+    cannot be measured by the generic A/B judge alone — whether the template
+    appeared is machine-checkable. Reported, never gated: firing on a
+    work-close case is the candidate working; firing on a consultation case is
+    the misfire the case exists to catch. The reader decides which is which.
+    """
+    out: dict[tuple[str, str], tuple[int, int]] = {}
+    for r in rows:
+        pat = cases.get(r["case_id"], {}).get("fire_regex")
+        if not pat:
+            continue
+        k = (r["case_id"], r["condition"])
+        fired, total = out.get(k, (0, 0))
+        out[k] = (fired + (1 if re.search(pat, r["response"]) else 0), total + 1)
+    return out
+
+
 def order_for(case_id: str, trial: int) -> tuple[str, str]:
     """Deterministic A/B order, so a rerun reproduces the same layout."""
     h = hashlib.sha256(f"{case_id}/{trial}".encode()).digest()[0]
@@ -188,6 +208,14 @@ def main(argv: list[str] | None = None) -> int:
         cut = any(v.get("lost_correctness") or v.get("lost_safety") for v in vs)
         wins = [v.get("winner") for v in vs]
         print(f"{cid:<18}{probes:<14}{str(wins):<34}{'content cut' if cut else ''}")
+
+    fires = fire_counts(rows, cases)
+    if fires:
+        print("\n=== template fire (cases with fire_regex) ===")
+        for cid in sorted({c for c, _ in fires}):
+            fb, nb = fires.get((cid, "baseline"), (0, 0))
+            fc, nc = fires.get((cid, "candidate"), (0, 0))
+            print(f"{cid:<22}baseline {fb}/{nb}   candidate {fc}/{nc}")
 
     passed, reasons = gate(verdicts)
     print(f"\ntally: {dict(Counter(v.get('winner') for v in verdicts))}")
