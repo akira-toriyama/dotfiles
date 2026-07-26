@@ -24,9 +24,14 @@
 #      (`command -v rundiff`), so an uninstalled rundiff is a no-op rather than
 #      an error on every Bash call.
 #   4. model-routing defaults: model "opus[1m]" + effortLevel "xhigh" — the
-#      「モデル運用」policy in the global CLAUDE.md (Opus 4.8 as the daily main
-#      loop; Fable 5 only via the fable-architect subagent or an explicit /model
-#      switch).
+#      「モデル運用」policy in the global CLAUDE.md (the LATEST Opus as the daily
+#      main loop; Fable 5 only via the fable-architect subagent or an explicit
+#      /model switch).
+#      NOTE: "opus[1m]" is a version-free alias — it resolves to whatever the
+#      current latest Opus is (Opus 5 as of 2026-07), which is the point: a new
+#      Opus is adopted without touching this file. Never pin a concrete id such
+#      as "claude-opus-4-8[1m]" here; the seed would then quietly ship a stale
+#      generation on every new Mac.
 #      NOTE: effortLevel is seeded as "xhigh", NOT "ultracode". "ultracode"
 #      (= xhigh + automatic workflow orchestration) is session-only by design and
 #      is NOT a persistable effortLevel value: Claude Code accepts only
