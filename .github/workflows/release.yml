@@ -51,9 +51,9 @@ jobs:
           persist-credentials: false
 
       - name: install glyph
-        uses: akira-toriyama/glyph/.github/actions/install@v0.10.2
+        uses: akira-toriyama/glyph/.github/actions/install@v0.11.1
         with:
-          version: v0.8.0
+          version: v0.11.1
           token: ${{ github.token }}
 
       - name: Compose the verdict and upsert the rolling DRAFT
