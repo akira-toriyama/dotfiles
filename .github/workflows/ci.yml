@@ -119,6 +119,19 @@ jobs:
           fi
           echo "✅ my- command prefix 規約 OK"
 
+  # 自作 Claude hook スクリプトの回帰テスト（Stop hook の判定ロジック。
+  # 「lint/test で防げることは人力でやらない」— hook の壊れは CI で止める）
+  hook-scripts-test:
+    name: hook scripts test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
+      - name: Run claude-work-report-check tests
+        run: bash scripts/claude-work-report-check-test.sh
+
   # chezmoi テンプレートのレンダリング検証（構文エラー早期検出）
   chezmoi-templates:
     name: chezmoi templates render
@@ -309,6 +322,7 @@ jobs:
       - shellcheck
       - convention-executable-prefix
       - convention-command-prefix
+      - hook-scripts-test
       - chezmoi-templates
       - flake-changes
       - darwin-build
@@ -339,6 +353,7 @@ jobs:
       - shellcheck
       - convention-executable-prefix
       - convention-command-prefix
+      - hook-scripts-test
       - chezmoi-templates
       - darwin-build
       - darwin-switch-smoke
