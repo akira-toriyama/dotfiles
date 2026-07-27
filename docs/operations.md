@@ -457,6 +457,21 @@ azooKey の「OpenAI API」backend の endpoint を `127.0.0.1:8787` に向け�
 
 ---
 
+## 5.14 `~/.claude` の一時ファイルを恒久保管先にしない（不変条件）
+
+`~/.claude/` は Claude Code の**実行時ディレクトリ**であり、宣言管理の対象は
+`chezmoi/private_dot_claude/` 配下（`CLAUDE.md` / `agents/` / `skills/` /
+`modify_settings.json`）だけ。それ以外にできたファイルは**どこにもバックアップされない**。
+
+- **`~/.claude/plans/` とホーム直下の一時メモ（`tmp-*.txt` 等）を恒久保管先にしない。**
+  作業計画・引き継ぎの正本は **furrow の task body**（大きい資料は `furrow attach` で
+  `bodies/assets/` へ）。実例: 2026-07-27 に `plans/` の 4 本を整理し、生きている 2 本は
+  `furrow attach` で t-8qqz / t-j8ek に移送、完了 2 本は削除した。
+- **memory の slug は必ず `MEMORY.md` の索引から link されていること。** 索引に載らない
+  memory は次のセッションで読まれず、書いた事実が静かに消える。`claude-maint` の
+  月次レーンは memory を見ていない（skills / commands / agents のみ）ので、
+  ここは今のところ**散文頼み**。
+
 ## 完了済の大きな migration
 
 - **chord `[input-aliases]` 機能 + 論理名移行** — chord 本体で `[input-aliases]` 機能が ship 済 ([PR #4](https://github.com/akira-toriyama/chord/pull/4) v0.5.0 初版、[PR #7](https://github.com/akira-toriyama/chord/pull/7) で v0.6.0 として `$prefix` 必須 + `[aliases]` → `[action-aliases]` rename + schema v2 → v3)。`chezmoi/dot_config/chord/private_config.toml` は `[action-aliases]` + `[input-aliases]` + `$prefix` 参照 (`input = "$ULTRA_LL - c"`) に移行済。`scripts/gen-chord-doc.py` の hardcoded dict は削除済 (chord 自身が alias 解決)。daemon 入れ替えは `brew upgrade chord && chord --resign` か 5.10 の手元 build 手順を参照。
