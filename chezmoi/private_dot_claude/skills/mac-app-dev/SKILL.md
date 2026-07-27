@@ -10,6 +10,17 @@ description: Use when developing, modifying, or debugging a macOS app in Swift (
 ## 設計・並行性 → `software-architecture` skill 参照
 層分離（Core / Adapter / View）・ports & adapters・DDD・YAGNI 層判断・**並行性の設計則**（serial queue 一元化／cross-actor 非循環／value snapshot 受け渡し／非 Sendable 境界）は **`software-architecture` skill**（mac app 設計時に auto 発火）に集約＝二重管理しない。本 skill は以下の **macOS 固有の実装メカニクス**に専念する。
 
+## UI の既定は SwiftUI + Sill（AppKit は floor と legacy 保守だけ）
+- **新規 UI は SwiftUI ＋ [Sill](https://github.com/akira-toriyama/sill)**（共通 UI 基盤。theming コアと
+  共有 widget kit を提供する）。**どの library が在るかは Sill の `Package.swift` を読む** ——
+  ここにも global CLAUDE.md にも一覧を書き写さない（写した瞬間 drift する。正本は 1 箇所）。
+- **AppKit を書いてよいのは 2 つだけ**: ① SwiftUI で届かない **essential floor**（何が floor かの
+  判断基準と規律は `software-architecture` skill。floor の一覧を持つのは Sill 側であって skill ではない）
+  ② 既存 AppKit コードの **legacy 保守**。下の落とし穴節はこの 2 つに効く実装知識。
+- **足りない部品はアプリ側に one-off で足す前に Sill への PR を検討する**（共通化できるものを
+  各アプリに散らさない）。
+- OS サポートは**最新 macOS のみ**。古い OS 向けの availability 分岐は書かない。
+
 ## AppKit / AX 落とし穴
 - agent 系アプリ: `LSUIElement=true`（Dock 無し）＋非アクティブ化パネル。別 window を focus する**前に** key を返す（クリックで panel が key を握ったまま離れない事故を防ぐ）。
 - window title 等は **AX 解決**（`kAXTitle`・短 TTL キャッシュ・off-main）。backend が埋めると仮定しない。
