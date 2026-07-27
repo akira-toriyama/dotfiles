@@ -108,6 +108,90 @@ class TestGate(unittest.TestCase):
         self.assertIn("failed to judge", " ".join(reasons))
 
 
+class TestTwoArmGate(unittest.TestCase):
+    """With two file-backed arms both sides cut, so only the excess counts.
+
+    Measured once (PR #274 old vs new, 30 pairs): baseline 8 cut-wins,
+    candidate 11. The one-arm rate blocks that; the candidate is not worse
+    than what it replaces.
+    """
+
+    def test_the_observed_run_passes_two_arm_but_blocks_one_arm(self) -> None:
+        verdicts = (
+            [v("candidate", cut=True)] * 11
+            + [v("candidate")] * 6
+            + [v("baseline", cut=True)] * 8
+            + [v("baseline")] * 5
+        )
+        self.assertFalse(judge.gate(verdicts)[0])
+        self.assertTrue(judge.gate(verdicts, two_arm=True)[0])
+
+    def test_blocks_when_the_candidate_cuts_far_more_than_the_baseline(self) -> None:
+        passed, reasons = judge.gate(
+            [v("candidate", cut=True)] * 6 + [v("candidate")] * 2 + [v("baseline")] * 2,
+            two_arm=True,
+        )
+        self.assertFalse(passed)
+        self.assertIn("excess", " ".join(reasons))
+
+    def test_baseline_cutting_more_never_blocks(self) -> None:
+        passed, _ = judge.gate(
+            [v("candidate")] * 6 + [v("baseline", cut=True)] * 4, two_arm=True
+        )
+        self.assertTrue(passed)
+
+    def test_the_win_count_check_still_applies(self) -> None:
+        passed, reasons = judge.gate([v("candidate")] * 5 + [v("baseline")] * 5, True)
+        self.assertFalse(passed)
+        self.assertIn("did not beat baseline", " ".join(reasons))
+
+    def test_the_threshold_is_a_parameter_not_a_constant(self) -> None:
+        verdicts = [v("candidate", cut=True)] * 3 + [v("candidate")] * 7
+        self.assertTrue(judge.gate(verdicts, two_arm=True, cut_delta=0.5)[0])
+        self.assertFalse(judge.gate(verdicts, two_arm=True, cut_delta=0.1)[0])
+
+
+class TestResolveMode(unittest.TestCase):
+    """Guessing one-arm for an unlabelled two-arm run is the silent failure."""
+
+    def test_file_rows_select_the_two_arm_gate(self) -> None:
+        two_arm, warning = judge.resolve_mode([{"baseline_mode": "file"}] * 4)
+        self.assertTrue(two_arm)
+        self.assertIsNone(warning)
+
+    def test_none_rows_select_the_one_arm_gate(self) -> None:
+        two_arm, warning = judge.resolve_mode([{"baseline_mode": "none"}] * 4)
+        self.assertFalse(two_arm)
+        self.assertIsNone(warning)
+
+    def test_rows_predating_the_field_warn_instead_of_assuming(self) -> None:
+        two_arm, warning = judge.resolve_mode([{"case_id": "x"}] * 4)
+        self.assertFalse(two_arm)
+        self.assertIsNotNone(warning)
+
+    def test_a_mixed_file_makes_itself_heard(self) -> None:
+        two_arm, warning = judge.resolve_mode(
+            [{"baseline_mode": "file"}, {"baseline_mode": "none"}]
+        )
+        self.assertTrue(two_arm)
+        assert warning is not None
+        self.assertIn("mixed", warning)
+
+
+class TestBaselineModeIsRecorded(unittest.TestCase):
+    """judge.py cannot pick a gate from arms_key — it is only a hash."""
+
+    def test_a_bare_baseline_is_labelled_none(self) -> None:
+        self.assertEqual(
+            run.baseline_mode({"baseline": None, "candidate": "NEW"}), "none"
+        )
+
+    def test_a_file_backed_baseline_is_labelled_file(self) -> None:
+        self.assertEqual(
+            run.baseline_mode({"baseline": "OLD", "candidate": "NEW"}), "file"
+        )
+
+
 class TestIsolation(unittest.TestCase):
     def test_baseline_gets_no_section(self) -> None:
         self.assertNotIn("--append-system-prompt", run.build_cmd("m", None))
