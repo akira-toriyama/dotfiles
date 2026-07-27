@@ -42,6 +42,7 @@ GATES: dict[str, str] = {
     "actionlint": "workflow",
     "typos": "docs",
     "lychee": "docs",
+    "doc-paths": "docs",
     "lychee-external": "external",
     "gitleaks": "secret",
 }
@@ -317,6 +318,16 @@ def main(argv: list[str] | None = None) -> int:
     # --offline 固定。外部 URL は他人都合の 5xx が入るので PR を止めさせない
     # （外部込みは下の lychee-external ＝ opt-in グループ）。
     r.run("lychee", ["lychee", "--offline", "--no-progress", "."])
+    # lychee はリンク要素しか見ない。バッククォート内のパス言及は構造的に見えず、
+    # 実際そこで 3 件の切れた参照が長期間生き延びた。その穴を埋める自前ゲート。
+    r.run(
+        "doc-paths",
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "doc_paths.py"),
+            *(["--ci"] if args.ci else []),
+        ],
+    )
 
     # --- external（既定では走らない）---
     # --offline を外すだけ。対象も規則（accept の 429・projects の exclude・
