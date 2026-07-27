@@ -49,6 +49,40 @@ class TestGateDeclaration(unittest.TestCase):
         self.assertEqual(lint.GATES["gitleaks"], "secret")
 
 
+class TestOptInGroups(unittest.TestCase):
+    """ネットワークを叩くゲートが既定に混ざらないこと。
+
+    混ざると PR の合否が他人のサーバの機嫌（5xx / rate limit）で決まる。
+    「入れてはいけない」を散文で書いても守られないので、ここで固定する。
+    """
+
+    def test_opt_in_groups_are_real_groups(self) -> None:
+        self.assertTrue(set(lint.GROUPS) >= lint.OPT_IN_GROUPS)
+
+    def test_the_default_run_excludes_them(self) -> None:
+        self.assertEqual(
+            set(lint.DEFAULT_GROUPS), set(lint.GROUPS) - lint.OPT_IN_GROUPS
+        )
+        self.assertFalse(set(lint.DEFAULT_GROUPS) & lint.OPT_IN_GROUPS)
+
+    def test_the_external_link_check_is_opt_in(self) -> None:
+        self.assertEqual(lint.GATES["lychee-external"], "external")
+        self.assertIn("external", lint.OPT_IN_GROUPS)
+
+    def test_a_default_runner_does_not_want_the_external_gate(self) -> None:
+        r = lint.Runner(ci=False, groups=lint.DEFAULT_GROUPS)
+        self.assertFalse(r.wants("lychee-external"))
+        self.assertTrue(r.wants("lychee"))
+
+    def test_naming_the_group_turns_it_on(self) -> None:
+        r = lint.Runner(ci=False, groups=["external"])
+        self.assertTrue(r.wants("lychee-external"))
+
+    def test_the_offline_gate_is_not_opt_in(self) -> None:
+        # 相対パス + アンカーの検査は 0 network なので PR で走り続けること。
+        self.assertNotIn(lint.GATES["lychee"], lint.OPT_IN_GROUPS)
+
+
 class TestMissingGateIsNotGreen(unittest.TestCase):
     """宣言したゲートが走らなかったら緑を出さない、という一番大事な性質。"""
 
