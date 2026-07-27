@@ -5,7 +5,7 @@ description: Use when waiting for a condition — a log line to appear (regex), 
 
 # 条件待ちは wait4x（until+sleep を手書きしない）
 
-> 出典: エージェント向け CLI 調査（2026-07-03、実機検証済み。詳細 = `~/claude-cli-tools-memo.md` #4 節、task = projects t-v1t1）。wait4x は nix 宣言済み（packages.nix）。
+> 出典: エージェント向け CLI 調査（2026-07-03、実機検証済み。採用 task = projects t-v1t1・done）。wait4x は nix 宣言済み（packages.nix）。
 
 ## exit code 契約
 

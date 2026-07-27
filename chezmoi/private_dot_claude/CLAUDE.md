@@ -3,7 +3,7 @@
 ## Commits message style
 
 - **gitmoji-driven**（エンジン = 自作 [glyph](https://github.com/akira-toriyama/glyph)。lint も semver も notes も glyph）。**先頭の `:code:` が type**＝release の semver と notes を駆動する。形式は `<:gitmoji:>[(<scope>)][!] <subject>`（Conventional の `<type>` 語は退役。legacy `<type>(scope)!:` token は lint が accept-and-ignore するので旧履歴はそのまま通る）。
-- 版を動かす gitmoji: `:boom:`・`!`・`BREAKING CHANGE:` footer→major（非抑制） ／ `:sparkles:`→minor（唯一の minor） ／ 出荷挙動を変える code（`:bug:` `:zap:` `:lock:` `:arrow_up:` 等）→patch ／ 内部・meta（`:memo:` `:recycle:` `:wrench:` 等）→bump なし。全75 code の機械正本は `glyph rules`（`--md` で表）。unknown code は lint hard error。
+- 版を動かす gitmoji: `:boom:`・`!`・`BREAKING CHANGE:` footer→major（非抑制） ／ `:sparkles:`→minor（唯一の minor） ／ 出荷挙動を変える code（`:bug:` `:zap:` `:lock:` `:arrow_up:` 等）→patch ／ 内部・meta（`:memo:` `:recycle:` `:wrench:` 等）→bump なし。全75 code の機械正本は `glyph rules`（既定が表・機械可読は `--json`）。unknown code は lint hard error。**削除/改名を伴う code（`:fire:` `:coffin:` `:truck:`）は `!` か `NON-BREAKING: <理由>` footer が必須**（`undeclared-removal`・exit 3）。
 - subject も body も英語。body を書く時は後半に `---（和訳）` 区切りで subject と body の和訳を付ける（subject だけなら不要）。
 - **全文（厳格仕様・例つき）**: https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md
 
@@ -12,7 +12,7 @@
 - **タスク管理は furrow + `projects` repo に一本化**（GitHub issue ではない）。`projects` は全 repo 横断の private tracker（GitHub Projects #5 のローカル正本）。実体は plain text（`.furrow/tasks/<id>.json` + `meta.json` + `bodies/<id>.md`＝furrow v2 shard 化で index.json 廃止）。**運用ルールの正典は [`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)** —— ここはその薄いポインタ。
 - **furrow は開発活発 → install 版でなく clone した source を使う**（install 版は stale 化・古い id 採番で並行 add が衝突した実績）。source = `…/github.com/akira-toriyama/furrow`。**使う時は `furrow` コマンド**（dotfiles の Nix wrapper＝`packages.nix`。呼ぶたび clone を incremental build して PATH のどこからでも・**呼び出し元の cwd で実行**＝下記 global 既定ボードが効く。常に source 反映で stale 化しない）。**furrow 自身を開発する時**だけ source dir で `go run ./cmd/furrow <args>`（uncommitted を試すため）。
 - **着手前に `projects` を最新化**: `furrow sync`（`.furrow/` 限定 auto-commit→pull --rebase→push）を読む前・書いた後に回す（古い body で判断する事故を防ぐ。conflict は exit 3 `sync-conflict`）。
-- **タスクの帰属は一級の `repos` フィールド**（`owner/repo`、0..N、`[]`=draft。repos-pivot／furrow v0.6.0・flag-day t-3bmm 以降）。**ラベルは純粋タグ**（repo をラベルに書かない）。`…/github.com/akira-toriyama/` 配下の code repo の中では global 既定ボードが **`repo="auto"`** で自動作用（`~/.config/furrow/config.toml`＝home-manager 生成。`projects/CLAUDE.md` の board 節）：`add` は cwd の git origin から導出した owner/repo を `repos` へ union（`--draft` で抑止・明示 `-r` は追加）、`ls/next/revisit` はその repo で silent に自動フィルタ（per-board `auto_filter`・既定 true、`-r ''` で全件・明示 `-r` は上書き）。導出は **worktree-aware**（gitdir→commondir 追跡。旧 label=auto の「worktree dir 名ズレ」問題は解消済み — `-l` 明示の worktree 運用は不要）。tracker 自身の作業は `-r projects`（projects checkout 内なら auto）。自前 `.furrow`／per-repo `.furrow-pointer.toml` を持つ repo はそちらが優先（近い方が勝つ）。旧習慣の `-l <repo>` は did-you-mean ガードが exit 2＋`candidates` で受け止める。
+- **タスクの帰属は一級の `repos` フィールド**（`owner/repo`、0..N、`[]`=draft。repos-pivot／furrow v0.6.0・flag-day t-3bmm 以降）。**ラベルは純粋タグ**（repo をラベルに書かない）。`…/github.com/akira-toriyama/` 配下の code repo の中では global 既定ボードが **`repo="auto"`** で自動作用（`~/.config/furrow/config.toml`＝home-manager 生成。`projects/CLAUDE.md` の board 節）：`add` は cwd の git origin から導出した owner/repo を `repos` へ union（`--draft` で抑止・明示 `-r` は追加）、`ls/next/revisit` はその repo で silent に自動フィルタ（per-board `auto_filter`・既定 true、`-r ''` で全件・明示 `-r` は上書き）。導出は **worktree-aware**（gitdir→commondir 追跡。旧 label=auto の「worktree dir 名ズレ」問題は解消済み — `-l` 明示の worktree 運用は不要）。**tracker 自身の作業は明示 `-r projects` が必須** —— projects checkout 内は local `.furrow` が global 既定ボードを shadow するため `repo="auto"` は効かず、bare `add` は draft になる（`furrow doctor` が `scope-shadowed` として報告する）。自前 `.furrow`／per-repo `.furrow-pointer.toml` を持つ repo はそちらが優先（近い方が勝つ）。旧習慣の `-l <repo>` は did-you-mean ガードが exit 2＋`candidates` で受け止める。
 - **進捗の正本はそのタスク body 一本**。「どこまで終わったか／次に何をするか」は `projects/.furrow/bodies/<id>.md` のチェックリストに記録し、**memory やブランチ上のファイルに複製しない**（2重管理＝剥離を避ける）。
 - **1 セッションの作業粒度は「Claude が無理なく・品質を保って完了できる単位」に区切る**（効率よく＝詰め込む、ではない。品質 > 一気の完了）。1 単位が収まらないなら分割し、やり残しは少なめに。残るものは暗黙に流さず task 化する（中断は失敗でなく既定運用 —— task 化してあれば止めてよい）。継続に要る情報は body に集約する（↑の正本一本に同じ）。
 - セッションの作法:
@@ -158,8 +158,10 @@
     メインループを担うのではなく、workflow の安い stage に使う。
   - **Fable 5 = 単独深考（solo）担当**: 設計判断・難実装の一発書き・絡んだバグの根治。
     `fable-architect` エージェント（model: fable）経由でのみ使う。**ファンアウト禁止**
-    （Fable が Fable を並列で呼ぶと model scoped 週枠が即枯渇する）。この禁止は
-    `fable-architect` の `tools:` から `Agent` を外して**構造で担保済み**（散文でなく harness が拒否）。
+    （Fable が Fable を並列で呼ぶと model scoped 週枠が即枯渇する）。`fable-architect` の
+    `tools:` から `Agent` を外してあるので **Agent ツール経路は harness が拒否する**（散文でなく構造）。
+    ただし塞がっているのはその経路だけ —— `Bash` は持たせてあるので `claude -p --model fable` で
+    迂回できてしまう可能性がある（**未実測**）。迂回しないのは散文頼み。
 
 - **枠の仕組み（誤解しない）**: Fable は独立バケットではなく**全体 Weekly と同一原資**
   （Fable 枠は全体の約 50%・重さは Opus の約 2 倍）。全体を Opus だけで使うと、
@@ -193,7 +195,9 @@
 ## Mac アプリ（Swift）
 
 - **UI は SwiftUI ＋ [Sill](https://github.com/akira-toriyama/sill) をベースとする**
-  （Sill = 共通 theming 基盤 Palette / PaletteKit / Effects）。**AppKit は基本的に使用禁止**
+  （Sill = 共通 UI 基盤の 13 library。theming コア = Palette / PaletteKit / Effects / Motion /
+  ThemeKit / ThemeKitUI、共有 widget kit = CLIKit / Gesture / ListCore / GridCore / PixelArt /
+  MarkdownKitUI / ConfigSchema。**契約の正本は Sill の `Package.swift`**）。**AppKit は基本的に使用禁止**
   — SwiftUI で届かない essential floor に限る（判断基準は software-architecture skill）。
 - **不足パーツは Sill へ PR を検討**: アプリ側に one-off で足す前に、共通化して
   Sill に上げられないかを先に考える。
@@ -224,7 +228,15 @@ source-build wrapper＝呼ぶたび変更検知で rebuild）。**作って終�
   成功は畳む。汎用 pare は多行 assertion の expected/actual を落とすが profile は残す。
   go test / swift test / vitest / jest / pytest）。
 - **cifail** — CI 失敗の要点抽出。生 run ログを漁らず `cifail`（cwd の remote/現 branch から推定。
-  `--pr N` / `--branch B` / `--run ID` / `--json`）。job ゼロの失敗 run（workflow 文法エラー等）も拾う。
+  `--pr N` / `--branch B` / `--run ID`。1 行 JSON は **`--ndjson`**）。job ゼロの失敗 run
+  （workflow 文法エラー等）も拾う。サブコマンドで **`wait`**（現 commit の CI 終了まで待って判定）・
+  **`delta`**（直近の緑との差分）・**`flake`**（flaky か要デバッグかの判定）。
+- **rundiff** — 同じコマンドの**前回との差分**だけを出す（pare が 1 回の出力を切るのに対し、
+  こちらは実行間を切る）。並べ替え・時刻・elapsed・temp パスは差分に出ない。
+  1 行目が機械可読 JSON。test/lint の再実行はこれに通すと読む量が激減する
+  （`settings.json` の PreToolUse hook が主要な test runner を自動で wrap する）。
+- **revpost** — findings JSON を PR レビュー 1 本に束ねて投稿。アンカーを diff の
+  commentable 行に照合して落とさない（422 で投稿ごと消える事故を封じる）。`--dry-run` あり。
 - **furrow** — タスク管理（↑ Workflow 節が正典）。
 - **glyph** — commit 規約の正本（gitmoji → semver → notes）。**commit する前に
   `glyph lint --range origin/main..HEAD`**（1 通なら `--message "<subject>"`）。
@@ -237,7 +249,7 @@ source-build wrapper＝呼ぶたび変更検知で rebuild）。**作って終�
 ## 自作アプリ・自作 CLI は source を使う（brew 版は使わない）
 
 - **起動者で機構が分かれる（Claude と共有する前提の認識）**: **GUI アプリ = ほぼ人間（開発者本人）が起動する** → Xcode / ビルド成果物を動かす（署名・TCC が絡むので「呼ぶたび rebuild」な wrapper には載せない）。**CLI = 主に Claude Code が叩く道具**（furrow・pare・cifail 等）→ `packages.nix` の source-build wrapper で always-latest。**どちらも brew/cask の stale スナップショットは使わない**（機構は違えど哲学は同じ。詳細は下）。
-- **akira-toriyama の自作アプリ / CLI（furrow・cifail・jig 等）は、その repo の clone（`…/github.com/akira-toriyama/<repo>` の source）で使う。自分のマシンでは brew 版（cask/formula）を入れない・使わない。** 理由 = source なら常に最新・コードを読める・デバッグ出力を足して即リビルドできる・`git log` で挙動を追える（brew はリリース時点の stale スナップショット）。
+- **akira-toriyama の自作アプリ / CLI（furrow・cifail・rundiff 等）は、その repo の clone（`…/github.com/akira-toriyama/<repo>` の source）で使う。自分のマシンでは brew 版（cask/formula）を入れない・使わない。** 理由 = source なら常に最新・コードを読める・デバッグ出力を足して即リビルドできる・`git log` で挙動を追える（brew はリリース時点の stale スナップショット）。
 - CLI は dotfiles の `packages.nix` に source-build ラッパ（呼ぶたび変更検知で rebuild）があるものはそれを使う（↑ furrow の節と同じ仕組み）。**`brew install` しないこと** —— PATH は `/opt/homebrew/bin` が nix profile より前なので、brew 版があると wrapper を shadow する。入れなければ shadow は起きない（現に furrow/cifail は wrapper のみ）。
 - GUI アプリは自分が開発者なので通常どおり Xcode / ビルド成果物を動かす（cask を自分では入れない）。
 - **brew tap/cask の位置づけ** = 他人・他マシン・再現性のための配布。自分のマシンでは source が正。

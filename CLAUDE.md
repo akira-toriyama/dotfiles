@@ -72,14 +72,13 @@ flowchart TD
 
 - **`main` は唯一の永続ブランチ**（2026-05-27 に `rebuild` を統合・削除。CI も main へ単発）。作業は短命な feature ブランチを切り、**PR 経由で `main` に squash-merge** する（直 push はしない）。
 - **フロー**: `git checkout -b <type>/<topic>` → 論理単位で commit → `git push -u origin <branch>` → `gh pr create` → CI green → `gh pr merge --squash`（`--auto` 可）。実例は [docs/operations.md](docs/operations.md)。
-- **コミットメッセージは gitmoji + Conventional Commits**: `:sparkles: feat(nix): ...` / `:memo: docs(roadmap): ...` / `:bug: fix(...): ...`。`git log -n 20` でスタイルを確認してから書く。
+- **コミットメッセージは gitmoji-driven**（`<:gitmoji:>[(<scope>)][!] <subject>`。Conventional の `<type>` 語は退役済み）。規約の正本は [docs/commit-convention.md](docs/commit-convention.md) と `glyph rules`。**push 前に `glyph lint --range origin/main..HEAD`**（履歴には退役形式の commit が残っているので `git log` を手本にしない）。
 - **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
   - `shellcheck` — `install.sh` 静的解析
   - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞 + 自作 command（`~/.claude/commands/`）の `my-` 接頭辞を強制
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
-- **CI green を確認してからマージ**。失敗したら**新規コミットで修正**（push 済みへの `--amend` は使わない）。
-- **`--force` push / 履歴改変は禁止**（ユーザー明示指示がある場合のみ）。
+- **CI green を確認してからマージ**。失敗したら**新規コミットで修正**する（`--amend` / `--force` push / 履歴改変の可否は「作業時の絶対ルール」4 が正本）。
 - **push 時、pre-push フック（[.githooks/pre-push](.githooks/pre-push)）は chezmoi/ を触る push で `chezmoi verify` を実行し、乖離があれば警告するが止めない（warn-only、2026-07-03〜。Claude 主導運用のため）**。気づいたら `chezmoi apply` で live を追従する。恒久ゲートは CI（darwin build/switch smoke + chezmoi apply + templates render）と main のブランチ保護が担う。詳細 → [docs/operations.md §5.11](docs/operations.md)。
 
 ## シークレット取扱（YOU MUST）
@@ -135,13 +134,13 @@ op read "op://Vault/Item/field"
 ## Roadmap board / task tracker
 
 dotfiles の作業タスク（バックログ・設計メモ・引き継ぎ）の**正本は furrow + private repo
-[`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**（帰属は一級の
-repos フィールド `akira-toriyama/dotfiles`。ラベルは純粋タグ — repos-pivot 以降 `-l <repo>` は廃止）。
-`furrow ls -r dotfiles`（着手候補 = ready / in-progress）/ `furrow show <id>` / 起票は
-`furrow add "…" -r dotfiles`（この checkout 内なら global 既定ボードが repo を auto 付与）。運用ルールの正典は
-[`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)、
-全 repo 共通の作法は global `~/.claude/CLAUDE.md` の Workflow 節（furrow source を使う・
-着手前に projects 最新化・PR 本文に `SetStatus-task:` footer）。
+[`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**。
+この repo での入口は `furrow ls -r dotfiles`（着手候補 = ready / in-progress）/ `furrow show <id>` /
+起票は `furrow add "…" -r dotfiles`。
+
+**帰属・ラベル・board 自動導出・sync・PR footer の規約はここに複製しない** —— 全 repo 共通の作法は
+global `~/.claude/CLAUDE.md` の Workflow 節、運用ルールの正典は
+[`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)。
 
 issue 運用（集約 Project「roadmap」#5・Inbox/Status フロー・`Closes #N`）は family 共通ポリシー
 の名残で、**task の正本は furrow に移行済み**。**Project #5 / 残 open issue は手動 mirror 扱い**

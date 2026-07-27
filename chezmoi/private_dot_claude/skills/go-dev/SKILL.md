@@ -63,13 +63,13 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 ## build / release / distribution ※ 運用面は github-practices
 - **3層 distribution**: (1) self-contained `flake.nix`（`nix run github:owner/repo`）、(2) **GoReleaser** cross-compile＋Homebrew **cask**（binary formula は GoReleaser v2 で deprecated）を tap に auto-push、(3) source `install.sh` → `~/.local/bin`。
 - release build は必ず **`-trimpath` ＋ `-ldflags "-s -w"` ＋ `CGO_ENABLED=0`**（reproducible・小・static cross-compile）。matrix linux/darwin × amd64/arm64、`tar.gz`＋`checksums.txt`。unsigned cask は `post.install` の `xattr -dr com.apple.quarantine` で Gatekeeper 突破。
-- **release は tag driven のみ**（`on: push: tags: ['v*']`）、notes は **git-cliff** で on-the-fly（CHANGELOG.md を commit しない・`runner.temp` に書いて `--release-notes`）。semver は gitmoji でなく Conventional type で駆動（feat→minor / fix・perf→patch / breaking→major）。
+- **release は tag driven のみ**（`on: push: tags: ['v*']`）、notes は **`glyph notes --since-tag=<base>`** で on-the-fly（CHANGELOG.md を commit しない・`runner.temp` に書いて `--release-notes`）。**semver も notes も gitmoji 駆動**（`:sparkles:`→minor / `:bug:` `:zap:` 等→patch / `:boom:`・`!`・`BREAKING CHANGE:`→major。正本は `glyph rules`）。git-cliff は置き換え済み。
 - **`scripts/check.sh` を CI と byte 一致の mirror に**（build / vet / race test / lint / vulncheck / smoke）＝「green here == green CI」を Claude が headless に確認。⚠️ `set -e` 下の drift check は bare `diff`（`diff && echo` は `&&` 左辺が errexit 免除で drift を握り潰す）。GoReleaser は `~> 2` に pin（latest 禁止）。
 
 ## style & lint 設定
 - **golangci-lint v2 default set**（errcheck / govet / ineffassign / staticcheck / unused）を baseline に、CLI 向け調整: errcheck から `fmt.Fprint*` 除外（stdout/stderr write は best-effort・broken pipe は non-actionable）、revive unused-parameter off（cobra `RunE` の `(cmd,args)` 固定 signature）、`_test.go` は errcheck 免除。
 - gofmt/goimports 全 file、naming は MixedCaps・initialism 一貫（`URL`/`ID`/`HTTP`・`ServeHTTP`）・getter は `Get` 無し・error string は lowercase 無句点＝lint が強制するので手で議論しない（Go Code Review Comments）。
-- **fleet-managed file**（`commit-lint.yml`/`taplo.yml`/`task-status.yml`/`dependabot.yml`）は per-repo で編集しない。canonical copy は `akira-toriyama/.github`（fleet-sync が上書き）。
+- **fleet-managed file は per-repo で編集しない**（fleet-sync が上書きする）。canonical copy は `akira-toriyama/.github` の `fleet/`。**対象の正本は `.github/.github/workflows/fleet-sync.yml` の `MANIFEST=` 行**（2026-07-27 時点で 7 destination: `.github/workflows/` の task-status / commit-lint / taplo / zizmor / version-preview、`.github/zizmor.yml`、`docs/commit-convention.md`）。ここに一覧を写さない —— 増減は MANIFEST を読んで確認する（`dependabot.yml` は既に外れている）。
 
 ## house が mainstream Go から意図的に外す点（知らずに"直さない"）
 - **port は core 側で宣言**（consumer 側でなく）＝stateful app＋swappable fs/mem adapter の hexagonal 選択。lib なら canonical（consumer 定義）が正。

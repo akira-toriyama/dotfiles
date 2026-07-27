@@ -25,7 +25,7 @@
 
 | ルール（正本 = global CLAUDE.md の節） | Claude の手番 | ユーザーの手番 | 機構 | 印 |
 |---|---|---|---|---|
-| gitmoji commit 規約（Commits 節） | `glyph rules` を引いて書く。push 前に `glyph lint --range origin/main..HEAD` | — | PR の [commit-lint.yml](../.github/workflows/commit-lint.yml)（fleet 同期・glyph reusable） | 🟡 PR で必ず走り赤 X は付くが、branch protection 必須は `ci-gate` 1 本のみ（実測）で commit-lint 赤は merge を**止めない**。押さえは赤を見て直す運用。push 前 lint は 📖 |
+| gitmoji commit 規約（Commits 節） | `glyph rules` を引いて書く。push 前に `glyph lint --range origin/main..HEAD` | — | PR の [commit-lint.yml](../.github/workflows/commit-lint.yml)（fleet 同期・glyph reusable）。`undeclared-removal`（`:fire:` `:coffin:` `:truck:` に `!` か `NON-BREAKING:` footer を要求）は `glyph lint` が exit 3 で落とす | 🟡 PR で必ず走り赤 X は付くが、branch protection 必須は `ci-gate` 1 本のみ（実測）で commit-lint 赤は merge を**止めない**。押さえは赤を見て直す運用。push 前 lint は 📖（2026-07-27 に `undeclared-removal` を実際に踏んだ = push 前 lint が効いた例） |
 | body の和訳 footer（Commits 節） | `---（和訳）` を付ける | — | なし（実測: 和訳無し英語 body を `glyph lint` が exit 0 で通す） | 📖 |
 | furrow 一本化・source 使用（Workflow 節） | wrapper の `furrow` を叩く | — | `packages.nix` の source-build wrapper。brew 版未導入なので shadow は構造的に不発 | 🟡 `brew install` する事故自体は止まらない |
 | 着手前後の `furrow sync`（Workflow 節） | 読む前・書いた後に回す | — | なし | 📖 |
@@ -51,7 +51,7 @@
 | Fable% ≥ Weekly% 不変条件・約 4 日で 100%（モデル運用節） | `~/.claude.json` の枠を読み委譲判断 | 「これ Fable で」の発令 | なし | 📖 |
 | Opus 失敗の body 記録（モデル運用節） | 失敗の都度 task body に書く | — | なし | 📖 |
 | SwiftUI+Sill・AppKit 原則禁止・最新 macOS のみ（Mac アプリ節） | 設計・実装時に適用 | — | なし（lint 化候補: `import AppKit` 検出等） | 📖 |
-| 現在地ワンショット・pare/cifail/wait4x/peekaboo を既定で使う（現在地・自作 CLI 節） | 生ログ・手書きループより先にツールへ手を伸ばす | — | 読み取り git allowlist と rundiff の test 自動 wrap（PreToolUse hook）は modify_settings.json が 🔒。**使う判断そのもの**は散文 | 🟡 |
+| 現在地ワンショット・pare/cifail/rundiff/revpost/wait4x/peekaboo を既定で使う（現在地・自作 CLI 節） | 生ログ・手書きループより先にツールへ手を伸ばす | — | 読み取り git allowlist と rundiff の test 自動 wrap（PreToolUse hook）は modify_settings.json が 🔒。**使う判断そのもの**は散文 | 🟡 |
 | 自作 CLI/アプリは source・brew 版禁止（source 節） | `brew install` しない | `brew install` しない | PATH 構造: brew 版が無ければ shadow は起きない（実測: furrow/cifail は nix profile のみ） | 🟡 導入操作自体は止まらない |
 
 ## ユーザーの手番（一覧）
