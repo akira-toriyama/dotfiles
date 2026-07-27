@@ -110,9 +110,9 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" '
 # change rebuilds. Give it room: a timed-out hook is fail-open (the command runs
 # unwrapped), but it is noisy, and a rebuild happens exactly when the tool is
 # being worked on.
-if command -v rundiff >/dev/null 2>&1 \
-  && snippet=$(rundiff hook print --json 2>/dev/null) \
-  && printf '%s' "$snippet" | jq -e '.hooks.PreToolUse[0].hooks[0].command' >/dev/null 2>&1; then
+if command -v rundiff >/dev/null 2>&1 &&
+  snippet=$(rundiff hook print --json 2>/dev/null) &&
+  printf '%s' "$snippet" | jq -e '.hooks.PreToolUse[0].hooks[0].command' >/dev/null 2>&1; then
   merged=$(printf '%s\n' "$out" | jq --argjson add "$snippet" '
     ($add.hooks.PreToolUse[0].hooks[0] | .timeout = 30) as $h
     | ( if ( [ (.hooks.PreToolUse // [])[]?.hooks[]?

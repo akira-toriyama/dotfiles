@@ -22,12 +22,18 @@ NAME=""
 DESC=""
 for arg in "$@"; do
   case "$arg" in
-    --name=*) NAME="${arg#--name=}" ;;
-    --desc=*) DESC="${arg#--desc=}" ;;
-    *) echo "unknown arg: $arg (使い方: --name=... [--desc=...])" >&2; exit 1 ;;
+  --name=*) NAME="${arg#--name=}" ;;
+  --desc=*) DESC="${arg#--desc=}" ;;
+  *)
+    echo "unknown arg: $arg (使い方: --name=... [--desc=...])" >&2
+    exit 1
+    ;;
   esac
 done
-[ -z "$NAME" ] && { echo "--name は必須" >&2; exit 1; }
+[ -z "$NAME" ] && {
+  echo "--name は必須" >&2
+  exit 1
+}
 
 # flake dir 解決
 FLAKE_DIR="${DOTFILES_FLAKE_DIR:-}"
@@ -35,7 +41,10 @@ if [ -z "$FLAKE_DIR" ] && command -v ghq >/dev/null 2>&1; then
   FLAKE_DIR=$(ghq list -p github.com/akira-toriyama/dotfiles 2>/dev/null | head -1)
 fi
 [ -z "$FLAKE_DIR" ] && [ -d "$HOME/dotfiles" ] && FLAKE_DIR="$HOME/dotfiles"
-[ -z "$FLAKE_DIR" ] && { echo "flake が見つからない" >&2; exit 1; }
+[ -z "$FLAKE_DIR" ] && {
+  echo "flake が見つからない" >&2
+  exit 1
+}
 HB="$FLAKE_DIR/system/modules/homebrew.nix"
 
 # cask / formula 判定 (formula 優先 = CLI が多いため)
@@ -63,14 +72,14 @@ insert_after_block() {
   awk -v sec="$section" -v ln="$line" '
     $0 == "    " sec " = [" { print; print ln; next }
     { print }
-  ' "$HB" > "$HB.tmp" && mv "$HB.tmp" "$HB"
+  ' "$HB" >"$HB.tmp" && mv "$HB.tmp" "$HB"
 }
 
 # tap formula/cask (owner/repo/name 形式) なら tap も宣言する。
 # nix-darwin homebrew は宣言された tap からしか解決しないので、これが無いと
 # 新 PC の switch で "No available formula/cask" になる (既存 omniwm と同じ理由)。
 if [[ "$NAME" == */*/* ]]; then
-  TAP="${NAME%/*}"   # owner/repo/name → owner/repo
+  TAP="${NAME%/*}" # owner/repo/name → owner/repo
   if grep -q "\"$TAP\"" "$HB"; then
     echo "tap 宣言済み: $TAP"
   else
