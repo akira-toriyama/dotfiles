@@ -14,8 +14,32 @@ exclude = [".git", "result", "result-*"]
 "chezmoi/dot_local/share/azookey-bridge/executable_azookey-bridge.py" = "py39"
 
 [lint]
-# 既定ルールセット（E4 / E7 / E9 + F）から始める。select の拡張（B, UP 等）は
-# 赤の増分を測ってから決める。最初から広げて既存コードを赤くしない。
+# 既定（E4/E7/E9 + F）から、1 グループずつ赤の増分を測って広げた結果がこれ。
+# 実測 2026-07-27（ruff 0.15 系・対象 = repo 全体 + 拡張子の無い `scripts/lint`）:
+#
+#   E 10 / I 2 / SIM 1 / EXE 1 / W・F・UP・B・C4・RET・PIE 0  → 計 14 件
+#
+# 14 件は全部直したので**ベースラインは 0**。以後この select が赤を出したら
+# それは新しく入った違反で、既存の借金ではない。
+select = ["E", "W", "F", "I", "UP", "B", "C4", "SIM", "RET", "PIE", "EXE"]
+
+# ── 選ばなかったもの（`--select ALL` は 231 件。実測 2026-07-27）───────────────
+# ignore に書くと「選んでいないのに ignore してある」死んだ設定になるので、
+# 理由はここに散文で残す。復活を検討する時はこの段落を読むこと。
+#
+# RUF001/002/003 (17) — 全角記号（（ ） ／）を ambiguous 扱いする。日本語で
+#   コメントを書く以上は不可避で、直す＝日本語をやめること。
+# PT009 (28) — unittest を pytest へ移せと言う。stdlib のみ・unittest 維持は
+#   決定事項（scripts のランタイム方針）なので正面衝突する。
+# T201 (23) — print 禁止。CLI の出力そのものなので意図的。
+# D1xx / ANN — docstring 強制・型注釈強制。今の規模（Python 7 ファイル）に過剰。
+#
+# EXE001 は chezmoi/ 配下では意味を持たない。$HOME 側の +x を供給するのは
+# `executable_` 接頭辞（CI の convention-executable-prefix job が強制）で、
+# source 側の git mode は無関係 —— 実際 chezmoi/ の executable_* 6 本のうち
+# 5 本は 100644。scripts/ 側では EXE001 を効かせたいので、per-file で外す。
+[lint.per-file-ignores]
+"chezmoi/**" = ["EXE001"]
 
 [format]
 # 既定（black 互換）。設定を持たないこと自体が意図 —— 形式の議論を機械に預ける。
