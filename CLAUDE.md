@@ -7,8 +7,8 @@
 
 このリポジトリで使う正規語彙は [`docs/glossary.md`](docs/glossary.md) に従う
 — 所有レイヤー（`nix-darwin` / `home-manager` / `chezmoi` / `1Password`）、
-chezmoi prefix（`executable_` / `private_` / `encrypted_` / `run_once_` /
-`run_onchange_`）、ビルド / 適用コマンド（`darwin-rebuild build/switch` /
+chezmoi prefix（`executable_` / `private_` / `modify_` / `create_` / `encrypted_` /
+`run_once_` / `run_onchange_`）、ビルド / 適用コマンド（`darwin-rebuild build/switch` /
 `chezmoi diff/apply/re-add`）、配布（`install.sh` / `aarch64-darwin`）、
 運用（`main` / `feature branch` / `pre-push hook`）など。`Don't call it:`
 側の同義語は使わない。用語の追加・改名はコード変更と **同一 PR で** この
@@ -31,6 +31,7 @@ global CLAUDE.md ルールの強制状態: [docs/claude-md-ledger.md](docs/claud
 | DSL のあるプログラム設定（zsh など） | **home-manager** `programs.*` | `home/modules/*.nix` |
 | 手編集の生 dotfile / バイナリ資産 | **chezmoi** | `chezmoi/dot_*` |
 | シークレット（SSH 鍵 / PAT 等） | **chezmoi + 1Password `op`** | `chezmoi/private_*.tmpl` |
+| Claude の指示書 / skill / agent / hook | **chezmoi** | `chezmoi/private_dot_claude/`・`chezmoi/dot_local/bin/` |
 
 **1 ファイル 1 所有**。Nix と chezmoi の両方が同じファイルを管理してはいけない（事故の主因）。
 
@@ -110,7 +111,7 @@ flowchart TD
 - macOS の **TCC/sandbox で保護されたアプリ**（Mail / Safari / Calendar 等）の defaults は switch が成功しても無音で適用されない。AI は「修正」追加で深追いしない。
 - chezmoi run スクリプトは **`run_onchange_` 既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap でのみ使う。
 - chord config パス（`dot_config/chord/private_config.toml`）は `.tmpl` の `{{ include }}`・`verify-chord-*.yml` の `paths:`・`gen-chord-doc.py` の **4 箇所**が指す。リネーム時は同時更新（PR #123 で古参照を踏んだ）。config 文法を released chord より先行させると `verify-chord-validate.yml`（tap の chord で strict 検証）が落ちる。`.tmpl` 自体は read-only で他リポに副作用なし。詳細 → [docs/operations.md §5.7](docs/operations.md)。
-- 編集を許したい AI/ユーザー共有ファイル（例: `~/.claude/settings.json`）は home.file に直接書かず **`mkOutOfStoreSymlink`** で逃がす（直書きは Nix store immutable で AI 編集できなくなる）。
+- 編集を許したい AI/ユーザー共有ファイル（例: `~/.claude/settings.json`）は home.file に直接書かない（Nix store は immutable で AI が編集できなくなる）。**実機構は chezmoi の `modify_` スクリプト** — [`chezmoi/private_dot_claude/modify_settings.json`](chezmoi/private_dot_claude/modify_settings.json) が live を stdin で受けて必要なキーだけ保証し、残りは pass-through する。`mkOutOfStoreSymlink` はこの repo では **1 箇所も使っていない**（実測）ので、それを前提に書かない。
 
 ## よく使うコマンド（Claude が推測できないもの）
 
