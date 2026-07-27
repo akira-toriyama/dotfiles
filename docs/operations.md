@@ -38,7 +38,8 @@ cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 git status
 git checkout -b chore/sync-chord-config
 git add chezmoi/dot_config/chord/private_config.toml
-git commit -m ":memo: chore(dotfiles): chord 設定を source に反映"
+glyph lint --range origin/main..HEAD   # push 前に必ず
+git commit -m ":memo:(chord) sync the chord config into the chezmoi source"
 git push -u origin chore/sync-chord-config   # pre-push フックが chezmoi verify で乖離を警告（warn-only、§5.11）
 gh pr create --title "..." --body "..."
 gh pr merge --auto --squash
@@ -90,7 +91,8 @@ nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure
 # 6. PR
 git checkout -b feat/add-foo-cask
 git add system/modules/homebrew.nix
-git commit -m ":sparkles: feat(homebrew): foo cask 宣言追加"
+glyph lint --range origin/main..HEAD   # push 前に必ず
+git commit -m ":sparkles:(homebrew) declare the foo cask"
 git push -u origin feat/add-foo-cask
 gh pr create
 # CI の "Verify casks installed" が cask 名のタイポを検知
@@ -176,7 +178,7 @@ brew uninstall --cask foo
 # 2. darwin-rebuild switch で自動的に消える
 ```
 
-`homebrew.onActivation.cleanup = "zap"` に切り替えれば未宣言の brew/cask を自動 uninstall。**現状は `"none"` 据え置き**（フェーズ 4 残りを宣言化してからユーザー確認の上で切り替える方針、[CLAUDE.md:66](../CLAUDE.md)）。
+`homebrew.onActivation.cleanup = "zap"` に切り替えれば未宣言の brew/cask を自動 uninstall。**現状は `"none"` 据え置き**（フェーズ 4 残りを宣言化してからユーザー確認の上で切り替える方針、[CLAUDE.md「既知の落とし穴」節](../CLAUDE.md#既知の落とし穴読まずに修正を試みない)）。
 
 ### 5.2 darwin-rebuild rollback
 
@@ -227,7 +229,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 
 ### 5.5 secret 取り扱い（YOU MUST）
 
-[CLAUDE.md:44-50](../CLAUDE.md) より:
+[CLAUDE.md「シークレット取扱」節](../CLAUDE.md#シークレット取扱you-must) より:
 
 - 平文を `print / log / echo / コミット / template リテラル` しない
 - chezmoi template で参照: `{{ onepasswordRead "op://Vault/Item/field" }}`
