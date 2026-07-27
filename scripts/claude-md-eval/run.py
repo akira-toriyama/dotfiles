@@ -10,12 +10,14 @@ CLAUDE.md, plugins, hooks and memory cannot leak in. Without that, the baseline
 would already contain the rules being tested and the comparison would measure
 the section against itself.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import subprocess
 import sys
+from typing import Any
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -38,27 +40,40 @@ BASE_SYSTEM = (
 
 def build_cmd(model: str, section: str | None) -> list[str]:
     cmd = [
-        "claude", "--print",
-        "--setting-sources", "",
-        "--model", model,
-        "--output-format", "json",
-        "--system-prompt", BASE_SYSTEM,
-        "--tools", "",
+        "claude",
+        "--print",
+        "--setting-sources",
+        "",
+        "--model",
+        model,
+        "--output-format",
+        "json",
+        "--system-prompt",
+        BASE_SYSTEM,
+        "--tools",
+        "",
     ]
     if section is not None:
         cmd += ["--append-system-prompt", PREAMBLE + section]
     return cmd
 
 
-def call(case: dict, condition: str, trial: int, model: str,
-         section: str, retries: int) -> dict:
+def call(
+    case: dict[str, Any],
+    condition: str,
+    trial: int,
+    model: str,
+    section: str,
+    retries: int,
+) -> dict[str, Any]:
     cmd = build_cmd(model, section if condition == "candidate" else None)
     err = "no attempt made"
     for _ in range(retries + 1):
         # The prompt goes through stdin: --tools is variadic and swallows a
         # positional prompt whenever no other flag follows it.
-        p = subprocess.run(cmd, input=case["prompt"], capture_output=True,
-                           text=True, timeout=600)
+        p = subprocess.run(
+            cmd, input=case["prompt"], capture_output=True, text=True, timeout=600
+        )
         if p.returncode == 0:
             try:
                 d = json.loads(p.stdout)
@@ -67,18 +82,25 @@ def call(case: dict, condition: str, trial: int, model: str,
                 continue
             if not d.get("is_error"):
                 return {
-                    "case_id": case["id"], "probes": case.get("probes", []),
-                    "condition": condition, "trial": trial,
-                    "response": d["result"], "cost_usd": d.get("total_cost_usd"),
+                    "case_id": case["id"],
+                    "probes": case.get("probes", []),
+                    "condition": condition,
+                    "trial": trial,
+                    "response": d["result"],
+                    "cost_usd": d.get("total_cost_usd"),
                     "model": model,
                 }
             err = f"is_error: {str(d)[:200]}"
         else:
             err = (p.stderr or p.stdout)[:300]
     return {
-        "case_id": case["id"], "probes": case.get("probes", []),
-        "condition": condition, "trial": trial, "response": None,
-        "error": err, "model": model,
+        "case_id": case["id"],
+        "probes": case.get("probes", []),
+        "condition": condition,
+        "trial": trial,
+        "response": None,
+        "error": err,
+        "model": model,
     }
 
 
@@ -97,12 +119,19 @@ def completed(path: Path) -> set[tuple[str, str, int]]:
 def main(argv: list[str] | None = None) -> int:
     here = Path(__file__).resolve().parent
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--candidate", type=Path, required=True,
-                    help="Markdown file holding the section under test")
+    ap.add_argument(
+        "--candidate",
+        type=Path,
+        required=True,
+        help="Markdown file holding the section under test",
+    )
     ap.add_argument("--cases", type=Path, default=here / "cases.json")
     ap.add_argument("--out", type=Path, default=here / "results" / "responses.jsonl")
-    ap.add_argument("--model", default="claude-opus-5",
-                    help="Pinned so results stay comparable across runs and operators")
+    ap.add_argument(
+        "--model",
+        default="claude-opus-5",
+        help="Pinned so results stay comparable across runs and operators",
+    )
     ap.add_argument("--trials", type=int, default=2)
     ap.add_argument("--retries", type=int, default=2)
     ap.add_argument("--workers", type=int, default=8)
@@ -113,24 +142,35 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
 
     done = completed(args.out)
-    jobs = [(c, cond, t)
-            for c in cases
-            for cond in ("baseline", "candidate")
-            for t in range(1, args.trials + 1)
-            if (c["id"], cond, t) not in done]
+    jobs: list[tuple[dict[str, Any], str, int]] = [
+        (c, cond, t)
+        for c in cases
+        for cond in ("baseline", "candidate")
+        for t in range(1, args.trials + 1)
+        if (c["id"], cond, t) not in done
+    ]
     print(f"{len(jobs)} calls to make ({len(done)} already complete)", flush=True)
 
     with ThreadPoolExecutor(max_workers=args.workers) as ex, args.out.open("a") as f:
-        for r in ex.map(lambda j: call(*j, args.model, section, args.retries), jobs):
+        for r in ex.map(
+            lambda j: call(j[0], j[1], j[2], args.model, section, args.retries), jobs
+        ):
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
             f.flush()
-            print(f"  {'ok' if r.get('response') else 'FAIL'} "
-                  f"{r['case_id']}/{r['condition']}/t{r['trial']}", flush=True)
+            print(
+                f"  {'ok' if r.get('response') else 'FAIL'} "
+                f"{r['case_id']}/{r['condition']}/t{r['trial']}",
+                flush=True,
+            )
 
-    rows = [json.loads(l) for l in args.out.read_text().splitlines() if l.strip()]
+    rows = [
+        json.loads(line) for line in args.out.read_text().splitlines() if line.strip()
+    ]
     fails = [r for r in rows if not r.get("response")]
     cost = sum(r.get("cost_usd") or 0 for r in rows)
-    print(f"\nrows={len(rows)} failures={len(fails)} cost=${cost:.2f} model={args.model}")
+    print(
+        f"\nrows={len(rows)} failures={len(fails)} cost=${cost:.2f} model={args.model}"
+    )
     for r in fails[:5]:
         print(f"  FAIL {r['case_id']}/{r['condition']}/t{r['trial']}: {r.get('error')}")
     return 1 if fails else 0

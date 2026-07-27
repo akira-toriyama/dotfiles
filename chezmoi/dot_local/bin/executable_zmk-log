@@ -20,12 +20,19 @@ case "${1:-}" in
         exec cat "$TODAY"
         ;;
     days)
-        ls -1 "$LOGDIR" | grep '^zmk-.*\.log$' | sed 's/^zmk-//; s/\.log$//'
+        for f in "$LOGDIR"/zmk-*.log; do
+            [ -e "$f" ] || continue
+            b=${f##*/}; b=${b#zmk-}
+            echo "${b%.log}"
+        done
         ;;
     find)
         N="${2:-3}"
-        ls -1 "$LOGDIR"/zmk-*.log 2>/dev/null | tail -n "$N" | xargs cat 2>/dev/null \
-            | grep -E "$EVENTS"
+        files=("$LOGDIR"/zmk-*.log)
+        [ -e "${files[0]}" ] || exit 0
+        start=$(( ${#files[@]} - N ))
+        [ "$start" -lt 0 ] && start=0
+        cat "${files[@]:start}" 2>/dev/null | grep -E "$EVENTS"
         ;;
     since)
         [ -n "${2:-}" ] || { echo "usage: zmk-log since \"HH:MM\"" >&2; exit 2; }

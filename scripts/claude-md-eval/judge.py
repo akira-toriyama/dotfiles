@@ -14,12 +14,14 @@ Two independent signals, on purpose:
 The gate refuses a candidate that wins by deleting substance: a net increase in
 judge-flagged information loss blocks release even when the win count is higher.
 """
+
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
 import re
+from typing import Any
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -27,14 +29,38 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # Phrases a section may forbid by name. Extend when the section names others.
-NAMED = [r"良い質問", r"いい質問", r"しますね", r"見ていきま", r"お役に立て",
-         r"他に何か", r"他にご", r"何かあれば", r"遠慮なく"]
+NAMED = [
+    r"良い質問",
+    r"いい質問",
+    r"しますね",
+    r"見ていきま",
+    r"お役に立て",
+    r"他に何か",
+    r"他にご",
+    r"何かあれば",
+    r"遠慮なく",
+]
 # Preamble/closer patterns no section names. If these survive while NAMED drops,
 # the banned-phrase list is catching strings, not the underlying habit.
-UNNAMED = [r"^承知", r"^了解", r"^まず", r"結論から", r"^それでは", r"^では[、,]",
-           r"について説明", r"を説明します", r"以上です", r"以上になります",
-           r"参考になれば", r"ご確認ください", r"必要でしたら", r"よろしければ",
-           r"お気軽に", r"サポートします", r"^はい[、,。]"]
+UNNAMED = [
+    r"^承知",
+    r"^了解",
+    r"^まず",
+    r"結論から",
+    r"^それでは",
+    r"^では[、,]",
+    r"について説明",
+    r"を説明します",
+    r"以上です",
+    r"以上になります",
+    r"参考になれば",
+    r"ご確認ください",
+    r"必要でしたら",
+    r"よろしければ",
+    r"お気軽に",
+    r"サポートします",
+    r"^はい[、,。]",
+]
 
 JUDGE_PROMPT = """あなたは応答品質の審査員です。同じ質問への2つの応答 A / B を評価します。
 
@@ -66,8 +92,8 @@ loser_had_more_* は「負けた方にあった必要な情報／安全確認を
 いる」場合に true。"""
 
 
-def metrics(text: str) -> dict:
-    first = next((l for l in text.split("\n") if l.strip()), "")
+def metrics(text: str) -> dict[str, object]:
+    first = next((line for line in text.split("\n") if line.strip()), "")
     return {
         "chars": len(text),
         "lines": len(text.split("\n")),
@@ -79,7 +105,9 @@ def metrics(text: str) -> dict:
     }
 
 
-def fire_counts(rows: list[dict], cases: dict) -> dict[tuple[str, str], tuple[int, int]]:
+def fire_counts(
+    rows: list[dict[str, Any]], cases: dict[str, Any]
+) -> dict[tuple[str, str], tuple[int, int]]:
     """Per (case, condition): how many responses matched the case's fire_regex.
 
     A section whose effect is a fixed template (the work-request closing form)
@@ -105,27 +133,49 @@ def order_for(case_id: str, trial: int) -> tuple[str, str]:
     return ("baseline", "candidate") if h % 2 == 0 else ("candidate", "baseline")
 
 
-def judge_one(case_id: str, trial: int, by_cond: dict, model: str, retries: int) -> dict:
+def judge_one(
+    case_id: str, trial: int, by_cond: dict[str, Any], model: str, retries: int
+) -> dict[str, Any]:
     first, second = order_for(case_id, trial)
-    prompt = JUDGE_PROMPT.format(prompt=by_cond[first]["prompt"],
-                                 a=by_cond[first]["response"],
-                                 b=by_cond[second]["response"])
-    cmd = ["claude", "--print", "--setting-sources", "", "--model", model,
-           "--output-format", "json", "--tools", ""]
+    prompt = JUDGE_PROMPT.format(
+        prompt=by_cond[first]["prompt"],
+        a=by_cond[first]["response"],
+        b=by_cond[second]["response"],
+    )
+    cmd = [
+        "claude",
+        "--print",
+        "--setting-sources",
+        "",
+        "--model",
+        model,
+        "--output-format",
+        "json",
+        "--tools",
+        "",
+    ]
     for _ in range(retries + 1):
-        p = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=600)
+        p = subprocess.run(
+            cmd, input=prompt, capture_output=True, text=True, timeout=600
+        )
         if p.returncode != 0:
             continue
         try:
             raw = json.loads(p.stdout)["result"]
-            v = json.loads(re.search(r"\{.*\}", raw, re.S).group(0))
+            m = re.search(r"\{.*\}", raw, re.S)
+            if m is None:
+                continue
+            v = json.loads(m.group(0))
         except Exception:
             continue
         winner = {"A": first, "B": second, "tie": "tie"}.get(v.get("winner"))
         if winner is None:
             continue
         return {
-            "case_id": case_id, "trial": trial, "shown_as_A": first, "winner": winner,
+            "case_id": case_id,
+            "trial": trial,
+            "shown_as_A": first,
+            "winner": winner,
             "margin": v.get("margin"),
             "lost_correctness": bool(v.get("loser_had_more_correct")),
             "lost_safety": bool(v.get("loser_had_more_safety")),
@@ -134,14 +184,17 @@ def judge_one(case_id: str, trial: int, by_cond: dict, model: str, retries: int)
     return {"case_id": case_id, "trial": trial, "winner": None, "error": "judge failed"}
 
 
-def gate(verdicts: list[dict]) -> tuple[bool, list[str]]:
+def gate(verdicts: list[dict[str, Any]]) -> tuple[bool, list[str]]:
     """A candidate ships only if it wins on merit, not by deleting substance."""
     scored = [v for v in verdicts if v.get("winner")]
     tally = Counter(v["winner"] for v in scored)
     cand_wins, base_wins = tally["candidate"], tally["baseline"]
     # Only losses attributable to the candidate count against it.
-    cand_cut = sum(1 for v in scored
-                   if v["winner"] == "candidate" and (v["lost_correctness"] or v["lost_safety"]))
+    cand_cut = sum(
+        1
+        for v in scored
+        if v["winner"] == "candidate" and (v["lost_correctness"] or v["lost_safety"])
+    )
     reasons = []
     if len(scored) != len(verdicts):
         reasons.append(f"{len(verdicts) - len(scored)} pairs failed to judge")
@@ -149,14 +202,17 @@ def gate(verdicts: list[dict]) -> tuple[bool, list[str]]:
         reasons.append(f"candidate did not beat baseline ({cand_wins} vs {base_wins})")
     if scored and cand_cut / len(scored) > 0.25:
         reasons.append(
-            f"candidate won by cutting needed content in {cand_cut}/{len(scored)} pairs (>25%)")
+            f"candidate won by cutting needed content in {cand_cut}/{len(scored)} pairs (>25%)"
+        )
     return not reasons, reasons
 
 
 def main(argv: list[str] | None = None) -> int:
     here = Path(__file__).resolve().parent
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--responses", type=Path, default=here / "results" / "responses.jsonl")
+    ap.add_argument(
+        "--responses", type=Path, default=here / "results" / "responses.jsonl"
+    )
     ap.add_argument("--cases", type=Path, default=here / "cases.json")
     ap.add_argument("--out", type=Path, default=here / "results" / "verdicts.json")
     ap.add_argument("--model", default="claude-opus-5")
@@ -165,9 +221,13 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     cases = {c["id"]: c for c in json.loads(args.cases.read_text())}
-    rows = [json.loads(l) for l in args.responses.read_text().splitlines() if l.strip()]
+    rows = [
+        json.loads(line)
+        for line in args.responses.read_text().splitlines()
+        if line.strip()
+    ]
     rows = [r for r in rows if r.get("response")]
-    grouped: dict = defaultdict(dict)
+    grouped: dict[Any, Any] = defaultdict(dict)
     for r in rows:
         r["prompt"] = cases[r["case_id"]]["prompt"]
         grouped[(r["case_id"], r["trial"])][r["condition"]] = r
@@ -175,32 +235,47 @@ def main(argv: list[str] | None = None) -> int:
     pairs = [(k, v) for k, v in sorted(grouped.items()) if len(v) == 2]
     unpaired = len(grouped) - len(pairs)
     if unpaired:
-        print(f"warning: {unpaired} case/trial slots lack both conditions and are skipped")
+        print(
+            f"warning: {unpaired} case/trial slots lack both conditions and are skipped"
+        )
     print(f"judging {len(pairs)} pairs", flush=True)
 
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
-        verdicts = list(ex.map(
-            lambda p: judge_one(p[0][0], p[0][1], p[1], args.model, args.retries), pairs))
+        verdicts = list(
+            ex.map(
+                lambda p: judge_one(p[0][0], p[0][1], p[1], args.model, args.retries),
+                pairs,
+            )
+        )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(verdicts, ensure_ascii=False, indent=2))
 
-    agg: dict = defaultdict(lambda: defaultdict(list))
+    agg: dict[Any, Any] = defaultdict(lambda: defaultdict(list))
     for r in rows:
         for k, v in metrics(r["response"]).items():
             agg[r["condition"]][k].append(v)
     print("\n=== objective metrics (mean per response) ===")
     print(f"{'metric':<18}{'baseline':>10}{'candidate':>11}{'delta':>10}")
-    for k in ("chars", "lines", "named_filler", "unnamed_filler",
-              "first_line_chars", "bullets", "headers"):
+    for k in (
+        "chars",
+        "lines",
+        "named_filler",
+        "unnamed_filler",
+        "first_line_chars",
+        "bullets",
+        "headers",
+    ):
         b = sum(agg["baseline"][k]) / len(agg["baseline"][k])
         c = sum(agg["candidate"][k]) / len(agg["candidate"][k])
         print(f"{k:<18}{b:>10.1f}{c:>11.1f}{c - b:>+10.1f}")
     if agg["baseline"]["named_filler"] and not any(agg["baseline"]["named_filler"]):
-        print("  note: the baseline never used the named filler phrases, so a rule "
-              "forbidding them by name has nothing to act on")
+        print(
+            "  note: the baseline never used the named filler phrases, so a rule "
+            "forbidding them by name has nothing to act on"
+        )
 
     print("\n=== per case ===")
-    per_case: dict = defaultdict(list)
+    per_case: dict[Any, list[Any]] = defaultdict(list)
     for v in verdicts:
         per_case[v["case_id"]].append(v)
     for cid, vs in sorted(per_case.items()):

@@ -18,6 +18,7 @@
 
 stdlib のみ。リポジトリルートからの相対パスで動く。
 """
+
 from __future__ import annotations
 
 import re
@@ -32,17 +33,23 @@ BEGIN = "<!-- AUTO-GENERATED (scripts/gen-chord-doc.py from chezmoi/dot_config/c
 END = "<!-- END AUTO-GENERATED -->"
 
 DOC_RE = re.compile(r"^#\s*doc:\s*(.+?)\s*$")
-BIND_RE = re.compile(r'^\[\[bindings\]\]\s*$')
+BIND_RE = re.compile(r"^\[\[bindings\]\]\s*$")
 INPUT_RE = re.compile(r'^input\s*=\s*"(.+?)"\s*$')
-APPS_RE = re.compile(r'^apps\s*=\s*\[(.+?)\]\s*$')
+APPS_RE = re.compile(r"^apps\s*=\s*\[(.+?)\]\s*$")
 
 # 修飾子トークンの表記正規化（chord の input 文法に合わせる）。
 # [input-aliases] で定義された論理名 (ULTRA_LL 等) はこの dict に該当
 # しないので、_format_token のフォールバックで原文のまま出力される。
 _MOD = {
-    "cmd": "Cmd", "opt": "Opt", "alt": "Opt", "option": "Opt",
-    "ctrl": "Ctrl", "control": "Ctrl",
-    "shift": "Shift", "fn": "Fn", "hyper": "Hyper",
+    "cmd": "Cmd",
+    "opt": "Opt",
+    "alt": "Opt",
+    "option": "Opt",
+    "ctrl": "Ctrl",
+    "control": "Ctrl",
+    "shift": "Shift",
+    "fn": "Fn",
+    "hyper": "Hyper",
 }
 
 
@@ -149,14 +156,9 @@ def build_block() -> str:
 def update_doc(check_only: bool = False) -> int:
     block = build_block()
     text = DOC.read_text(encoding="utf-8")
-    pattern = re.compile(
-        re.escape(BEGIN) + r".*?" + re.escape(END), re.DOTALL
-    )
+    pattern = re.compile(re.escape(BEGIN) + r".*?" + re.escape(END), re.DOTALL)
     if not pattern.search(text):
-        raise SystemExit(
-            f"{DOC} に AUTO-GENERATED マーカーが無い "
-            f"({BEGIN} / {END})"
-        )
+        raise SystemExit(f"{DOC} に AUTO-GENERATED マーカーが無い ({BEGIN} / {END})")
     new = pattern.sub(block, text)
     if check_only:
         if new != text:
