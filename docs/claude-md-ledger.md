@@ -25,6 +25,8 @@
 
 | ルール（正本 = global CLAUDE.md の節） | Claude の手番 | ユーザーの手番 | 機構 | 印 |
 |---|---|---|---|---|
+| precedence と正典マップ（読み方節） | 規範が食い違ったら ①ユーザー指示 ②repo CLAUDE.md ③正典 ④この文書 の順で解決する。正典の所在は正典マップ 1 表だけを見る | — | なし。**この節を足した PR #274 自身が同一 PR での台帳更新を落とした**（本行はその追いつき） | 📖 精読と記憶次第。ただし正典マップは「どの文書が正典か」の重複を 1 箇所に潰したので、剥離の面数は減っている |
+| 節の並びは発火頻度順（読み方節） | 節を足す時もその軸に挿す | — | なし | 📖 |
 | gitmoji commit 規約（Commits 節） | `glyph rules` を引いて書く。push 前に `glyph lint --range origin/main..HEAD` | — | PR の [commit-lint.yml](../.github/workflows/commit-lint.yml)（fleet 同期・glyph reusable）。`undeclared-removal`（`:fire:` `:coffin:` `:truck:` に `!` か `NON-BREAKING:` footer を要求）は `glyph lint` が exit 3 で落とす | 🟡 PR で必ず走り赤 X は付くが、branch protection 必須は `ci-gate` 1 本のみ（実測）で commit-lint 赤は merge を**止めない**。押さえは赤を見て直す運用。push 前 lint は 📖（2026-07-27 に `undeclared-removal` を実際に踏んだ = push 前 lint が効いた例） |
 | commit は英語・body に和訳 footer（Commits 節） | subject も body も英語で書き、body には `---（和訳）` を付ける | — | なし（実測 2026-07-27: ①和訳無し英語 body ②**日本語だけの subject/body** をどちらも `glyph lint` が exit 0 で通す。commit-lint.yml も同じ glyph reusable なので CI でも落ちない） | 📖 英語要件は完全に散文頼み |
 | furrow 一本化・source 使用（Workflow 節） | wrapper の `furrow` を叩く | — | `packages.nix` の source-build wrapper。brew 版未導入なので shadow は構造的に不発 | 🟡 `brew install` する事故自体は止まらない |
@@ -69,10 +71,11 @@
 
 ## 検証状態
 
-強制状態の印は 2026-07-26 に成果物を読む・実測して付けた:
+強制状態の印は 2026-07-26 に成果物を読む・実測して付けた（2026-07-27 に PR #273 / #275 / #274 の変更分を追記・下記 ⑤〜⑦）:
 
 - **読取**: commit-lint.yml / task-status.yml / ci.yml / agents/fable-architect.md / modify_settings.json / furrow.nix / .githooks/pre-push / scripts/claude-md-eval/README.md
 - **実測**: ① glyph の和訳非強制 — 和訳なし英語 body を `glyph lint --message` に通して exit 0。② Stop hook — fixture 9 ケース緑 + 変異検証（hook 無効化で block 系 3 件が fail）+ live 配布後の E2E block。③ brew shadow 不在 — `which furrow cifail pare glyph` が全て nix profile、`/opt/homebrew/bin` に無し。④ **`-l <repo>` ガード** — 初回実測（2026-07-26）では発火しなかったが、原因は repos-pivot の移行漏れで repo 名 label が 13 task に残存していたこと（ガードは「label 実在なら発火しない」設計 = furrow `app/repo.go` DidYouMeanRepo のコメントに明記）。t-mztn で 13 件を `--rm-label` 掃除後、`furrow ls -l dotfiles` が exit 2 + `candidates: [akira-toriyama/dotfiles]` を返すことを再実測で確認。CLAUDE.md の記載は「データに repo 名 label が無い」不変条件の下で正しい。その不変条件を機械で守る lint は未実装（furrow t-jbrr）。
+- **2026-07-27 の追加実測**: ⑤ 日本語だけの subject/body を `glyph lint --stdin` が exit 0 で通す（英語要件は無強制）。⑥ `:fire:` + footer 無しは exit 3 `undeclared-removal`。⑦ `furrow doctor` は projects checkout 内で `scope-shadowed` を **info** 報告するだけで止めない（auto 不発）。
 - **記載準拠（本台帳では未再検証）**: ultracode の恒久化不能・`/model` がユーザー操作限定である点は CLAUDE.md / modify_settings.json コメントの記載に依る。
 
 ## 運用
