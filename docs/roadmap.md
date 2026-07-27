@@ -31,7 +31,7 @@
 - [x] **`.chezmoiroot=chezmoi` 採用**（ユーザー決定 / commit f9b1800）
   - `git mv` で `dot_*` `Library/` `run_onchange_*` `.chezmoi*` を `chezmoi/` へ集約
   - 検証ゲート通過: 再配置前後で `chezmoi managed`(28件) と `chezmoi diff` が**完全一致**（$HOME 不変。※既存の未適用 .Brewfile 差分は再配置と無関係に元から存在）
-- [x] flake スケルトン作成（適用しない・ビルド確認のみ / commit 546d2c8）
+- [x] flake スケルトン作成（switch せず `darwin-rebuild build` のみ / commit 546d2c8）
   - `flake.nix`（nix-darwin/master + home-manager + nix-homebrew, follows 固定）
   - `system/hosts/<hostname>.nix`（旧: 当初は LocalHostName 固定モジュール。後にホスト依存をやめ `system/hosts/generic.nix` に統一）
   - `system/modules/` `home/modules/` 雛形（空）。Determinate 共存で `nix.enable=false`

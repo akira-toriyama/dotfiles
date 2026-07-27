@@ -52,7 +52,13 @@
 | Fable のファンアウト禁止（モデル運用節） | `fable-architect` 経由でのみ Fable を使う | — | [agents/fable-architect.md](../chezmoi/private_dot_claude/agents/fable-architect.md) の `tools:` に Agent 非搭載 → harness が拒否 | 🔒 Agent ツール経路のみ（Bash から `claude -p` を叩く迂回は構造では止まらない — 未実測） |
 | Fable% ≥ Weekly% 不変条件・約 4 日で 100%（モデル運用節） | `~/.claude.json` の枠を読み委譲判断 | 「これ Fable で」の発令 | なし | 📖 |
 | Opus 失敗の body 記録（モデル運用節） | 失敗の都度 task body に書く | — | なし | 📖 |
+| 版番号を書かない＝`opus[1m]` alias を pin しない（モデル運用節） | settings にも CLAUDE.md にも `claude-opus-4-8` 等の具体 ID を書かない | — | なし。[modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json):97 が seed するのは alias `"opus[1m]"`（実測）だが、**具体 ID に書き換える事故を止める lint は無い** | 📖 一度ずれた実績があるルール |
+| 担当分担 Opus/Sonnet/Fable（モデル運用節） | メインループ=最新 Opus、機械的サブエージェント=Sonnet+`effort: low`、単独深考=`fable-architect` | — | なし（Fable のファンアウト禁止だけが上行で 🔒） | 📖 |
+| Fable セッションで既定継承させない（モデル運用節） | `/model fable` 中の workflow / サブエージェントは探索=`sonnet`+low、検証・judge=`opus` を明示指定する | `/model fable` への切替 | なし。サブエージェントは既定でメインループのモデルを継承するため、**指定漏れは黙って全員 Fable になる** | 📖 枠を直撃するのに無強制 |
+| 検証は常に Opus 側（モデル運用節） | Fable で書いたもののレビュー・検証は ultracode（opus / sonnet サブエージェント）で回す | — | なし | 📖 |
+| 枠が尽きたら追加課金に逃げない（モデル運用節） | Fable 枠が尽きたら Opus で粘る | 課金判断 | なし | 🙅 リスク受容・ユーザー裁量 |
 | SwiftUI+Sill・AppKit 原則禁止・最新 macOS のみ（Mac アプリ節） | 設計・実装時に適用 | — | なし（lint 化候補: `import AppKit` 検出等） | 📖 |
+| 不足パーツは Sill への PR を検討（Mac アプリ節） | アプリ側に one-off で足す前に共通化して Sill に上げられるか先に考える | Sill への PR merge 判断 | なし | 📖 |
 | 現在地ワンショット・pare/cifail/rundiff/revpost/wait4x/peekaboo を既定で使う（現在地・自作 CLI 節） | 生ログ・手書きループより先にツールへ手を伸ばす | — | 読み取り git allowlist と rundiff の test 自動 wrap（PreToolUse hook）は modify_settings.json が 🔒。**使う判断そのもの**は散文 | 🟡 |
 | 他 repo では repo の慣習に従う（「akira-toriyama 以外のリポジトリに対して」節） | その repo の CLAUDE.md / CONTRIBUTING / 既存履歴を先に読む | — | なし（gitmoji 規約・furrow・skill 等を他 repo に持ち込まないことを機械では止めていない） | 📖 |
 | 自作 CLI/アプリは source・brew 版禁止（source 節） | `brew install` しない | `brew install` しない | PATH 構造: brew 版が無ければ shadow は起きない（実測: furrow/cifail は nix profile のみ） | 🟡 導入操作自体は止まらない |
@@ -61,13 +67,24 @@
 
 機構化できない・Claude からは起こせない操作。**この一覧はここが初出**（各ルールの正本には分散して埋まっていた）。
 
+出所で 2 つに分ける — 上の台帳の対象は global CLAUDE.md だけ（:3-4）だが、実際に手を動かすのは
+ユーザー 1 人なので、**dotfiles 固有の手番も同じ場所で見えないと一覧の意味が無い**。混ざらないよう
+小見出しで分離する。
+
+### global CLAUDE.md 由来（全 repo 共通・上の台帳と同じ対象）
+
 - **セッション開始時の `/effort ultracode`** — 恒久化不能（モデル運用節）。ファンアウトさせたいセッションで 1 回。
 - **`/model` 切替と「これ Fable で」の発令** — メインループのモデルは Claude からは変えられない。セッション跨ぎの「何度も失敗している」記憶を持つのはユーザー側（モデル運用節）。
-- **ホスト側 sudo の実行** — `darwin-rebuild switch` / `--rollback` 等。Claude はコマンド提示まで（開発ポリシー節・dotfiles CLAUDE.md ルール 2）。
-- **破壊的 git の明示指示** — force push・履歴改変・push 済みへの amend はユーザーが明示した時だけ（dotfiles CLAUDE.md ルール 4）。
+- **VM 外（ホスト）の sudo 実行** — Claude はコマンド提示まで（開発ポリシー節。VM の中は全操作 OK）。
 - **好み・リスク受容・product 判断の裁定** — 一問一答への回答、「残り全部推奨で」の委任（作業依頼への返し方節）。
 - **作業開始の GO** — 質問・状況共有・相談への返答は GO ではない。保留中の作業は明示指示で再開（Workflow 節）。
-- **PR merge の判断（Claude 主導運用を明示していない repo）** — dotfiles は repo CLAUDE.md ルール 5 で Claude が merge してよい。明示の無い repo では従来どおりユーザー。
+- **カナリア／フリート進行の判断** — 段の正本は [fleet-change-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/fleet-change-policy.md)（開発ポリシー節）。
+
+### dotfiles の repo CLAUDE.md 由来（**上の台帳の対象外** — この repo だけの手番）
+
+- **`darwin-rebuild switch` / `--rollback` の実行** — sudo が要るのでコマンド提示までが Claude（ルール 2）。
+- **破壊的 git の明示指示** — force push・履歴改変・push 済みへの amend はユーザーが明示した時だけ（ルール 4）。
+- **PR merge の判断（Claude 主導運用を明示していない repo）** — dotfiles はルール 5 で Claude が merge してよい。明示の無い repo では従来どおりユーザー。
 
 ## 検証状態
 

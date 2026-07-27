@@ -21,10 +21,10 @@
 | Nix でビルド可能な CLI（jq, gh, ghq, direnv, ripgrep 等） | **home-manager** `home.packages` | クロスプラットフォーム・宣言的 |
 | GUI アプリ / cask / Mac App Store | **nix-darwin** `homebrew.casks` / `masApps` | Nix は cask をビルド不可 |
 | Homebrew 本体 | **nix-homebrew** モジュール | brew バイナリ導入も再現可能に（任意だが推奨） |
-| カスタム tap のツール（borders, rift, skhd, krp 等） | **nix-darwin** `homebrew.brews` + `taps` | nixpkgs に無い→ brew 維持 |
+| カスタム tap のツール（現行は `steipete/tap/peekaboo` のみ） | **nix-darwin** `homebrew.brews` + `taps` | nixpkgs に無い→ brew 維持 |
 | macOS defaults（Dock/Finder/NSGlobalDomain 等） | **nix-darwin** `system.defaults` / `CustomUserPreferences` | 宣言的に再現。system-inventory が入力 |
 | zsh / starship / git のプログラム設定（DSL あり） | **home-manager** `programs.zsh` / `starship` / `git` | DSL で生成。現 `.zshrc` は刷新（後述） |
-| アプリ固有の手編集 dotfile（borders, rift, focusfx, claude） | **chezmoi** | Nix DSL が無い・アプリ所有の生 JSON。現状維持 |
+| アプリ固有の手編集 dotfile（chord, facet, halo, wand, claude） | **chezmoi** | Nix DSL が無い・アプリ所有の生 TOML/JSON。現状維持 |
 | シークレット（SSH 鍵, PAT, トークン） | **chezmoi + 1Password** `onepasswordRead` テンプレート | リポジトリに置かず apply 時に注入 |
 | 効果音等の不透明アセット（dot_local/share/sounds） | **chezmoi** | バイナリ資産 |
 | LaunchAgent（border-cycle 等） | **chezmoi**（現状の run_onchange 方式）/ システム級は nix-darwin | 既存資産を尊重 |
@@ -42,21 +42,32 @@ dotfiles/                       # 1リポジトリに flake と chezmoi 源を�
 ├── .chezmoiroot   → "chezmoi"  # ★これにより直下の Nix 群が $HOME に流出しない
 ├── flake.nix  flake.lock
 ├── system/                     # nix-darwin
-│   ├── hosts/<hostname>.nix    #   マシン別エントリ
-│   ├── modules/                #   homebrew.nix / defaults.nix / nix.nix
-│   └── profiles/               #   役割別（任意）
+│   ├── hosts/generic.nix       #   マシン別エントリ
+│   └── modules/                #   homebrew.nix / defaults.nix / power.nix /
+│                               #   launchd-drift.nix / claude-maint.nix / zmk-log.nix
 ├── home/                       # home-manager
-│   └── modules/                #   zsh.nix / git.nix / packages.nix
+│   └── modules/                #   zsh.nix / git.nix / packages.nix / mise.nix /
+│                               #   chezmoi.nix / furrow.nix
 ├── chezmoi/                    # ★ chezmoi source root（.chezmoiroot の指す先）
-│   ├── .chezmoiignore  .chezmoi.toml.tmpl
-│   ├── dot_config/{borders,rift,focusfx}/...   # 現 dot_config を移動
-│   ├── dot_claude/settings.json
-│   ├── dot_local/share/sounds/...
-│   ├── private_dot_ssh/private_id_*.tmpl   # ★ op から注入する秘密
-│   └── run_onchange_border-cycle.sh.tmpl
-├── docs/  README.md  .editorconfig  LICENSE
-└── (任意) .justfile             # タスクランナー（just）
+│   ├── .chezmoiignore  .chezmoiversion
+│   ├── dot_config/{chord,facet,halo,wand}/...  # アプリ所有の生設定
+│   ├── private_dot_claude/     #   CLAUDE.md / agents / skills /
+│   │                           #   modify_settings.json（★ live を書き換える modify_ スクリプト）
+│   ├── dot_local/bin/executable_*   # 手書きの helper（claude-work-report-check 等）
+│   ├── dot_local/share/{sounds,azookey-bridge}/...
+│   ├── private_Library/{LaunchAgents,private_Containers}/...
+│   ├── private_dot_ssh/{private_config,create_private_known_hosts}
+│   └── run_onchange_after_*.sh(.tmpl)
+├── scripts/                    # repo 運用スクリプト（lint / doc_paths.py / claude-md-eval 等）
+├── docs/  README.md  CLAUDE.md  install.sh  LICENSE
+└── .githooks/  .github/  ruff.toml  lychee.toml  _typos.toml  .taplo.toml
 ```
+
+> このツリーは **2026-07-27 時点の現物**（`ls -A` で実測）。設計当初に置く予定だった
+> `.chezmoi.toml.tmpl` は採用せず（単一機のため prompt 化不要 — [roadmap.md](roadmap.md) 参照）、
+> 代わりに `.chezmoiversion` を置いている。`.justfile` は「埋める材料が無い＝YAGNI」で
+> クローズ済み。`dot_config/{borders,rift,focusfx}` は WM スタックごと drop 済み
+> （[roadmap.md](roadmap.md) の「カスタム tap 由来 brew は全 drop」）。
 
 ### ⚠️ 重要な設計判断: `.chezmoiroot` を採用（過去決定の見直し）
 
@@ -153,7 +164,11 @@ SSH gate（`P-onepassword`）が 1Password agent の実署名を要求するた�
 
 ---
 
-## 5. 現状からの移行メモ
+## 5. 現状からの移行メモ（歴史的記録・移行は完了済み）
+
+> ⚠️ **この節は移行前（2026-05）のスナップショット**。当時の `dot_Brewfile` と旧 WM スタックを
+> 前提に書かれており、**現物の所在としては読まない**（現在の配置は §2 のツリー、所有レイヤーは
+> [CLAUDE.md](../CLAUDE.md) の責務分担表が正）。移行判断の経緯を残すために保存している。
 
 **Nix 化する（現 `dot_Brewfile` から）**
 

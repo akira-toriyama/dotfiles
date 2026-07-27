@@ -28,7 +28,7 @@ ZMK ファームから届くチョードを macOS 側で捕まえてアクショ
 ```sh
 $EDITOR ~/.config/chord/config.toml         # 直接編集（eventfx 等と同じ運用）
 chord --validate                            # 動作確認（任意）
-chezmoi re-add ~/.config/chord/config.toml  # source に取り込み
+chezmoi re-add ~/.config/chord/config.toml  # 実体 → ソースへ re-add
 ```
 
 chord は vnode 監視で自動 reload するので明示 `chord --reload` は不要。
