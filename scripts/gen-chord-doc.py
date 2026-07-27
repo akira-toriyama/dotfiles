@@ -29,7 +29,12 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "chezmoi" / "dot_config" / "chord" / "private_config.toml"
 DOC = ROOT / "docs" / "chord.md"
 
-BEGIN = "<!-- AUTO-GENERATED (scripts/gen-chord-doc.py from chezmoi/dot_config/chord/private_config.toml) — do not edit -->"
+# 折返しは実装都合。この文字列は docs/chord.md のマーカーと 1 文字も違ってはならない
+# （違うと pattern.search が外れて SystemExit する）。
+BEGIN = (
+    "<!-- AUTO-GENERATED (scripts/gen-chord-doc.py from "
+    "chezmoi/dot_config/chord/private_config.toml) — do not edit -->"
+)
 END = "<!-- END AUTO-GENERATED -->"
 
 DOC_RE = re.compile(r"^#\s*doc:\s*(.+?)\s*$")
@@ -123,10 +128,9 @@ def build_block() -> str:
         if m:
             current_apps = parse_apps(m.group(1))
             continue
-        if line == "":
-            if in_binding and current_input is not None:
-                flush()
-                in_binding = False
+        if line == "" and in_binding and current_input is not None:
+            flush()
+            in_binding = False
     # flush trailing binding
     if in_binding:
         flush()

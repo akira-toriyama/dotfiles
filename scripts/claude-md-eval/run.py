@@ -25,10 +25,10 @@ import hashlib
 import json
 import subprocess
 import sys
-from typing import Any
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 PREAMBLE = "以下はユーザーの global CLAUDE.md からの抜粋である。これに従うこと。\n\n"
 

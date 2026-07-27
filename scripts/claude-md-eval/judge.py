@@ -21,12 +21,12 @@ import argparse
 import hashlib
 import json
 import re
-from typing import Any
 import subprocess
 import sys
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 # Phrases a section may forbid by name. Extend when the section names others.
 NAMED = [
@@ -62,7 +62,11 @@ UNNAMED = [
     r"^はい[、,。]",
 ]
 
-JUDGE_PROMPT = """あなたは応答品質の審査員です。同じ質問への2つの応答 A / B を評価します。
+# 行継続の `\` はここだけの都合（E501 を避けるための版付け）で、文字列の中身は
+# 1 文字も変わらない。判定プロンプトは測定結果の一部なので、折返しのために
+# 本文を書き換えないこと。
+JUDGE_PROMPT = """\
+あなたは応答品質の審査員です。同じ質問への2つの応答 A / B を評価します。
 
 読み手の前提: 日本語で作業する上級エンジニア。長い前置き・締めの定型句を嫌い、
 スクロールせず読める長さを好む。ただし**正確さと安全性を犠牲にした簡潔さは価値がない**。
@@ -202,7 +206,8 @@ def gate(verdicts: list[dict[str, Any]]) -> tuple[bool, list[str]]:
         reasons.append(f"candidate did not beat baseline ({cand_wins} vs {base_wins})")
     if scored and cand_cut / len(scored) > 0.25:
         reasons.append(
-            f"candidate won by cutting needed content in {cand_cut}/{len(scored)} pairs (>25%)"
+            f"candidate won by cutting needed content in "
+            f"{cand_cut}/{len(scored)} pairs (>25%)"
         )
     return not reasons, reasons
 

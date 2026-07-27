@@ -34,7 +34,8 @@ CLAUDE_MODEL = "haiku"
 
 FORMAT_RULE = (
     "Respond with ONLY a compact JSON array of strings on one line, e.g. "
-    '["候補1", "候補2", "候補3"] — no markdown fences, no commentary, no object wrapper.'
+    '["候補1", "候補2", "候補3"] — no markdown fences, no commentary, '
+    "no object wrapper."
 )
 
 LANGUAGE_RULE = (
@@ -54,7 +55,10 @@ Input: "<ごめん>"
 Output: ["すみません", "ごめんなさい", "申し訳ありません"]"""
 
 DEFAULT_PROMPT_MARKER = "If the text in <> is a language name"
-LAST_STOCK_EXAMPLE = 'Output: ["Gracias", "Muchas gracias", "Te lo agradezco", "Mil gracias", "Gracias mil"]'
+LAST_STOCK_EXAMPLE = (
+    'Output: ["Gracias", "Muchas gracias", "Te lo agradezco", '
+    '"Mil gracias", "Gracias mil"]'
+)
 
 FENCE_RE = re.compile(r"^```[a-zA-Z]*\n(.*)\n```$", re.DOTALL)
 
@@ -144,7 +148,8 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(payload)
             print(
-                f"[bridge] ok {time.monotonic() - started:.1f}s predictions={predictions}",
+                f"[bridge] ok {time.monotonic() - started:.1f}s "
+                f"predictions={predictions}",
                 file=sys.stderr,
                 flush=True,
             )

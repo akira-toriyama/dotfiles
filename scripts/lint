@@ -8,8 +8,8 @@ drift する」形が構造的に作れない。ツールは flake.lock 固定�
     nix develop .#lint --command scripts/lint --ci
     nix develop .#lint --command scripts/lint shell python   # 一部だけ
 
-素で叩くと開発機の brew 版が混ざる（PATH は /opt/homebrew/bin が nix profile より前）ので、
-必ず `nix develop .#lint --command` を通すこと。
+素で叩くと開発機の brew 版が混ざる（PATH は /opt/homebrew/bin が nix profile
+より前）ので、必ず `nix develop .#lint --command` を通すこと。
 
 **ツール不在は skip でなく failure。** command -v で黙って skip して緑を出すのが
 いちばん危ない失敗の仕方なので、宣言したゲートが 1 つでも走らなければ非ゼロで終わる。
@@ -219,6 +219,11 @@ class Runner:
 
         chezmoi/ 側は CI の convention-executable-prefix job が prefix で見ているが、
         scripts/ は誰も見ていなかった。
+
+        ruff の EXE001 が入って .py と（明示指定している）このランナー自身は二重に
+        守られている。それでも残すのは、`claude-work-report-check-test.sh` のような
+        shell スクリプトを ruff は一切見ないから —— 重複を理由に外すと shell だけ
+        無防備になる。
         """
         gate = "exec-bit"
         if not self.begin(gate):
@@ -299,13 +304,16 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- docs ---
     r.run("typos", ["typos", *(["--format", "brief"] if args.ci else [])])
-    # --offline 固定。外部 URL は他人都合の 5xx が入るので PR を止めさせない（nightly は別 task）。
+    # --offline 固定。外部 URL は他人都合の 5xx が入るので PR を止めさせない
+    # （nightly は別 task）。
     r.run("lychee", ["lychee", "--offline", "--no-progress", "."])
 
     # --- secret ---
-    # `dir` でなく `git`: dir は .gitignore を尊重しないので result symlink や scratch まで舐める。
+    # `dir` でなく `git`: dir は .gitignore を尊重しないので result symlink や
+    # scratch まで舐める。
     # --redact 必須（外すと secret が stdout に平文で出る）。
-    # --exit-code 9 必須（既定だと「検出」と「ツールエラー」がどちらも 1 で区別できない）。
+    # --exit-code 9 必須（既定だと「検出」と「ツールエラー」がどちらも 1 で
+    # 区別できない）。
     r.run("gitleaks", ["gitleaks", "git", "--redact", "--exit-code", "9", "."])
 
     # 宣言したゲートが全部走ったか。走らなかったものがあれば緑を出さない。

@@ -3,3 +3,8 @@
 # (README.md / install.sh / docs / .editorconfig / flake.nix / system/ / home/ 等)
 # はソースルート(chezmoi/)の外にあるため、ここで列挙する必要はない。
 # chezmoi/ 配下に $HOME へ出したくないものが出たらここへ追加する。
+
+# Python のバイトコードキャッシュ。git は .gitignore で無視するが chezmoi は
+# .gitignore を読まないので、chezmoi/ 配下で一度でも python を走らせると
+# __pycache__ が $HOME へ配られる（実測: importlib で読んだだけで生成された）。
+**/__pycache__
