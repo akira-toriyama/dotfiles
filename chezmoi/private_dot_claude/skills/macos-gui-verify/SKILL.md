@@ -10,20 +10,34 @@ description: Use when verifying macOS app GUI behavior end-to-end — dump an ap
 ## 前提（TCC）
 
 - Accessibility + Screen Recording の許可は **CLI 本体でなくホストアプリ（Terminal / IDE）に付与**する（TCC の responsible-code）。ローカルで再ビルドしたバイナリでも同じホストから動く限り再付与不要。
-- 確認: `peekaboo permissions status --all-sources`。未付与ならユーザーに System Settings での付与を依頼する（GUI 操作なので自分ではできない）。
+- 確認: `peekaboo permissions status --all-sources`（`--json` も可。`bridge` と `local` の 2 source が出る）。
+- **付与するのは「peekaboo」ではなく責任を持つ親アプリ**。peekaboo は CLI formula だけで
+  `.app` バンドルが無いので、System Settings の一覧に peekaboo という項目は出ない。
+  実際に付与する対象はプロセスツリーの祖先アプリ（実測例: `zsh ← claude ← Code Helper (Plugin)
+  ← Visual Studio Code.app` なので **VS Code**）。特定は
+  `p=$$; ps -o ppid=,comm= -p $p` を親へ辿る。
+- **付与はユーザーの手番**（macOS に TCC を grant する API / CLI は無い。`tccutil` は `reset` のみ、
+  `TCC.db` は SIP 保護下）。Claude 側にできるのは**プロンプトを出させること**まで
+  ——「System Settings > プライバシーとセキュリティ > 画面収録 で <親アプリ> を ON」と伝える。
+- **画面収録は付与後にそのアプリを再起動するまで効かない**（Accessibility と違う）。
+  IDE 内で動かしているなら、その IDE ごと再起動＝セッションも切れることを先に伝える。
 - AI-provider 設定（API key）は自動化用途には不要。
 
 ## 基本ループ（見る → 選ぶ → 押す）
 
 ```sh
-# 1) AX ツリーを見る。Screen Recording が要らない方が inspect-ui:
-peekaboo inspect-ui --app "MyApp" --json   # 大きい tree は --max-depth / --max-elements / --max-children
-peekaboo see --app "MyApp" --json          # スクリーンショットも要るとき（Screen Recording 必須）
+# 1) AX ツリーを見る。既定は see（構造化配列が返る唯一の経路。Screen Recording 必須）:
+peekaboo see --app "MyApp" --json          # --mode screen で画面全体・--app frontmost も可
+peekaboo inspect-ui --app "MyApp" --json   # Screen Recording が無い時だけ。返る形が違う（下記）
 
-# 2) 要素 ID を拾う。★ inspect-ui は構造化配列を返さない（下の「JSON の形」参照）:
+# 2) 要素を選ぶ。see は .data.ui_elements[] を返す。is_actionable=true で絞るのが速い:
+peekaboo see --app "MyApp" --json | jq -r '.data.ui_elements[] | select(.is_actionable) | "\(.id)\t\(.role)\t\(.label)"'
+#    snapshot は .data.snapshot_id、ウィンドウ名は .data.window_title（meta 階層は無い）。
+#
+#    ★ inspect-ui は構造化配列を返さない — テキスト塊なので jq で select できない:
 peekaboo inspect-ui --app "MyApp" --json | jq -r '.data.content[].text'
-#    → "elem_8 - \"保存\" - at (100, 200) size 80x24 - desc: \"...\"" 形式のテキスト塊。
-#      role ごとにグループ化され、非操作要素には [not actionable] が付く。
+#    → "elem_8 - \"保存\" - at (100, 200) size 80x24 - desc: \"...\"" 形式。role ごとに
+#      グループ化され、非操作要素には [not actionable] が付く。
 #    snapshot は .data.meta.snapshot_id、ウィンドウ名は .data.meta.summary.window_title。
 
 # 3) 別プロセスからでも id で操作できる（snapshot 経由で live 再解決）
@@ -32,28 +46,51 @@ peekaboo type "text" --app MyApp
 peekaboo press return / peekaboo hotkey cmd,s / peekaboo set-value / peekaboo perform-action / peekaboo menu
 ```
 
-### JSON の形（`inspect-ui` は 2026-07-27 に実測・peekaboo 3.9.4）
+### JSON の形（2026-07-27 に両方とも実測・peekaboo 3.9.4）
 
-- 成功: `.success = true` / `.data.isError = false`
-  - `.data.meta.snapshot_id` — **`.data.snapshot_id` ではない**
-  - `.data.meta.{element_count, actionable_count, truncated, used_cache}`
-  - `.data.meta.summary.{action, target_app, window_title, capture_app, capture_window}`
-  - `.data.content[].text`（= `.data.text`）— **人間可読のテキスト塊**。
-    **`.data.ui_elements[]` のような構造化配列は返らない**ので、
-    `id / role / label / bounds / is_actionable` を jq で直接 select することはできない。
-    絞り込みが要るなら `--max-elements` で減らすか、テキストを grep する。
-- 失敗: `.success = false` + `.error.{code, message}`、**exit 1**（成功は 0）
-  - ウィンドウを持たないアプリ → `VALIDATION_ERROR`「App 'X' is running but has no windows or dialogs」。
-    エラーでなく状態 — 対象アプリのウィンドウを開いてから撮る。
-    **`X` はローカライズ名で来る**（Notes → 「メモ」）ので文字列一致に使わない。
-  - Screen Recording 未付与で `see` → `PERMISSION_ERROR_SCREEN_RECORDING`・exit 1。
-- **`see --json` の成功時スキーマは未検証**（この機械は Screen Recording 未付与のため実測できていない）。
-  `inspect-ui` と同形とは限らないので、使う前に 1 回撮って確かめること。
+**`see --json`（成功）** — `.success = true`、`.data` 直下がすべて:
+
+| key | 中身（実測値の例） |
+|---|---|
+| `.data.ui_elements[]` | `{id, role, label, role_description, bounds{x,y,width,height}, is_actionable}`。`id` は `elem_8` 形式 |
+| `.data.snapshot_id` / `.data.window_title` / `.data.application_name` | `meta` 階層は**無い** |
+| `.data.element_count` / `.data.interactable_count` | 画面全体 1 枚で 517 / 400 |
+| `.data.ui_map` | `~/.peekaboo/snapshots/<id>/snapshot.json` への**パス**（全量はこの先） |
+| `.data.capture_mode` / `.data.is_dialog` / `.data.execution_time` | — |
+| `.data.screenshot_raw` / `.data.screenshot_annotated` | **既定は空文字**。画像が要るなら `--path` / `--annotate` |
+
+- **出力は大きい**（画面全体で約 160KB）。素で `cat` せず jq で絞るか `--app` で対象を狭める。
+
+**`inspect-ui --json`（成功）** — `see` とは**別の形**。`.success = true` / `.data.isError = false`:
+
+- `.data.meta.snapshot_id` — **`.data.snapshot_id` ではない**
+- `.data.meta.{element_count, actionable_count, truncated, used_cache}`
+- `.data.meta.summary.{action, target_app, window_title, capture_app, capture_window}`
+- `.data.content[].text`（= `.data.text`）— **人間可読のテキスト塊**。
+  **`.data.ui_elements[]` は返らない**ので jq で直接 select できない。
+  絞り込みは `--max-elements` で減らすか、テキストを grep する。
+
+**失敗** — `.success = false` + `.error.{code, message}`、**exit 1**（成功は 0）。code は実測で 4 種:
+
+| code | いつ | どちら |
+|---|---|---|
+| `WINDOW_NOT_FOUND` | アプリは動いているがウィンドウが無い | `see` |
+| `UNKNOWN_ERROR` | ウィンドウはあるが**共有可能な**ものが無い（Finder のデスクトップのみ等） | `see` |
+| `VALIDATION_ERROR` | 同じ「ウィンドウ無し」状態 —— **`see` と code が違う** | `inspect-ui` |
+| `PERMISSION_ERROR_SCREEN_RECORDING` | Screen Recording 未付与 | `see` |
+
+- どの message も **アプリ名がローカライズ名で来る**（Notes → 「メモ」）ので文字列一致に使わない。
+- **`--json` の出力が壊れて jq が落ちることがある**（`debug_logs` の中に `\'` という
+  不正な JSON エスケープが混じる）。2026-07-27 に `see` で **3 回遭遇**したが、
+  同じコマンドの 5 連続実行では**再現しなかった** —— ウィンドウ状態依存で
+  **確実な再現条件は未特定**。落ちたら黙って諦めず、まず撮り直す。
 
 - 既定は background 配送（フォーカスを奪わない）。key window が要るときだけ `--foreground`。
 - snapshot が期限切れなら `SNAPSHOT_NOT_FOUND` → 撮り直す。
-- **Electron / 非ネイティブアプリは 0 要素で返ることがある**（VS Code で実測: `element_count = 0` +
-  「No accessible UI elements found」）。AX 経路が無いだけなので、`see` の画像側に切り替える。
+- **Electron 系は経路で結果が変わる**（VS Code で実測）: `inspect-ui` は `element_count = 0` +
+  「No accessible UI elements found」を返すのに、同じアプリを `see --mode screen` で撮ると
+  **517 要素（うち操作可能 400）が取れた**。0 要素は「AX が無い」ではなく
+  **`inspect-ui` の経路で見えていないだけ**なので、`see` に切り替えて確かめる。
 
 ## 注意
 
