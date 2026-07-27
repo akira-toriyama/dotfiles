@@ -19,7 +19,7 @@ python3 judge.py
 `run.py` が baseline（節なし）と candidate（節あり）の応答を作り、`judge.py` が盲検で
 判定してリリースゲートを適用する。ゲートが通れば exit 0、落ちれば exit 2。
 
-既定は 12 ケース × 2 試行 × 2 条件 = 応答 48 本、判定 24 ペア。実測で 10 分・$6 前後。
+既定は 15 ケース × 2 試行 × 2 条件 = 応答 60 本、判定 30 ペア。実測で 10 分・$6 前後。
 中断しても `results/responses.jsonl` を見て再開する（完了済みの行は作り直さない）。
 
 ```sh
@@ -27,6 +27,30 @@ python3 run.py --candidate sec.md --trials 3 --model claude-opus-5
 python3 judge.py --responses results/responses.jsonl --out results/verdicts.json
 python3 -m unittest test_eval          # ハーネス自身のテスト
 ```
+
+### 2 版を比べる（`--baseline`）
+
+`--baseline` を渡すと baseline 腕にも別のファイルが載る。既定の「節なし vs 節あり」が
+**足すか足さないか**しか測れないのに対し、こちらは**版 A vs 版 B** を測る。
+
+```sh
+git show <old-sha>:chezmoi/private_dot_claude/CLAUDE.md > /tmp/old.md
+python3 run.py --baseline /tmp/old.md --candidate chezmoi/private_dot_claude/CLAUDE.md \
+               --out results/reorder.jsonl
+python3 judge.py --responses results/reorder.jsonl --out results/reorder-verdicts.json
+```
+
+これが要るのは、**内容を足しも引きもしない編集**（節の並べ替え・1 bullet の分割・
+precedence の明示）が既定の腕構成ではコントラストを作れないため。それらは
+「測る必要が無い」のではなく **「測れなかった」**（PR #274 の構造再編がこれで、
+測らずに merge された）。
+
+全文 2 本を system prompt に載せるので、節だけの比較よりトークンは増える。
+
+**同じ `--out` を腕違いで使い回すと exit 3 で止まる。** 各行に `arms_key`
+（model + 両腕の本文の hash）が入っていて、別の比較の行が混ざったファイルへの追記を
+拒否する。`judge.py` は `(case_id, trial)` でペアにするだけで腕を見ないので、
+混ざると「誰も実行していない比較」の判定が出てしまう。
 
 ## 何を測っているか
 
@@ -79,6 +103,11 @@ named だけ減って unnamed が減らないなら、その規則は**文字列
 
 headless の単発応答の形だけ。対話の複数ターンにわたる挙動、ツールを使う実作業中の振る舞い、
 長いセッションでの遵守率は範囲外。判定者も LLM なので絶対ではない。
+
+**skill の description が発火するかは測れない。** 隔離のために `--setting-sources ""` と
+`--tools ""` を渡している以上、そのセッションには Skill ツール自体が存在しない。
+description を書き換えて「呼ばれやすくなったか」を見るには、ツールを持つ実セッションが
+要る＝このハーネスの外。
 
 work-close 系ケース（W1/W2）はこの制約の中での近似 —— 「作業を終えた状況」をプロンプトに
 書き込んだ単発応答で定型の発火を測る。実セッション末尾（長い文脈の後）での発火率は

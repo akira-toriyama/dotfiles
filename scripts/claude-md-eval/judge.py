@@ -227,6 +227,15 @@ def main(argv: list[str] | None = None) -> int:
         if line.strip()
     ]
     rows = [r for r in rows if r.get("response")]
+    # A response whose case was renamed or deleted has no prompt to judge
+    # against. Skipping loudly beats the KeyError this used to raise, which
+    # threw away every completed pair in the file over one orphan row.
+    orphans = sorted({r["case_id"] for r in rows if r["case_id"] not in cases})
+    if orphans:
+        print(
+            f"warning: skipping {len(orphans)} unknown case id(s): {', '.join(orphans)}"
+        )
+        rows = [r for r in rows if r["case_id"] in cases]
     grouped: dict[Any, Any] = defaultdict(dict)
     for r in rows:
         r["prompt"] = cases[r["case_id"]]["prompt"]
