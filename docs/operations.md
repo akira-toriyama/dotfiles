@@ -241,29 +241,41 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 
 [.github/workflows/ci.yml](../.github/workflows/ci.yml) ＋ chord 専用 verify-* ワークフロー:
 
+`ci.yml` の job は 11 本。**表に無い job があれば ci.yml が正**（この表は説明用の写し）。
+
 | ジョブ | 内容 | runner |
 |---|---|---|
-| `nix flake check (eval only)` | Nix の eval/型検査 | Linux（速い） |
-| `darwin-rebuild build (macOS)` | 実 build（cask DL 含む） | macOS-15 |
-| `darwin-rebuild switch smoke (macOS)` | Tart VM で switch 試す | macOS-15 |
-| `Verify casks installed` | 宣言された cask が実際 install できるか | macOS-15 |
-| `lint` | `scripts/lint`（ruff / mypy / shfmt / shellcheck / actionlint / typos / lychee / gitleaks） | Linux |
-| `script test` | Stop hook の fixture + `scripts/**` の unittest | Linux |
-| `chezmoi templates render` | 全 `.tmpl` の execute-template 検証 | Linux |
-| `convention / executable_ prefix` | shebang スクリプトの +x 接頭辞強制 | Linux |
-| `validate` (verify-chord-validate.yml) | chord config strict validation | macOS-15 |
-| `verify` (verify-chord-doc.yml) | chord doc 同期検証 | Linux |
+| `nix flake check (eval only)` | Nix の eval/型検査 | ubuntu-latest |
+| `lint` | `scripts/lint --ci`（ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / gitleaks の 12 ゲート） | ubuntu-latest |
+| `convention / executable_ prefix` | `chezmoi/` の shebang スクリプトに `executable_` 接頭辞を強制 | ubuntu-latest |
+| `convention / my- command prefix` | 自作 slash command に `my-` 接頭辞を強制 | ubuntu-latest |
+| `script test` | Stop hook の fixture + `scripts/**` と `scripts/claude-md-eval/` の unittest | ubuntu-latest |
+| `chezmoi templates render` | 全 `.tmpl` の execute-template 検証（get.chezmoi.io の最新版で） | ubuntu-latest |
+| `detect flake-affecting changes` | PR が flake/nix/ci.yml を触ったかを判定し、下 2 本の実行可否を出す | ubuntu-latest |
+| `darwin-rebuild build (macOS)` | 実 build（cask DL 含む・非破壊） | macos-latest |
+| `darwin-rebuild switch smoke (macOS)` | 実 switch＋PATH/cask 検証＋`chezmoi apply`（ephemeral runner なので副作用 OK） | macos-latest |
+| `ci-gate` | 上を全部 needs。**branch protection の必須チェックはこれ 1 本だけ** | ubuntu-latest |
+| `notify red main` | 非 PR の赤を固定タイトル issue に集約（PR では走らない） | ubuntu-latest |
+
+chord 専用の別ワークフロー:
+
+| ジョブ | 内容 | runner |
+|---|---|---|
+| `validate` (verify-chord-validate.yml) | chord config strict validation | macos-15（Swift 6 toolchain 必須） |
+| `verify` (verify-chord-doc.yml) | chord doc 同期検証 | ubuntu-latest |
 
 ### 5.6.1 lint を手元で回す / gitleaks が赤くなったら
 
 ```sh
 nix develop .#lint --command scripts/lint            # CI と同一コマンド・同一バイナリ
-nix develop .#lint --command scripts/lint python     # 一部だけ（python / shell / workflow / docs / secret）
+nix develop .#lint --command scripts/lint python     # 一部だけ（docs / python / secret / shell / tmpl / workflow）
 ```
 
 **素で `scripts/lint` を叩かないこと** —— PATH は `/opt/homebrew/bin` が nix profile より
 前なので、brew 版の shfmt / typos / lychee / gitleaks が混ざって CI と結果がずれる。
 ツールの版の正本は `flake.lock` 1 本で、`devShells.lint`（[flake.nix](../flake.nix)）が配る。
+**開発機で PATH に居るだけのツールを devShell の宣言と混同しないこと** —— `chezmoi` は
+`home.packages` からも来るので、devShell に足し忘れても手元は緑になり CI だけが落ちる。
 
 **gitleaks が真陽性を出したら**（履歴は書き換えない — 絶対ルール 4）:
 

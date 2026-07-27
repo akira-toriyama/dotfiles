@@ -127,6 +127,10 @@
             pkgs.typos
             pkgs.lychee
             pkgs.gitleaks
+            # tmpl ゲートが .sh.tmpl / .plist.tmpl を render するのに要る。開発機では
+            # home.packages 側の chezmoi が PATH に居るので「入れ忘れても手元は緑」に
+            # なる —— CI (ubuntu runner) には無いのでここでの宣言が唯一の供給源。
+            pkgs.chezmoi
           ];
         };
       });
