@@ -81,6 +81,18 @@ def arms_key(model: str, arms: Mapping[str, str | None]) -> str:
     return h.hexdigest()[:16]
 
 
+def baseline_mode(arms: Mapping[str, str | None]) -> str:
+    """Which comparison the row belongs to: "none" (add a section?) or "file".
+
+    judge.py needs this to pick its gate. The absolute cut-rate threshold is
+    calibrated for a bare baseline; with two file-backed arms both sides carry a
+    full CLAUDE.md that itself demands brevity, so cuts stop being attributable
+    to the candidate and the threshold blocks everything. arms_key cannot stand
+    in for it — it is a hash and says nothing about which arms produced it.
+    """
+    return "file" if arms["baseline"] is not None else "none"
+
+
 def call(
     case: dict[str, Any],
     condition: str,
@@ -113,6 +125,7 @@ def call(
                     "cost_usd": d.get("total_cost_usd"),
                     "model": model,
                     "arms_key": arms_key(model, arms),
+                    "baseline_mode": baseline_mode(arms),
                 }
             err = f"is_error: {str(d)[:200]}"
         else:
@@ -126,6 +139,7 @@ def call(
         "error": err,
         "model": model,
         "arms_key": arms_key(model, arms),
+        "baseline_mode": baseline_mode(arms),
     }
 
 

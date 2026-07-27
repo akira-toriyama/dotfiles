@@ -188,28 +188,83 @@ def judge_one(
     return {"case_id": case_id, "trial": trial, "winner": None, "error": "judge failed"}
 
 
-def gate(verdicts: list[dict[str, Any]]) -> tuple[bool, list[str]]:
-    """A candidate ships only if it wins on merit, not by deleting substance."""
+DEFAULT_CUT_RATE = 0.25
+DEFAULT_CUT_DELTA = 0.10
+
+
+def _cut_wins(scored: list[dict[str, Any]], arm: str) -> int:
+    return sum(
+        1
+        for v in scored
+        if v["winner"] == arm and (v["lost_correctness"] or v["lost_safety"])
+    )
+
+
+def gate(
+    verdicts: list[dict[str, Any]],
+    two_arm: bool = False,
+    cut_rate: float = DEFAULT_CUT_RATE,
+    cut_delta: float = DEFAULT_CUT_DELTA,
+) -> tuple[bool, list[str]]:
+    """A candidate ships only if it wins on merit, not by deleting substance.
+
+    Two shapes of comparison need two different cut checks:
+
+      one-arm (``baseline_mode=none``) — the baseline is the bare prompt, so any
+        content loss is attributable to the candidate section. An absolute rate
+        works: cut-bought wins above ``cut_rate`` of all judged pairs block.
+
+      two-arm (``baseline_mode=file``) — both arms carry a full CLAUDE.md that
+        itself demands brevity, so *both* sides cut. Measured once (30 pairs,
+        PR #274 old vs new): baseline 8 cut-wins, candidate 11 — the absolute
+        rate blocks a candidate that is no worse than its baseline. Here only
+        the *excess over baseline* can be laid at the candidate's feet.
+
+    ``cut_delta`` is provisional and uncalibrated: it comes from one run, not
+    from a calibration sweep. It is a flag so a sweep can replace it without
+    touching this function.
+    """
     scored = [v for v in verdicts if v.get("winner")]
     tally = Counter(v["winner"] for v in scored)
     cand_wins, base_wins = tally["candidate"], tally["baseline"]
-    # Only losses attributable to the candidate count against it.
-    cand_cut = sum(
-        1
-        for v in scored
-        if v["winner"] == "candidate" and (v["lost_correctness"] or v["lost_safety"])
-    )
+    cand_cut = _cut_wins(scored, "candidate")
+    base_cut = _cut_wins(scored, "baseline")
     reasons = []
     if len(scored) != len(verdicts):
         reasons.append(f"{len(verdicts) - len(scored)} pairs failed to judge")
     if cand_wins <= base_wins:
         reasons.append(f"candidate did not beat baseline ({cand_wins} vs {base_wins})")
-    if scored and cand_cut / len(scored) > 0.25:
+    if scored and two_arm:
+        excess = (cand_cut - base_cut) / len(scored)
+        if excess > cut_delta:
+            reasons.append(
+                f"candidate cut needed content in {cand_cut}/{len(scored)} pairs "
+                f"vs baseline's {base_cut} — {excess:+.0%} excess "
+                f"(> {cut_delta:.0%})"
+            )
+    elif scored and cand_cut / len(scored) > cut_rate:
         reasons.append(
             f"candidate won by cutting needed content in "
-            f"{cand_cut}/{len(scored)} pairs (>25%)"
+            f"{cand_cut}/{len(scored)} pairs (>{cut_rate:.0%})"
         )
     return not reasons, reasons
+
+
+def resolve_mode(rows: list[dict[str, Any]]) -> tuple[bool, str | None]:
+    """(two_arm, warning). Rows predating baseline_mode cannot be told apart.
+
+    Guessing "one-arm" for an unlabelled two-arm run is the silent failure this
+    exists to prevent, so say so instead of assuming.
+    """
+    modes = {r.get("baseline_mode") for r in rows}
+    if None in modes:
+        return "file" in modes, (
+            "rows without baseline_mode (written before it existed) — "
+            "assuming the labelled rows are representative; rerun to be sure"
+        )
+    if len(modes) > 1:
+        return True, f"mixed baseline_mode values {sorted(m or '?' for m in modes)}"
+    return modes == {"file"}, None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -223,6 +278,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--model", default="claude-opus-5")
     ap.add_argument("--retries", type=int, default=2)
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument(
+        "--cut-rate",
+        type=float,
+        default=DEFAULT_CUT_RATE,
+        help="one-arm gate: max share of judged pairs the candidate may win "
+        "while cutting needed content",
+    )
+    ap.add_argument(
+        "--cut-delta",
+        type=float,
+        default=DEFAULT_CUT_DELTA,
+        help="two-arm gate: max excess of candidate cut-wins over the "
+        "baseline's, as a share of judged pairs (provisional — see gate())",
+    )
     args = ap.parse_args(argv)
 
     cases = {c["id"]: c for c in json.loads(args.cases.read_text())}
@@ -306,8 +375,20 @@ def main(argv: list[str] | None = None) -> int:
             fc, nc = fires.get((cid, "candidate"), (0, 0))
             print(f"{cid:<22}baseline {fb}/{nb}   candidate {fc}/{nc}")
 
-    passed, reasons = gate(verdicts)
+    two_arm, warning = resolve_mode(rows)
+    if warning:
+        print(f"\nwarning: {warning}")
+    passed, reasons = gate(verdicts, two_arm, args.cut_rate, args.cut_delta)
     print(f"\ntally: {dict(Counter(v.get('winner') for v in verdicts))}")
+    # Both arms' cut counts, always — the two-arm gate is only readable next to
+    # them, and in one-arm mode the baseline's count is the sanity check that
+    # the judge is not simply flagging everything.
+    scored = [v for v in verdicts if v.get("winner")]
+    print(
+        f"cut-bought wins: candidate {_cut_wins(scored, 'candidate')} / "
+        f"baseline {_cut_wins(scored, 'baseline')} of {len(scored)} judged"
+    )
+    print(f"gate mode: {'two-arm (baseline_mode=file)' if two_arm else 'one-arm'}")
     print(f"release gate: {'PASS' if passed else 'BLOCKED'}")
     for r in reasons:
         print(f"  - {r}")
