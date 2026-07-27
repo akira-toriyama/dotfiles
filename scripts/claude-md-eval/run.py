@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """Generate baseline and candidate responses for a CLAUDE.md section under test.
 
-baseline  = the case prompt alone
-candidate = the same prompt with the section appended to the system prompt,
+candidate = the case prompt with --candidate appended to the system prompt,
             which is the closest analogue to how CLAUDE.md reaches a session
+baseline  = the case prompt alone, or — with --baseline — the same prompt with
+            a second file appended the same way
+
+The default (no --baseline) answers "does adding this section help?". With
+--baseline it answers "is version B better than version A?", which is the only
+way to measure edits that neither add nor remove content: reordering sections,
+splitting a bullet, making precedence explicit. Those were previously not
+"unnecessary to measure" but *impossible* to measure here.
 
 Both arms are isolated with --setting-sources "" so the operator's own
 CLAUDE.md, plugins, hooks and memory cannot leak in. Without that, the baseline
@@ -14,10 +21,12 @@ the section against itself.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
 from typing import Any
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -58,15 +67,29 @@ def build_cmd(model: str, section: str | None) -> list[str]:
     return cmd
 
 
+def arms_key(model: str, arms: Mapping[str, str | None]) -> str:
+    """Identity of one comparison: the model plus the exact text of both arms.
+
+    Stamped on every row so a resume cannot silently mix runs. Changing
+    --baseline while reusing the same --out would otherwise reuse the old
+    baseline responses and produce a comparison nobody ever ran.
+    """
+    h = hashlib.sha256()
+    for part in (model, arms["baseline"] or "", arms["candidate"] or ""):
+        h.update(part.encode())
+        h.update(b"\0")
+    return h.hexdigest()[:16]
+
+
 def call(
     case: dict[str, Any],
     condition: str,
     trial: int,
     model: str,
-    section: str,
+    arms: Mapping[str, str | None],
     retries: int,
 ) -> dict[str, Any]:
-    cmd = build_cmd(model, section if condition == "candidate" else None)
+    cmd = build_cmd(model, arms[condition])
     err = "no attempt made"
     for _ in range(retries + 1):
         # The prompt goes through stdin: --tools is variadic and swallows a
@@ -89,6 +112,7 @@ def call(
                     "response": d["result"],
                     "cost_usd": d.get("total_cost_usd"),
                     "model": model,
+                    "arms_key": arms_key(model, arms),
                 }
             err = f"is_error: {str(d)[:200]}"
         else:
@@ -101,19 +125,33 @@ def call(
         "response": None,
         "error": err,
         "model": model,
+        "arms_key": arms_key(model, arms),
     }
 
 
-def completed(path: Path) -> set[tuple[str, str, int]]:
+def completed(path: Path, key: str) -> tuple[set[tuple[str, str, int]], set[str]]:
+    """Rows this run may resume, and the foreign arms_key values found alongside.
+
+    Rows written before arms_key existed carry no key; they are treated as
+    foreign rather than assumed compatible — an unlabelled row could have come
+    from any pair of arms.
+    """
     if not path.exists():
-        return set()
-    done = set()
+        return set(), set()
+    done: set[tuple[str, str, int]] = set()
+    foreign: set[str] = set()
     for line in path.read_text().splitlines():
-        if line.strip():
-            r = json.loads(line)
-            if r.get("response"):
-                done.add((r["case_id"], r["condition"], r["trial"]))
-    return done
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        if r.get("arms_key") != key:
+            foreign.add(
+                r.get("arms_key") or "(no arms_key — written before this check)"
+            )
+            continue
+        if r.get("response"):
+            done.add((r["case_id"], r["condition"], r["trial"]))
+    return done, foreign
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -124,6 +162,17 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         required=True,
         help="Markdown file holding the section under test",
+    )
+    ap.add_argument(
+        "--baseline",
+        type=Path,
+        default=None,
+        help=(
+            "Markdown file for the baseline arm. Omit to compare against no "
+            "section at all (does adding this help?). Pass the old version to "
+            "compare two revisions (is B better than A?) — the only way to "
+            "measure reordering, splitting or precedence edits."
+        ),
     )
     ap.add_argument("--cases", type=Path, default=here / "cases.json")
     ap.add_argument("--out", type=Path, default=here / "results" / "responses.jsonl")
@@ -137,11 +186,25 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--workers", type=int, default=8)
     args = ap.parse_args(argv)
 
-    section = args.candidate.read_text()
+    arms: dict[str, str | None] = {
+        "baseline": args.baseline.read_text() if args.baseline else None,
+        "candidate": args.candidate.read_text(),
+    }
+    key = arms_key(args.model, arms)
     cases = json.loads(args.cases.read_text())
     args.out.parent.mkdir(parents=True, exist_ok=True)
 
-    done = completed(args.out)
+    done, foreign = completed(args.out, key)
+    if foreign:
+        # Appending here would leave one file holding two different comparisons,
+        # and judge.py pairs by (case_id, trial) without looking at the arms.
+        print(
+            f"{args.out} already holds rows from a different comparison "
+            f"({', '.join(sorted(foreign))}; this run is {key}).\n"
+            "Write to a fresh --out, or delete the file, so the two are not mixed.",
+            file=sys.stderr,
+        )
+        return 3
     jobs: list[tuple[dict[str, Any], str, int]] = [
         (c, cond, t)
         for c in cases
@@ -149,11 +212,15 @@ def main(argv: list[str] | None = None) -> int:
         for t in range(1, args.trials + 1)
         if (c["id"], cond, t) not in done
     ]
-    print(f"{len(jobs)} calls to make ({len(done)} already complete)", flush=True)
+    print(
+        f"{len(jobs)} calls to make ({len(done)} already complete)  "
+        f"arms={key} baseline={'file' if args.baseline else 'none'}",
+        flush=True,
+    )
 
     with ThreadPoolExecutor(max_workers=args.workers) as ex, args.out.open("a") as f:
         for r in ex.map(
-            lambda j: call(j[0], j[1], j[2], args.model, section, args.retries), jobs
+            lambda j: call(j[0], j[1], j[2], args.model, arms, args.retries), jobs
         ):
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
             f.flush()
