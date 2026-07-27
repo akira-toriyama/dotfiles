@@ -51,7 +51,7 @@ jobs:
   # 旧 shellcheck job（ludeeus action）を置換。あれは実質 5 ファイルしか見ておらず、
   # Claude Stop hook 本体・pre-push・chezmoi/run_* が全部 lint 圏外だった。
   lint:
-    name: lint (ruff / mypy / shfmt / shellcheck / tmpl / actionlint / typos / lychee / gitleaks)
+    name: lint (ruff / mypy / shfmt / shellcheck / tmpl / actionlint / typos / lychee / doc-paths / gitleaks)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -179,13 +179,22 @@ jobs:
           persist-credentials: false
       - name: Run claude-work-report-check tests
         run: bash scripts/claude-work-report-check-test.sh
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
+
+      # setup-python ではなく lint devShell から Python を取る。理由は 2 つ:
+      #   ① test_doc_paths.py は chezmoi を呼ぶ（管理下の $HOME パス一覧を得るため）。
+      #      ツールが無いと ImportError でなく実行時エラーで落ちる ＝ 黙って skip
+      #      しない設計なので、供給側を用意するのが正しい対処。
+      #   ② Python の版が flake.lock 固定の 3.13 に揃い、setup-python の別系統の
+      #      版指定と drift しない。
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+
       - name: Run python unit tests
         run: |
-          python3 -m unittest discover -s scripts -p 'test_*.py' -v
-          python3 -m unittest discover -s scripts/claude-md-eval -p 'test_*.py' -v
+          nix develop .#lint --command \
+            python3 -m unittest discover -s scripts -p 'test_*.py' -v
+          nix develop .#lint --command \
+            python3 -m unittest discover -s scripts/claude-md-eval -p 'test_*.py' -v
 
   # chezmoi テンプレートのレンダリング検証（構文エラー早期検出）
   chezmoi-templates:

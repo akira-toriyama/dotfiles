@@ -9,7 +9,7 @@
 <summary><b>1. <code>~/.config/&lt;app&gt;/...</code> を編集した場合（chezmoi）</b></summary>
 
 ### シナリオ
-`~/.config/chord/config.toml` や `~/.config/eventfx/config` を直接編集した、または上流（chord / wand 等）の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
+`~/.config/chord/config.toml` や `~/.config/wand/config.toml` を直接編集した、または上流（chord / wand 等）の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
 
 dot_config 配下の管理ファイルは **全て plain（`.tmpl` なし）** に統一済み。チェック内容に template 変数が登場しないので、`chezmoi re-add` で安全に取り込める。
 
@@ -24,7 +24,7 @@ chezmoi diff        # 何が違うか
 
 # ③ live を source に取り込む（実体 ──▶ source）
 chezmoi re-add ~/.config/chord/config.toml
-# 例: ~/.config/eventfx/config も同様
+# 例: ~/.config/wand/config.toml・~/.config/facet/config.toml・~/.config/halo/config.toml も同様
 #   ※ 実体を編集したら必ず re-add が先。先に apply すると古い source で
 #     実体を上書きして編集が消える。
 
@@ -246,7 +246,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 | ジョブ | 内容 | runner |
 |---|---|---|
 | `nix flake check (eval only)` | Nix の eval/型検査 | ubuntu-latest |
-| `lint` | `scripts/lint --ci`（ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / gitleaks の 12 ゲート） | ubuntu-latest |
+| `lint` | `scripts/lint --ci`（ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / doc-paths / gitleaks の 13 ゲート） | ubuntu-latest |
 | `convention / executable_ prefix` | `chezmoi/` の shebang スクリプトに `executable_` 接頭辞を強制 | ubuntu-latest |
 | `convention / my- command prefix` | 自作 slash command に `my-` 接頭辞を強制 | ubuntu-latest |
 | `script test` | Stop hook の fixture + `scripts/**` と `scripts/claude-md-eval/` の unittest | ubuntu-latest |
