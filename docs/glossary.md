@@ -23,6 +23,13 @@ dotfiles を構成する各パーツの **正規の呼び名** をまとめた�
 > 各エントリの形式: **正規名**, 1〜2 行の定義, 設定 / コードでの所在,
 > そして `Don't call it:` 行 — このエントリが置き換える誤った呼び名のリスト。
 
+**`Don't call it:` の効き方（誤読しやすいので明記）**: 禁じているのは
+「**そのエントリの概念を、その名前で呼ぶこと**」であって、その語の一般使用ではない。
+たとえば `darwin-rebuild switch` の `Don't call it: apply` は「switch を apply と呼ぶな」の意味で、
+`chezmoi apply`（それ自体が正規名）を禁じない。同様に `適用` `取り込み` `ビルド確認` のような
+一般語も、**別の正規名を持つ操作を指す時にだけ**違反になる。
+この非対称性のため、**単純な grep では強制できない**（台帳の印は 📖）。
+
 ---
 
 ## 全体像
@@ -257,6 +264,8 @@ PR 経由で `main` に squash-merge する（直 push なし）。
 ### feature branch
 **短命**ブランチ。命名は `<type>/<topic>` で `type` は `docs` / `feat` /
 `fix` / `refactor` / `chore` 等。PR → CI green → `gh pr merge --squash`。
+- 散文中の **「feature ブランチ」は同じものの日本語表記として可**（正規名を英語で保つ
+  規則 :15-17 に沿う混在表記）。`feature branch` と揺れていても違反ではない。
 - **Don't call it:** topic branch, work branch, 作業ブランチ
 
 ### pre-push hook
@@ -305,7 +314,25 @@ PR 経由で `main` に squash-merge する（直 push なし）。
 config 文法を released chord より先行させると `verify-chord-validate.yml`
 （tap の chord で strict 検証）が落ちる。
 - 参照: [`docs/chord.md`](chord.md)
-- **Don't call it:** chord config, hotkey config, ホットキー設定
+- **`chord config` は禁止語ではない** — chord CLI の実サブコマンド名
+  （`chord config --validate`）であり、設定ファイルそのものを指す語としても正しい。
+  禁じるのは **bridge 本体**を「chord config」と呼ぶこと。
+- **Don't call it:**（bridge 本体の呼び名として）hotkey config, ホットキー設定
+
+### `halo` / `facet` / `wand` (in dotfiles context)
+
+dotfiles が **config だけを持つ**自作 macOS アプリ 3 本（アプリ本体は各 repo）。
+`chord` と同じく `chezmoi/dot_config/<name>/config.toml` が chezmoi 管理下にあり、
+**アプリ側は読むだけ**（dotfiles からアプリを起動・ビルドしない）。
+
+| 名前 | 何をするか | config |
+|---|---|---|
+| `halo` | アクティブウィンドウの枠（border ring）を描く | [`chezmoi/dot_config/halo/config.toml`](../chezmoi/dot_config/halo/config.toml) — 未知キーは既定値に落ちるので typo で壊れない |
+| `facet` | デスクトップ演出（focus ring / pets 等）。`#:schema` 行で taplo 補完が効く | [`chezmoi/dot_config/facet/config.toml`](../chezmoi/dot_config/facet/config.toml) — schema sidecar は `facet --emit-schema` 由来 |
+| `wand` | パネル / カード UI。GUI 設定を持たず config が唯一の正本 | [`chezmoi/dot_config/wand/config.toml`](../chezmoi/dot_config/wand/config.toml) |
+
+- **Don't call it:** WM スタック（旧 borders/rift/focusfx は drop 済みで別物）、
+  ランチャー、オーバーレイ設定
 
 ### `azookey-bridge`
 **azooKey いい感じ変換（変換中 Ctrl+S）を Foundation Models で動かすローカル
