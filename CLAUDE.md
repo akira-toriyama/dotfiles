@@ -76,7 +76,8 @@ flowchart TD
 - **コミットメッセージは gitmoji-driven**（`<:gitmoji:>[(<scope>)][!] <subject>`。Conventional の `<type>` 語は退役済み）。規約の正本は [docs/commit-convention.md](docs/commit-convention.md) と `glyph rules`。**push 前に `glyph lint --range origin/main..HEAD`**（履歴には退役形式の commit が残っているので `git log` を手本にしない）。
 - **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
-  - `shellcheck` — `install.sh` 静的解析
+  - `lint` — `scripts/lint` 一本（ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks）。**ローカルでも同じコマンドが走る**: `nix develop .#lint --command scripts/lint`
+  - `script test` — Stop hook の fixture テスト + `scripts/` と `scripts/claude-md-eval/` の unittest
   - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞 + 自作 command（`~/.claude/commands/`）の `my-` 接頭辞を強制
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
 - **CI green を確認してからマージ**。失敗したら**新規コミットで修正**する（`--amend` / `--force` push / 履歴改変の可否は「作業時の絶対ルール」4 が正本）。

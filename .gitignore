@@ -1,3 +1,6 @@
 # nix build 成果物（darwin-rebuild build / nix build の symlink）
 result
 result-*
+
+# Python のバイトコードキャッシュ（scripts/ の unittest 実行で生える）
+__pycache__/

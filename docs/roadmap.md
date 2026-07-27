@@ -76,7 +76,7 @@ PAT/トークン等で chezmoi テンプレが要るようになったら `chezm
 - [x] home-manager `programs.zsh` をバニラで有効化（commit 13f75ab）— starship/プラグインは育成フェーズへ
 - [x] 旧 `~/.zshrc`（廃止済 `_/zsh` を source）/ `~/.zprofile`（brew shellenv 三重複）を破棄
 - [x] **初回 `darwin-rebuild switch` 達成**: `/run/current-system` 第1世代生成、home-manager 第1世代生成、`/etc/zshrc` 引き取り、`/opt/homebrew` を nix-homebrew が autoMigrate で吸収
-- [ ] エイリアス/関数の追加は次フェーズ以降に育成（[育成タスク](#育成タスク)へ）
+- [ ] エイリアス/関数の追加は次フェーズ以降に育成（[未決事項](#未決事項判断待ち随時更新)へ）
 
 **検証ゲート**: ✅ 達成 — clean env での新規 zsh -l で `which darwin-rebuild` 解決可、PATH に `/run/current-system/sw/bin` 含む、brew shellenv 重複は home-manager の `typeset -U path` で吸収
 

@@ -42,6 +42,12 @@
         in
         chosen;
 
+      # lint ツールの供給源。CI (x86_64-linux) と開発機 (aarch64-darwin) へ同じ版を配る。
+      # 版の正本は flake.lock 1 本 —— 「ローカルで通ったものと CI が別版」が構造的に起きない。
+      forLintSystems = f:
+        nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ]
+          (system: f nixpkgs.legacyPackages.${system});
+
       # 1ホスト分の darwinSystem を組み立てる共通工場。
       # username が specialArgs に注入され、host module で users.users.${username} と
       # system.primaryUser を構成する。
@@ -102,6 +108,28 @@
         hostModule = ./system/hosts/generic.nix;
         extraModules = [ bootstrapBrewOverride ];
       };
+
+      # `nix develop .#lint --command scripts/lint` が食う shell。CI の lint job も同じ経路。
+      # ここに宣言したものだけが PATH に載るので、開発機の brew 版（PATH は
+      # /opt/homebrew/bin が nix profile より前）が混ざらない —— 検査ツールを
+      # home.packages に足さずに済むのはこの隔離のおかげ。
+      # python313 を明示するのは、mypy の伝播依存で漏れてくる python が 3.14 で、
+      # 「既定は Python 3.13」の方針と食い違うため（暗黙 leak に乗らない）。
+      devShells = forLintSystems (pkgs: {
+        lint = pkgs.mkShellNoCC {
+          packages = [
+            pkgs.python313
+            pkgs.ruff
+            pkgs.mypy
+            pkgs.shfmt
+            pkgs.shellcheck
+            pkgs.actionlint
+            pkgs.typos
+            pkgs.lychee
+            pkgs.gitleaks
+          ];
+        };
+      });
 
       # install.sh が locked nix-darwin から darwin-rebuild を起動するための passthrough。
       # `nix run nix-darwin/master#darwin-rebuild` は実行時に master を解決する rolling

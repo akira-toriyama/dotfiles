@@ -38,22 +38,39 @@ jobs:
       - name: nix flake check --no-build
         run: nix flake check --no-build --show-trace
 
-  # シェルスクリプトの静的解析（install.sh のみ。.tmpl は chezmoi 構文が混ざるので除外）
-  shellcheck:
-    name: shellcheck
+  # ── スクリプト / ドキュメント / secret の静的検査（Linux・毎 PR/push）─────────
+  # ruff / mypy / shfmt / shellcheck / actionlint / typos / lychee / gitleaks を
+  # 1 ジョブに集約する。分割すると Determinate installer（8-13s）を N 回払う。
+  #
+  # ツール供給は flake.lock 固定の devShell（`nix develop .#lint`）。ローカルで
+  # 通したものと CI が同一版であることが flake.lock 1 ファイルで保証される
+  # （tool 別 action を並べると版 pin が 8 箇所に散り、手動 bump が要る）。
+  # 判定ロジックは scripts/lint 一本 —— CI はそれを --ci で呼ぶだけなので、
+  # 「ローカル用スクリプトと CI が drift する」形が構造的に作れない。
+  #
+  # 旧 shellcheck job（ludeeus action）を置換。あれは実質 5 ファイルしか見ておらず、
+  # Claude Stop hook 本体・pre-push・chezmoi/run_* が全部 lint 圏外だった。
+  lint:
+    name: lint (ruff / mypy / shfmt / shellcheck / actionlint / typos / lychee / gitleaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
+          # gitleaks git は全 ref の全履歴を見る。既定 fetch-depth: 1 だと
+          # 「1 commits scanned」で緑になり、実質何も検査していない状態になる。
+          # この repo は 299 commits・939 KB・70ms なので全履歴でもコストはゼロ。
+          fetch-depth: 0
           # CI-only, never pushes — drop the persisted checkout token. t-yaxa
           persist-credentials: false
 
-      - name: Run shellcheck on install.sh
-        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # master
-        with:
-          scandir: '.'
-          additional_files: 'install.sh'
-          ignore_paths: 'chezmoi .git'
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+
+      # --ci は検査内容を変えない（出力を GitHub annotation にするだけ）。
+      # ローカル `nix develop .#lint --command scripts/lint` と対象集合が同一。
+      - name: scripts/lint --ci
+        run: nix develop .#lint --command scripts/lint --ci
 
   # 規約チェック: chezmoi 配下のスクリプトは executable_ 接頭辞を持つこと。
   # 例外: run_* / .chezmoiscripts/ 配下 (chezmoi 自身が実行 = $HOME に展開しない)。
@@ -82,6 +99,8 @@ jobs:
           )
           if [ -n "$violations" ]; then
             echo "::error::shebang script under chezmoi/ without executable_ prefix:"
+            # shellcheck disable=SC2001  # 複数行への prefix 付与。sed の方が読める。
+            # ※ この行は該当行の直前に置くこと（run: ブロック先頭では抑止されない）
             echo "$violations" | sed 's/^/  - /'
             exit 1
           fi
@@ -114,15 +133,19 @@ jobs:
           )
           if [ -n "$violations" ]; then
             echo "::error::self-made command under commands/ without my- prefix:"
+            # shellcheck disable=SC2001  # 複数行への prefix 付与。sed の方が読める。
+            # ※ この行は該当行の直前に置くこと（run: ブロック先頭では抑止されない）
             echo "$violations" | sed 's/^/  - /'
             exit 1
           fi
           echo "✅ my- command prefix 規約 OK"
 
-  # 自作 Claude hook スクリプトの回帰テスト（Stop hook の判定ロジック。
-  # 「lint/test で防げることは人力でやらない」— hook の壊れは CI で止める）
-  hook-scripts-test:
-    name: hook scripts test
+  # 自作スクリプトの回帰テスト（Stop hook の判定ロジックと scripts/lint のゲート宣言）。
+  # 「lint/test で防げることは人力でやらない」— これらの壊れは CI で止める。
+  # test_lint.py が守るのは「宣言したゲートが走らなければ緑を出さない」という性質で、
+  # 黙って skip して ✓ を出すのがいちばん危ない失敗の形だから。
+  script-test:
+    name: script test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -131,6 +154,13 @@ jobs:
           persist-credentials: false
       - name: Run claude-work-report-check tests
         run: bash scripts/claude-work-report-check-test.sh
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Run python unit tests
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_*.py' -v
+          python3 -m unittest discover -s scripts/claude-md-eval -p 'test_*.py' -v
 
   # chezmoi テンプレートのレンダリング検証（構文エラー早期検出）
   chezmoi-templates:
@@ -298,6 +328,8 @@ jobs:
           missing=$(comm -23 /tmp/expected_casks.txt /tmp/installed_casks.txt)
           if [ -n "$missing" ]; then
             echo "::error::declared cask(s) not installed:"
+            # shellcheck disable=SC2001  # 複数行への prefix 付与。sed の方が読める。
+            # ※ この行は該当行の直前に置くこと（run: ブロック先頭では抑止されない）
             echo "$missing" | sed 's/^/  - /'
             exit 1
           fi
@@ -319,10 +351,10 @@ jobs:
     if: always()
     needs:
       - nix-flake-check
-      - shellcheck
+      - lint
       - convention-executable-prefix
       - convention-command-prefix
-      - hook-scripts-test
+      - script-test
       - chezmoi-templates
       - flake-changes
       - darwin-build
@@ -350,10 +382,10 @@ jobs:
     if: always() && github.event_name != 'pull_request' && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     needs:
       - nix-flake-check
-      - shellcheck
+      - lint
       - convention-executable-prefix
       - convention-command-prefix
-      - hook-scripts-test
+      - script-test
       - chezmoi-templates
       - darwin-build
       - darwin-switch-smoke

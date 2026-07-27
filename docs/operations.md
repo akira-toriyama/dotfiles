@@ -247,11 +247,32 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 | `darwin-rebuild build (macOS)` | 実 build（cask DL 含む） | macOS-15 |
 | `darwin-rebuild switch smoke (macOS)` | Tart VM で switch 試す | macOS-15 |
 | `Verify casks installed` | 宣言された cask が実際 install できるか | macOS-15 |
-| `shellcheck` | `install.sh` 静的解析 | Linux |
+| `lint` | `scripts/lint`（ruff / mypy / shfmt / shellcheck / actionlint / typos / lychee / gitleaks） | Linux |
+| `script test` | Stop hook の fixture + `scripts/**` の unittest | Linux |
 | `chezmoi templates render` | 全 `.tmpl` の execute-template 検証 | Linux |
 | `convention / executable_ prefix` | shebang スクリプトの +x 接頭辞強制 | Linux |
 | `validate` (verify-chord-validate.yml) | chord config strict validation | macOS-15 |
 | `verify` (verify-chord-doc.yml) | chord doc 同期検証 | Linux |
+
+### 5.6.1 lint を手元で回す / gitleaks が赤くなったら
+
+```sh
+nix develop .#lint --command scripts/lint            # CI と同一コマンド・同一バイナリ
+nix develop .#lint --command scripts/lint python     # 一部だけ（python / shell / workflow / docs / secret）
+```
+
+**素で `scripts/lint` を叩かないこと** —— PATH は `/opt/homebrew/bin` が nix profile より
+前なので、brew 版の shfmt / typos / lychee / gitleaks が混ざって CI と結果がずれる。
+ツールの版の正本は `flake.lock` 1 本で、`devShells.lint`（[flake.nix](../flake.nix)）が配る。
+
+**gitleaks が真陽性を出したら**（履歴は書き換えない — 絶対ルール 4）:
+
+1. **まず鍵を rotate する**（public repo なので、push された時点で漏れている前提で動く）
+2. `.gitleaksignore` に fingerprint を追記して CI を緑に戻す
+3. `gitleaks git` は全 ref の全履歴を毎回見るので、**真陽性を放置すると `ci-gate` が恒久的に赤**になる
+
+> push **後**にしか走らないのが CI の限界。push 時点で止めるのは GitHub の
+> secret scanning push protection の役目で、そちらは repo 設定（Settings → Code security）。
 
 ### 5.7 run_onchange_ スクリプト
 
