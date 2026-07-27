@@ -51,7 +51,7 @@ jobs:
   # 旧 shellcheck job（ludeeus action）を置換。あれは実質 5 ファイルしか見ておらず、
   # Claude Stop hook 本体・pre-push・chezmoi/run_* が全部 lint 圏外だった。
   lint:
-    name: lint (ruff / mypy / shfmt / shellcheck / actionlint / typos / lychee / gitleaks)
+    name: lint (ruff / mypy / shfmt / shellcheck / tmpl / actionlint / typos / lychee / gitleaks)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

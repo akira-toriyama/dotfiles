@@ -90,11 +90,60 @@ class TestShellFileDiscovery(unittest.TestCase):
         self.assertIn(".githooks/pre-push", found)
 
     def test_templates_are_excluded(self) -> None:
-        # .tmpl は chezmoi 構文が混ざるので raw では検査できない。
+        # .tmpl は chezmoi 構文が混ざるので raw では検査できない
+        # （render 後に見るのは tmpl グループ = TestTemplateDiscovery）。
         self.assertFalse([f for f in lint.shell_files() if f.endswith(".tmpl")])
 
     def test_python_files_are_not_in_the_shell_set(self) -> None:
         self.assertFalse([f for f in lint.shell_files() if f.endswith(".py")])
+
+
+class TestTemplateDiscovery(unittest.TestCase):
+    """tmpl ゲートが「0 件を検査して緑」にならないことを固定する。
+
+    shell_files() が .tmpl を除外している以上、tmpl 側の対象集合が空に縮退しても
+    lint は ✓ を出してしまう（ゲート自体は「走った」ので missing にもならない）。
+    実在ファイルを名指しで押さえるのがいちばん確実な歯止め。
+    """
+
+    def test_shell_templates_are_found(self) -> None:
+        found = lint.tmpl_files(".sh.tmpl")
+        self.assertIn("chezmoi/run_onchange_after_chord-validate.sh.tmpl", found)
+        self.assertIn("chezmoi/run_onchange_after_azookey-bridge.sh.tmpl", found)
+
+    def test_plist_templates_are_found(self) -> None:
+        found = lint.tmpl_files(".plist.tmpl")
+        self.assertIn(
+            "chezmoi/private_Library/LaunchAgents/"
+            "com.akira-toriyama.azookey-bridge.plist.tmpl",
+            found,
+        )
+
+    def test_every_declared_suffix_has_at_least_one_target(self) -> None:
+        for suffix in lint.TMPL_SUFFIXES:
+            with self.subTest(suffix=suffix):
+                self.assertTrue(
+                    lint.tmpl_files(suffix),
+                    f"{suffix} の対象が 0 件。ゲートが空振りしている",
+                )
+
+    def test_declared_suffixes_cover_every_tracked_template(self) -> None:
+        """新種の .tmpl（例: .toml.tmpl）が増えたら気づけるように。
+
+        カバーしていない .tmpl は CI の chezmoi-templates job が render 検証だけは
+        するので落ちはしないが、中身の検査は誰もしていない状態になる。
+        """
+        uncovered = sorted(
+            p
+            for p in lint.tracked("*.tmpl")
+            if not any(p.endswith(s) for s in lint.TMPL_SUFFIXES)
+        )
+        self.assertEqual(
+            uncovered,
+            [],
+            "TMPL_SUFFIXES が見ていない .tmpl がある。検査を足すか、"
+            "検査不要ならこの期待値に理由付きで足すこと",
+        )
 
 
 if __name__ == "__main__":
