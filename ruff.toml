@@ -1,11 +1,7 @@
 # Python の lint + format。既定は Python 3.13（`scripts/` 配下 = mise の python で叩く前提）。
 target-version = "py313"
 
-exclude = [
-  ".git",
-  "result",
-  "result-*",
-]
+exclude = [".git", "result", "result-*"]
 
 # launchd 常駐の azookey-bridge だけは `/usr/bin/python3`（system 3.9）で起動される
 # （LaunchAgents の plist がフルパス指定）。mise の 3.13 には依存させられないので、
