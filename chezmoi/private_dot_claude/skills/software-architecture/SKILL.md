@@ -30,7 +30,11 @@ The value is realized at three distinct moments — if none is plausible you may
 
 ## UI toolkit: default to the highest level, confine the escape hatches
 
-Which UI framework the **View** layer imports is an architectural choice, not a per-view whim. Default to the **highest-level toolkit** (on macOS, SwiftUI) and treat the lower-level one (AppKit) as an **escape hatch confined to a small, named set of essential floors** — the places the high-level toolkit genuinely can't reach:
+Which UI framework the **View** layer imports is an architectural choice, not a per-view whim. Default to the **highest-level toolkit** (on macOS, SwiftUI) and treat the lower-level one (AppKit) as an **escape hatch confined to a small, named set of essential floors** — the places the high-level toolkit genuinely can't reach.
+
+**The authoritative floor list does not live here.** Per the discipline below, it belongs to the project's own canon; in this house that is the shared UI library **[Sill](https://github.com/akira-toriyama/sill)** — check its `Package.swift` (the library contract) before declaring a floor, because a floor that Sill has since covered is no longer a floor. See the `mac-app-dev` skill for the house default (SwiftUI + Sill).
+
+Floors observed in one production codebase, kept here **only as calibration for what "essential" means** — not as a list to copy:
 
 - **IME / text-input core** — marked-text (composition) interception and pre-commit key routing (Return / Esc / arrows) the high-level field doesn't expose.
 - **A focus-preserving non-activating panel shell** — a floating window that takes key + input without stealing the frontmost app / menu bar (and popups overflowing their parent). The *shell* is low-level; its contents are hosted high-level views.
