@@ -13,40 +13,47 @@ TODAY="$LOGDIR/zmk-$(date +%F).log"
 EVENTS='ZOMBIE|ZR-EPISODE|zombie-check|give-up|self-reboot|bounce|latch|refill|Booting Zephyr|ble_hid_host up|disconnected:|bond|berr=[1-9]|err'
 
 case "${1:-}" in
-    ""|tail)
-        exec tail -n 50 -F "$TODAY"
-        ;;
-    today)
-        exec cat "$TODAY"
-        ;;
-    days)
-        for f in "$LOGDIR"/zmk-*.log; do
-            [ -e "$f" ] || continue
-            b=${f##*/}; b=${b#zmk-}
-            echo "${b%.log}"
-        done
-        ;;
-    find)
-        N="${2:-3}"
-        files=("$LOGDIR"/zmk-*.log)
-        [ -e "${files[0]}" ] || exit 0
-        start=$(( ${#files[@]} - N ))
-        [ "$start" -lt 0 ] && start=0
-        cat "${files[@]:start}" 2>/dev/null | grep -E "$EVENTS"
-        ;;
-    since)
-        [ -n "${2:-}" ] || { echo "usage: zmk-log since \"HH:MM\"" >&2; exit 2; }
-        awk -v t="$(date +%F) ${2}" '$0 >= t' "$TODAY"
-        ;;
-    around)
-        [ -n "${2:-}" ] || { echo "usage: zmk-log around \"HH:MM\"" >&2; exit 2; }
-        C=$(date -j -f "%F %H:%M" "$(date +%F) ${2}" +%s) || exit 2
-        FROM=$(date -j -f %s $((C - 120)) '+%F %T')
-        TO=$(date -j -f %s $((C + 120)) '+%F %T')
-        awk -v a="$FROM" -v b="$TO" '$0 >= a && $0 <= b' "$TODAY"
-        ;;
-    *)
-        echo "usage: zmk-log [tail|today|find [N]|since HH:MM|around HH:MM|days]" >&2
-        exit 2
-        ;;
+"" | tail)
+  exec tail -n 50 -F "$TODAY"
+  ;;
+today)
+  exec cat "$TODAY"
+  ;;
+days)
+  for f in "$LOGDIR"/zmk-*.log; do
+    [ -e "$f" ] || continue
+    b=${f##*/}
+    b=${b#zmk-}
+    echo "${b%.log}"
+  done
+  ;;
+find)
+  N="${2:-3}"
+  files=("$LOGDIR"/zmk-*.log)
+  [ -e "${files[0]}" ] || exit 0
+  start=$((${#files[@]} - N))
+  [ "$start" -lt 0 ] && start=0
+  cat "${files[@]:start}" 2>/dev/null | grep -E "$EVENTS"
+  ;;
+since)
+  [ -n "${2:-}" ] || {
+    echo "usage: zmk-log since \"HH:MM\"" >&2
+    exit 2
+  }
+  awk -v t="$(date +%F) ${2}" '$0 >= t' "$TODAY"
+  ;;
+around)
+  [ -n "${2:-}" ] || {
+    echo "usage: zmk-log around \"HH:MM\"" >&2
+    exit 2
+  }
+  C=$(date -j -f "%F %H:%M" "$(date +%F) ${2}" +%s) || exit 2
+  FROM=$(date -j -f %s $((C - 120)) '+%F %T')
+  TO=$(date -j -f %s $((C + 120)) '+%F %T')
+  awk -v a="$FROM" -v b="$TO" '$0 >= a && $0 <= b' "$TODAY"
+  ;;
+*)
+  echo "usage: zmk-log [tail|today|find [N]|since HH:MM|around HH:MM|days]" >&2
+  exit 2
+  ;;
 esac

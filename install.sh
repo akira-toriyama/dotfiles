@@ -55,12 +55,12 @@ MODE=full
 SKIP_CLONE=0
 for arg in "$@"; do
   case "$arg" in
-    --phase2) MODE=phase2 ;;
-    --skip-clone) SKIP_CLONE=1 ;;
-    *)
-      printf 'install.sh: 未知のオプション: %s (使えるのは --phase2 / --skip-clone のみ)\n' "$arg" >&2
-      exit 2
-      ;;
+  --phase2) MODE=phase2 ;;
+  --skip-clone) SKIP_CLONE=1 ;;
+  *)
+    printf 'install.sh: 未知のオプション: %s (使えるのは --phase2 / --skip-clone のみ)\n' "$arg" >&2
+    exit 2
+    ;;
   esac
 done
 
@@ -77,12 +77,12 @@ DF_EVENTS="$DF_RUN_DIR/events.tsv"
 DF_SUMMARY="$DF_RUN_DIR/summary.txt"
 DF_DETAIL="$DF_RUN_DIR/detail"
 
-if ! mkdir -p "$DF_DETAIL" 2>/dev/null || ! : > "$DF_LOG" 2>/dev/null; then
+if ! mkdir -p "$DF_DETAIL" 2>/dev/null || ! : >"$DF_LOG" 2>/dev/null; then
   echo "FATAL: ログ出力先を用意できない: $DF_RUN_DIR" >&2
   exit 1
 fi
-: > "$DF_EVENTS"
-printf '#ts\ttype\tname\trc\n' >> "$DF_EVENTS"
+: >"$DF_EVENTS"
+printf '#ts\ttype\tname\trc\n' >>"$DF_EVENTS"
 ln -sfn "$DF_RUN_ID" "$DF_LOG_ROOT/latest"
 
 # リダイレクト前に実端末へ出す（後段でハングしても在り処が分かる）
@@ -93,12 +93,12 @@ DF_FIFO_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dfinstall.XXXXXX")"
 mkfifo -m 600 "$DF_FIFO_DIR/pipe"
 # tee は SIG_IGN を継承して Ctrl-C を生き延び、FIFO を最後まで drain する
 trap '' INT
-tee -a "$DF_LOG" < "$DF_FIFO_DIR/pipe" &
+tee -a "$DF_LOG" <"$DF_FIFO_DIR/pipe" &
 DF_TEE_PID=$!
 trap - INT
 # fd 3 = 実端末（tee を畳んだ後でも人間向けに 1 行出せる）
 exec 3>&1
-exec > "$DF_FIFO_DIR/pipe" 2>&1
+exec >"$DF_FIFO_DIR/pipe" 2>&1
 rm -f "$DF_FIFO_DIR/pipe"
 rmdir "$DF_FIFO_DIR" 2>/dev/null || :
 
@@ -113,7 +113,7 @@ df_say() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 
 df_phase() {
   DF_PHASE="$1"
-  printf '%s\tPHASE\t%s\t-\n' "$(df_now)" "$1" >> "$DF_EVENTS"
+  printf '%s\tPHASE\t%s\t-\n' "$(df_now)" "$1" >>"$DF_EVENTS"
   printf '\n[%s] ===== PHASE %s =====\n' "$(date +%H:%M:%S)" "$1"
 }
 
@@ -123,19 +123,19 @@ df_phase() {
 # df_step_try = リトライ前提の 1 試行。events には TRY で記録し DF_STEP_FAILURES に
 #   数えない（数えると「attempt 1 失敗 → attempt 2 成功」の正常回復まで RESULT が
 #   FAILED になる偽失敗が出る。成否の正本は各 phase 末尾の df_check_ok/fail）。
-df_step()     { df_step_impl STEP "$@"; }
+df_step() { df_step_impl STEP "$@"; }
 df_step_try() { df_step_impl TRY "$@"; }
 df_step_impl() {
   df_step_evt="$1"
   df_step_name="$2"
   df_step_mode="$3"
   shift 3
-  printf '%s\tSTEP_START\t%s\t-\n' "$(df_now)" "$df_step_name" >> "$DF_EVENTS"
+  printf '%s\tSTEP_START\t%s\t-\n' "$(df_now)" "$df_step_name" >>"$DF_EVENTS"
   df_say "--- step $df_step_name"
   if [ "$df_step_mode" = quiet ]; then
     df_step_out="$DF_DETAIL/$df_step_name.log"
-    if "$@" > "$df_step_out" 2>&1; then df_step_rc=0; else df_step_rc=$?; fi
-    df_say "    output -> detail/$df_step_name.log ($(wc -l < "$df_step_out" | tr -d ' ') lines)"
+    if "$@" >"$df_step_out" 2>&1; then df_step_rc=0; else df_step_rc=$?; fi
+    df_say "    output -> detail/$df_step_name.log ($(wc -l <"$df_step_out" | tr -d ' ') lines)"
     if [ "$df_step_rc" -ne 0 ]; then
       df_say "    tail of detail/$df_step_name.log:"
       tail -n 30 "$df_step_out" | sed 's/^/    | /'
@@ -143,7 +143,7 @@ df_step_impl() {
   else
     if "$@"; then df_step_rc=0; else df_step_rc=$?; fi
   fi
-  printf '%s\t%s\t%s\t%s\n' "$(df_now)" "$df_step_evt" "$df_step_name" "$df_step_rc" >> "$DF_EVENTS"
+  printf '%s\t%s\t%s\t%s\n' "$(df_now)" "$df_step_evt" "$df_step_name" "$df_step_rc" >>"$DF_EVENTS"
   if [ "$df_step_rc" -ne 0 ]; then
     if [ "$df_step_evt" = STEP ]; then
       DF_STEP_FAILURES=$((DF_STEP_FAILURES + 1))
@@ -158,7 +158,7 @@ df_step_impl() {
 # 事後条件違反の記録（fail しても flow は止めない。RESULT は必ず FAILED になる）
 df_check_fail() {
   DF_STEP_FAILURES=$((DF_STEP_FAILURES + 1))
-  printf '%s\tCHECK\t%s\t1\n' "$(df_now)" "$1" >> "$DF_EVENTS"
+  printf '%s\tCHECK\t%s\t1\n' "$(df_now)" "$1" >>"$DF_EVENTS"
   df_say "  ✘ CHECK [$1] $2"
 }
 df_check_ok() { df_say "  ok [$1] $2"; }
@@ -180,28 +180,33 @@ df_finish() {
   if [ "$df_rc" -ne 0 ]; then
     df_verdict=FAILED
   elif [ "$DF_REACHED_END" != "1" ]; then
-    df_verdict=ABORTED; df_rc=99
+    df_verdict=ABORTED
+    df_rc=99
   elif [ "$DF_STEP_FAILURES" -gt 0 ]; then
-    df_verdict=FAILED; df_rc=1
+    df_verdict=FAILED
+    df_rc=1
   elif [ "$SKIP_CLONE" = 1 ]; then
     df_verdict=PARTIAL
   else
     df_verdict=OK
   fi
-  printf '%s\tEND\t%s\t%s\n' "$(df_now)" "$df_verdict" "$df_rc" >> "$DF_EVENTS"
+  printf '%s\tEND\t%s\t%s\n' "$(df_now)" "$df_verdict" "$df_rc" >>"$DF_EVENTS"
 
   printf '\n[%s] ================ RESULT ================\n' "$(date +%H:%M:%S)"
   printf 'RESULT: %s (exit %s)\n' "$df_verdict" "$df_rc"
   awk -F'\t' '($2=="STEP"||$2=="CHECK") && $4!="0"{printf "FAIL %s\n", $3}' "$DF_EVENTS"
   case "$df_verdict" in
-    OK)
-      printf '\n✓ 完了。全 phase + 事後条件検証を通過。新しいターミナルを開いて使用開始。\n' ;;
-    PARTIAL)
-      printf '\nPARTIAL: --skip-clone のため未完（ghq-get-mine と claude-memory link が残っている）\n' ;;
-    *)
-      printf '\nNEXT: 上の FAIL を直し、同じコマンドを再実行（冪等）。\n'
-      printf '     SSH gate (P-onepassword) 起因なら 1Password の サインイン / SSH agent ON /\n'
-      printf '     鍵承認 を確認して "sh %s/install.sh --phase2" が最短。詳細: %s\n' "$REPO_DIR" "$DF_SUMMARY" ;;
+  OK)
+    printf '\n✓ 完了。全 phase + 事後条件検証を通過。新しいターミナルを開いて使用開始。\n'
+    ;;
+  PARTIAL)
+    printf '\nPARTIAL: --skip-clone のため未完（ghq-get-mine と claude-memory link が残っている）\n'
+    ;;
+  *)
+    printf '\nNEXT: 上の FAIL を直し、同じコマンドを再実行（冪等）。\n'
+    printf '     SSH gate (P-onepassword) 起因なら 1Password の サインイン / SSH agent ON /\n'
+    printf '     鍵承認 を確認して "sh %s/install.sh --phase2" が最短。詳細: %s\n' "$REPO_DIR" "$DF_SUMMARY"
+    ;;
   esac
   printf 'summary: %s\nlog:     %s\n' "$DF_SUMMARY" "$DF_LOG"
 
@@ -231,7 +236,7 @@ df_finish() {
     done
     echo "--- last 40 log lines ---"
     tail -n 40 "$DF_LOG" 2>/dev/null
-  } > "$DF_SUMMARY" 2>&1
+  } >"$DF_SUMMARY" 2>&1
 
   printf 'install.sh(%s): RESULT %s (exit %s) — %s\n' "$MODE" "$df_verdict" "$df_rc" "$DF_SUMMARY" >&3
   exit "$df_rc"
@@ -317,16 +322,19 @@ run_verify_system() {
 
   # V2: user layer の実体。期待リストは手書きせず現世代から導出（drift しない）
   if [ -n "$expect_gen" ] && [ -d "$expect_gen/home-files" ]; then
-    ( cd "$expect_gen/home-files" && find . \( -type f -o -type l \) | sed 's|^\./||' ) \
-      > "$DF_RUN_DIR/expected-home-files"
+    (cd "$expect_gen/home-files" && find . \( -type f -o -type l \) | sed 's|^\./||') \
+      >"$DF_RUN_DIR/expected-home-files"
     v2_missing=0
     while IFS= read -r rel; do
-      [ -e "$HOME/$rel" ] || { v2_missing=$((v2_missing + 1)); df_say "    missing: ~/$rel"; }
-    done < "$DF_RUN_DIR/expected-home-files"
+      [ -e "$HOME/$rel" ] || {
+        v2_missing=$((v2_missing + 1))
+        df_say "    missing: ~/$rel"
+      }
+    done <"$DF_RUN_DIR/expected-home-files"
     if [ "$v2_missing" -gt 0 ]; then
       df_check_fail V2-home-files "$v2_missing 件の home file 欠落"
     else
-      df_check_ok V2-home-files "$(wc -l < "$DF_RUN_DIR/expected-home-files" | tr -d ' ') files"
+      df_check_ok V2-home-files "$(wc -l <"$DF_RUN_DIR/expected-home-files" | tr -d ' ') files"
     fi
   else
     df_check_fail V2-home-files "期待ファイル一覧を導出できない（世代パス不明 = V1 を先に直す）"
@@ -355,23 +363,23 @@ run_verify_system() {
   if [ -x /opt/homebrew/bin/brew ]; then
     for kind in brews casks; do
       env PATH="$HM_PATH:$PATH" nix eval --impure --json \
-        "$REPO_DIR#darwinConfigurations.${FLAKE_HOST}.config.homebrew.${kind}" 2>/dev/null \
-        | env PATH="$HM_PATH:$PATH" jq -r '.[] | if type=="string" then . else .name end' \
-        | sed 's|.*/||' | sort > "$DF_RUN_DIR/expected-$kind" || :
+        "$REPO_DIR#darwinConfigurations.${FLAKE_HOST}.config.homebrew.${kind}" 2>/dev/null |
+        env PATH="$HM_PATH:$PATH" jq -r '.[] | if type=="string" then . else .name end' |
+        sed 's|.*/||' | sort >"$DF_RUN_DIR/expected-$kind" || :
       if [ "$kind" = brews ]; then
-        /opt/homebrew/bin/brew list --formula 2>/dev/null | sort > "$DF_RUN_DIR/actual-$kind" || :
+        /opt/homebrew/bin/brew list --formula 2>/dev/null | sort >"$DF_RUN_DIR/actual-$kind" || :
       else
-        /opt/homebrew/bin/brew list --cask 2>/dev/null | sort > "$DF_RUN_DIR/actual-$kind" || :
+        /opt/homebrew/bin/brew list --cask 2>/dev/null | sort >"$DF_RUN_DIR/actual-$kind" || :
       fi
       if [ ! -s "$DF_RUN_DIR/expected-$kind" ]; then
         df_check_fail "V6-$kind" "期待 $kind を flake から導出できない"
         continue
       fi
-      comm -23 "$DF_RUN_DIR/expected-$kind" "$DF_RUN_DIR/actual-$kind" > "$DF_RUN_DIR/missing-$kind"
+      comm -23 "$DF_RUN_DIR/expected-$kind" "$DF_RUN_DIR/actual-$kind" >"$DF_RUN_DIR/missing-$kind"
       if [ -s "$DF_RUN_DIR/missing-$kind" ]; then
-        df_check_fail "V6-$kind" "未 install: $(tr '\n' ' ' < "$DF_RUN_DIR/missing-$kind")"
+        df_check_fail "V6-$kind" "未 install: $(tr '\n' ' ' <"$DF_RUN_DIR/missing-$kind")"
       else
-        df_check_ok "V6-$kind" "全 $(wc -l < "$DF_RUN_DIR/expected-$kind" | tr -d ' ') 件"
+        df_check_ok "V6-$kind" "全 $(wc -l <"$DF_RUN_DIR/expected-$kind" | tr -d ' ') 件"
       fi
     done
   else
@@ -398,11 +406,14 @@ run_clone_phases() {
   fi
   gate_out="$DF_RUN_DIR/ssh-gate.out"
   ssh -n -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -T git@github.com \
-    > "$gate_out" 2>&1 &
+    >"$gate_out" 2>&1 &
   gate_pid=$!
   # watchdog の fd を FIFO から切り離す（>/dev/null 2>&1）。切り離さないと kill 後も
   # orphan の sleep が FIFO の write 端を掴み、df_finish の wait(tee) が最大 75 秒止まる
-  ( sleep 75; kill "$gate_pid" 2>/dev/null ) >/dev/null 2>&1 &
+  (
+    sleep 75
+    kill "$gate_pid" 2>/dev/null
+  ) >/dev/null 2>&1 &
   gate_watchdog=$!
   wait "$gate_pid" 2>/dev/null || :
   kill "$gate_watchdog" 2>/dev/null || :
@@ -447,14 +458,14 @@ run_clone_phases() {
   # 取り、200 超で検証が空振りになる縮退を検出できるようにする）
   if env PATH="$HM_PATH:$PATH" gh auth status >/dev/null 2>&1; then
     env PATH="$HM_PATH:$PATH" gh repo list "$GITHUB_USERNAME" --no-archived --limit 1000 \
-      --json nameWithOwner --jq '.[].nameWithOwner' 2>/dev/null | sort > "$DF_RUN_DIR/expected-repos" || :
-    env PATH="$HM_PATH:$PATH" ghq list 2>/dev/null | sed 's|^github.com/||' | sort > "$DF_RUN_DIR/actual-repos" || :
+      --json nameWithOwner --jq '.[].nameWithOwner' 2>/dev/null | sort >"$DF_RUN_DIR/expected-repos" || :
+    env PATH="$HM_PATH:$PATH" ghq list 2>/dev/null | sed 's|^github.com/||' | sort >"$DF_RUN_DIR/actual-repos" || :
     if [ -s "$DF_RUN_DIR/expected-repos" ]; then
-      comm -23 "$DF_RUN_DIR/expected-repos" "$DF_RUN_DIR/actual-repos" > "$DF_RUN_DIR/missing-repos"
+      comm -23 "$DF_RUN_DIR/expected-repos" "$DF_RUN_DIR/actual-repos" >"$DF_RUN_DIR/missing-repos"
       if [ -s "$DF_RUN_DIR/missing-repos" ]; then
-        df_check_fail V5b-clone "未 clone: $(tr '\n' ' ' < "$DF_RUN_DIR/missing-repos")"
+        df_check_fail V5b-clone "未 clone: $(tr '\n' ' ' <"$DF_RUN_DIR/missing-repos")"
       else
-        df_check_ok V5b-clone "全 $(wc -l < "$DF_RUN_DIR/expected-repos" | tr -d ' ') repo clone 済み"
+        df_check_ok V5b-clone "全 $(wc -l <"$DF_RUN_DIR/expected-repos" | tr -d ' ') repo clone 済み"
       fi
     else
       df_check_fail V5b-clone "gh repo list が空。clone 完全性を検証できていない"
@@ -548,9 +559,9 @@ fi
 # ※ Defaults !use_pty 案（宣言側）との優劣は Tart VM probe で最終確定（VM-gated seam）。
 DOTFILES_SUDO_RULE="${DOTFILES_SUDO_RULE:-$USER ALL=(ALL) NOPASSWD:SETENV: ALL}"
 df_sudo_tmp="$DF_RUN_DIR/sudoers-dropin"
-printf '%s\n' "$DOTFILES_SUDO_RULE" > "$df_sudo_tmp"
-if sudo -n /usr/sbin/visudo -cf "$df_sudo_tmp" >/dev/null 2>&1 \
-  && sudo -n /usr/bin/install -m 0440 -o root -g wheel "$df_sudo_tmp" "$SUDOERS_DROPIN"; then
+printf '%s\n' "$DOTFILES_SUDO_RULE" >"$df_sudo_tmp"
+if sudo -n /usr/sbin/visudo -cf "$df_sudo_tmp" >/dev/null 2>&1 &&
+  sudo -n /usr/bin/install -m 0440 -o root -g wheel "$df_sudo_tmp" "$SUDOERS_DROPIN"; then
   DF_SUDO_RULE_PLANTED=1
   df_check_ok P1-sudoers "bootstrap drop-in 設置（終了時に自動削除）"
 else
@@ -566,10 +577,10 @@ CLT_SENTINEL=/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 clt_pick_label() {
   # macOS 26 は複数ラベルを同時提示する（26.5 / 26.6 を実測）。beta を除き最新を
   # sort -V で選ぶ（lexical だと 26.9 > 26.10 になる罠）。
-  /usr/sbin/softwareupdate --list 2>&1 \
-    | sed -n 's/^[* -]*Label: \(Command Line Tools for Xcode[^,]*\).*$/\1/p' \
-    | grep -iv beta \
-    | sort -V | tail -n 1
+  /usr/sbin/softwareupdate --list 2>&1 |
+    sed -n 's/^[* -]*Label: \(Command Line Tools for Xcode[^,]*\).*$/\1/p' |
+    grep -iv beta |
+    sort -V | tail -n 1
 }
 if clt_ok; then
   df_say "CLT 導入済み → skip"
@@ -629,8 +640,8 @@ fi
 nix_pkg="$DF_RUN_DIR/Determinate.pkg"
 nix_pkg_download() {
   curl --proto '=https' --tlsv1.2 -fsSL -o "$nix_pkg.part" \
-    https://install.determinate.systems/determinate-pkg/stable/Universal \
-    && mv -f "$nix_pkg.part" "$nix_pkg"
+    https://install.determinate.systems/determinate-pkg/stable/Universal &&
+    mv -f "$nix_pkg.part" "$nix_pkg"
 }
 if command -v nix >/dev/null 2>&1 && [ -d /nix ]; then
   df_say "nix 導入済み → skip"
@@ -640,10 +651,16 @@ else
     nix_attempt=$((nix_attempt + 1))
     df_say "Determinate .pkg install 試行 $nix_attempt/2"
     if [ ! -f "$nix_pkg" ]; then
-      df_step_try "nix-pkg-download-$nix_attempt" plain nix_pkg_download || { sleep 10; continue; }
+      df_step_try "nix-pkg-download-$nix_attempt" plain nix_pkg_download || {
+        sleep 10
+        continue
+      }
     fi
     df_step_try "nix-pkg-install-$nix_attempt" quiet \
-      sudo -n /usr/sbin/installer -pkg "$nix_pkg" -target / || { sleep 10; continue; }
+      sudo -n /usr/sbin/installer -pkg "$nix_pkg" -target / || {
+      sleep 10
+      continue
+    }
     break
   done
   if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
@@ -694,22 +711,22 @@ else
   if [ -x /opt/homebrew/bin/brew ]; then
     for bf_kind in taps brews casks; do
       env PATH="$HM_PATH:$PATH" nix eval --impure --json \
-        "$REPO_DIR#darwinConfigurations.${FLAKE_HOST}.config.homebrew.${bf_kind}" 2>/dev/null \
-        | env PATH="$HM_PATH:$PATH" jq -r '.[] | if type=="string" then . else .name end' \
-        | while IFS= read -r bf_item; do
-        [ -z "$bf_item" ] && continue
-        case "$bf_kind" in
-          taps)  bf_cmd="tap" ;;
+        "$REPO_DIR#darwinConfigurations.${FLAKE_HOST}.config.homebrew.${bf_kind}" 2>/dev/null |
+        env PATH="$HM_PATH:$PATH" jq -r '.[] | if type=="string" then . else .name end' |
+        while IFS= read -r bf_item; do
+          [ -z "$bf_item" ] && continue
+          case "$bf_kind" in
+          taps) bf_cmd="tap" ;;
           brews) bf_cmd="install --formula" ;;
           casks) bf_cmd="install --cask" ;;
-        esac
-        # shellcheck disable=SC2086  # bf_cmd の語分割は意図的
-        if /opt/homebrew/bin/brew $bf_cmd "$bf_item" >/dev/null 2>&1; then
-          df_say "  ✓ $bf_kind $bf_item"
-        else
-          df_say "  ✘ $bf_kind $bf_item 失敗"
-        fi
-      done
+          esac
+          # shellcheck disable=SC2086  # bf_cmd の語分割は意図的
+          if /opt/homebrew/bin/brew $bf_cmd "$bf_item" >/dev/null 2>&1; then
+            df_say "  ✓ $bf_kind $bf_item"
+          else
+            df_say "  ✘ $bf_kind $bf_item 失敗"
+          fi
+        done
     done
   fi
   df_step darwin-switch-retry plain switch_cmd || df_say "switch retry も失敗（RESULT は FAILED になる。verify で実害を特定）"

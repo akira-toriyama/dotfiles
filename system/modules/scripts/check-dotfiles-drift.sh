@@ -88,12 +88,12 @@ count_lines() { if [ -z "$1" ]; then echo 0; else echo "$1" | wc -l | tr -d ' ';
 # 1. homebrew drift
 # ============================================================
 declared_casks=$(
-  nix eval --json "$FLAKE_DIR#darwinConfigurations.default.config.homebrew.casks" --impure 2>/dev/null \
-    | jq -r '.[] | if type == "object" then .name else . end' 2>/dev/null | sort || true
+  nix eval --json "$FLAKE_DIR#darwinConfigurations.default.config.homebrew.casks" --impure 2>/dev/null |
+    jq -r '.[] | if type == "object" then .name else . end' 2>/dev/null | sort || true
 )
 declared_brews=$(
-  nix eval --json "$FLAKE_DIR#darwinConfigurations.default.config.homebrew.brews" --impure 2>/dev/null \
-    | jq -r '.[] | if type == "object" then .name else . end' 2>/dev/null | sort || true
+  nix eval --json "$FLAKE_DIR#darwinConfigurations.default.config.homebrew.brews" --impure 2>/dev/null |
+    jq -r '.[] | if type == "object" then .name else . end' 2>/dev/null | sort || true
 )
 installed_casks=$(brew list --cask 2>/dev/null | sort || true)
 installed_brews=$(brew leaves 2>/dev/null | sort || true)
@@ -118,7 +118,7 @@ while IFS= read -r name; do
   else
     undeclared_brews="${undeclared_brews}${name}"$'\n'
   fi
-done <<< "$extra_brews_all"
+done <<<"$extra_brews_all"
 dup_brews=$(echo "$dup_brews" | grep -v '^$' || true)
 undeclared_brews=$(echo "$undeclared_brews" | grep -v '^$' || true)
 
@@ -159,9 +159,9 @@ if [ "$n_dirty" -gt 0 ]; then
     [ -e "$full" ] || continue
     m=$(stat -f %m "$full" 2>/dev/null || echo 0)
     [ "$m" -gt "$newest" ] && newest=$m
-  done <<< "$dirty"
+  done <<<"$dirty"
   if [ "$newest" -gt 0 ]; then
-    age_days=$(( (now - newest) / 86400 ))
+    age_days=$(((now - newest) / 86400))
     [ "$age_days" -ge "$STALE_DAYS" ] && n_stale=$n_dirty
   fi
 fi
@@ -169,7 +169,7 @@ fi
 # ============================================================
 # 集約: 何も無ければ静かに終了 (+ 残通知を消す)
 # ============================================================
-total=$(( n_ec + n_mc + n_dup + n_ub + n_mb + n_cz + n_unpushed + n_stale ))
+total=$((n_ec + n_mc + n_dup + n_ub + n_mb + n_cz + n_unpushed + n_stale))
 if [ "$total" -eq 0 ]; then
   echo "[$(date)] no drift"
   rm -f "$DETAIL_FILE" "$HOME/.local/state/dotfiles/drift-notified.sha"
@@ -178,14 +178,14 @@ fi
 
 # subtitle: 件数サマリ
 subtitle_parts=""
-[ "$n_ec" -gt 0 ]       && subtitle_parts="${subtitle_parts}未宣言cask${n_ec} / "
-[ "$n_mc" -gt 0 ]       && subtitle_parts="${subtitle_parts}未installcask${n_mc} / "
-[ "$n_dup" -gt 0 ]      && subtitle_parts="${subtitle_parts}Nix二重brew${n_dup} / "
-[ "$n_ub" -gt 0 ]       && subtitle_parts="${subtitle_parts}未宣言brew${n_ub} / "
-[ "$n_mb" -gt 0 ]       && subtitle_parts="${subtitle_parts}未installbrew${n_mb} / "
-[ "$n_cz" -gt 0 ]       && subtitle_parts="${subtitle_parts}chezmoi乖離${n_cz} / "
+[ "$n_ec" -gt 0 ] && subtitle_parts="${subtitle_parts}未宣言cask${n_ec} / "
+[ "$n_mc" -gt 0 ] && subtitle_parts="${subtitle_parts}未installcask${n_mc} / "
+[ "$n_dup" -gt 0 ] && subtitle_parts="${subtitle_parts}Nix二重brew${n_dup} / "
+[ "$n_ub" -gt 0 ] && subtitle_parts="${subtitle_parts}未宣言brew${n_ub} / "
+[ "$n_mb" -gt 0 ] && subtitle_parts="${subtitle_parts}未installbrew${n_mb} / "
+[ "$n_cz" -gt 0 ] && subtitle_parts="${subtitle_parts}chezmoi乖離${n_cz} / "
 [ "$n_unpushed" -gt 0 ] && subtitle_parts="${subtitle_parts}未push${n_unpushed} / "
-[ "$n_stale" -gt 0 ]    && subtitle_parts="${subtitle_parts}滞留未commit${n_stale} / "
+[ "$n_stale" -gt 0 ] && subtitle_parts="${subtitle_parts}滞留未commit${n_stale} / "
 subtitle="${subtitle_parts% / }"
 
 # 詳細レポートの description 取得
@@ -260,7 +260,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       echo "- **$name**${desc:+ — $desc}"
       fence "brew uninstall $name"
       echo
-    done <<< "$dup_brews"
+    done <<<"$dup_brews"
     echo
   fi
 
@@ -278,7 +278,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       echo "- 削除"
       fence "brew uninstall $name"
       echo
-    done <<< "$undeclared_brews"
+    done <<<"$undeclared_brews"
     echo
   fi
 
@@ -294,7 +294,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       echo "- 削除"
       fence "brew uninstall --cask $name"
       echo
-    done <<< "$extra_casks"
+    done <<<"$extra_casks"
     echo
   fi
 
@@ -309,7 +309,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       fence "brew install --cask $name"
       echo "- 宣言取消: \`homebrew.nix\` の casks から該当行を削除"
       echo
-    done <<< "$missing_casks"
+    done <<<"$missing_casks"
     echo
   fi
 
@@ -324,7 +324,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
       fence "brew install $name"
       echo "- 宣言取消: \`homebrew.nix\` の brews から該当行を削除"
       echo
-    done <<< "$missing_brews"
+    done <<<"$missing_brews"
     echo
   fi
 
@@ -334,7 +334,7 @@ fence() { printf '```sh\n%s\n```\n' "$1"; }
   fence "$RECHECK"
   echo "- 実行ログ"
   fence "tail -30 /tmp/dotfiles-drift.log"
-} > "$DETAIL_FILE"
+} >"$DETAIL_FILE"
 
 # ============================================================
 # 通知。
@@ -350,15 +350,16 @@ if command -v osascript >/dev/null 2>&1; then
   dialog_msg="${subtitle}
 
 「詳細を開く」で対応コマンド付きレポートを表示します。"
-  btn=$(osascript <<OSA 2>/dev/null
+  btn=$(
+    osascript <<OSA 2>/dev/null
 display dialog "${dialog_msg}" with title "⚠ dotfiles drift" buttons {"閉じる", "詳細を開く"} default button "詳細を開く" with icon caution
 OSA
-) || true
+  ) || true
   case "$btn" in
-    *"詳細を開く"*)
-      /opt/homebrew/bin/code -n "$DETAIL_FILE" >/dev/null 2>&1 \
-        || open "$DETAIL_FILE" >/dev/null 2>&1 || true
-      ;;
+  *"詳細を開く"*)
+    /opt/homebrew/bin/code -n "$DETAIL_FILE" >/dev/null 2>&1 ||
+      open "$DETAIL_FILE" >/dev/null 2>&1 || true
+    ;;
   esac
   echo "[$(date)] notified (dialog): $subtitle (詳細: $DETAIL_FILE)"
 else

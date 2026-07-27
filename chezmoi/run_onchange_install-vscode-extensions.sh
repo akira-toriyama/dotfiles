@@ -27,11 +27,13 @@ fi
 # shellcheck disable=SC2043  # 1 要素なのは今だけ — 拡張を足す時に行を増やす拡張点として
 #                             ループの形を保つ（潰すと足す側が構造ごと書き直すことになる）
 for ext in \
-  anthropic.claude-code
-do
+  anthropic.claude-code; do
   "$CODE_BIN" --install-extension "$ext" --force >/dev/null &
   ext_pid=$!
-  ( sleep 120; kill "$ext_pid" 2>/dev/null ) >/dev/null 2>&1 &
+  (
+    sleep 120
+    kill "$ext_pid" 2>/dev/null
+  ) >/dev/null 2>&1 &
   ext_watchdog=$!
   if wait "$ext_pid" 2>/dev/null; then
     kill "$ext_watchdog" 2>/dev/null || :

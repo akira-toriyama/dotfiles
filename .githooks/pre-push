@@ -28,15 +28,15 @@ repo_root=$(git rev-parse --show-toplevel)
 # 時 (origin/main 無し等) は安全側に倒して verify する。
 range_base=$(git merge-base origin/main HEAD 2>/dev/null || true)
 if [ -n "$range_base" ]; then
-    if git diff --name-only "$range_base..HEAD" 2>/dev/null | grep -q '^chezmoi/'; then
-        : # chezmoi/ を含む push → verify へ進む
-    else
-        exit 0 # chezmoi/ を触らない push → 検査スキップ
-    fi
+  if git diff --name-only "$range_base..HEAD" 2>/dev/null | grep -q '^chezmoi/'; then
+    : # chezmoi/ を含む push → verify へ進む
+  else
+    exit 0 # chezmoi/ を触らない push → 検査スキップ
+  fi
 fi
 
 if chezmoi --source "$repo_root/chezmoi" verify; then
-    exit 0
+  exit 0
 fi
 
 # 乖離検知。warn-only: push は止めない (exit 0)。

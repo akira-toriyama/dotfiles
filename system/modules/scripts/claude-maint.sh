@@ -52,22 +52,32 @@ if [ -z "$FLAKE_DIR" ] && [ -d "$HOME/dotfiles" ]; then
   FLAKE_DIR="$HOME/dotfiles"
 fi
 if [ -z "$FLAKE_DIR" ] || [ ! -e "$FLAKE_DIR/flake.nix" ]; then
-  log "dotfiles repo not found, skipping"; exit 0
+  log "dotfiles repo not found, skipping"
+  exit 0
 fi
 log "repo = $FLAKE_DIR"
 
 # --- 前提コマンド --------------------------------------------------------------
 for c in claude git gh jq; do
-  command -v "$c" >/dev/null 2>&1 || { log "missing command: $c — skipping"; exit 0; }
+  command -v "$c" >/dev/null 2>&1 || {
+    log "missing command: $c — skipping"
+    exit 0
+  }
 done
 
 # --- ~/.claude のソース (chezmoi 管理) のパス ----------------------------------
 # 移行中の命名 divergence (private_dot_claude vs dot_claude) を両対応。
 CLAUDE_SRC=""
 for cand in "chezmoi/private_dot_claude" "chezmoi/dot_claude"; do
-  [ -d "$FLAKE_DIR/$cand" ] && { CLAUDE_SRC="$cand"; break; }
+  [ -d "$FLAKE_DIR/$cand" ] && {
+    CLAUDE_SRC="$cand"
+    break
+  }
 done
-[ -n "$CLAUDE_SRC" ] || { log "claude source dir not found under $FLAKE_DIR/chezmoi — skipping"; exit 0; }
+[ -n "$CLAUDE_SRC" ] || {
+  log "claude source dir not found under $FLAKE_DIR/chezmoi — skipping"
+  exit 0
+}
 log "claude source = $CLAUDE_SRC"
 
 YM=$(date '+%Y-%m')
@@ -75,7 +85,8 @@ BRANCH="chore/claude-maint-${YM}"
 
 # 既に今月の PR/branch があるなら二重起動しない (月内の再実行ガード)。
 if [ "$DRY_RUN" -eq 0 ] && git -C "$FLAKE_DIR" ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-  log "branch $BRANCH already on origin — this month already processed, skipping"; exit 0
+  log "branch $BRANCH already on origin — this month already processed, skipping"
+  exit 0
 fi
 
 # ============================================================================
@@ -86,7 +97,8 @@ PROJECTS="$HOME/.claude/projects"
 # 候補の列挙: 実体のある自作分だけ (symlink = plugin 由来は自動除外)。
 # skills: 直下の実ディレクトリ / commands: 直下の実 .md。
 # (macOS の bash は 3.2 で mapfile が無いため while-read で配列化)
-SKILLS=(); COMMANDS=()
+SKILLS=()
+COMMANDS=()
 while IFS= read -r line; do [ -n "$line" ] && SKILLS+=("$line"); done \
   < <(find "$HOME/.claude/skills" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort)
 while IFS= read -r line; do [ -n "$line" ] && COMMANDS+=("$line"); done \
@@ -95,26 +107,26 @@ while IFS= read -r line; do [ -n "$line" ] && COMMANDS+=("$line"); done \
 # skill 起動の集計 (name=Skill の tool_use の .input.skill)。count + last-used。
 # rg は launchd PATH に無いので grep -r を使う (/usr/bin/grep は常在)。
 SKILL_STATS=$(
-  grep -rhI --include='*.jsonl' '"name":"Skill"' "$PROJECTS" 2>/dev/null \
-  | jq -r '.timestamp as $t | (.message.content[]? | select(.type=="tool_use" and .name=="Skill") | .input.skill) | "\(.)\t\($t // "-")"' 2>/dev/null \
-  | awk -F'\t' '{c[$1]++; if($2>last[$1]) last[$1]=$2} END{for(k in c) printf "%s\t%d\t%s\n", k, c[k], substr(last[k],1,10)}' \
-  || true
+  grep -rhI --include='*.jsonl' '"name":"Skill"' "$PROJECTS" 2>/dev/null |
+    jq -r '.timestamp as $t | (.message.content[]? | select(.type=="tool_use" and .name=="Skill") | .input.skill) | "\(.)\t\($t // "-")"' 2>/dev/null |
+    awk -F'\t' '{c[$1]++; if($2>last[$1]) last[$1]=$2} END{for(k in c) printf "%s\t%d\t%s\n", k, c[k], substr(last[k],1,10)}' ||
+    true
 )
 # command 起動の集計 (<command-name>/foo)。最終日は付けない (count 主体)。
 CMD_STATS=$(
-  grep -rhoEI --include='*.jsonl' 'command-name>/[A-Za-z0-9_-]+' "$PROJECTS" 2>/dev/null \
-  | sed 's#.*command-name>/##' \
-  | sort | uniq -c | awk '{printf "%s\t%d\n", $2, $1}' \
-  || true
+  grep -rhoEI --include='*.jsonl' 'command-name>/[A-Za-z0-9_-]+' "$PROJECTS" 2>/dev/null |
+    sed 's#.*command-name>/##' |
+    sort | uniq -c | awk '{printf "%s\t%d\n", $2, $1}' ||
+    true
 )
 # 観測期間 (トランスクリプト .jsonl の最古〜最新 mtime を proxy に。全 timestamp 走査は重い)。
 WINDOW=$(
-  find "$PROJECTS" -name '*.jsonl' -type f -exec stat -f '%Sm' -t '%Y-%m-%d' {} + 2>/dev/null \
-  | sort | awk 'NR==1{f=$0} {l=$0} END{if(f)printf "%s 〜 %s", f, l; else printf "(no data)"}'
+  find "$PROJECTS" -name '*.jsonl' -type f -exec stat -f '%Sm' -t '%Y-%m-%d' {} + 2>/dev/null |
+    sort | awk 'NR==1{f=$0} {l=$0} END{if(f)printf "%s 〜 %s", f, l; else printf "(no data)"}'
 )
 
 lookup_skill() { echo "$SKILL_STATS" | awk -F'\t' -v k="$1" '$1==k{print $2" 回 / 最終 "$3; f=1} END{if(!f)print "0 回"}'; }
-lookup_cmd()   { echo "$CMD_STATS"   | awk -F'\t' -v k="$1" '$1==k{print $2" 回"; f=1} END{if(!f)print "0 回"}'; }
+lookup_cmd() { echo "$CMD_STATS" | awk -F'\t' -v k="$1" '$1==k{print $2" 回"; f=1} END{if(!f)print "0 回"}'; }
 
 # 使用表 (markdown) を組む。
 USAGE_TABLE=$(
@@ -141,7 +153,7 @@ cleanup() { [ "$DRY_RUN" -eq 0 ] && git -C "$FLAKE_DIR" worktree remove --force 
 trap cleanup EXIT
 
 git -C "$FLAKE_DIR" worktree remove --force "$WT" >/dev/null 2>&1 || true
-git -C "$FLAKE_DIR" branch -D "$BRANCH" >/dev/null 2>&1 || true   # 前回失敗の残骸を掃除
+git -C "$FLAKE_DIR" branch -D "$BRANCH" >/dev/null 2>&1 || true # 前回失敗の残骸を掃除
 git -C "$FLAKE_DIR" fetch --quiet origin 2>/dev/null || true
 # ベースは origin/main (PR を最新 main 相手に出す)。CLAUDE_MAINT_BASE で上書き可 (テスト用)。
 BASE="${CLAUDE_MAINT_BASE:-origin/main}"
@@ -160,7 +172,8 @@ REPORT_REL="docs/claude-maint-reports/${YM}.md"
 ARCHIVE_LIST="$WT/.claude-maint-archive.list"
 mkdir -p "$WT/$(dirname "$REPORT_REL")"
 
-PROMPT=$(cat <<EOF
+PROMPT=$(
+  cat <<EOF
 あなたは ~/.claude の自作ドキュメント保守担当。作業ツリーは現在の作業ディレクトリ。
 
 ## 対象 (自作分のみ。plugin / symlink は対象外)
@@ -199,14 +212,14 @@ EOF
 log "running claude (budget \$${MAX_BUDGET_USD}) ..."
 CLAUDE_RC=0
 RUN_LOG="$WT/.claude-maint-run.log"
-( cd "$WT" && claude --print \
-    --permission-mode acceptEdits \
-    --allowedTools "Read Edit Write WebFetch Glob Grep" \
-    --max-budget-usd "$MAX_BUDGET_USD" \
-    --output-format text \
-    "$PROMPT" ) >"$RUN_LOG" 2>&1 || CLAUDE_RC=$?
+(cd "$WT" && claude --print \
+  --permission-mode acceptEdits \
+  --allowedTools "Read Edit Write WebFetch Glob Grep" \
+  --max-budget-usd "$MAX_BUDGET_USD" \
+  --output-format text \
+  "$PROMPT") >"$RUN_LOG" 2>&1 || CLAUDE_RC=$?
 sed "s/^/$LOG_PREFIX claude| /" "$RUN_LOG" 2>/dev/null || true
-rm -f "$RUN_LOG"   # PR に含めない
+rm -f "$RUN_LOG" # PR に含めない
 [ "$CLAUDE_RC" -eq 0 ] || log "claude exited rc=$CLAUDE_RC (続行: レポート有無で判断)"
 
 # claude がレポートを書かなかった場合のフォールバック (常に PR を出すため最低限の md を置く)。
@@ -222,31 +235,35 @@ if [ ! -s "$WT/$REPORT_REL" ]; then
     echo '```'
     echo "$USAGE_TABLE"
     echo '```'
-  } > "$WT/$REPORT_REL"
+  } >"$WT/$REPORT_REL"
 fi
 
 # ============================================================================
 # ④ archive 移動 → commit → push → PR
 # ============================================================================
-ARCHIVE_DEST="archive/claude-docs"   # chezmoi 外 = $HOME に展開されない (履歴のみ残る)
+ARCHIVE_DEST="archive/claude-docs" # chezmoi 外 = $HOME に展開されない (履歴のみ残る)
 moved=0
 if [ -s "$ARCHIVE_LIST" ]; then
   while IFS= read -r rel; do
-    rel="${rel#./}"; [ -z "$rel" ] && continue
+    rel="${rel#./}"
+    [ -z "$rel" ] && continue
     src="$WT/$rel"
-    [ -e "$src" ] || { log "archive: not found, skip: $rel"; continue; }
+    [ -e "$src" ] || {
+      log "archive: not found, skip: $rel"
+      continue
+    }
     dest="$WT/$ARCHIVE_DEST/$(echo "$rel" | sed "s#^chezmoi/private_dot_claude/##; s#^chezmoi/dot_claude/##")"
     mkdir -p "$(dirname "$dest")"
-    ( cd "$WT" && git mv "$rel" "${dest#"$WT"/}" ) && moved=$((moved+1)) && log "archived: $rel"
-  done < "$ARCHIVE_LIST"
+    (cd "$WT" && git mv "$rel" "${dest#"$WT"/}") && moved=$((moved + 1)) && log "archived: $rel"
+  done <"$ARCHIVE_LIST"
 fi
-rm -f "$ARCHIVE_LIST"   # PR に含めない
+rm -f "$ARCHIVE_LIST" # PR に含めない
 
 if [ "$DRY_RUN" -eq 1 ]; then
   cp "$WT/$REPORT_REL" "${TMPDIR:-/tmp}/claude-maint-${YM}.md" 2>/dev/null || true
   log "DRY-RUN: report → ${TMPDIR:-/tmp}/claude-maint-${YM}.md / archived=${moved} / worktree 残置: $WT"
   log "DRY-RUN: 'git -C $WT status' で変更を確認できます"
-  trap - EXIT   # worktree を消さない
+  trap - EXIT # worktree を消さない
   exit 0
 fi
 
@@ -257,15 +274,18 @@ if git diff --cached --quiet; then
   exit 0
 fi
 git -c user.email="claude-maint@noreply" -c user.name="claude-maint" \
-    commit -q -m "chore: monthly Claude docs maintenance (${YM})" \
-    -m "archived: ${moved} / report: ${REPORT_REL}"
+  commit -q -m "chore: monthly Claude docs maintenance (${YM})" \
+  -m "archived: ${moved} / report: ${REPORT_REL}"
 git push -q -u origin "$BRANCH"
 
 # worktree は git remote 設定を共有するので gh は origin を自動検出する。
 PR_URL=$(gh pr create \
   --head "$BRANCH" --base main \
   --title "chore: Claude docs maintenance ${YM}" \
-  --body-file "$WT/$REPORT_REL" 2>&1) || { log "gh pr create failed: $PR_URL"; PR_URL=""; }
+  --body-file "$WT/$REPORT_REL" 2>&1) || {
+  log "gh pr create failed: $PR_URL"
+  PR_URL=""
+}
 log "PR: ${PR_URL:-(作成失敗・branch は push 済)}"
 
 # worktree を片付けてから通知 (dialog はクリックまでブロックするため先に掃除)。
