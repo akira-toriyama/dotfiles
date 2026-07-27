@@ -168,22 +168,41 @@ switch ...` で呼ぶ。
 
 ### `encrypted_` prefix
 **age / gpg で暗号化された秘密ファイル**の prefix。`private_` の代替。
+- **この repo に実インスタンスは無い**（2026-07-27 実測 0 件）。secret ファイルを
+  置く必要が出たときの規範として残している。
 - **Don't call it:** crypt prefix, secure prefix
+
+### `modify_` prefix
+**既存の live ファイルを stdin で受け取り、stdout で書き戻す** [[chezmoi]] の
+差分マージ script。全置換しないので、ユーザー / AI が live 側に足した設定を
+保ったまま特定のキーだけを保証できる。
+- 適用例: [`chezmoi/private_dot_claude/modify_settings.json`](../chezmoi/private_dot_claude/modify_settings.json)
+  （`~/.claude/settings.json` に 5 項目を保証し、他は pass-through）
+- **Don't call it:** merge script, patch script, マージスクリプト
+
+### `create_` prefix
+**存在しないときだけ生成する** [[chezmoi]] の prefix。以後 live 側の変更を上書きしない。
+- 適用例: `chezmoi/private_dot_ssh/create_private_known_hosts`
+- **Don't call it:** init file, seed file, 初期生成
 
 ### `.tmpl` + `onepasswordRead`
 [[chezmoi]] テンプレに secret を **参照** として埋め込む正規パターン。
 リテラル値は書かない。前提: `op signin` 済み。
+- **この repo に実インスタンスは無い**（2026-07-27 実測: `chezmoi/` 配下 0 件）。
+  無人 / agent 読み取りの実経路は [[Service Account (`op-sa`)]]。
 - **Don't call it:** secret template, op template, シークレットテンプレ
 
-### `run_once_` / `run_onchange_`
+### `run_once_` / `run_onchange_` / `run_onchange_after_`
 [[chezmoi]] の **scripts 発火ポリシー**。`run_onchange_` が既定（idempotent）。
-`run_once_` は本当に一度きりの bootstrap でのみ使う。
+`run_once_` は本当に一度きりの bootstrap でのみ使う。`_after_` は同一 apply 内での
+実行順序を後ろに寄せるサフィックス。
 - **Don't call it:** init script, setup hook, 初期化スクリプト
 
 ### `mkOutOfStoreSymlink`
-**AI / ユーザーが直接編集する dotfile** を nix store 外へ逃がす [[home-manager]]
-イディオム。直書きすると `/nix/store` は immutable なので編集できない。
-- 適用例: `~/.claude/settings.json`
+nix store 外のファイルへ symlink を張る [[home-manager]] イディオム。
+- **この repo では使っていない**（2026-07-27 実測: `*.nix` に 0 件）。AI / ユーザーが
+  編集する共有ファイル（`~/.claude/settings.json`）の実機構は上の [[`modify_` prefix]]。
+  将来 home-manager 側で逃がしたくなったときの選択肢として名前だけ残す。
 - **Don't call it:** writable symlink, out-of-store link, 書き換え可能リンク
 
 ---
@@ -309,6 +328,86 @@ upstream プロンプト修正（projects t-22se）が出るまでの**つなぎ
 - ByHost ドメイン（`-currentHost`） — `system.defaults` から **書けない**。
   Display 配置や一部 Finder 詳細は `activationScripts` で
   `defaults -currentHost write` を使う以外手がない。
+
+---
+
+## Claude Code を助ける自作 CLI
+
+いずれも akira-toriyama 製で、[`home/modules/packages.nix`](../home/modules/packages.nix) の
+`sourceBuiltCLI`（呼ぶたび clone を incremental build する wrapper）で PATH に載る。
+**brew 版は入れない**（`/opt/homebrew/bin` が nix profile より前なので wrapper を shadow する）。
+使いどころの正典は global CLAUDE.md の「自作 CLI」節 — ここは呼び名の定義だけ。
+
+### `furrow`
+**タスク管理 CLI**。この repo のタスクの正本は furrow + private tracker repo `projects`。
+- **Don't call it:** todo CLI, task tracker, タスクツール／install 版・brew 版
+
+### `glyph`
+**commit 規約のエンジン**（gitmoji → semver → release notes）。lint も semver も notes も glyph。
+- **Don't call it:** commitlint, conventional-commits ツール, git-cliff
+
+### `pare`
+**1 回のコマンド出力を予算内に切り詰める**（head + error-match + tail）。`| tail` の代わり。
+- **Don't call it:** truncate, output clipper, ログ切り詰め
+
+### `cifail`
+**CI 失敗の要点抽出**。生 run ログを漁らずに失敗 step のエラー行だけを取る。
+- **Don't call it:** ci log viewer, gh run view のラッパ
+
+### `rundiff`
+**同一コマンドの前回実行との差分**だけを出す（pare が 1 回の出力を切るのに対し、実行間を切る）。
+- **Don't call it:** output diff, テスト差分
+
+### `revpost`
+**findings JSON を PR レビュー 1 本に束ねて投稿**する。アンカーを diff の commentable 行に照合する。
+- **Don't call it:** review bot, コメント投稿ツール
+
+### `peekaboo` / `wait4x`
+自作ではなく **adopt 済の外部 CLI**。peekaboo = macOS の AX ツリー取得と操作（GUI 検証）、
+wait4x = 条件待ち（ログ行 / port / HTTP / プロセス）。手書きの `until` + `sleep` は書かない。
+- 所在: peekaboo = [`system/modules/homebrew.nix`](../system/modules/homebrew.nix)（`steipete/tap/peekaboo`）、
+  wait4x = [`home/modules/packages.nix`](../home/modules/packages.nix)
+- **Don't call it:** AX ダンプツール, ポーリングループ
+
+---
+
+## Claude asset（`chezmoi/private_dot_claude/`）
+
+Claude Code 自身の設定・知識を [[chezmoi]] で再現するレイヤー。
+**所有は chezmoi**（Nix ではない — 1 ファイル 1 所有の鉄則）。
+
+### global CLAUDE.md
+**全 repo に効く Claude への常時ロード指示書**。source =
+[`chezmoi/private_dot_claude/CLAUDE.md`](../chezmoi/private_dot_claude/CLAUDE.md) →
+配布先 `~/.claude/CLAUDE.md`。**live を直接編集しない**（次の apply で剥がれる）。
+- **Don't call it:** システムプロンプト, グローバル設定, AI ルール
+
+### skill（`SKILL.md`）
+**特定の作業で読み込ませる知識パック**。`chezmoi/private_dot_claude/skills/<name>/SKILL.md`。
+frontmatter の `description` が「いつ発火するか」を決める。
+- **Don't call it:** プラグイン, ナレッジベース, プロンプトテンプレ
+
+### agent（`fable-architect`）
+**サブエージェントの定義**。`chezmoi/private_dot_claude/agents/<name>.md`。
+`tools:` に載せないツールは harness が拒否する（＝許可を構造で担保する場所）。
+- **Don't call it:** サブエージェント設定, ペルソナ
+
+### Stop hook（`claude-work-report-check`）
+**セッション終了時に走る判定スクリプト**。作業報告の定型に task ID が無ければ停止をブロックする。
+実体 = [`chezmoi/dot_local/bin/executable_claude-work-report-check`](../chezmoi/dot_local/bin/executable_claude-work-report-check)、
+回帰テストは CI の `hook scripts test`。
+- **Don't call it:** 終了フック, 報告チェッカー
+
+### `claude-md-eval`
+**CLAUDE.md の散文変更を配る前に測るハーネス**。baseline（節なし）と candidate（節あり）の
+応答を作り、盲検で判定してリリースゲートを掛ける。実体 =
+[`scripts/claude-md-eval/`](../scripts/claude-md-eval/README.md)。
+- **Don't call it:** プロンプト評価, A/B テスト基盤
+
+### 台帳（`docs/claude-md-ledger.md`）
+**global CLAUDE.md の各ルールが「機構で強制されているか / 散文頼みか」を 1 表にしたもの**。
+ルール本文は転記しない（正本は CLAUDE.md）。ルールを足す・変える PR では同一 PR で更新する。
+- **Don't call it:** ルール一覧, ポリシー表
 
 ---
 

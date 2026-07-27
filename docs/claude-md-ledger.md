@@ -26,10 +26,10 @@
 | ルール（正本 = global CLAUDE.md の節） | Claude の手番 | ユーザーの手番 | 機構 | 印 |
 |---|---|---|---|---|
 | gitmoji commit 規約（Commits 節） | `glyph rules` を引いて書く。push 前に `glyph lint --range origin/main..HEAD` | — | PR の [commit-lint.yml](../.github/workflows/commit-lint.yml)（fleet 同期・glyph reusable）。`undeclared-removal`（`:fire:` `:coffin:` `:truck:` に `!` か `NON-BREAKING:` footer を要求）は `glyph lint` が exit 3 で落とす | 🟡 PR で必ず走り赤 X は付くが、branch protection 必須は `ci-gate` 1 本のみ（実測）で commit-lint 赤は merge を**止めない**。押さえは赤を見て直す運用。push 前 lint は 📖（2026-07-27 に `undeclared-removal` を実際に踏んだ = push 前 lint が効いた例） |
-| body の和訳 footer（Commits 節） | `---（和訳）` を付ける | — | なし（実測: 和訳無し英語 body を `glyph lint` が exit 0 で通す） | 📖 |
+| commit は英語・body に和訳 footer（Commits 節） | subject も body も英語で書き、body には `---（和訳）` を付ける | — | なし（実測 2026-07-27: ①和訳無し英語 body ②**日本語だけの subject/body** をどちらも `glyph lint` が exit 0 で通す。commit-lint.yml も同じ glyph reusable なので CI でも落ちない） | 📖 英語要件は完全に散文頼み |
 | furrow 一本化・source 使用（Workflow 節） | wrapper の `furrow` を叩く | — | `packages.nix` の source-build wrapper。brew 版未導入なので shadow は構造的に不発 | 🟡 `brew install` する事故自体は止まらない |
 | 着手前後の `furrow sync`（Workflow 節） | 読む前・書いた後に回す | — | なし | 📖 |
-| repos 帰属・ラベル純タグ・`-l <repo>` 廃止（Workflow 節） | `-r` / auto 導出に乗る | — | global 既定ボード（[furrow.nix](../home/modules/furrow.nix) 生成 config）が repo を auto 付与・auto フィルタ。read 側は did-you-mean ガード（exit 2 + candidates） | 🟡 ガードは「label 実在なら発火しない」設計 — 移行漏れの repo 名 label 13 件で不発だった（t-mztn で掃除・復旧済み、下記[検証状態](#検証状態)）。`add -l <repo>` は今も素通り（furrow 側 lint 案 = t-jbrr） |
+| repos 帰属・ラベル純タグ・`-l <repo>` 廃止（Workflow 節） | `-r` / auto 導出に乗る | — | global 既定ボード（[furrow.nix](../home/modules/furrow.nix) 生成 config）が repo を auto 付与・auto フィルタ。read 側は did-you-mean ガード（exit 2 + candidates）。**ただし projects checkout 内は local `.furrow` が勝って auto は不発**（`furrow doctor` が `scope-shadowed` を info 報告するだけで止めない） | 🟡 ガードは「label 実在なら発火しない」設計 — 移行漏れの repo 名 label 13 件で不発だった（t-mztn で掃除・復旧済み、下記[検証状態](#検証状態)）。`add -l <repo>` は今も素通り（furrow 側 lint 案 = t-jbrr） |
 | 進捗の正本は task body 一本（Workflow 節） | body のチェックリストを更新・複製しない | — | なし | 📖 |
 | セッション粒度・中断時の 1 行明言（Workflow 節） | 単位を区切る・希望を書き残す | — | なし | 📖 |
 | PR footer `SetStatus-task:`（Workflow 節） | footer を書く | — | [task-status.yml](../.github/workflows/task-status.yml)（fleet 同期）が lane を自動適用。非ブロッキング | 🟡 footer を**書き忘れても**何も落ちない |
@@ -52,6 +52,7 @@
 | Opus 失敗の body 記録（モデル運用節） | 失敗の都度 task body に書く | — | なし | 📖 |
 | SwiftUI+Sill・AppKit 原則禁止・最新 macOS のみ（Mac アプリ節） | 設計・実装時に適用 | — | なし（lint 化候補: `import AppKit` 検出等） | 📖 |
 | 現在地ワンショット・pare/cifail/rundiff/revpost/wait4x/peekaboo を既定で使う（現在地・自作 CLI 節） | 生ログ・手書きループより先にツールへ手を伸ばす | — | 読み取り git allowlist と rundiff の test 自動 wrap（PreToolUse hook）は modify_settings.json が 🔒。**使う判断そのもの**は散文 | 🟡 |
+| 他 repo では repo の慣習に従う（「akira-toriyama 以外のリポジトリに対して」節） | その repo の CLAUDE.md / CONTRIBUTING / 既存履歴を先に読む | — | なし（gitmoji 規約・furrow・skill 等を他 repo に持ち込まないことを機械では止めていない） | 📖 |
 | 自作 CLI/アプリは source・brew 版禁止（source 節） | `brew install` しない | `brew install` しない | PATH 構造: brew 版が無ければ shadow は起きない（実測: furrow/cifail は nix profile のみ） | 🟡 導入操作自体は止まらない |
 
 ## ユーザーの手番（一覧）
