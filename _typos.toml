@@ -1,0 +1,45 @@
+# typos-cli の設定。仕様: https://github.com/crate-ci/typos/blob/master/docs/reference.md
+#
+# 日本語 docs での誤検知はゼロ（実測）。CJK は identifier にはなるが "word" へ
+# 分解されないため辞書照合に掛からない。一方で日本語散文中の ASCII typo は拾う
+# （「設定を recieve して」→ 検出される）。以下は ASCII 側の固有名詞・データ・16 進数だけ。
+#
+# 注意1: このファイル自身は typos の検査対象外なので、例示の綴りを書いても自爆しない。
+# 注意2: typos は **親ディレクトリを遡って** config を探す（typos.toml / _typos.toml /
+#        .typos.toml / Cargo.toml / pyproject.toml）。repo の外で検証する時に
+#        隣の config を静かに拾って結果が変わる。
+# 注意3: [default.extend-identifiers] は使わない。`・`(U+30FB) が XID_Continue なので
+#        隣接トークンが 1 identifier に融合し、identifier 単位の allowlist が空振りする。
+#        また extend-words は「emit される word」と一致する時だけ効く（ANDed は
+#        AN + Ded に割れるので anded = "anded" では抑止できない）。
+
+[files]
+# .github/ を検査対象に含める（既定 ignore-hidden=true だと workflow 12 本が素通りする）。
+# 代替の --hidden は .git/ 配下 57 本まで舐めるので使わない。
+# ここで .git/ を除外しているのは findings 対策ではなく走査量（93→150 files）対策。
+ignore-hidden = false
+extend-exclude = [
+  ".git/",
+  # azooKey のローマ字→かな入力テーブル（335 行のデータ）。ba/gya/tyo 等の
+  # ローマ字が英単語の typo と誤認される。人の書く散文ではないので丸ごと除外。
+  "custom_input_table.tsv",
+]
+
+[default]
+extend-ignore-re = [
+  # git の短縮 SHA。typos の hex 判定は `0x` 接頭辞が必須なので、
+  # 30747ba→ba / 896daa4→daa / a611ede→ede と誤検知する。
+  # 上限が 31 なのは、32 文字以上の単一 case hex を upstream の hash_literal
+  # (IGNORE_HEX_MIN = 32) が既に無視するため（実測: 31 文字は発火・32 文字は無反応）。
+  # 潰れる辞書エントリは words.csv 全体で 2 個だけ（becacdd / ebedded）。
+  "\\b[0-9a-f]{7,31}\\b",
+  # chezmoi/dot_config/facet/config.toml の散文 "Keys WITHIN a rule are ANDed"。
+  # typos は ANDed を AN + Ded に割って Ded→Dead と誤検知する。
+  "\\bANDed\\b",
+]
+
+[default.extend-words]
+# ELECOM IST PRO（マウス）と chord の vkey 接頭辞 IST_BTN5 等。
+ist = "ist"
+# 本 repo で 4 箇所一貫して使う綴り（unparsable と両方通用する変種）。
+unparseable = "unparseable"

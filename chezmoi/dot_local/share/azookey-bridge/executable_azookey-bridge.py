@@ -121,7 +121,7 @@ def run_engine(prompt: str) -> list[str]:
 
 
 class Handler(BaseHTTPRequestHandler):
-    def do_POST(self):
+    def do_POST(self) -> None:
         started = time.monotonic()
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -158,9 +158,8 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(payload)
 
-    def log_message(
-        self, fmt, *args
-    ):  # 既定のアクセスログは抑止 (stderr は launchd のログへ)
+    def log_message(self, fmt: str, *args: object) -> None:
+        # 既定のアクセスログは抑止 (stderr は launchd のログへ)
         pass
 
 

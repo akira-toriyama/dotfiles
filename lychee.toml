@@ -1,0 +1,32 @@
+# lychee.toml — Markdown のリンク切れ + 見出しアンカー検査（repo 所有）。
+# cwd から自動ロードされる（--config 不要）。
+#
+# 実行モードは CLI 側で決める:
+#   PR / push : lychee --offline --no-progress .   相対パス + アンカーのみ（0 network）
+#   nightly   : lychee --no-progress .             外部 URL 込み（未配線・task 送り）
+
+# 見出しアンカー (#section) を検査する。日本語見出しも解決できることを実測済み
+# （全角括弧・「」・/ は落ち、空白は - になる。GitHub の slug と一致するのは
+#  この repo のコーパス範囲での確認であって、一般的保証ではない）。
+# 値は none|anchor-only|text-only|full。CLI で渡す時は `=` 必須。
+include_fragments = "anchor-only"
+
+# 【罠】accept は既定を「置換」する。既定は 100..=103 と 200..=299 なので、
+# 範囲を書き落とすと 201/204 が Rejected になる。429 は rate limit であって
+# リンク切れではないので許容する。
+accept = ["100..=103", "200..=299", "429"]
+
+# 既定は 3 回 / 1 秒。ここでは待ちだけ 2 秒に伸ばす。
+max_retries = 3
+retry_wait_time = 2
+
+exclude = [
+  # akira-toriyama/projects は private repo。未認証だと GitHub が private を 404 で
+  # 隠すので public CI では恒久的に落ちる。token を渡しても lychee の check_github は
+  # private repo を「repo が見えれば OK」と rubber-stamp するだけでファイルの実在を
+  # 確認しないので、検査価値そのものが無い。
+  #
+  # 【重要】末尾の (/|$) は必須。これが無いと将来 projects-public-thing のような
+  # public repo へのリンクまで無言で Excluded になる。
+  '^https://github\.com/akira-toriyama/projects(/|$)',
+]

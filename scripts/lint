@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+"""この repo の静的検査ゲートを 1 本にまとめたランナー。
+
+CI の `lint` job はこれを `--ci` 付きで呼ぶだけなので、「ローカル用スクリプトと CI が
+drift する」形が構造的に作れない。ツールは flake.lock 固定の devShell から来る:
+
+    nix develop .#lint --command scripts/lint
+    nix develop .#lint --command scripts/lint --ci
+    nix develop .#lint --command scripts/lint shell python   # 一部だけ
+
+素で叩くと開発機の brew 版が混ざる（PATH は /opt/homebrew/bin が nix profile より前）ので、
+必ず `nix develop .#lint --command` を通すこと。
+
+**ツール不在は skip でなく failure。** command -v で黙って skip して緑を出すのが
+いちばん危ない失敗の仕方なので、宣言したゲートが 1 つでも走らなければ非ゼロで終わる。
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from collections.abc import Sequence
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+SELF = "scripts/lint"
+
+# ゲート名 → グループ。ここが「何を走らせるべきか」の宣言（正本）で、
+# 実行後に ran 済みかを突き合わせる。scripts/test_lint.py がこの整合を守る。
+GATES: dict[str, str] = {
+    "ruff": "python",
+    "ruff-format": "python",
+    "mypy": "python",
+    "shellcheck": "shell",
+    "shfmt": "shell",
+    "exec-bit": "shell",
+    "actionlint": "workflow",
+    "typos": "docs",
+    "lychee": "docs",
+    "gitleaks": "secret",
+}
+
+GROUPS = sorted(set(GATES.values()))
+
+
+def tracked(*patterns: str) -> list[str]:
+    """git 管理下のファイルを glob で引く（未追跡・生成物を検査対象にしない）。"""
+    out = subprocess.run(
+        ["git", "ls-files", "-z", *patterns],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return [p for p in out.split("\0") if p]
+
+
+def shell_files() -> list[str]:
+    """shebang が sh/bash のファイル。拡張子に頼らない。
+
+    `.tmpl` は chezmoi のテンプレ構文が混ざるので raw では検査できない（render 後の
+    検査は別 task）。`modify_settings.json` のように拡張子が嘘をつくものがあるため、
+    ここは必ず 1 行目を読む。
+    """
+    found = []
+    for rel in tracked():
+        if rel.endswith(".tmpl"):
+            continue
+        path = ROOT / rel
+        try:
+            with path.open("rb") as fh:
+                first = fh.readline(200)
+        except OSError:
+            continue
+        if first.startswith(b"#!") and (b"sh" in first or b"bash" in first):
+            found.append(rel)
+    return found
+
+
+class Runner:
+    def __init__(self, ci: bool, groups: Sequence[str]) -> None:
+        self.ci = ci
+        self.groups = set(groups)
+        self.ran: set[str] = set()
+        self.failed: list[str] = []
+
+    def wants(self, gate: str) -> bool:
+        return GATES[gate] in self.groups
+
+    def run(
+        self, gate: str, cmd: list[str], *, ok_codes: tuple[int, ...] = (0,)
+    ) -> None:
+        if not self.wants(gate):
+            return
+        if self.ci:
+            print(f"::group::{gate}", flush=True)
+        else:
+            print(f"── {gate}", flush=True)
+        proc = subprocess.run(cmd, cwd=ROOT)
+        if self.ci:
+            print("::endgroup::", flush=True)
+        self.ran.add(gate)
+        if proc.returncode not in ok_codes:
+            self.failed.append(f"{gate} (exit {proc.returncode})")
+            if self.ci:
+                print(f"::error title={gate}::{gate} failed (exit {proc.returncode})")
+
+    def check_exec_bit(self) -> None:
+        """scripts/ 配下の shebang スクリプトが +x か。
+
+        chezmoi/ 側は CI の convention-executable-prefix job が prefix で見ているが、
+        scripts/ は誰も見ていなかった。
+        """
+        gate = "exec-bit"
+        if not self.wants(gate):
+            return
+        print(f"── {gate}" if not self.ci else f"::group::{gate}", flush=True)
+        bad = []
+        for rel in tracked("scripts/*"):
+            path = ROOT / rel
+            if not path.is_file():
+                continue
+            with path.open("rb") as fh:
+                if not fh.readline(200).startswith(b"#!"):
+                    continue
+            if not os.access(path, os.X_OK):
+                bad.append(rel)
+        for rel in bad:
+            msg = f"shebang script without +x: {rel}"
+            print(f"::error file={rel}::{msg}" if self.ci else f"  {msg}", flush=True)
+        if self.ci:
+            print("::endgroup::", flush=True)
+        self.ran.add(gate)
+        if bad:
+            self.failed.append(f"{gate} ({len(bad)} file(s))")
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "groups",
+        nargs="*",
+        choices=GROUPS,
+        default=None,
+        help="走らせるグループ（既定: 全部）",
+    )
+    ap.add_argument(
+        "--ci",
+        action="store_true",
+        help="GitHub annotation 形式で出す（検査内容は変えない）",
+    )
+    args = ap.parse_args(argv)
+    groups = args.groups or GROUPS
+
+    r = Runner(ci=args.ci, groups=groups)
+    # このランナー自身は拡張子が無いので ruff/mypy の自動探索に載らない。
+    # 「検査する側が未検査」を避けるため明示的に足す（test_lint.py が固定している）。
+    py = [*tracked("*.py"), SELF]
+    sh = shell_files()
+
+    # --- python ---
+    r.run(
+        "ruff",
+        [
+            "ruff",
+            "check",
+            *(["--output-format", "github"] if args.ci else []),
+            ".",
+            SELF,
+        ],
+    )
+    r.run("ruff-format", ["ruff", "format", "--check", ".", SELF])
+    # azookey-bridge は launchd が /usr/bin/python3 (3.9) で起動するが、mypy は
+    # --python-version 3.9 を受け付けない（"must be 3.10 or higher"）。3.9 互換の
+    # 保証は ruff.toml の per-file-target-version が担う。ここは 3.13 で型だけ見る。
+    r.run("mypy", ["mypy", "--strict", "--python-version", "3.13", *py])
+
+    # --- shell ---
+    r.run("shellcheck", ["shellcheck", "-x", *(["-f", "gcc"] if args.ci else []), *sh])
+    # フラグを渡さない = .editorconfig（indent 2）が効く。-i/-s/-ln/-p を足すと
+    # 正本が 2 箇所になるので足さないこと。
+    r.run("shfmt", ["shfmt", "-l", "-d", *sh])
+    r.check_exec_bit()
+
+    # --- workflow ---
+    fmt = (
+        "{{range $e := .}}::error file={{$e.Filepath}},line={{$e.Line}},"
+        "col={{$e.Column}}::{{$e.Message}}{{println}}{{end}}"
+    )
+    r.run("actionlint", ["actionlint", *(["-format", fmt] if args.ci else [])])
+
+    # --- docs ---
+    r.run("typos", ["typos", *(["--format", "brief"] if args.ci else [])])
+    # --offline 固定。外部 URL は他人都合の 5xx が入るので PR を止めさせない（nightly は別 task）。
+    r.run("lychee", ["lychee", "--offline", "--no-progress", "."])
+
+    # --- secret ---
+    # `dir` でなく `git`: dir は .gitignore を尊重しないので result symlink や scratch まで舐める。
+    # --redact 必須（外すと secret が stdout に平文で出る）。
+    # --exit-code 9 必須（既定だと「検出」と「ツールエラー」がどちらも 1 で区別できない）。
+    r.run("gitleaks", ["gitleaks", "git", "--redact", "--exit-code", "9", "."])
+
+    # 宣言したゲートが全部走ったか。走らなかったものがあれば緑を出さない。
+    expected = {g for g, grp in GATES.items() if grp in set(groups)}
+    missing = sorted(expected - r.ran)
+    if missing:
+        print(f"✘ ゲートが走っていない: {', '.join(missing)}", file=sys.stderr)
+        return 2
+    if r.failed:
+        print(
+            f"\n✘ {len(r.failed)} gate(s) failed: {', '.join(r.failed)}",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"\n✓ {len(expected)} gates passed ({', '.join(sorted(groups))})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
