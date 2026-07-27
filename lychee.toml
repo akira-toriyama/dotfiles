@@ -1,9 +1,15 @@
 # lychee.toml — Markdown のリンク切れ + 見出しアンカー検査（repo 所有）。
 # cwd から自動ロードされる（--config 不要）。
 #
-# 実行モードは CLI 側で決める:
-#   PR / push : lychee --offline --no-progress .   相対パス + アンカーのみ（0 network）
-#   nightly   : lychee --no-progress .             外部 URL 込み（未配線・task 送り）
+# 実行モードは scripts/lint のグループで決める（CLI 直叩きではない）:
+#   PR / push : `lychee` ゲート       = --offline    相対パス + アンカーのみ（0 network）
+#   nightly   : `lychee-external`     = --offline 無し 外部 URL 込み
+#               = OPT_IN_GROUPS の "external"。名指ししないと走らない。
+#
+# 【罠】RFC 2606 の予約 TLD（.invalid / .test / .example）と example.com は lychee が
+# 既定で Excluded にする。ゲートの動作確認に .invalid を使うと「1 件 Excluded が
+# 増えて緑」になり、**ゲートが壊れていても気づけない**（実測 2026-07-27）。
+# 検証には実在ホストの 404 を使うこと。
 
 # 見出しアンカー (#section) を検査する。日本語見出しも解決できることを実測済み
 # （全角括弧・「」・/ は落ち、空白は - になる。GitHub の slug と一致するのは

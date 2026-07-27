@@ -72,6 +72,31 @@ jobs:
       - name: scripts/lint --ci
         run: nix develop .#lint --command scripts/lint --ci
 
+  # 外部 URL のリンク検査。**PR / push では走らせない**（nightly + 手動のみ）。
+  # 他人都合の 5xx や rate limit で PR が止まるのを避けるため、判定を分けている:
+  #   PR/push : scripts/lint の `lychee` ゲート = --offline（相対パス + アンカー・0 network）
+  #   ここ    : `external` グループ = --offline を外すだけ。対象も規則も lychee.toml 一本
+  # ci-gate の needs には**入れない**（PR を止めない）。notify-red-main には入れる
+  # （main の赤を見逃さない）。ここが唯一「PR を止めずに赤を検出する」経路。
+  docs-link-check-external:
+    name: docs link check (external URLs)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # CI-only, never pushes — drop the persisted checkout token. t-yaxa
+          persist-credentials: false
+
+      - name: Install Nix (Determinate)
+        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+
+      # `external` を名指ししないと走らない（scripts/lint の OPT_IN_GROUPS）。
+      # 素の `scripts/lint` がネットワークを叩かないことは test_lint.py が固定する。
+      - name: scripts/lint external --ci
+        run: nix develop .#lint --command scripts/lint external --ci
+
   # 規約チェック: chezmoi 配下のスクリプトは executable_ 接頭辞を持つこと。
   # 例外: run_* / .chezmoiscripts/ 配下 (chezmoi 自身が実行 = $HOME に展開しない)。
   convention-executable-prefix:
@@ -383,6 +408,9 @@ jobs:
     needs:
       - nix-flake-check
       - lint
+      # ci-gate には**入れない**（PR を止めない）が、ここには入れる。
+      # PR/push では skipped で、skipped は failure ではないので誤発火しない。
+      - docs-link-check-external
       - convention-executable-prefix
       - convention-command-prefix
       - script-test

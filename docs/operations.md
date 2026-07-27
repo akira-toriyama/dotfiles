@@ -241,7 +241,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 
 [.github/workflows/ci.yml](../.github/workflows/ci.yml) ＋ chord 専用 verify-* ワークフロー:
 
-`ci.yml` の job は 11 本。**表に無い job があれば ci.yml が正**（この表は説明用の写し）。
+`ci.yml` の job は 12 本。**表に無い job があれば ci.yml が正**（この表は説明用の写し）。
 
 | ジョブ | 内容 | runner |
 |---|---|---|
@@ -251,6 +251,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 | `convention / my- command prefix` | 自作 slash command に `my-` 接頭辞を強制 | ubuntu-latest |
 | `script test` | Stop hook の fixture + `scripts/**` と `scripts/claude-md-eval/` の unittest | ubuntu-latest |
 | `chezmoi templates render` | 全 `.tmpl` の execute-template 検証（get.chezmoi.io の最新版で） | ubuntu-latest |
+| `docs link check (external URLs)` | 外部 URL 込みの lychee。**nightly / 手動のみ**・`ci-gate` の needs 外 | ubuntu-latest |
 | `detect flake-affecting changes` | PR が flake/nix/ci.yml を触ったかを判定し、下 2 本の実行可否を出す | ubuntu-latest |
 | `darwin-rebuild build (macOS)` | 実 build（cask DL 含む・非破壊） | macos-latest |
 | `darwin-rebuild switch smoke (macOS)` | 実 switch＋PATH/cask 検証＋`chezmoi apply`（ephemeral runner なので副作用 OK） | macos-latest |
@@ -269,7 +270,13 @@ chord 専用の別ワークフロー:
 ```sh
 nix develop .#lint --command scripts/lint            # CI と同一コマンド・同一バイナリ
 nix develop .#lint --command scripts/lint python     # 一部だけ（docs / python / secret / shell / tmpl / workflow）
+nix develop .#lint --command scripts/lint external   # 外部 URL のリンク検査（既定では走らない）
 ```
+
+**`external` は opt-in**。ネットワークを叩くゲートは他人のサーバの 5xx / rate limit で
+落ちるので、PR の合否に混ぜない（`ci-gate` の needs に入っていない）。回すのは nightly と
+`workflow_dispatch` の `docs link check (external URLs)` job で、赤は `notify-red-main` が
+issue に集約する。素の `scripts/lint` がネットワークを叩かないことは `test_lint.py` が固定。
 
 **素で `scripts/lint` を叩かないこと** —— PATH は `/opt/homebrew/bin` が nix profile より
 前なので、brew 版の shfmt / typos / lychee / gitleaks が混ざって CI と結果がずれる。

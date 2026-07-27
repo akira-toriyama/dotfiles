@@ -42,10 +42,17 @@ GATES: dict[str, str] = {
     "actionlint": "workflow",
     "typos": "docs",
     "lychee": "docs",
+    "lychee-external": "external",
     "gitleaks": "secret",
 }
 
 GROUPS = sorted(set(GATES.values()))
+
+# 名指ししない限り走らないグループ。ここに入るのは **ネットワークを叩くもの**で、
+# 判定が他人のサーバの機嫌に依存する（5xx / rate limit）＝ PR を止める資格がない。
+# 既定に混ぜないことが要点なので、test_lint.py がこの性質を固定する。
+OPT_IN_GROUPS = frozenset({"external"})
+DEFAULT_GROUPS = sorted(set(GROUPS) - OPT_IN_GROUPS)
 
 
 def tracked(*patterns: str) -> list[str]:
@@ -252,7 +259,10 @@ def main(argv: list[str] | None = None) -> int:
         nargs="*",
         choices=GROUPS,
         default=None,
-        help="走らせるグループ（既定: 全部）",
+        help=(
+            f"走らせるグループ（既定: {' '.join(DEFAULT_GROUPS)}）。"
+            f"{' '.join(sorted(OPT_IN_GROUPS))} は名指しした時だけ走る"
+        ),
     )
     ap.add_argument(
         "--ci",
@@ -260,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         help="GitHub annotation 形式で出す（検査内容は変えない）",
     )
     args = ap.parse_args(argv)
-    groups = args.groups or GROUPS
+    groups = args.groups or DEFAULT_GROUPS
 
     r = Runner(ci=args.ci, groups=groups)
     # このランナー自身は拡張子が無いので ruff/mypy の自動探索に載らない。
@@ -305,8 +315,13 @@ def main(argv: list[str] | None = None) -> int:
     # --- docs ---
     r.run("typos", ["typos", *(["--format", "brief"] if args.ci else [])])
     # --offline 固定。外部 URL は他人都合の 5xx が入るので PR を止めさせない
-    # （nightly は別 task）。
+    # （外部込みは下の lychee-external ＝ opt-in グループ）。
     r.run("lychee", ["lychee", "--offline", "--no-progress", "."])
+
+    # --- external（既定では走らない）---
+    # --offline を外すだけ。対象も規則（accept の 429・projects の exclude・
+    # fragment 設定）も lychee.toml 一本のままなので、offline 版と drift しない。
+    r.run("lychee-external", ["lychee", "--no-progress", "."])
 
     # --- secret ---
     # `dir` でなく `git`: dir は .gitignore を尊重しないので result symlink や
