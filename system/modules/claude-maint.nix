@@ -1,7 +1,7 @@
 { ... }:
 
 {
-  # ~/.claude の自作ドキュメント (CLAUDE.md 要所トリガー索引 / commands / skills) を
+  # ~/.claude の自作ドキュメント (CLAUDE.md 要所トリガー索引 / commands / skills / agents) を
   # 毎月 1 回まとめて保守し、判断レポート付きの PR を 1 本作る LaunchAgent。
   # launchd-drift.nix の兄弟 (同じ流儀)。スクリプト本体は
   # ./scripts/claude-maint.sh (Nix store にコピーされる)。

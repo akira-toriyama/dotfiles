@@ -89,6 +89,10 @@ ALLOW: dict[str, str] = {
     "~/claude-cli-tools-memo.md": (
         "現存しない。本文で「このファイルは現存しない」と明示した上での歴史的参照"
     ),
+    "~/.claude/plans": (
+        "Claude Code が実行時に作る。宣言管理**しない**ことが不変条件で、"
+        "operations.md §5.14 はまさにそれを書いている（管理下に無いのが正しい状態）"
+    ),
 }
 
 

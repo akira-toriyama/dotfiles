@@ -50,7 +50,7 @@
 | 既定 model/effort（モデル運用節） | — | `/model`・`/effort` の対話変更 | [modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json) が `//=` で seed（新 Mac の初期値） | 🔒 seed として。既存マシンの値は訂正しない設計 |
 | ultracode は毎セッション手動（モデル運用節） | — | セッション開始時に `/effort ultracode` | 機構化不能（Claude Code 仕様: 恒久設定値に存在しない） | 🙅 仕様 — 純ユーザー手番 |
 | Fable のファンアウト禁止（モデル運用節） | `fable-architect` 経由でのみ Fable を使う | — | [agents/fable-architect.md](../chezmoi/private_dot_claude/agents/fable-architect.md) の `tools:` に Agent 非搭載 → harness が拒否 | 🔒 Agent ツール経路のみ（Bash から `claude -p` を叩く迂回は構造では止まらない — 未実測） |
-| Fable% ≥ Weekly% 不変条件・約 4 日で 100%（モデル運用節） | `~/.claude.json` の枠を読み委譲判断 | 「これ Fable で」の発令 | なし | 📖 |
+| Fable% ≥ Weekly% 不変条件・約 4 日で 100%（モデル運用節） | `~/.claude.json` の枠を読み委譲判断。恒常の駆動は**割合**、ユーザーの一言はそれを**上書きするトリガー**、開発ポリシー節の「使い切ってよい」は週枠不変条件に**劣後** | 「これ Fable で」の発令 | なし | 📖 |
 | Opus 失敗の body 記録（モデル運用節） | 失敗の都度 task body に書く | — | なし | 📖 |
 | 版番号を書かない＝`opus[1m]` alias を pin しない（モデル運用節） | settings にも CLAUDE.md にも `claude-opus-4-8` 等の具体 ID を書かない | — | なし。[modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json):97 が seed するのは alias `"opus[1m]"`（実測）だが、**具体 ID に書き換える事故を止める lint は無い** | 📖 一度ずれた実績があるルール |
 | 担当分担 Opus/Sonnet/Fable（モデル運用節） | メインループ=最新 Opus、機械的サブエージェント=Sonnet+`effort: low`、単独深考=`fable-architect` | — | なし（Fable のファンアウト禁止だけが上行で 🔒） | 📖 |

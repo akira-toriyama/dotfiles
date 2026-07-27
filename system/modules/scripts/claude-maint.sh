@@ -1,11 +1,13 @@
 #!/bin/bash
-# ~/.claude の自作ドキュメント (CLAUDE.md 要所トリガー索引 / commands / skills) を
+# ~/.claude の自作ドキュメント (CLAUDE.md 要所トリガー索引 / commands / skills / agents) を
 # 月 1 回まとめて保守し、判断レポート付きの PR を 1 本作る。launchd (claude-maint.nix)
 # から毎月 1 日に起動される。check-dotfiles-drift.sh の兄弟 (= 同じ流儀)。
 #
 # やること:
-#   ① 集計 (機械的) : ~/.claude/projects/*/*.jsonl から各 skill / command の
+#   ① 集計 (機械的) : ~/.claude/projects/*/*.jsonl から各 skill / command / agent の
 #        「明示起動の回数・最終起動日」を集計。観測期間も出す。
+#        agent は Agent ツールの .input.subagent_type で数える (2026-07-27 実測)。
+#        列挙は ~/.claude/agents/*.md なので、built-in agent は表に出ない。
 #        ※ description トリガーの自動ロードは記録に残らない → 低/ゼロ回数でも
 #          実際に有用な場合がある (この前提はプロンプトにも渡す)。
 #   ② 判断 (claude -p, 頭脳) : 使用表 + 各 doc + .maint-ignore を渡し、
@@ -99,10 +101,14 @@ PROJECTS="$HOME/.claude/projects"
 # (macOS の bash は 3.2 で mapfile が無いため while-read で配列化)
 SKILLS=()
 COMMANDS=()
+AGENTS=()
 while IFS= read -r line; do [ -n "$line" ] && SKILLS+=("$line"); done \
   < <(find "$HOME/.claude/skills" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort)
 while IFS= read -r line; do [ -n "$line" ] && COMMANDS+=("$line"); done \
   < <(find "$HOME/.claude/commands" -maxdepth 1 -mindepth 1 -type f -name '*.md' -exec basename {} .md \; 2>/dev/null | sort)
+# agents: 直下の実 .md (fable-architect 等)。skills/commands と同じ扱いで保守対象に入れる。
+while IFS= read -r line; do [ -n "$line" ] && AGENTS+=("$line"); done \
+  < <(find "$HOME/.claude/agents" -maxdepth 1 -mindepth 1 -type f -name '*.md' -exec basename {} .md \; 2>/dev/null | sort)
 
 # skill 起動の集計 (name=Skill の tool_use の .input.skill)。count + last-used。
 # rg は launchd PATH に無いので grep -r を使う (/usr/bin/grep は常在)。
@@ -119,6 +125,14 @@ CMD_STATS=$(
     sort | uniq -c | awk '{printf "%s\t%d\n", $2, $1}' ||
     true
 )
+# agent 起動の集計 (name=Agent の tool_use の .input.subagent_type)。skill と同形。
+# 2026-07-27 に実測して確認: 起動は "name":"Agent" + .input.subagent_type で残る。
+AGENT_STATS=$(
+  grep -rhI --include='*.jsonl' '"name":"Agent"' "$PROJECTS" 2>/dev/null |
+    jq -r '.timestamp as $t | (.message.content[]? | select(.type=="tool_use" and .name=="Agent") | .input.subagent_type) | "\(.)\t\($t // "-")"' 2>/dev/null |
+    awk -F'\t' '{c[$1]++; if($2>last[$1]) last[$1]=$2} END{for(k in c) printf "%s\t%d\t%s\n", k, c[k], substr(last[k],1,10)}' ||
+    true
+)
 # 観測期間 (トランスクリプト .jsonl の最古〜最新 mtime を proxy に。全 timestamp 走査は重い)。
 WINDOW=$(
   find "$PROJECTS" -name '*.jsonl' -type f -exec stat -f '%Sm' -t '%Y-%m-%d' {} + 2>/dev/null |
@@ -127,6 +141,7 @@ WINDOW=$(
 
 lookup_skill() { echo "$SKILL_STATS" | awk -F'\t' -v k="$1" '$1==k{print $2" 回 / 最終 "$3; f=1} END{if(!f)print "0 回"}'; }
 lookup_cmd() { echo "$CMD_STATS" | awk -F'\t' -v k="$1" '$1==k{print $2" 回"; f=1} END{if(!f)print "0 回"}'; }
+lookup_agent() { echo "$AGENT_STATS" | awk -F'\t' -v k="$1" '$1==k{print $2" 回 / 最終 "$3; f=1} END{if(!f)print "0 回"}'; }
 
 # 使用表 (markdown) を組む。
 USAGE_TABLE=$(
@@ -137,8 +152,11 @@ USAGE_TABLE=$(
   echo
   echo "### commands (起動回数)"
   for c in ${COMMANDS[@]+"${COMMANDS[@]}"}; do echo "- ${c}: $(lookup_cmd "$c")"; done
+  echo
+  echo "### agents (Agent ツール経由の起動回数)"
+  for a in ${AGENTS[@]+"${AGENTS[@]}"}; do echo "- ${a}: $(lookup_agent "$a")"; done
 )
-log "usage aggregated (skills=${#SKILLS[@]} commands=${#COMMANDS[@]})"
+log "usage aggregated (skills=${#SKILLS[@]} commands=${#COMMANDS[@]} agents=${#AGENTS[@]})"
 
 # .maint-ignore (除外/pin) — live を正とする。無ければ空。
 IGNORE_FILE="$HOME/.claude/.maint-ignore"
@@ -180,6 +198,7 @@ PROMPT=$(
 - 索引: ${CLAUDE_SRC}/CLAUDE.md
 - commands: ${CLAUDE_SRC}/commands/*.md
 - skills:   ${CLAUDE_SRC}/skills/*/SKILL.md
+- agents:   ${CLAUDE_SRC}/agents/*.md
 
 ## 除外 / pin (.maint-ignore) — これらは絶対に archive しない
 ${IGNORE_CONTENT}
