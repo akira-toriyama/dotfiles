@@ -5,7 +5,7 @@ description: Use when verifying macOS app GUI behavior end-to-end — dump an ap
 
 # macOS GUI 検証は peekaboo（AX ツリー JSON + UI 操作）
 
-> 出典: エージェント向け CLI 調査（2026-07-03。詳細 = `~/claude-cli-tools-memo.md` #2 節、task = projects t-c0s2）。peekaboo = openclaw/Peekaboo（MIT）、homebrew.nix で宣言済み（`steipete/tap/peekaboo`）。
+> 出典: エージェント向け CLI 調査（2026-07-03。採用 task = projects t-c0s2・done）。peekaboo = openclaw/Peekaboo（MIT）、homebrew.nix で宣言済み（`steipete/tap/peekaboo`）。
 
 ## 前提（TCC）
 
@@ -40,4 +40,4 @@ peekaboo press return / peekaboo hotkey cmd,s / peekaboo set-value / peekaboo pe
 
 - **exit code は素の 0/1**（house の 0/1/2/3 ではない）。エラー詳細が要るときは必ず `--json` を付けて stderr でなく JSON エラーを読む。
 - 要素指定は `see` が返す `.id`（+ 必要なら `--snapshot`）で。`button 1 of window 1` 式の位置 index は tree 変化で壊れるので使わない。
-- Peekaboo が重い/変化が速すぎる等の実害が出たら fallback（facet の AX モジュールで薄い Swift CLI を自作）の仕様スケッチが `~/claude-cli-tools-memo.md` #2 節にある。
+- Peekaboo が重い/変化が速すぎる等の実害が出たら fallback = facet の AX モジュールで薄い Swift CLI を自作する。※かつての仕様スケッチは `~/claude-cli-tools-memo.md` にあったが**このファイルは現存しない** — 実害が出た時点で task を切って設計し直すこと。

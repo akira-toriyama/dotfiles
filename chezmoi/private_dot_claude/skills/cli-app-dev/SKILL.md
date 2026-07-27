@@ -5,7 +5,7 @@ description: Use when developing or modifying a CLI app/tool in any language —
 
 # CLI app development — house patterns
 
-> facet（Swift）と furrow・cifail・pare（Go）の CLI 面から抽出した**言語非依存**の CLI-UX 知見。言語固有の実装メカニクスは `go-dev`（Go）/ `mac-app-dev`（Swift・macOS）、arch は `software-architecture` 参照＝二重管理しない。facet/repo 固有のサブコマンド語彙は含めない。
+> facet（Swift）と furrow・cifail・pare（Go）の CLI 面から抽出した**言語非依存**の CLI-UX 知見。言語固有の実装メカニクスは `go-dev`（Go）/ `mac-app-dev`（Swift・macOS）、arch は `software-architecture`（**macOS アプリ限定** — Go CLI の構成は `go-dev`）参照＝二重管理しない。facet/repo 固有のサブコマンド語彙は含めない。
 
 ## 引数 grammar & UX
 - POSIX/GNU: `--long-option`。`--help`/`--version` は行のどこでも効く。
@@ -34,6 +34,6 @@ description: Use when developing or modifying a CLI app/tool in any language —
 
 ## スクリプト / 配布 / ハザード
 - 状態変更スクリプトは `--dry-run`（preview）＋ `/tmp/<script>.log` に tee（`--silent` で opt-out）。※長命サーバの env-gate default-quiet とは極性が逆。
-- **Homebrew tap で配布**、release ごとに formula/cask bump を CI 自動化、**publish 後に remote の url/sha が実際に変わったか目視**（update-tap は未変更でも成功報告する前科）。言語別の release 機構（Go は GoReleaser cask＋git-cliff。binary formula は GoReleaser v2 で deprecated）は `go-dev`、GitHub 運用は `github-practices`。
+- **Homebrew tap で配布**、release ごとに formula/cask bump を CI 自動化、**publish 後に remote の url/sha が実際に変わったか目視**（update-tap は未変更でも成功報告する前科）。言語別の release 機構（Go は GoReleaser cask＋`glyph notes`。binary formula は GoReleaser v2 で deprecated）は `go-dev`、GitHub 運用は `github-practices`。
 - **silent-break ハザード**: hotkey runner（skhd/hammerspoon/chord）は非ゼロ exit を握り潰す → 古い binding が無言で失敗。grammar 変更時は全 binding を再確認。
 - **GUI→CLI 分離**: キーボードショートカット管理をアプリに入れない。合成可能な CLI を出し、skhd/Karabiner/hammerspoon でユーザーに配線させる（yabai+skhd モデル）。
