@@ -17,6 +17,7 @@ JSON 文字列 {"predictions": ["…", …]} しか読まない (OpenAIClient.pa
 リリースされるまでのつなぎ。恒久対応後は backend を Foundation Models に
 戻してこのブリッジごと退役させる。設計と検証ログは projects t-85fn。
 """
+
 import json
 import os
 import re
@@ -53,9 +54,7 @@ Input: "<ごめん>"
 Output: ["すみません", "ごめんなさい", "申し訳ありません"]"""
 
 DEFAULT_PROMPT_MARKER = "If the text in <> is a language name"
-LAST_STOCK_EXAMPLE = (
-    'Output: ["Gracias", "Muchas gracias", "Te lo agradezco", "Mil gracias", "Gracias mil"]'
-)
+LAST_STOCK_EXAMPLE = 'Output: ["Gracias", "Muchas gracias", "Te lo agradezco", "Mil gracias", "Gracias mil"]'
 
 FENCE_RE = re.compile(r"^```[a-zA-Z]*\n(.*)\n```$", re.DOTALL)
 
@@ -82,7 +81,7 @@ def extract_predictions(raw: str) -> list[str]:
         for open_ch, close_ch in (("{", "}"), ("[", "]")):
             start, end = text.find(open_ch), text.rfind(close_ch)
             if start != -1 and end > start:
-                text = text[start:end + 1]
+                text = text[start : end + 1]
                 break
         else:
             raise ValueError(f"no JSON in output: {raw!r}")
@@ -98,12 +97,23 @@ def run_engine(prompt: str) -> list[str]:
         cmd, timeout = [FM_PREDICT], 15
     else:
         cmd = [
-            "claude", "-p", "--model", CLAUDE_MODEL, "--max-turns", "1",
-            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
+            "claude",
+            "-p",
+            "--model",
+            CLAUDE_MODEL,
+            "--max-turns",
+            "1",
+            "--strict-mcp-config",
+            "--mcp-config",
+            '{"mcpServers":{}}',
         ]
         timeout = 50
     proc = subprocess.run(
-        cmd, input=prompt, capture_output=True, text=True, timeout=timeout,
+        cmd,
+        input=prompt,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"{cmd[0]} exited {proc.returncode}: {proc.stderr[-500:]}")
@@ -135,7 +145,8 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(payload)
             print(
                 f"[bridge] ok {time.monotonic() - started:.1f}s predictions={predictions}",
-                file=sys.stderr, flush=True,
+                file=sys.stderr,
+                flush=True,
             )
         except Exception as e:  # noqa: BLE001 — 失敗は種類を問わず 500 で IME へ返す
             msg = f"bridge error: {e}"
@@ -147,10 +158,16 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(payload)
 
-    def log_message(self, fmt, *args):  # 既定のアクセスログは抑止 (stderr は launchd のログへ)
+    def log_message(
+        self, fmt, *args
+    ):  # 既定のアクセスログは抑止 (stderr は launchd のログへ)
         pass
 
 
 if __name__ == "__main__":
-    print(f"[bridge] engine={ENGINE} listening on http://{HOST}:{PORT}", file=sys.stderr, flush=True)
+    print(
+        f"[bridge] engine={ENGINE} listening on http://{HOST}:{PORT}",
+        file=sys.stderr,
+        flush=True,
+    )
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()

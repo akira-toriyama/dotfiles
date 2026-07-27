@@ -19,7 +19,7 @@ find_dev() {
         | grep -m1 '"locationID"' | grep -oE '[0-9]+$')
     [ -n "$loc" ] || return 1
     prefix=$(printf '%x' "$loc" | sed 's/0*$//')
-    local devs=(/dev/cu.usbmodem${prefix}*)
+    local devs=("/dev/cu.usbmodem${prefix}"*)
     [ -e "${devs[0]}" ] || return 1
     echo "${devs[0]}"
 }
