@@ -36,6 +36,10 @@ extend-ignore-re = [
   # chezmoi/dot_config/facet/config.toml の散文 "Keys WITHIN a rule are ANDed"。
   # typos は ANDed を AN + Ded に割って Ded→Dead と誤検知する。
   "\\bANDed\\b",
+  # claude-md-eval の triage-fix-now ケース（cases.json）。「今触っているファイルの中に
+  # ある 5 行で直る typo」を題材にする以上、綴り間違いそのものがテストデータで、
+  # 直すと測りたい状況が消える。バッククォート付きの 1 トークンだけに限定する。
+  "`recieved`",
 ]
 
 [default.extend-words]

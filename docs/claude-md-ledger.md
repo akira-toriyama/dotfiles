@@ -35,7 +35,7 @@
 | 進捗の正本は task body 一本（Workflow 節） | body のチェックリストを更新・複製しない | — | なし | 📖 |
 | セッション粒度・中断時の 1 行明言（Workflow 節） | 単位を区切る・希望を書き残す | — | なし | 📖 |
 | PR footer `SetStatus-task:`（Workflow 節） | footer を書く | — | [task-status.yml](../.github/workflows/task-status.yml)（fleet 同期）が lane を自動適用。非ブロッキング | 🟡 footer を**書き忘れても**何も落ちない |
-| 遠慮なく task 化・やり残しを暗黙にしない（Workflow 節） | 起票する | — | Stop hook が正常終了定型の task ID 列挙を強制（下の行） | 🟡 |
+| 拾うが既定の行き先は `icebox`・やり残しを暗黙にしない（Workflow 節） | 起票する。ただし既定 lane は `backlog` でなく `icebox`、昇格は「戻る価値」を 1 行言えるものだけ | — | Stop hook が正常終了定型の task ID 列挙と生成予算（`created ≤ closed − 1`・理由行なき超過をブロック）を強制（下の行）。**起票先が icebox かどうかは見ていない** | 🟡 件数は縛られるが lane 選択は散文 |
 | 指示なし時は task を進める／状況共有を GO と読まない（Workflow 節） | 既定挙動として従う | 作業開始の GO を明示する | なし（memory 併用） | 📖 |
 | 品質>速度・迷ったら一貫性・破壊的変更 OK（開発ポリシー節） | 判断規範として適用 | 好み・リスク受容の裁定 | — | 🙅 |
 | lint/test で防げることは人力でやらない（開発ポリシー節） | 機構化を検討し、CLAUDE.md の散文変更は配る前に測る | — | 測定ハーネス [scripts/claude-md-eval](../scripts/claude-md-eval/README.md) は存在。**回す発火自体は散文** | 🟡 |
