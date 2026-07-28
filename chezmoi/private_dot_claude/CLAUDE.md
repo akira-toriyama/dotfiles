@@ -135,9 +135,12 @@
 - **code repo の PR 本文に footer を1行**:
   `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`
   （PR open→in-progress / merge→`<lane>` 適用。lane 省略で参照のみ。非ブロッキング）。
-- **遠慮なく task 化する（取りこぼさない・暗黙にしない）**: 不満・仕様の曖昧・やる/やらない
-  判断・気づいた罠やツール案は、記憶や口頭でなく task に上げる（曖昧は「仕様確認」自体を
-  task 化して詰まりを先に解く）。body 一項目で足りるものは body へ。詳細規約は
+- **拾う。ただし既定の行き先は `icebox`**（取りこぼさない・暗黙にしないが、溜めもしない）:
+  不満・仕様の曖昧・やる/やらない判断・気づいた罠やツール案は、記憶や口頭でなく task に
+  上げる（曖昧は「仕様確認」自体を task 化して詰まりを先に解く）。ただし**起票先の既定は
+  `backlog` ではなく `icebox`** —— backlog 以上に置くのは「戻る価値」を 1 行で言えるものだけ。
+  icebox は消去ではない（`furrow set <id> -s backlog` で戻る）ので迷ったら icebox に倒す。
+  body 一項目で足りるものは body へ。詳細規約は
   [`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md) の
   「何を task にするか」節。
 - **指示が無ければこの repo の task を進める**（セッション開始時に何も依頼が無い場合の既定）:
