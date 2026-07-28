@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# claude-work-report-check — Claude Code Stop hook: validate the work-request
-# closing template (global CLAUDE.md「作業・task 依頼への返し方」).
+# claude-work-report-check — Claude Code Stop hook: validate the work-session
+# closing contract (global CLAUDE.md「作業の締め」).
 #
-# WHAT IT ENFORCES: when the final assistant message uses the closing template
-# (the fixed opener 「品質担保できる範囲まで…」 or a 「やり残しは task 化…」
-# line), the やり残し declaration must be VERIFIABLE — at least one furrow task
-# id (t-xxxx) or the literal 「なし」 on that line. Prose alone (「後で task 化
-# します」) cannot be checked with `furrow show`; ids can. On violation we emit
-# {"decision":"block","reason":…} so Claude gets exactly one repair round.
+# WHAT IT ENFORCES: a work-session close must carry two VERIFIABLE elements,
+# wording otherwise free (the verbatim template was retired 2026-07-28):
+#   1. a やり残し line with at least one furrow task id (t-xxxx) or 「なし」
+#   2. a counts line `closed N / created M`; when M > N (budget is
+#      created ≤ closed − 1, projects/CLAUDE.md「board を収束させる」), a
+#      reason must sit on the counts line or the line right after it.
+# Prose alone (「後で task 化します」) cannot be checked with `furrow show`;
+# ids and numbers can. On violation we emit {"decision":"block","reason":…}
+# so Claude gets exactly one repair round.
 #
-# WHAT IT CANNOT ENFORCE (scope decision, furrow t-m2bf): firing of the template
-# itself. Whether a turn was a work request needs semantic classification of the
-# conversation — the Stop payload carries no cheap, reliable signal for that.
-# This hook guarantees well-formedness WHEN the template is used, not usage.
+# WHAT IT CANNOT ENFORCE (scope decision, furrow t-m2bf): that a work session
+# closes with the contract at all. Whether a turn was a work request needs
+# semantic classification of the conversation — the Stop payload carries no
+# cheap, reliable signal for that. This hook guarantees well-formedness WHEN
+# a close is attempted, not that one happens.
 #
 # Loop safety: stop_hook_active=true → always allow (the repair round is
 # single; Claude Code would force-stop after repeated blocks anyway).
@@ -35,15 +39,24 @@ printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
 msg=$(printf '%s' "$input" | jq -r '.last_assistant_message // empty')
 [ -n "$msg" ] || exit 0
 
-# Template detection — two independent markers, either one arms the check:
-#   a) the fixed opening line 「品質担保できる範囲まで」
-#   b) a やり残し declaration line (やり残し + task on the same line)
-# Ordinary conversation ABOUT the workflow can hit (b); the cost is one
-# spurious repair round, bounded by the stop_hook_active guard above.
+# Counts shape, shared by arming and the budget check below — one regex, not
+# two drifting copies.
+counts_re='closed[^0-9]{0,3}[0-9]+[^0-9]{0,3}/[^0-9]{0,3}created[^0-9]{0,3}[0-9]+'
+
+# Close detection — three independent markers, any one arms the check:
+#   a) the retired template opener 「品質担保できる範囲まで」 (backward compat)
+#   b) any line containing やり残し (no longer requires "task" on the line)
+#   c) a counts-shaped token — a counts line without a やり残し declaration is
+#      itself a violation, so it must arm rather than slip through
+# Wide on purpose: a false arm costs one bounded repair round (stop_hook_active
+# guard above), a miss is undetectable. Ordinary conversation ABOUT the
+# workflow can hit (b)/(c); same bounded cost.
 armed=0
 if printf '%s' "$msg" | grep -qF '品質担保できる範囲まで'; then
   armed=1
-elif printf '%s' "$msg" | grep -qiE 'やり残し.*task|task.*やり残し'; then
+elif printf '%s' "$msg" | grep -qF 'やり残し'; then
+  armed=1
+elif printf '%s' "$msg" | grep -qiE "$counts_re"; then
   armed=1
 fi
 [ "$armed" -eq 1 ] || exit 0
@@ -60,7 +73,7 @@ if [ -n "$decl" ]; then
 fi
 
 if [ "$ok_decl" -eq 0 ]; then
-  jq -n '{decision: "block", reason: "正常終了定型の「やり残し」宣言に task ID がありません（global CLAUDE.md「作業・task 依頼への返し方」— ID は furrow show で検証できるが、文だけでは検証できない）。やり残しを furrow で task 化して「やり残しは task 化済: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「なし」と書いてください。直したらそのまま停止してよい。"}'
+  jq -n '{decision: "block", reason: "作業の締めに検証可能な「やり残し」宣言がありません（global CLAUDE.md「作業の締め」— ID は furrow show で検証できるが、文だけでは検証できない）。「やり残し: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「やり残し: なし」と書いてください。作業の締めでないなら、その旨が分かる表現に直してよい。直したらそのまま停止してよい。"}'
   exit 0
 fi
 
@@ -75,21 +88,25 @@ fi
 # arithmetic to be self-consistent, and leaves the counting honest-by-convention
 # — same call as the id check, which cannot verify that an id was really filed
 # today either. An overrun stays possible; it just has to be said out loud.
-counts=$(printf '%s' "$msg" | grep -oiE 'closed[^0-9]{0,3}[0-9]+[^0-9]{0,3}/[^0-9]{0,3}created[^0-9]{0,3}[0-9]+' | head -1)
+counts=$(printf '%s' "$msg" | grep -oiE "$counts_re" | head -1)
 if [ -z "$counts" ]; then
-  jq -n '{decision: "block", reason: "締めに増減の実数がありません。global CLAUDE.md の定型どおり「closed N / created M」の行を足してください（board は放っておくと単調増加する — 実測で完了は週 100 件超なのに未完は 95 → 295 に増えた。数字を出さない限り収束しているか誰にも分からない）。直したらそのまま停止してよい。"}'
+  jq -n '{decision: "block", reason: "作業の締めに増減の実数がありません。「closed N / created M」の行を足してください（board は放っておくと単調増加する — 実測で完了は週 100 件超なのに未完は 95 → 295 に増えた。数字を出さない限り収束しているか誰にも分からない）。作業の締めでないなら、その旨が分かる表現に直してよい。直したらそのまま停止してよい。"}'
   exit 0
 fi
 
 closed_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | head -1)
 created_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | tail -1)
 
-# An overrun is allowed ONLY with a stated reason on some line — the escape
-# hatch for a blocker today's work genuinely created. Without one, the repair
-# round is the point: re-triage the new tasks to icebox, or fix them now.
+# An overrun is allowed ONLY with a stated reason ON THE COUNTS LINE or the
+# line right after it — the escape hatch for a blocker today's work genuinely
+# created. Scoped because the wording of the close is now free-form: a stray
+# 「理由」 anywhere in the message (e.g. an error explanation) must not
+# satisfy the check. Without a reason, the repair round is the point:
+# re-triage the new tasks to icebox, or fix them now.
 if [ "$created_n" -gt "$closed_n" ]; then
-  if ! printf '%s' "$msg" | grep -qE '理由|例外|blocker|ブロッカー'; then
-    jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md「board を収束させる」— 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。新しい task を (a) その場で直す（effort ≤ 2 かつ今触っているコード内）(b) icebox に落とす（`furrow set <id> -s icebox`・復帰可能）のどちらかに振り直して数字を直すか、超過の理由を 1 行添えてください。直したらそのまま停止してよい。")}'
+  reason_zone=$(printf '%s' "$msg" | grep -iE -A1 "$counts_re" | head -2)
+  if ! printf '%s' "$reason_zone" | grep -qE '理由|例外|blocker|ブロッカー'; then
+    jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md「board を収束させる」— 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。新しい task を (a) その場で直す（effort ≤ 2 かつ今触っているコード内）(b) icebox に落とす（`furrow set <id> -s icebox`・復帰可能）のどちらかに振り直して数字を直すか、超過の理由を counts 行かその直後の行に 1 行添えてください。直したらそのまま停止してよい。")}'
     exit 0
   fi
 fi
