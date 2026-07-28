@@ -48,13 +48,17 @@
 | commit 英語・和訳 footer（Commits 節） | 英語 + `---（和訳）` | — | なし（実測: glyph は日本語 subject も exit 0） | 📖 |
 | 既定 model/effort（モデル運用節） | — | `/model`・`/effort` の対話変更 | [modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json) が `//=` で seed | 🔒 seed として |
 | ultracode は毎セッション手動（モデル運用節） | — | セッション開始時に `/effort ultracode` | 機構化不能（Claude Code 仕様） | 🙅 |
-| 版番号を pin しない（モデル運用節） | 具体 ID を書かない | — | なし（lint 化は PR-3 候補 — rule of two 適合: ずれた実績あり） | 📖 |
+| 版番号を pin しない（モデル運用節） | 具体 ID を書かない | — | [scripts/claude_md_guard.py](../scripts/claude_md_guard.py)（lint ゲート claude-md-guard）が CLAUDE.md と modify_settings.json の実値行で版付き ID を fail | 🔒 |
 | Fable のファンアウト禁止（モデル運用節） | `fable-architect` 経由でのみ | — | [agents/fable-architect.md](../chezmoi/private_dot_claude/agents/fable-architect.md) の `tools:` に Agent 非搭載 → harness が拒否 | 🔒 Agent 経路のみ |
-| Fable%≥Weekly% 不変条件・約 4 日で 100%・尽きたら Opus（モデル運用節・正典に無い） | `~/.claude.json` の枠を読み委譲判断 | 「これ Fable で」の発令・課金判断 | なし（SessionStart hook 化は PR-3 候補） | 📖 |
+| Fable%≥Weekly% 不変条件・約 4 日で 100%・尽きたら Opus（モデル運用節・正典に無い） | 開幕 quota 行を見て委譲判断 | 「これ Fable で」の発令・課金判断 | SessionStart hook [claude-quota-note](../chezmoi/dot_local/bin/executable_claude-quota-note) が Weekly% / Fable% と不変条件の充足/割れを毎セッション冒頭に提示（fail-open・fixture テストつき） | 🟡 数字は毎回出るが、委譲判断そのものは散文 |
 | Opus 失敗の body 記録（モデル運用節） | 都度 task body に書く | — | なし | 📖 |
 | 分担・Fable セッションで既定継承させない・検証は Opus 側（モデル運用節） | サブエージェントの model/effort を明示 | `/model fable` への切替 | なし。指定漏れは黙って全員 Fable | 📖 |
 | SwiftUI+Sill・AppKit は essential floor・最新 macOS のみ（Mac アプリ節） | 設計・実装時に適用 | — | なし | 📖 |
 | 他 repo は慣習に従う・自分の規約を持ち込まない（他リポジトリ節） | repo の CLAUDE.md/CONTRIBUTING/履歴を先に読む | — | なし | 📖 |
+
+### この台帳自身の機構（2026-07-28〜）
+
+- **CLAUDE.md サイズ上限（11,500 bytes）・具体 model ID pin 禁止・台帳同期（CLAUDE.md に触る PR は台帳も触る。escape = commit footer `Ledger-unchanged: <理由>`）** は lint ゲート claude-md-guard（[scripts/claude_md_guard.py](../scripts/claude_md_guard.py)・CI の `lint` job で毎 PR 実行）が強制する 🔒。どれも既に踏んだ失敗（21 倍肥大・pin ずれ・PR #274 の台帳更新漏れ）の再発防止で rule of two 適合。
 
 ## 削除記録（0 ベース再構成 2026-07-28・旧版 = `92e19cc`）
 

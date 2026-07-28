@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# claude-quota-note — Claude Code SessionStart hook: put the weekly quota
+# numbers into the opening context.
+#
+# WHY: the model-routing invariant (Fable% ≥ Weekly%, global CLAUDE.md
+# 「モデル運用」) was the ledger's weakest 📖 — it only fired if the model
+# remembered to read ~/.claude.json mid-session. This hook turns "go read the
+# cache" into "the numbers are already in front of you" at session start.
+#
+# Output: one line, e.g.
+#   quota: Weekly 62% / Fable 48% — Fable 遅行（不変条件 Fable% ≥ Weekly% 割れ・委譲の敷居を下げる）
+# Fail-open: no jq / no file / unexpected schema → print nothing, exit 0
+# (an empty SessionStart contribution is a no-op; breaking session start is
+# never worth a quota reminder — same asymmetry as modify_settings.json).
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-quota-note). Wired from
+# ~/.claude/settings.json hooks.SessionStart by modify_settings.json (step 6).
+# Tests: scripts/test_claude_quota_note.py (unittest, run in CI).
+set -u
+
+command -v jq >/dev/null 2>&1 || exit 0
+f="${CLAUDE_QUOTA_FILE:-$HOME/.claude.json}"
+[ -r "$f" ] || exit 0
+
+line=$(jq -r '
+  (.cachedUsageUtilization.utilization.limits // []) as $l
+  | ($l | map(select(.kind == "weekly_all")) | first | .percent) as $w
+  | ($l
+     | map(select(.kind == "weekly_scoped" and (.scope.model.display_name == "Fable")))
+     | first | .percent) as $f
+  | if ($w == null or $f == null) then empty
+    else
+      "quota: Weekly \($w)% / Fable \($f)%"
+      + (if $f < $w
+         then " — Fable 遅行（不変条件 Fable% ≥ Weekly% 割れ・委譲の敷居を下げる）"
+         else " — 不変条件充足（目標: 約 4 日で Fable 週枠 100%）"
+         end)
+    end
+' "$f" 2>/dev/null) || exit 0
+
+[ -n "$line" ] && printf '%s\n' "$line"
+exit 0
