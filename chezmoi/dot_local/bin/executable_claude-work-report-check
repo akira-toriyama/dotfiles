@@ -53,10 +53,44 @@ fi
 # message must not satisfy the check. An armed message with NO やり残し line at
 # all (opener present, declaration dropped) is also a violation.
 decl=$(printf '%s' "$msg" | grep -F 'やり残し' || true)
+ok_decl=0
 if [ -n "$decl" ]; then
-  printf '%s' "$decl" | grep -qE 't-[a-z0-9]{3,}' && exit 0
-  printf '%s' "$decl" | grep -qF 'なし' && exit 0
+  printf '%s' "$decl" | grep -qE 't-[a-z0-9]{3,}' && ok_decl=1
+  printf '%s' "$decl" | grep -qF 'なし' && ok_decl=1
 fi
 
-jq -n '{decision: "block", reason: "正常終了定型の「やり残し」宣言に task ID がありません（global CLAUDE.md「作業・task 依頼への返し方」— ID は furrow show で検証できるが、文だけでは検証できない）。やり残しを furrow で task 化して「やり残しは task 化済: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「なし」と書いてください。直したらそのまま停止してよい。"}'
+if [ "$ok_decl" -eq 0 ]; then
+  jq -n '{decision: "block", reason: "正常終了定型の「やり残し」宣言に task ID がありません（global CLAUDE.md「作業・task 依頼への返し方」— ID は furrow show で検証できるが、文だけでは検証できない）。やり残しを furrow で task 化して「やり残しは task 化済: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「なし」と書いてください。直したらそのまま停止してよい。"}'
+  exit 0
+fi
+
+# ---- 生成予算 (created ≤ closed − 1) ----------------------------------------
+# WHY: the ID enumeration above proves nothing was dropped; it says nothing
+# about whether the board is CONVERGING. Measured 2026-07-28: 546 tasks closed
+# board-wide and yet open grew 95 → 295 in five weeks, because created outran
+# closed every single week. The number has to be declared to be argued with.
+#
+# Enforced as SHAPE, not as truth: the hook cannot know a session's boundaries
+# (multiple sessions share a day), so it requires the declaration and the
+# arithmetic to be self-consistent, and leaves the counting honest-by-convention
+# — same call as the id check, which cannot verify that an id was really filed
+# today either. An overrun stays possible; it just has to be said out loud.
+counts=$(printf '%s' "$msg" | grep -oiE 'closed[^0-9]{0,3}[0-9]+[^0-9]{0,3}/[^0-9]{0,3}created[^0-9]{0,3}[0-9]+' | head -1)
+if [ -z "$counts" ]; then
+  jq -n '{decision: "block", reason: "締めに増減の実数がありません。global CLAUDE.md の定型どおり「closed N / created M」の行を足してください（board は放っておくと単調増加する — 実測で完了は週 100 件超なのに未完は 95 → 295 に増えた。数字を出さない限り収束しているか誰にも分からない）。直したらそのまま停止してよい。"}'
+  exit 0
+fi
+
+closed_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | head -1)
+created_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | tail -1)
+
+# An overrun is allowed ONLY with a stated reason on some line — the escape
+# hatch for a blocker today's work genuinely created. Without one, the repair
+# round is the point: re-triage the new tasks to icebox, or fix them now.
+if [ "$created_n" -gt "$closed_n" ]; then
+  if ! printf '%s' "$msg" | grep -qE '理由|例外|blocker|ブロッカー'; then
+    jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md「board を収束させる」— 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。新しい task を (a) その場で直す（effort ≤ 2 かつ今触っているコード内）(b) icebox に落とす（`furrow set <id> -s icebox`・復帰可能）のどちらかに振り直して数字を直すか、超過の理由を 1 行添えてください。直したらそのまま停止してよい。")}'
+    exit 0
+  fi
+fi
 exit 0

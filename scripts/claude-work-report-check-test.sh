@@ -39,14 +39,16 @@ mk() { # $1=last_assistant_message → full hook payload
 run "定型なしの普通の応答 → allow" \
   "$(mk '原因は Authorization ヘッダ欠落でした。修正済みです。')" allow
 
-run "定型 + task ID 列挙 → allow" \
+run "定型 + task ID 列挙 + 増減の実数 → allow" \
   "$(mk '品質担保できる範囲まで作業続けました。
 やり残しは task 化済: t-ab3d, t-9kzz
+closed 3 / created 1
 別セッションで作業お願いします。')" allow
 
-run "定型 + なし → allow" \
+run "定型 + なし + 増減の実数 → allow" \
   "$(mk '品質担保できる範囲まで作業続けました。
 やり残しは task 化済: なし
+closed 1 / created 0
 別セッションで作業お願いします。')" allow
 
 run "opener だけで やり残し宣言行が無い → block" \
@@ -59,6 +61,39 @@ run "なし は宣言行スコープ（他行の「問題なし」では通ら�
   "$(mk '品質担保できる範囲まで作業続けました。
 やり残しは task 化済: 未起票
 テストは問題なしでした。')" block
+
+# ---- 生成予算 (created ≤ closed − 1) ----------------------------------------
+# ID が揃っていても board が増え続けるなら収束していない。実数の申告と、超過時の
+# 理由を要求する（数え方そのものは hook から検証できない — id 検査と同じ割り切り）。
+
+run "ID はあるが closed/created 行が無い → block" \
+  "$(mk '品質担保できる範囲まで作業続けました。
+やり残しは task 化済: t-ab3d
+別セッションで作業お願いします。')" block
+
+run "created > closed で理由なし → block" \
+  "$(mk '品質担保できる範囲まで作業続けました。
+やり残しは task 化済: t-ab3d, t-9kzz
+closed 1 / created 2
+別セッションで作業お願いします。')" block
+
+run "created > closed でも理由が書いてあれば → allow" \
+  "$(mk '品質担保できる範囲まで作業続けました。
+やり残しは task 化済: t-ab3d, t-9kzz
+closed 1 / created 2（理由: 今日の作業が生んだ blocker）
+別セッションで作業お願いします。')" allow
+
+run "created == closed は予算内 → allow" \
+  "$(mk '品質担保できる範囲まで作業続けました。
+やり残しは task 化済: なし
+closed 2 / created 2
+別セッションで作業お願いします。')" allow
+
+run "全角混じり・語順どおりなら読める → allow" \
+  "$(mk '品質担保できる範囲まで作業続けました。
+やり残しは task 化済: t-ab3d
+このセッションの増減: closed 4 / created 0
+別セッションで作業お願いします。')" allow
 
 run "stop_hook_active=true は違反があっても素通し → allow" \
   "$(jq -n '{stop_hook_active: true, last_assistant_message: "やり残しは task 化済:（あとで）"}')" allow

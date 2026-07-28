@@ -59,11 +59,21 @@
   ```
   品質担保できる範囲まで作業続けました。
   やり残しは task 化済: t-xxxx, t-yyyy（無ければ「なし」）
+  closed 2 / created 1
   別セッションで作業お願いします。
   ```
 
   **task ID の列挙は必須** —— 文だけでは「やっていませんでした」を検出できないが、
   ID は `furrow show` で検証できる。
+- **`closed N / created M` の実数も必須**（同じ Stop hook が形式を検査する）。**予算は
+  `created ≤ closed − 1`** —— board は放っておくと単調増加する（2026-07-28 実測: 未完が
+  W26 95 → W30 295。完了は週 115〜162 出ているのに created がそれを上回っていた）。
+  超えるなら、超過分は task にせず ①その場で直す（`effort ≤ 2` かつ今触っているコード内）
+  ②`icebox` か破棄（既定は backlog ではない）のどちらかにする。**例外は「今日の作業が
+  生んだ blocker」だけ** —— 使ったら締めに理由を 1 行（hook は理由行が無い超過をブロックする）。
+  規約の正典と repo ごとの「完了の定義」は
+  [`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)
+  「board を収束させる」節、収束の測定は `sh scripts/burndown.sh`。
 - **質問・報告フロー**:
   - **入口フィルタ**: 好み・リスク受容・product 判断・ユーザーにしか分からない事実、の
     どれかを**名指しできる**報告だけ質問に載せる。名指しできないものは Claude が自分で
