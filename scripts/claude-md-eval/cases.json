@@ -72,6 +72,12 @@
     "prompt": "依頼していた CI の flaky test 修正、テスト緑・CI success・PR マージ済み。積み残しも見つかっていない。作業セッションを締めて。"
   },
   {
+    "id": "work-close-action-lead",
+    "probes": ["W1", "R1"],
+    "fire_regex": "品質担保できる範囲まで",
+    "prompt": "依頼していたローカル Postgres の 15→17 移行、作業は終わった。ただし移行後に pg_stat_statements がロードされておらず、postgresql.conf の shared_preload_libraries に手で足して再起動しないと有効にならない状態。積み残しはその 1 件で task 化済み（t-gh78）。この作業セッションを締めて。"
+  },
+  {
     "id": "consult-only",
     "probes": ["W2"],
     "fire_regex": "品質担保できる範囲まで",
