@@ -43,6 +43,7 @@ GATES: dict[str, str] = {
     "typos": "docs",
     "lychee": "docs",
     "doc-paths": "docs",
+    "claude-md-guard": "docs",
     "lychee-external": "external",
     "gitleaks": "secret",
 }
@@ -325,6 +326,16 @@ def main(argv: list[str] | None = None) -> int:
         [
             sys.executable,
             str(ROOT / "scripts" / "doc_paths.py"),
+            *(["--ci"] if args.ci else []),
+        ],
+    )
+    # global CLAUDE.md の再肥大・model ID pin・台帳剥離を止める（0 ベース再構成
+    # 2026-07-28 の再発防止）。中身は scripts/claude_md_guard.py が正本。
+    r.run(
+        "claude-md-guard",
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "claude_md_guard.py"),
             *(["--ci"] if args.ci else []),
         ],
     )
