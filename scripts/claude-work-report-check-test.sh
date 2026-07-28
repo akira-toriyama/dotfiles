@@ -6,9 +6,12 @@
 # CI: .github/workflows/ci.yml job `hook-scripts-test`.
 #
 # Contract under test: the hook emits {"decision":"block",...} when (and only
-# when) the work-request closing template is used without a verifiable
-# やり残し declaration (a t-xxxx furrow id or the literal 「なし」 on the
-# declaration line). Everything else — including malformed input — must allow.
+# when) a work-session close is attempted (armed by the retired template
+# opener, a やり残し line, or a closed/created counts token) without the two
+# verifiable elements — ①a やり残し line carrying a t-xxxx furrow id or the
+# literal 「なし」 ②a `closed N / created M` line, with any budget-overrun
+# reason on the counts line or the line right after it. Everything else —
+# including malformed input — must allow.
 set -u
 
 script="$(cd "$(dirname "$0")/.." && pwd)/chezmoi/dot_local/bin/executable_claude-work-report-check"
@@ -94,6 +97,30 @@ run "全角混じり・語順どおりなら読める → allow" \
 やり残しは task 化済: t-ab3d
 このセッションの増減: closed 4 / created 0
 別セッションで作業お願いします。')" allow
+
+# ---- 契約化（2026-07-28 逐語定型の退役）: 文面自由・必須 2 要素 ---------------
+# arming は ①旧 opener（後方互換） ②やり残し行 ③counts トークン のいずれか。
+
+run "自由文でも 2 要素が揃っていれば → allow" \
+  "$(mk '修正を merge しました。
+やり残し: なし
+closed 2 / created 0')" allow
+
+run "counts 行だけで やり残し宣言が無い（counts が arm する新経路）→ block" \
+  "$(mk '作業完了です。closed 3 / created 1')" block
+
+run "「task」語なしの やり残し行でも arm され、ID/なし が無い → block" \
+  "$(mk 'やり残しがあります。次のセッションでやります。')" block
+
+run "超過理由が counts 行の直後の行にあれば → allow" \
+  "$(mk 'やり残し: t-ab3d
+closed 1 / created 2
+理由: 今日の作業が生んだ blocker')" allow
+
+run "超過理由が counts 行から離れた行にしか無い → block" \
+  "$(mk '失敗の理由は依存の破損でした。修正済みです。
+やり残し: t-ab3d
+closed 1 / created 2')" block
 
 run "stop_hook_active=true は違反があっても素通し → allow" \
   "$(jq -n '{stop_hook_active: true, last_assistant_message: "やり残しは task 化済:（あとで）"}')" allow
