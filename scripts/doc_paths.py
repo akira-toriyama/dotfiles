@@ -61,8 +61,9 @@ FLEET_DOCS = ("chezmoi/private_dot_claude/",)
 # 直すこと（表だけ直すと文書が古いままになる）。
 FLEET_CLAIMS: dict[str, str] = {
     "packages.nix": "home/modules/packages.nix",
-    "modify_settings.json": "chezmoi/private_dot_claude/modify_settings.json",
-    "dotfiles/scripts/claude-md-eval": "scripts/claude-md-eval",
+    # modify_settings.json / dotfiles/scripts/claude-md-eval は 0 ベース再構成
+    # (2026-07-28) で global CLAUDE.md からの言及ごと消えたのでキーも撤去
+    # （未使用キーは test_every_claim_is_actually_mentioned が落とす設計）。
 }
 
 # 実在を主張しないコードスパンの目印。1 つでも含めば検査対象から外す。

@@ -101,6 +101,20 @@ flowchart TD
 4. **破壊的 git 操作を避ける**: `--force` push / 履歴改変 / `--amend`（push 済みコミットへ）はユーザー明示指示なしに禁止。
 5. **この repo は Claude 主導運用（2026-07-03〜）**: 通常の git / gh / chezmoi / PR 操作（branch 作成・commit・push・PR open/merge・`chezmoi diff/apply`）は都度ユーザー確認を取らず実行してよい。例外は上のルールが押さえる: ① `darwin-rebuild switch`（sudo）はルール 2 のとおりコマンド提示してユーザーに実行させる ② 破壊的 git はルール 4 のとおりユーザー明示指示時のみ ③ 検証ゲート（ルール 1）は「聞く」のでなく「自分で通す」。
 
+## global CLAUDE.md / skill の散文を変えるとき（この repo 固有の義務）
+
+global `~/.claude/CLAUDE.md` の source はこの repo（`chezmoi/private_dot_claude/CLAUDE.md`）に
+あるため、その変更義務はここに置く（常時ロードされる global 側には置かない）。
+
+- **挙動を狙う散文**（出力の形・作業の締め・skill の description 級）を変えたら、配る前に
+  [`scripts/claude-md-eval`](scripts/claude-md-eval/README.md) で測る（読んだだけでは効くか
+  分からない — 初稿 8 規則中 2 つが不良品だった実績）。事実の訂正・ポインタ化・圧縮だけの
+  編集は対象外。全面改稿は `--baseline`（旧版 vs 新版の 2 腕）で測る。
+- ルールを足す・削る・移す PR は [docs/claude-md-ledger.md](docs/claude-md-ledger.md) の
+  該当行（削除なら削除記録節）を**同一 PR で**更新する。
+- global CLAUDE.md の肥大を再演しない: 追加は「既に踏んだ失敗の再発防止」だけ
+  （global の機構化ルールと同じ基準を散文にも適用する）。
+
 ## 既知の落とし穴（読まずに「修正」を試みない）
 
 - `sudo darwin-rebuild` は PATH を引き継がないので **`sudo /run/current-system/sw/bin/darwin-rebuild ...`** とフルパス指定する。
