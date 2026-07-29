@@ -71,6 +71,13 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 - gofmt/goimports 全 file、naming は MixedCaps・initialism 一貫（`URL`/`ID`/`HTTP`・`ServeHTTP`）・getter は `Get` 無し・error string は lowercase 無句点＝lint が強制するので手で議論しない（Go Code Review Comments）。
 - **fleet-managed file は per-repo で編集しない**（fleet-sync が上書きする）。canonical copy は `akira-toriyama/.github` の `fleet/`。**対象の正本は `.github/.github/workflows/fleet-sync.yml` の `MANIFEST=` 行**（2026-07-27 時点で 7 destination: `.github/workflows/` の task-status / commit-lint / taplo / zizmor / version-preview、`.github/zizmor.yml`、`docs/commit-convention.md`）。ここに一覧を写さない —— 増減は MANIFEST を読んで確認する（`dependabot.yml` は既に外れている）。
 
+## コメント方針（mandate 2026-07-29）
+- **コメントの読者は Claude Code。人間向けの説明コメントは書かない** — tutorial 調の
+  逐語説明・コードの言い換え・飾りの区切り見出しは書かない。既存コードで見つけたら削る。
+- 書く・残すのは**保守に効くコメントだけ**: コードに表せない制約・不変条件・
+  package/型冒頭の層契約（役割と禁止事項）・外部仕様への追随点・「なぜこうしないか」。
+- 迷ったら書かない。コードで表せる情報は naming・型・test に載せる。
+
 ## house が mainstream Go から意図的に外す点（知らずに"直さない"）
 - **port は core 側で宣言**（consumer 側でなく）＝stateful app＋swappable fs/mem adapter の hexagonal 選択。lib なら canonical（consumer 定義）が正。
 - **error は source で eager 分類**（`%w` で wrap して defer でなく）＝exit code が製品契約。translate は Execute 境界で、が canonical とも整合。
