@@ -31,10 +31,10 @@
 | 生成予算 created ≤ closed − 1・icebox 既定（作業の締め節・Workflow 節） | 予算内に収める。起票既定は icebox（ユーザー明示依頼は対象外） | — | 同 Stop hook が実数と超過理由を強制。**lane 選択は見ていない** | 🟡 |
 | 質問・報告フロー（一問一答・推奨・委任）（作業の締め節） | 一問一答・推奨つき | 裁定・「残り全部推奨で」の委任 | なし | 📖 |
 | furrow 一本化・wrapper 使用（Workflow 節） | PATH の `furrow` を叩く | — | `packages.nix` の source-build wrapper。brew 版未導入なので shadow は構造的に不発 | 🟡 |
-| 着手前後の `furrow sync`（Workflow 節） | 読む前・書いた後に回す | — | なし | 📖 |
+| 着手前後の `furrow sync`・session start は `furrow sync && furrow brief`（Workflow 節） | 読む前・書いた後に sync。session start は sync && brief で orient | — | なし | 📖 |
 | 進捗の正本は body 一本・中断時 1 行（Workflow 節） | body 更新・複製しない | — | なし | 📖 |
 | projects checkout では明示 `-r projects`（Workflow 節・正典に無い） | 明示する | — | `furrow doctor` が `scope-shadowed` を info 報告するだけで止めない | 📖 |
-| 指示なし時は task を進める／状況共有を GO と読まない（Workflow 節） | 既定挙動として従う | 作業開始の GO を明示 | なし（memory 併用） | 📖 |
+| 指示なし時は `furrow brief` の先頭から着手／状況共有を GO と読まない／active epic の切り替えは申請制（Workflow 節） | 既定挙動として従う。勝手に `furrow epic activate` しない | 作業開始の GO・epic 切り替えの裁定 | furrow が next/brief を active epic に scope（epic-multi-active は lint error）。申請制そのものは散文 | 🟡 scope は機構・申請制は 📖 |
 | PR footer `SetStatus-task:`（Workflow 節） | footer を書く | — | [task-status.yml](../.github/workflows/task-status.yml) が lane 自動適用。書き忘れても落ちない | 🟡 |
 | 品質>速度・一貫性・破壊的変更 OK（開発ポリシー節） | 判断規範として適用 | 好み・リスク受容の裁定 | — | 🙅 |
 | 「できた」は実測とセット（開発ポリシー節） | 実測／未確認を分けて報告 | — | なし | 📖 |
