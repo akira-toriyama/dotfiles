@@ -24,6 +24,11 @@
       "steipete/tap"
     ];
     brews = [
+      "sourcekitten"  # Framework and command-line tool for interacting with SourceKit
+      "typos-cli"  # Source code spell checker
+      "shfmt"  # Autoformat shell script source code
+      "lychee"  # Fast, async, resource-friendly link checker
+      "gitleaks"  # Audit git repos for secrets
       # go は mise 管理へ移行（home/modules/mise.nix）。dev runtime は mise に一元化。
       "git-cliff"  # Highly customizable changelog generator
       "gifski"  # Highest-quality GIF encoder based on pngquant
