@@ -42,3 +42,10 @@ description: Use when developing, modifying, or debugging a macOS app in Swift (
 - 科学的デバッグ（観察→仮説→実験）＋`git bisect`。綺麗な commit が bisect を安くする。
 - ホスト影響変更・新規許可フローの検証は **VM**（Tart・APFS-COW clone + suspend snapshot）でクリーン環境実証。
 - 二層ログ: 常時 `Log.line` ＋ env-gate `Log.debug`（off は bool 1回）。temp file へ書き、gate on の時だけ stderr へミラー。
+
+## コメント方針（mandate 2026-07-29）
+- **コメントの読者は Claude Code。人間向けの説明コメントは書かない** — tutorial 調の
+  逐語説明・コードの言い換え・飾りの区切り見出しは書かない。既存コードで見つけたら削る。
+- 書く・残すのは**保守に効くコメントだけ**: コードに表せない制約・不変条件・
+  型/module 冒頭の層契約（役割と禁止事項）・外部仕様への追随点・「なぜこうしないか」。
+- 迷ったら書かない。コードで表せる情報は naming・型・test に載せる。
