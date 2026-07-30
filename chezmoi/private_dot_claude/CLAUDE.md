@@ -55,8 +55,11 @@
 
 - タスク管理は furrow + private repo `projects` に一本化。furrow は PATH の wrapper
   （常に source 反映）で叩く。furrow 自身を開発する時だけ source dir で
-  `go run ./cmd/furrow`。
-- 読む前・書いた後に `furrow sync`。
+  `go run ./cmd/furrow`。board の layout が上がった直後は各マシンで furrow の
+  source checkout を `git pull` してから叩く（古い HEAD のままだと `schema-too-new`
+  で board に書けない）。
+- 読む前・書いた後に `furrow sync`。session start は `furrow sync && furrow brief`
+  で orient（active epic・next の先頭・lint 件数が 1 読で出る）。
 - 進捗の正本はその task body 一本（memory・ブランチ上のファイルに複製しない）。
   中断時は body のチェックを更新し、次セッションへの希望を 1 行残す。
 - 起票の既定 lane は `icebox`（backlog 以上に置くのは「戻る価値」を 1 行で言えるものだけ。
@@ -65,7 +68,9 @@
 - code repo 内では global 既定ボードが repo を自動付与・自動フィルタする。
   **projects checkout の中だけは local `.furrow` が優先されて auto が効かない —
   tracker 自身の作業は明示 `-r projects` が必須**（正典に無い）。
-- 指示が無ければ `furrow next -r <repo>` の先頭から着手し、何を選んだか 1 行報告。
+- 指示が無ければ `furrow brief`（= next の先頭）から着手し、何を選んだか 1 行報告。
+  next は active epic の member + epic 未所属に絞られる（active が無ければ意図的に空）。
+  **active epic の切り替えは申請制 — 勝手に `furrow epic activate` しない**。
   質問・状況共有・相談への返答を作業開始の合図と読まない。
 - code repo の PR 本文に footer を 1 行:
   `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`
