@@ -71,7 +71,13 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 - gofmt/goimports 全 file、naming は MixedCaps・initialism 一貫（`URL`/`ID`/`HTTP`・`ServeHTTP`）・getter は `Get` 無し・error string は lowercase 無句点＝lint が強制するので手で議論しない（Go Code Review Comments）。
 - **fleet-managed file は per-repo で編集しない**（fleet-sync が上書きする）。canonical copy は `akira-toriyama/.github` の `fleet/`。**対象の正本は `.github/.github/workflows/fleet-sync.yml` の `MANIFEST=` 行**（2026-07-27 時点で 7 destination: `.github/workflows/` の task-status / commit-lint / taplo / zizmor / version-preview、`.github/zizmor.yml`、`docs/commit-convention.md`）。ここに一覧を写さない —— 増減は MANIFEST を読んで確認する（`dependabot.yml` は既に外れている）。
 
-## コメント方針（mandate 2026-07-29）
+## 開発前提（mandate 2026-07-29 コメント / 2026-08-02 全体へ拡張）
+- **この repo 群を人間は開発しない** — 書き手・読み手・保守者は Claude Code。人間は
+  製品の利用者としてだけ現れる（CLI help・エラーメッセージは利用者品質を保つ）。
+- **人間開発者向けの整備をしない**: contributor 向け onboarding・tutorial 文書・
+  human 向け godoc 体裁の丁寧化はしない。README は利用者向け usage と保守に効く
+  事実だけ。人間の学習コスト・muscle memory を理由に API・内部構造を温存しない
+  （破壊的変更 OK は global 準拠）。
 - **コメントの読者は Claude Code。人間向けの説明コメントは書かない** — tutorial 調の
   逐語説明・コードの言い換え・飾りの区切り見出しは書かない。既存コードで見つけたら削る。
 - 書く・残すのは**保守に効くコメントだけ**: コードに表せない制約・不変条件・
