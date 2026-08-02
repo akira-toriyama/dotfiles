@@ -7,6 +7,24 @@ description: Use when verifying macOS app GUI behavior end-to-end — dump an ap
 
 > 出典: エージェント向け CLI 調査（2026-07-03。採用 task = projects t-c0s2・done）。peekaboo = openclaw/Peekaboo（MIT）、homebrew.nix で宣言済み（`steipete/tap/peekaboo`）。
 
+## ホストを乱したくない時は capsule（Tart VM の検証ラボ）
+
+ホスト直の GUI 自動化は focus/Space を奪い、多 display 座標・TCC flakiness で
+非決定的。**ユーザーが作業中のホストを乱せない・クリーンな再現環境が要る時は、
+同じ peekaboo ループを使い捨て Tart VM の中で回す** —— それが
+[capsule](https://github.com/akira-toriyama/capsule)
+（local: `/Volumes/workspace/github.com/akira-toriyama/capsule`、対象 =
+akira-toriyama Swift app family）。
+
+- ループ: `tart clone <base> <ephemeral>` → `tart run --dir=…`（.build /
+  App.app を read-only マウント）→ VM 内で peekaboo + `helpers/click.swift`
+  （middle-click 用）→ `tart delete <ephemeral>`。手順の正典は capsule の
+  README / `verify.sh` / `docs/design.md`。
+- ループ全体で `export TART_NO_AUTO_PRUNE=1` 必須（素の `tart clone`/`pull`
+  は OCI cache を LRU auto-prune し、他 VM を黙って消しうる）。
+- VM は使い捨て前提 — 中身の破壊も VM 削除も OK。ホストへの影響はほぼ無い。
+- 状態は capsule README の Status 節を見てから使う（bring-up 中の部分あり）。
+
 ## 前提（TCC）
 
 - Accessibility + Screen Recording の許可は **CLI 本体でなくホストアプリ（Terminal / IDE）に付与**する（TCC の responsible-code）。ローカルで再ビルドしたバイナリでも同じホストから動く限り再付与不要。

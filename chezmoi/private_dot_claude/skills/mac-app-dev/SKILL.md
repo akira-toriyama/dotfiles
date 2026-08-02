@@ -21,6 +21,12 @@ description: Use when developing, modifying, or debugging a macOS app in Swift (
   各アプリに散らさない）。
 - OS サポートは**最新 macOS のみ**。古い OS 向けの availability 分岐は書かない。
 
+## GUI 検証 → `macos-gui-verify` skill 参照
+
+「UI 変更が本当に効いたか」の実機検証は **`macos-gui-verify` skill**（peekaboo +
+使い捨て Tart VM ラボ [capsule](https://github.com/akira-toriyama/capsule)）へ。
+ホストを乱したくない検証は capsule の VM 内で回せる。
+
 ## AppKit / AX 落とし穴
 - agent 系アプリ: `LSUIElement=true`（Dock 無し）＋非アクティブ化パネル。別 window を focus する**前に** key を返す（クリックで panel が key を握ったまま離れない事故を防ぐ）。
 - window title 等は **AX 解決**（`kAXTitle`・短 TTL キャッシュ・off-main）。backend が埋めると仮定しない。
