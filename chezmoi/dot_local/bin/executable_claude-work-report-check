@@ -8,6 +8,11 @@
 #   2. a counts line `closed N / created M`; when M > N (budget is
 #      created ≤ closed − 1, projects/CLAUDE.md「board を収束させる」), a
 #      reason must sit on the counts line or the line right after it.
+#   3. (furrow t-64tw) the counts must not contradict the BOARD: actuals come
+#      from `furrow stats -r '' --since <session-start> --json`'s window
+#      (session start = the transcript's first timestamp), and only the lying
+#      directions block — closed overstated, created understated. The board
+#      window includes co-writers, so the honest directions pass untouched.
 # Prose alone (「後で task 化します」) cannot be checked with `furrow show`;
 # ids and numbers can. On violation we emit {"decision":"block","reason":…}
 # so Claude gets exactly one repair round.
@@ -109,5 +114,47 @@ if [ "$created_n" -gt "$closed_n" ]; then
     jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md「board を収束させる」— 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。新しい task を (a) その場で直す（effort ≤ 2 かつ今触っているコード内）(b) icebox に落とす（`furrow set <id> -s icebox`・復帰可能）のどちらかに振り直して数字を直すか、超過の理由を counts 行かその直後の行に 1 行添えてください。直したらそのまま停止してよい。")}'
     exit 0
   fi
+fi
+
+# ---- board actuals cross-check (furrow t-64tw) ------------------------------
+# The shape checks above prove the declaration is WELL-FORMED; this one proves
+# it is TRUE where the board can testify. Session boundary: the transcript's
+# first entry timestamp (the Stop payload carries transcript_path — no marker
+# files, no SessionStart plumbing). Actuals: `furrow stats -r '' --since <t0>
+# --json`'s `window` section (created/closed ids inside the window, archive
+# unioned — furrow ≥ #224).
+#
+# Concurrency makes the board window a SUPERSET of this session's flow (other
+# sessions/machines write the same board), so the two directions differ:
+#   - closed_declared > closed_actual: the whole board closed fewer than this
+#     one session claims — definitely overstated. Block.
+#   - created_declared < created_actual: likely an undercount; a co-writer's
+#     ids can also land here. Block ONCE, naming the ids — the repair round
+#     either fixes the count or attributes the foreign ids out loud, and
+#     stop_hook_active bounds it to a single round.
+# Fail-open at every step (no furrow, no board in scope, no transcript, no
+# parsable timestamp): a broken probe must not break every session stop.
+command -v furrow >/dev/null 2>&1 || exit 0
+transcript=$(printf '%s' "$input" | jq -r '.transcript_path // empty')
+[ -n "$transcript" ] && [ -r "$transcript" ] || exit 0
+t0=$(head -20 "$transcript" | jq -r '.timestamp // empty' 2>/dev/null | grep -m1 . || true)
+[ -n "$t0" ] || exit 0
+window=$(furrow stats -r '' --since "$t0" --json 2>/dev/null | jq -c '.window // empty' 2>/dev/null) || exit 0
+[ -n "$window" ] || exit 0
+closed_actual=$(printf '%s' "$window" | jq -r '.closed // empty')
+created_actual=$(printf '%s' "$window" | jq -r '.created // empty')
+case "$closed_actual$created_actual" in *[!0-9]* | "") exit 0 ;; esac
+
+if [ "$closed_n" -gt "$closed_actual" ]; then
+  closed_ids=$(printf '%s' "$window" | jq -r '.closed_ids | join(", ")')
+  jq -n --arg d "$closed_n" --arg a "$closed_actual" --arg ids "$closed_ids" --arg t0 "$t0" --arg q "''" \
+    '{decision: "block", reason: ("締めの closed \($d) 件に対し、board の実数はセッション開始（\($t0)）以降 \($a) 件です（実 ID: \(if $ids == "" then "なし" else $ids end)）。閉じたつもりの task が board に反映されていないか（`furrow done` 忘れ・sync 前）、数え間違いです。`furrow stats -r \($q) --since \($t0) --json` の window で確認し、counts 行を実数に直すか、閉じ漏れを `furrow done` してください。直したらそのまま停止してよい。")}'
+  exit 0
+fi
+if [ "$created_n" -lt "$created_actual" ]; then
+  created_ids=$(printf '%s' "$window" | jq -r '.created_ids | join(", ")')
+  jq -n --arg d "$created_n" --arg a "$created_actual" --arg ids "$created_ids" --arg t0 "$t0" \
+    '{decision: "block", reason: ("締めの created \($d) 件に対し、board の実数はセッション開始（\($t0)）以降 \($a) 件です（実 ID: \($ids)）。起票を数え漏らしていないか確認してください（並走セッションの分が混ざっている場合は、その ID と旨を counts 行の直後に 1 行で明記して数字はそのままでよい）。直したらそのまま停止してよい。")}'
+  exit 0
 fi
 exit 0
