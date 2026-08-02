@@ -130,6 +130,65 @@ run "壊れた JSON → allow (fail-open)" 'not-json{{' allow
 run "last_assistant_message 欠落 → allow (fail-open)" \
   '{"stop_hook_active": false}' allow
 
+# ---- board 実数照合 (furrow t-64tw) ------------------------------------------
+# 形式が揃った締めは、board が証言できる範囲で数字の真偽も見る。session 境界は
+# transcript 先頭の timestamp、実数は `furrow stats -r '' --since <t0> --json` の
+# window。furrow は PATH shim で偽装し、shape 検査と独立に照合だけを試験する。
+# 並走セッションで実数が膨らむ側（closed の過少申告・created の過大申告）は
+# 通り、嘘の側（closed 過大・created 過少）だけ block になることを両方向で見る。
+
+shimdir=$(mktemp -d)
+transcript=$(mktemp)
+printf '{"timestamp":"2026-08-02T00:00:00Z","type":"summary"}\n' >"$transcript"
+
+mkshim() { # $1=window JSON (or "ERR" to exit 2)
+  if [ "$1" = ERR ]; then
+    printf '#!/bin/sh\nexit 2\n' >"$shimdir/furrow"
+  else
+    printf '#!/bin/sh\nprintf %%s '"'"'{"total":9,"drafts":0,"window":%s}'"'"'\n' "$1" >"$shimdir/furrow"
+  fi
+  chmod +x "$shimdir/furrow"
+}
+
+mkt() { # $1=last_assistant_message → payload carrying the transcript
+  jq -n --arg m "$1" --arg t "$transcript" \
+    '{stop_hook_active: false, last_assistant_message: $m, transcript_path: $t}'
+}
+
+close_msg='やり残し: なし
+closed 2 / created 0'
+
+mkshim '{"created":0,"closed":2,"created_ids":[],"closed_ids":["t-a1","t-b2"]}'
+PATH="$shimdir:$PATH" run "実数一致 → allow" "$(mkt "$close_msg")" allow
+
+mkshim '{"created":0,"closed":1,"created_ids":[],"closed_ids":["t-a1"]}'
+PATH="$shimdir:$PATH" run "closed 過大申告（宣言2/実数1）→ block" "$(mkt "$close_msg")" block
+
+mkshim '{"created":2,"closed":2,"created_ids":["t-x1","t-y2"],"closed_ids":["t-a1","t-b2"]}'
+PATH="$shimdir:$PATH" run "created 過少申告（宣言0/実数2）→ block" "$(mkt "$close_msg")" block
+
+mkshim '{"created":0,"closed":3,"created_ids":[],"closed_ids":["t-a1","t-b2","t-c3"]}'
+PATH="$shimdir:$PATH" run "closed 過少申告（並走分・宣言2/実数3）→ allow" "$(mkt "$close_msg")" allow
+
+mkshim '{"created":1,"closed":2,"created_ids":["t-x1"],"closed_ids":["t-a1","t-b2"]}'
+PATH="$shimdir:$PATH" run "created 過大申告（宣言側が多い）→ allow" \
+  "$(mkt 'やり残し: なし
+closed 2 / created 1
+理由: 今日の作業が生んだ blocker を起票')" allow
+
+mkshim ERR
+PATH="$shimdir:$PATH" run "furrow が exit 2（board 圏外）→ allow (fail-open)" "$(mkt "$close_msg")" allow
+
+mkshim '{"created":0,"closed":1,"created_ids":[],"closed_ids":["t-a1"]}'
+run_no_shim_transcript=$(jq -n --arg m "$close_msg" '{stop_hook_active: false, last_assistant_message: $m, transcript_path: "/nonexistent/transcript"}')
+PATH="$shimdir:$PATH" run "transcript が読めない → allow (fail-open)" "$run_no_shim_transcript" allow
+
+printf 'no timestamps here\n' >"$transcript"
+mkshim '{"created":0,"closed":1,"created_ids":[],"closed_ids":["t-a1"]}'
+PATH="$shimdir:$PATH" run "transcript に timestamp が無い → allow (fail-open)" "$(mkt "$close_msg")" allow
+
+rm -rf "$shimdir" "$transcript"
+
 echo
 if [ "$fail" -eq 0 ]; then
   echo "✅ all $n tests passed"
