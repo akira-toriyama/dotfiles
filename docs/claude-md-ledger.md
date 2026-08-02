@@ -46,7 +46,7 @@
 | 自作 CLI/アプリは source・brew 禁止（道具節） | `brew install` しない | `brew install` しない | brew 版が無ければ shadow は構造的に起きない（実測: wrapper のみ） | 🟡 |
 | gitmoji 規約・push 前 `glyph lint`（Commits 節） | `glyph rules` を引く・push 前に lint | — | PR の commit-lint.yml（fleet 同期）。branch protection 必須は `ci-gate` のみで commit-lint 赤は merge を止めない（実測） | 🟡 push 前 lint は 📖 |
 | commit 英語のみ（Commits 節・2026-08-02 和訳廃止） | 英語のみで書く | — | なし（実測: glyph は日本語 subject も exit 0） | 📖 |
-| 成果物は英語のみ・会話/task は日本語（開発ポリシー節・2026-08-02 新設） | README/docs/PR/issue に日本語版を作らない | — | なし | 📖 |
+| 成果物は英語のみ・会話/task は日本語（開発ポリシー節・2026-08-02 新設・正本 = fleet [doc-consistency-policy](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md)） | committed 文書を英語で書く・翻訳ファイルを持たない | — | なし（pare/rundiff の check-docs は version 検査のみ — README.ja 再出現は検知しない・実測） | 📖 |
 | 既定 model/effort（モデル運用節） | — | `/model`・`/effort` の対話変更 | [modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json) が `//=` で seed | 🔒 seed として |
 | ultracode は毎セッション手動（モデル運用節） | — | セッション開始時に `/effort ultracode` | 機構化不能（Claude Code 仕様） | 🙅 |
 | 版番号を pin しない（モデル運用節） | 具体 ID を書かない | — | [scripts/claude_md_guard.py](../scripts/claude_md_guard.py)（lint ゲート claude-md-guard）が CLAUDE.md と modify_settings.json の実値行で版付き ID を fail | 🔒 |
