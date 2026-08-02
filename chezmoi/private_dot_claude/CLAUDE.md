@@ -17,6 +17,7 @@
   | fleet 変更の段取り | [fleet-change-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/fleet-change-policy.md) |
   | Sill の library 契約 | [Sill](https://github.com/akira-toriyama/sill) の `Package.swift` |
   | ルールの強制状態・削除記録 | dotfiles の [claude-md-ledger.md](https://github.com/akira-toriyama/dotfiles/blob/main/docs/claude-md-ledger.md) |
+  | 文書の一貫性・言語（英語のみ・翻訳を持たない） | [doc-consistency-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md) |
 
 ## 出力の形
 
@@ -79,6 +80,8 @@
 
 - **品質 > 速度**。コストは制約ではない（ユーザー明言:「コストより品質」）。
 - **迷ったら一貫性**: 既存の設計・慣習・過去の決定と揃う側を選ぶ。
+- **成果物は英語のみ**: committed な文書・commit・PR・issue は英語で書き、翻訳ファイル
+  （README.ja 等）を持たない（正本 = doc-consistency-policy）。会話と furrow task は日本語。
 - **破壊的変更 OK**: 自分の repo では互換レイヤーを残すより綺麗に壊して major。
   保守側の理由が具体的な消費者・データ・利用箇所を指せないなら壊す方を採る。
 - **「できた」は実測とセット**: test 緑・CI success・merged は「実行できた」証拠であって
@@ -115,7 +118,7 @@
 - gitmoji-driven: `<:gitmoji:>[(<scope>)][!] <subject>`。規約は暗記せず `glyph rules` を引く。
 - **push 前に `glyph lint --range origin/main..HEAD`**（push 後に CI で落ちるのは
   1 往復の無駄 — 実際に起きた）。
-- subject も body も英語。body を書く時は後半に `---（和訳）` 区切りで和訳を付ける。
+- subject も body も英語。和訳は付けない（2026-08-02 廃止）。
 
 ## モデル運用（この節の事実は正典に無い — ここが一次の置き場）
 
