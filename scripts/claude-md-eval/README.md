@@ -17,7 +17,8 @@ python3 judge.py
 ```
 
 `run.py` が baseline（節なし）と candidate（節あり）の応答を作り、`judge.py` が盲検で
-判定してリリースゲートを適用する。ゲートが通れば exit 0、落ちれば exit 2。
+判定してリリースゲートを適用する。ゲートが通れば exit 0、落ちれば **exit 3**
+（argparse の usage エラー = exit 2 と区別するため。以前は両方 2 だった）。
 
 既定は 16 ケース × 2 試行 × 2 条件 = 応答 64 本、判定 32 ペア。実測で 10 分・$6 前後。
 中断しても `results/responses.jsonl` を見て再開する（完了済みの行は作り直さない）。
