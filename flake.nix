@@ -131,6 +131,11 @@
             # home.packages 側の chezmoi が PATH に居るので「入れ忘れても手元は緑」に
             # なる —— CI (ubuntu runner) には無いのでここでの宣言が唯一の供給源。
             pkgs.chezmoi
+            # 同じ理由で jq。test_modify_settings.py が modify_settings.json を実際に
+            # 走らせるが、あの script は jq が無いと入力を素通しする fail-safe を持つ。
+            # CI に jq が無いと、テストは「素通し経路だけ通って緑」になり、肝心の
+            # 生成ロジック（permission allowlist を作る側）を一度も見ない。
+            pkgs.jq
           ];
         };
       });
