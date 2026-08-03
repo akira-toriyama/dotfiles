@@ -34,7 +34,7 @@ jobs:
         with:
           # Verify-only, never pushes — drop the persisted checkout token. t-yaxa
           persist-credentials: false
-      - uses: actions/setup-python@v6.3.0
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.x"
       - name: Check chord doc is in sync
