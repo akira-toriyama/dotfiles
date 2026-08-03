@@ -180,5 +180,30 @@ class TestTemplateDiscovery(unittest.TestCase):
         )
 
 
+class NewFilesAreVisible(unittest.TestCase):
+    """まだ add していないファイルも検査対象に入ること。
+
+    ここが漏れると「手元は緑・push すると赤」が新規ファイルに限って起きる。
+    CI はその時点で追跡済みのファイルを見るので、ローカルだけが盲目になる。
+    実際に踏んだ（PR #312 の doc-paths）ので、性質として固定する。
+    """
+
+    def test_an_unadded_file_is_in_the_target_set(self) -> None:
+        new = ROOT / "zz-lint-visibility-probe.md"
+        self.assertFalse(new.exists(), "probe name collided with a real file")
+        new.write_text("probe\n", encoding="utf-8")
+        try:
+            self.assertIn(new.name, lint.tracked())
+        finally:
+            new.unlink()
+
+    def test_a_gitignored_file_is_not(self) -> None:
+        """--exclude-standard が効いていること。生成物まで拾い始めたら別の壊れ方。"""
+        ignored = ROOT / "result"
+        if not ignored.exists():
+            self.skipTest("no build result symlink present to use as a probe")
+        self.assertNotIn("result", lint.tracked())
+
+
 if __name__ == "__main__":
     unittest.main()
