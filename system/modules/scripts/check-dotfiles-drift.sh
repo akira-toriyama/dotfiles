@@ -37,7 +37,12 @@
 #   - drift が解消したら md を削除する。
 #   - flake パスは ghq → $HOME/dotfiles → $DOTFILES_FLAKE_DIR の順で解決
 #   - 実行ログ (append): /tmp/dotfiles-drift.log (launchd の Std{Out,Err}Path)
-set -eu
+# pipefail は add-homebrew.sh と揃える。この 2 本は launchd(/bin/bash 直起動)と
+# home.packages の writeShellApplication wrapper の 2 経路から走るので、`set` 行が
+# 両経路で効く唯一の正本になる。全 17 パイプラインのうち 15 本は `|| true` 付きで、
+# 残る 2 本（ghq list | head -1 / echo | wc -l | tr）は pipefail 下で exit 0 を
+# 実測確認済み（前者は不一致でも ghq が 0 を返す）。
+set -euo pipefail
 
 # 「明示的に未宣言 (破棄方針)」相当の cask は通知から除外する。
 # homebrew.nix 末尾コメントの破棄方針リストとは別管理。両方を更新する想定。
