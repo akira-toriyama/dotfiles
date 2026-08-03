@@ -7,6 +7,10 @@
 #   zmk-log around "HH:MM"  today's lines HH:MM +/- 2 min
 #   zmk-log days            list captured days
 # Spec: projects t-6cdr body. Retire with the capture stack when stable (t-x0ak).
+#
+# set -u only, no errexit: grep の不一致や ioreg の一時失敗といった
+# 正常系の非 0 で落ちてはいけない（docs/scripts-inventory.md の分類 ①）。
+set -u
 
 LOGDIR="$HOME/zmk-logs"
 TODAY="$LOGDIR/zmk-$(date +%F).log"
