@@ -78,7 +78,7 @@ flowchart TD
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
   - `lint` — `scripts/lint` 一本（ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` は render 後に shellcheck・plist 構文 / コードスパン内のパス実在）。**ローカルでも同じコマンドが走る**: `nix develop .#lint --command scripts/lint`
   - `script test` — Stop hook の fixture テスト + `scripts/` と `scripts/claude-md-eval/` の unittest
-  - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞 + 自作 command（`~/.claude/commands/`）の `my-` 接頭辞を強制
+  - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞を強制（例外: `run_*` / `modify_*` / `.chezmoiscripts/`）
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
 - **CI green を確認してからマージ**。失敗したら**新規コミットで修正**する（`--amend` / `--force` push / 履歴改変の可否は「作業時の絶対ルール」4 が正本）。
 - **push 時、pre-push フック（[.githooks/pre-push](.githooks/pre-push)）は chezmoi/ を触る push で `chezmoi verify` を実行し、乖離があれば警告するが止めない（warn-only、2026-07-03〜。Claude 主導運用のため）**。気づいたら `chezmoi apply` で live を追従する。恒久ゲートは CI（darwin build/switch smoke + chezmoi apply + templates render）と main のブランチ保護が担う。詳細 → [docs/operations.md §5.11](docs/operations.md)。

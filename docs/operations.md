@@ -241,14 +241,13 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 
 [.github/workflows/ci.yml](../.github/workflows/ci.yml) ＋ chord 専用 verify-* ワークフロー:
 
-`ci.yml` の job は 12 本。**表に無い job があれば ci.yml が正**（この表は説明用の写し）。
+`ci.yml` の job は 11 本。**表に無い job があれば ci.yml が正**（この表は説明用の写し）。
 
 | ジョブ | 内容 | runner |
 |---|---|---|
 | `nix flake check (eval only)` | Nix の eval/型検査 | ubuntu-latest |
-| `lint` | `scripts/lint --ci`（ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / doc-paths / gitleaks の 13 ゲート） | ubuntu-latest |
-| `convention / executable_ prefix` | `chezmoi/` の shebang スクリプトに `executable_` 接頭辞を強制 | ubuntu-latest |
-| `convention / my- command prefix` | 自作 slash command に `my-` 接頭辞を強制 | ubuntu-latest |
+| `lint` | `scripts/lint --ci`（ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks の 14 ゲート） | ubuntu-latest |
+| `convention / executable_ prefix` | `chezmoi/` の shebang スクリプトに `executable_` 接頭辞を強制（例外: `run_*` / `modify_*` / `.chezmoiscripts/`） | ubuntu-latest |
 | `script test` | Stop hook の fixture + `scripts/**` と `scripts/claude-md-eval/` の unittest | ubuntu-latest |
 | `chezmoi templates render` | 全 `.tmpl` の execute-template 検証（get.chezmoi.io の最新版で） | ubuntu-latest |
 | `docs link check (external URLs)` | 外部 URL 込みの lychee。**nightly / 手動のみ**・`ci-gate` の needs 外 | ubuntu-latest |
