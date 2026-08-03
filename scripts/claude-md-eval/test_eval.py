@@ -7,6 +7,8 @@ quiet mistake turns into a wrong conclusion rather than a visible error.
 """
 
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -341,6 +343,30 @@ class TestCases(unittest.TestCase):
         for c in self.cases:
             if "fire_regex" in c:
                 self.assertNotRegex(c["prompt"], c["fire_regex"], c["id"])
+
+
+class ExitCodes(unittest.TestCase):
+    """A blocked gate and a mistyped flag must not look the same to a caller.
+
+    Both used to exit 2. The gate now exits 3; argparse keeps 2.
+    """
+
+    def test_a_usage_error_still_exits_two(self) -> None:
+        p = subprocess.run(
+            [sys.executable, str(HERE / "judge.py"), "--no-such-flag"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(p.returncode, 2, p.stderr)
+        self.assertIn("unrecognized arguments", p.stderr)
+
+    def test_the_blocked_code_is_documented_as_three(self) -> None:
+        # 実際に BLOCKED を出すには judge の run が要るので、契約の側を固定する:
+        # main() の戻り値と README の記述が 3 で揃っていること。
+        source = (HERE / "judge.py").read_text(encoding="utf-8")
+        self.assertIn("return 0 if passed else 3", source)
+        self.assertIn("exit 3", (HERE / "README.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
