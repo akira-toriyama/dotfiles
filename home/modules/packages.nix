@@ -104,9 +104,11 @@ in
     # scripts/lint の各ゲートが起動する実体。CI は devShells.lint（flake.lock 固定）から
     # 供給するので、ここは **開発機で素の `scripts/lint` を叩ける** ための供給源。
     # 同じ flake.lock 由来なので CI とローカルでバージョンが一致する。
-    # 4 本（shfmt / typos / lychee / gitleaks）は brew で入っていて未宣言のまま
-    # drift 検出器が毎日報告していた（t-vk0w の保留項目）。nix 側へ寄せて解消する
-    # ——「迷ったら Nix」。switch 後に brew 版を uninstall すること。
+    # 4 本（shfmt / typos / lychee / gitleaks）は #297 で homebrew.brews に置かれて
+    # いたが、いずれも nixpkgs にある汎用 CLI ＝ 判断フローでは home.packages 側。
+    # brew bundle は 1 つの cask が壊れると bundle 全体を道連れにする（2026-08-02〜の
+    # CI 赤で実際に道連れになった）ので、Nix で足りるものは Nix に置く。
+    # switch 後に brew 版を uninstall すること。
     shellcheck # shell の lint。system/modules/scripts/*.sh 等の自己検証にも使う
     shfmt      # shell の formatter（scripts/lint の shfmt ゲート）
     actionlint # GitHub Actions workflow の静的チェック。push 前にローカルで拾う
