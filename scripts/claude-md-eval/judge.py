@@ -13,6 +13,14 @@ Two independent signals, on purpose:
 
 The gate refuses a candidate that wins by deleting substance: a net increase in
 judge-flagged information loss blocks release even when the win count is higher.
+
+Exit codes:
+  0  gate passed
+  2  argparse usage error (bad flags) — argparse owns this code
+  3  gate BLOCKED
+
+BLOCKED is 3 rather than 2 so a caller can tell "the release is blocked" apart
+from "you mistyped a flag". Both used to be 2.
 """
 
 from __future__ import annotations
@@ -159,9 +167,15 @@ def judge_one(
         "",
     ]
     for _ in range(retries + 1):
-        p = subprocess.run(
-            cmd, input=prompt, capture_output=True, text=True, timeout=600
-        )
+        try:
+            p = subprocess.run(
+                cmd, input=prompt, capture_output=True, text=True, timeout=600
+            )
+        except subprocess.TimeoutExpired:
+            # 未捕捉だと 1 本のハングが run 全体を道連れにし、既に judge 済みの
+            # verdict まで失われた（書き出しは全 pair 完了後だったため）。
+            # timeout は他の失敗と同じくリトライ対象として扱う。
+            continue
         if p.returncode != 0:
             continue
         try:
@@ -323,15 +337,18 @@ def main(argv: list[str] | None = None) -> int:
         )
     print(f"judging {len(pairs)} pairs", flush=True)
 
-    with ThreadPoolExecutor(max_workers=args.workers) as ex:
-        verdicts = list(
-            ex.map(
-                lambda p: judge_one(p[0][0], p[0][1], p[1], args.model, args.retries),
-                pairs,
-            )
-        )
+    # verdict は 1 件ごとに書き出す。全 pair 完了後に一括保存していたころは、
+    # 終盤の 1 本が落ちるとそれまでの judge 結果（= API 呼び出し数十回分）が
+    # まるごと消えた。逐次書き出しなら中断しても手元に残る。
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(verdicts, ensure_ascii=False, indent=2))
+    verdicts: list[dict[str, Any]] = []
+    with ThreadPoolExecutor(max_workers=args.workers) as ex:
+        for verdict in ex.map(
+            lambda p: judge_one(p[0][0], p[0][1], p[1], args.model, args.retries),
+            pairs,
+        ):
+            verdicts.append(verdict)
+            args.out.write_text(json.dumps(verdicts, ensure_ascii=False, indent=2))
 
     agg: dict[Any, Any] = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -392,7 +409,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"release gate: {'PASS' if passed else 'BLOCKED'}")
     for r in reasons:
         print(f"  - {r}")
-    return 0 if passed else 2
+    return 0 if passed else 3
 
 
 if __name__ == "__main__":

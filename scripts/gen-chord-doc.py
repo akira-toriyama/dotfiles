@@ -21,6 +21,7 @@ stdlib のみ。リポジトリルートからの相対パスで動く。
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -176,5 +177,22 @@ def update_doc(check_only: bool = False) -> int:
     return 0
 
 
+def main(argv: list[str] | None = None) -> int:
+    # argparse を挟むのは、素の `"--check" in sys.argv` が **未知フラグを黙って
+    # 書き込みモードに落とす**ため。`--dry-run` や `--check-only` と打った人は読み取り
+    # だけのつもりなのに docs/chord.md が書き換わる。argparse なら未知フラグは
+    # usage を出して exit 2 で止まる。
+    ap = argparse.ArgumentParser(
+        description="chord config から docs/chord.md のショートカット表を生成する。"
+    )
+    ap.add_argument(
+        "--check",
+        action="store_true",
+        help="書き換えず、差分があれば exit 1（CI 用）",
+    )
+    args = ap.parse_args(argv)
+    return update_doc(check_only=args.check)
+
+
 if __name__ == "__main__":
-    sys.exit(update_doc(check_only=("--check" in sys.argv[1:])))
+    sys.exit(main())
