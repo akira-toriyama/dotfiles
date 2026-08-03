@@ -293,14 +293,14 @@ if git diff --cached --quiet; then
   exit 0
 fi
 git -c user.email="claude-maint@noreply" -c user.name="claude-maint" \
-  commit -q -m "chore: monthly Claude docs maintenance (${YM})" \
+  commit -q -m ":memo:(claude) monthly docs maintenance (${YM})" \
   -m "archived: ${moved} / report: ${REPORT_REL}"
 git push -q -u origin "$BRANCH"
 
 # worktree は git remote 設定を共有するので gh は origin を自動検出する。
 PR_URL=$(gh pr create \
   --head "$BRANCH" --base main \
-  --title "chore: Claude docs maintenance ${YM}" \
+  --title ":memo:(claude) monthly docs maintenance ${YM}" \
   --body-file "$WT/$REPORT_REL" 2>&1) || {
   log "gh pr create failed: $PR_URL"
   PR_URL=""
