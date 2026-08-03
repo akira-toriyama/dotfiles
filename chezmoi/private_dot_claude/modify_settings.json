@@ -33,12 +33,24 @@
 #      as "claude-opus-4-8[1m]" here; the seed would then quietly ship a stale
 #      generation on every new Mac.
 #      NOTE: effortLevel is seeded as "xhigh", NOT "ultracode". "ultracode"
-#      (= xhigh + automatic workflow orchestration) is session-only by design and
-#      is NOT a persistable effortLevel value: Claude Code accepts only
-#      low/medium/high/xhigh here and normalizes "ultracode" to "xhigh" at
-#      startup, so seeding it never produced a persistent ultracode default. Enter
-#      it per session with /effort ultracode — there is no settings key, env var,
-#      or --effort launch flag that persists it (--effort tops out at max).
+#      (= xhigh + standing dynamic-workflow orchestration) is session-scoped by
+#      design and is not a persistable effortLevel value, so seeding it here
+#      never produced a persistent ultracode default.
+#      There IS a separate boolean settings key named "ultracode" — an earlier
+#      version of this note denied that, wrongly. Measured against the 2.1.214
+#      binary, its own schema says: "Enable ultracode for the session: xhigh
+#      effort plus standing dynamic-workflow orchestration. Session-scoped —
+#      typically provided via --settings or the apply_flag_settings control
+#      request; interactive toggles never persist it. Requires workflows to be
+#      enabled and an xhigh-capable model." So it can be supplied per launch
+#      (claude --settings '{"ultracode":true}'), but nothing seeded into this
+#      file makes it stick — which is why it is not seeded here.
+#      --effort advertises low/medium/high/xhigh/max (measured: an unknown value
+#      warns and lists exactly those five) and additionally accepts "ultracode"
+#      with no warning. Whether that alias also turns on the orchestration half
+#      or merely maps to xhigh is UNMEASURED — a probe was attempted and its
+#      control returned the same answer, so it proved nothing.
+#      Day to day: enter it per session with /effort ultracode.
 #      Seeded ONLY IF ABSENT (jq //=): /model and /effort change the live values
 #      interactively and re-apply must never fight that — this exists so a new
 #      Mac starts on the intended model+effort instead of whatever the installer
