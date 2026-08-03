@@ -22,32 +22,38 @@ let
   # ・(cd src) を subshell に閉じて cwd を保つ＝呼び出し元のディレクトリで実行され、
   #   そこの git origin / .furrow-pointer.toml 等の発見が効く。
   # ・出力は一時ファイル→atomic mv（並行起動でも壊れた binary を exec しない）。
-  sourceBuiltCLI = { name, cacheDir ? name }: pkgs.writeShellScriptBin name ''
-    set -eu
-    src=/Volumes/workspace/github.com/akira-toriyama/${name}
-    cache="''${XDG_CACHE_HOME:-$HOME/.cache}/${cacheDir}"
-    bin="$cache/${name}"
-    # clone が無い機械（別 Mac・bootstrap 前・/Volumes/workspace 未マウント）でも
-    # wrapper は PATH に居てしまう。素通しすると下の (cd "$src") が失敗し set -eu が
-    # 生の `cd: ... No such file or directory` のまま非 0 を返す。これは
-    # `command -v <tool>` を可用性の判定に使う呼び出し側——glyph の commit-msg hook、
-    # rundiff の PreToolUse hook——を全て欺く: コマンドは在るのに必ず失敗する。
-    if [ ! -d "$src" ]; then
-      if [ -x "$bin" ]; then
-        echo "⚠ ${name} の clone が無い ($src)。前回ビルドの $bin で続行 — source 追従が止まっており stale の可能性あり" >&2
-        exec "$bin" "$@"
+  #
+  # writeShellApplication は build 時に shellcheck を通し、errexit / nounset /
+  # pipefail を先頭に注入する（旧 writeShellScriptBin + 手書き `set -eu` の置換）。
+  # この本文にパイプは 1 本も無いので pipefail の追加は挙動を変えない。
+  sourceBuiltCLI = { name, cacheDir ? name }: pkgs.writeShellApplication {
+    inherit name;
+    text = ''
+      src=/Volumes/workspace/github.com/akira-toriyama/${name}
+      cache="''${XDG_CACHE_HOME:-$HOME/.cache}/${cacheDir}"
+      bin="$cache/${name}"
+      # clone が無い機械（別 Mac・bootstrap 前・/Volumes/workspace 未マウント）でも
+      # wrapper は PATH に居てしまう。素通しすると下の (cd "$src") が失敗し errexit が
+      # 生の `cd: ... No such file or directory` のまま非 0 を返す。これは
+      # `command -v <tool>` を可用性の判定に使う呼び出し側——glyph の commit-msg hook、
+      # rundiff の PreToolUse hook——を全て欺く: コマンドは在るのに必ず失敗する。
+      if [ ! -d "$src" ]; then
+        if [ -x "$bin" ]; then
+          echo "⚠ ${name} の clone が無い ($src)。前回ビルドの $bin で続行 — source 追従が止まっており stale の可能性あり" >&2
+          exec "$bin" "$@"
+        fi
+        # exit 0 で成功を装わない: script 中の `${name} ...` が pass に見える。
+        echo "✘ ${name} の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+        exit 127
       fi
-      # exit 0 で成功を装わない: script 中の `${name} ...` が pass に見える。
-      echo "✘ ${name} の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
-      exit 127
-    fi
-    if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
-      mkdir -p "$cache"
-      if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-      ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/${name} && mv -f "$bin.tmp.$$" "$bin" ) >&2
-    fi
-    exec "$bin" "$@"
-  '';
+      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+        mkdir -p "$cache"
+        if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
+        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/${name} && mv -f "$bin.tmp.$$" "$bin" ) >&2
+      fi
+      exec "$bin" "$@"
+    '';
+  };
 in
 {
   # home-manager 管理のユーザーパッケージ（**非ランタイムの CLI**）。
@@ -132,10 +138,20 @@ in
     #   (launchd-drift.nix と同一 source)。詳細 md の「削除/install」コマンドに
     #   `&& dotfiles-drift-check` で chain される。
     # source はいずれも system/modules/scripts/*.sh (単一ソース)。
-    (writeShellScriptBin "add-homebrew"
-      (builtins.readFile ../../system/modules/scripts/add-homebrew.sh))
-    (writeShellScriptBin "dotfiles-drift-check"
-      (builtins.readFile ../../system/modules/scripts/check-dotfiles-drift.sh))
+    #
+    # この 2 本は wrapper 以外に launchd からも直接起動される
+    # (launchd-drift.nix が `/bin/bash <store path>` で叩く)。writeShellApplication
+    # が注入する errexit/nounset/pipefail は wrapper 側にしか掛からないので、
+    # 2 経路の挙動を一致させるため **.sh 側の `set` 行を正本**に揃えてある
+    # (どちらも `set -euo pipefail`)。注入分は同じ内容の二重適用で無害。
+    (writeShellApplication {
+      name = "add-homebrew";
+      text = builtins.readFile ../../system/modules/scripts/add-homebrew.sh;
+    })
+    (writeShellApplication {
+      name = "dotfiles-drift-check";
+      text = builtins.readFile ../../system/modules/scripts/check-dotfiles-drift.sh;
+    })
 
     # ghq-get-mine: GitHub 上の自分の active(非 archived)repo を GHQ_ROOT
     # (/Volumes/workspace) へ ghq レイアウトで一括 SSH clone。clone 済みは
@@ -143,12 +159,14 @@ in
     # 新 Mac ブートストラップ (install.sh §6.5) で実行。fork・private は含み
     # archived は除外。前提 = gh 認証 (or GITHUB_TOKEN) + GitHub への SSH 疎通。
     # 未整備なら 1 行 warn で fail-fast(SSH の 1Password 整備は projects t-eep4)。
-    (writeShellScriptBin "ghq-get-mine" ''
-      set -eu
-      # pipefail はグローバルには効かせない: 前段の `ssh -T | grep` は ssh -T が
-      # 正常時でも exit 1(GitHub does not provide shell access)を返し、grep 一致
-      # での成功判定が pipefail だと ssh の非 0 に潰される。終端 fetch のみ変数捕捉で
-      # 守る(下記)。
+    # pipefail はグローバルには効かせない: 前段の `ssh -T | grep` は ssh -T が
+    # 正常時でも exit 1(GitHub does not provide shell access)を返し、grep 一致
+    # での成功判定が pipefail だと ssh の非 0 に潰される。終端 fetch のみ変数捕捉で
+    # 守る(下記)。errexit/nounset は writeShellApplication の既定どおり効かせる。
+    (writeShellApplication {
+      name = "ghq-get-mine";
+      bashOptions = [ "errexit" "nounset" ];
+      text = ''
       if ! ${pkgs.gh}/bin/gh auth status >/dev/null 2>&1; then
         echo "✘ gh 未認証。gh auth login するか GITHUB_TOKEN を設定して再実行" >&2
         exit 1
@@ -183,7 +201,8 @@ in
       ghq_noise='/(\.Spotlight-V100|\.Trashes|\.fseventsd): Permission denied'
       printf '%s\n' "$repos" | ${pkgs.ghq}/bin/ghq get -p -P \
         2> >(grep -vE "$ghq_noise" >&2 || :)
-    '')
+      '';
+    })
 
     # link-claude-memory: ~/.claude/projects/<slug>/memory（全 slug）を ghq clone した
     # claude-memory repo の projects/<slug>/ への symlink にする（clone が単一ソース・
@@ -194,8 +213,10 @@ in
     # 二度と再実行しない = 新 Mac では構造的に link されなかった（t-8qqz）。
     # clone の後(install.sh --phase2 / 手動)に呼ぶ冪等コマンド。新プロジェクトで memory が
     # 生えたら再実行すれば clone へ移送して link する。
-    (writeShellScriptBin "link-claude-memory" ''
-      set -eu
+    # 本文にパイプは無いので、注入される pipefail は挙動を変えない。
+    (writeShellApplication {
+      name = "link-claude-memory";
+      text = ''
       proj="$HOME/.claude/projects"
       clone="$(${pkgs.ghq}/bin/ghq root)/github.com/akira-toriyama/claude-memory"
       if [ ! -d "$clone/.git" ]; then
@@ -244,7 +265,8 @@ in
       done
       [ "$fail" -eq 0 ] && echo "claude-memory link 完了（全 slug）"
       exit "$fail"
-    '')
+      '';
+    })
 
     # furrow: 開発中の source を常に最新ビルドして PATH のどこからでも叩くラッパ。
     # brew/go install のスナップショットは stale 化するので、呼ぶたびに source が
