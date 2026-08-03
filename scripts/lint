@@ -58,9 +58,21 @@ DEFAULT_GROUPS = sorted(set(GROUPS) - OPT_IN_GROUPS)
 
 
 def tracked(*patterns: str) -> list[str]:
-    """git 管理下のファイルを glob で引く（未追跡・生成物を検査対象にしない）。"""
+    """検査対象のファイルを glob で引く。
+
+    追跡済み **＋ まだ add していない新規ファイル**（`--others --exclude-standard`）。
+    gitignore 済みの生成物は入らない。
+
+    `--others` が要るのは CI と対象集合を一致させるため。`git ls-files` だけだと
+    新規ファイルは commit するまでローカルの lint に見えず、CI では（その時点で
+    追跡済みなので）見える —— 「手元は緑・push すると赤」が新規ファイルに限って
+    起きる。この script はまさにその drift を消すために 1 本にまとめたものなので、
+    ここで漏らすと存在理由が薄くなる。実際に踏んだ: 未追跡の
+    docs/scripts-inventory.md が doc-paths を素通りし、PR #312 の CI で初めて落ちた。
+    """
+    args = ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"]
     out = subprocess.run(
-        ["git", "ls-files", "-z", *patterns],
+        [*args, *patterns],
         cwd=ROOT,
         capture_output=True,
         text=True,
