@@ -341,13 +341,13 @@ def main(argv: list[str] | None = None) -> int:
     # 終盤の 1 本が落ちるとそれまでの judge 結果（= API 呼び出し数十回分）が
     # まるごと消えた。逐次書き出しなら中断しても手元に残る。
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    verdicts = []
+    verdicts: list[dict[str, Any]] = []
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
-        for v in ex.map(
+        for verdict in ex.map(
             lambda p: judge_one(p[0][0], p[0][1], p[1], args.model, args.retries),
             pairs,
         ):
-            verdicts.append(v)
+            verdicts.append(verdict)
             args.out.write_text(json.dumps(verdicts, ensure_ascii=False, indent=2))
 
     agg: dict[Any, Any] = defaultdict(lambda: defaultdict(list))

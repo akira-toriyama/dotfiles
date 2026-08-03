@@ -179,7 +179,7 @@ def update_doc(check_only: bool = False) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     # argparse を挟むのは、素の `"--check" in sys.argv` が **未知フラグを黙って
-    # 書き込みモードに落とす**ため。`--dry-run` や `--chek` と打った人は読み取り
+    # 書き込みモードに落とす**ため。`--dry-run` や `--check-only` と打った人は読み取り
     # だけのつもりなのに docs/chord.md が書き換わる。argparse なら未知フラグは
     # usage を出して exit 2 で止まる。
     ap = argparse.ArgumentParser(

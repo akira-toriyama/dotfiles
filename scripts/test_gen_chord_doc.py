@@ -2,7 +2,7 @@
 
 守っているのは 1 点だけ: **未知フラグで書き込みモードに落ちないこと**。
 以前は `check_only=("--check" in sys.argv[1:])` だったので、`--dry-run` や
-`--chek` と打つと「読むだけのつもり」が docs/chord.md の書き換えになった。
+`--check-only` と打つと「読むだけのつもり」が docs/chord.md の書き換えになった。
 生成ロジック本体は verify-chord-doc.yml が `--check` で回している。
 """
 
@@ -38,9 +38,11 @@ class UnknownFlags(unittest.TestCase):
 
     def test_a_near_miss_of_check_does_not_silently_write(self) -> None:
         before = DOC.read_bytes()
-        p = run("--chek")
+        p = run("--check-only")
         self.assertEqual(p.returncode, 2, p.stderr)
-        self.assertEqual(DOC.read_bytes(), before, "doc was modified by a typo")
+        self.assertEqual(
+            DOC.read_bytes(), before, "doc was modified by a near-miss flag"
+        )
 
 
 class CheckMode(unittest.TestCase):
