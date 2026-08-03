@@ -5,6 +5,10 @@
 # timestamps each line with "%F %T", appends to ~/zmk-logs/zmk-YYYY-MM-DD.log
 # (daily rotation via the dated filename), prunes logs older than RETAIN_DAYS.
 # Spec: projects t-6cdr body.
+#
+# set -u only, no errexit: grep の不一致や ioreg の一時失敗といった
+# 正常系の非 0 で落ちてはいけない（docs/scripts-inventory.md の分類 ①）。
+set -u
 
 LOGDIR="$HOME/zmk-logs"
 RETAIN_DAYS=120
