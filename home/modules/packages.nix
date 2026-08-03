@@ -87,15 +87,9 @@ in
     # yq-go (バイナリ名 yq): YAML 版 jq。GitHub Actions workflow 等の YAML を
     # 確実にパース・編集する（Python 版 `yq` ではなく mikefarah の Go 版）。
     yq-go
-    # actionlint: GitHub Actions workflow の静的チェック。push して CI が落ちる前に
-    # ローカルで定義ミスを検出する。
-    actionlint
     # xcbeautify: xcodebuild / swift build ログの整形。Swift repo のビルドエラーを
     # 機械的に拾いやすくする。
     xcbeautify
-    # shellcheck: シェルスクリプトの lint。system/modules/scripts/*.sh 等を
-    # 書いた際の自己検証に使う。
-    shellcheck
     # ast-grep (バイナリ名 ast-grep / sg): 構文木ベースのコード検索・書き換え。
     # テキスト置換 (rg + sed) では危険な一括リファクタを構造的に安全に行う。
     ast-grep
@@ -105,6 +99,24 @@ in
     # until+sleep の手書きループ撲滅（projects t-v1t1）。使い方の正典は
     # ~/.claude/skills/condition-wait/SKILL.md（exec の footgun 3 点もそこに記載）。
     wait4x
+
+    # === lint 基盤（scripts/lint が呼ぶツール群）===
+    # scripts/lint の各ゲートが起動する実体。CI は devShells.lint（flake.lock 固定）から
+    # 供給するので、ここは **開発機で素の `scripts/lint` を叩ける** ための供給源。
+    # 同じ flake.lock 由来なので CI とローカルでバージョンが一致する。
+    # 4 本（shfmt / typos / lychee / gitleaks）は #297 で homebrew.brews に置かれて
+    # いたが、いずれも nixpkgs にある汎用 CLI ＝ 判断フローでは home.packages 側。
+    # brew bundle は 1 つの cask が壊れると bundle 全体を道連れにする（2026-08-02〜の
+    # CI 赤で実際に道連れになった）ので、Nix で足りるものは Nix に置く。
+    # switch 後に brew 版を uninstall すること。
+    shellcheck # shell の lint。system/modules/scripts/*.sh 等の自己検証にも使う
+    shfmt      # shell の formatter（scripts/lint の shfmt ゲート）
+    actionlint # GitHub Actions workflow の静的チェック。push 前にローカルで拾う
+    typos      # 散文・コード中の typo 検出
+    lychee     # リンク切れ検査（PR は --offline、外部 URL は nightly）
+    gitleaks   # commit 済みの秘密検出
+    # ruff / mypy はここに置かない: lint スイートの外で単独に叩く用途が無く、
+    # devShells.lint の供給で足りている（brew にも入っていない）。
 
     # === 再現テスト基盤（roadmap Phase 6: 新 PC install.sh 自動検証）===
     # Tart: Apple Silicon ネイティブの macOS/Linux 仮想化。
