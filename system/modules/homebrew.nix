@@ -25,10 +25,10 @@
     ];
     brews = [
       "sourcekitten"  # Framework and command-line tool for interacting with SourceKit
-      "typos-cli"  # Source code spell checker
-      "shfmt"  # Autoformat shell script source code
-      "lychee"  # Fast, async, resource-friendly link checker
-      "gitleaks"  # Audit git repos for secrets
+      # typos-cli / shfmt / lychee / gitleaks は home/modules/packages.nix へ移した
+      # （#297 で「対話でも使えるように」brew 側に置いたが、4 本とも nixpkgs にある
+      # 汎用 CLI ＝ 判断フローの「nixpkgs にあり & 汎用 CLI → home.packages」に該当。
+      # devShells.lint と同じ flake.lock に載るので CI と版が揃う）。
       # go は mise 管理へ移行（home/modules/mise.nix）。dev runtime は mise に一元化。
       "git-cliff"  # Highly customizable changelog generator
       "gifski"  # Highest-quality GIF encoder based on pngquant
