@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import plistlib
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -38,7 +37,6 @@ GATES: dict[str, str] = {
     "shfmt": "shell",
     "exec-bit": "shell",
     "tmpl-shellcheck": "tmpl",
-    "tmpl-plist": "tmpl",
     "actionlint": "workflow",
     "typos": "docs",
     "lychee": "docs",
@@ -85,7 +83,7 @@ def shell_files() -> list[str]:
     """shebang が sh/bash のファイル。拡張子に頼らない。
 
     `.tmpl` は chezmoi のテンプレ構文が混ざるので raw では検査できない。render して
-    から検査する経路が tmpl グループ（`tmpl-shellcheck` / `tmpl-plist`）。
+    から検査する経路が tmpl グループ（`tmpl-shellcheck`）。
     `modify_settings.json` のように拡張子が嘘をつくものがあるため、ここは必ず
     1 行目を読む。
     """
@@ -107,7 +105,7 @@ def shell_files() -> list[str]:
 # tmpl ゲートが「今日はたまたま 0 件だった」で緑にならないよう、対象が存在すること
 # 自体を scripts/test_lint.py が固定する。ここは suffix → 期待件数の下限ではなく
 # 「この suffix を見る」という宣言だけを持つ。
-TMPL_SUFFIXES = (".sh.tmpl", ".plist.tmpl")
+TMPL_SUFFIXES = (".sh.tmpl",)
 
 
 def tmpl_files(suffix: str) -> list[str]:
@@ -182,13 +180,13 @@ class Runner:
         """`.tmpl` を render してから検査する。
 
         raw の `.tmpl` は chezmoi のテンプレ構文が混ざって parse できないので
-        `shell_files()` から外れており、shellcheck も plist の構文検査も掛かって
-        いなかった（＝守りがゼロで、たまたまクリーンなだけの状態）。
+        `shell_files()` から外れており、shellcheck が掛かっていなかった
+        （＝守りがゼロで、たまたまクリーンなだけの状態）。
 
         shfmt は掛けない。整形結果を書き戻す先が render 後にしか無く、ソースに
         反映できない差分を毎回報告することになるため。
         """
-        sh_gate, plist_gate = "tmpl-shellcheck", "tmpl-plist"
+        sh_gate = "tmpl-shellcheck"
 
         if self.begin(sh_gate):
             bad: list[str] = []
@@ -215,25 +213,6 @@ class Runner:
                     bad.append(rel)
             print(f"  checked {len(targets)} rendered shell template(s)", flush=True)
             self.end(sh_gate, bad, "file(s)")
-
-        if self.begin(plist_gate):
-            bad = []
-            targets = tmpl_files(".plist.tmpl")
-            for rel in targets:
-                ok, out, err = render_tmpl(rel)
-                if not ok:
-                    self.error(rel, f"template render failed: {err.strip()}")
-                    bad.append(rel)
-                    continue
-                # macOS の `plutil -lint` 相当を stdlib で。CI は ubuntu なので
-                # plutil は使えない（= 手元だけ通って CI で空振り、を避ける）。
-                try:
-                    plistlib.loads(out.encode())
-                except Exception as exc:  # noqa: BLE001 — plistlib の例外型は多岐
-                    self.error(rel, f"invalid plist after render: {exc}")
-                    bad.append(rel)
-            print(f"  checked {len(targets)} rendered plist template(s)", flush=True)
-            self.end(plist_gate, bad, "file(s)")
 
     def check_exec_bit(self) -> None:
         """scripts/ 配下の shebang スクリプトが +x か。
@@ -304,9 +283,9 @@ def main(argv: list[str] | None = None) -> int:
         ],
     )
     r.run("ruff-format", ["ruff", "format", "--check", ".", SELF])
-    # azookey-bridge は launchd が /usr/bin/python3 (3.9) で起動するが、mypy は
-    # --python-version 3.9 を受け付けない（"must be 3.10 or higher"）。3.9 互換の
-    # 保証は ruff.toml の per-file-target-version が担う。ここは 3.13 で型だけ見る。
+    # 3.13 を明示する。system python (3.9) で走らせるスクリプトを置く日が来ても
+    # mypy 側は追随できない —— --python-version 3.9 を拒否する（"must be 3.10 or
+    # higher"）ので、その下限を見張るのは ruff.toml の per-file-target-version。
     r.run("mypy", ["mypy", "--strict", "--python-version", "3.13", *py])
 
     # --- shell ---

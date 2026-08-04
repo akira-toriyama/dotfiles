@@ -143,15 +143,6 @@ class TestTemplateDiscovery(unittest.TestCase):
     def test_shell_templates_are_found(self) -> None:
         found = lint.tmpl_files(".sh.tmpl")
         self.assertIn("chezmoi/run_onchange_after_chord-validate.sh.tmpl", found)
-        self.assertIn("chezmoi/run_onchange_after_azookey-bridge.sh.tmpl", found)
-
-    def test_plist_templates_are_found(self) -> None:
-        found = lint.tmpl_files(".plist.tmpl")
-        self.assertIn(
-            "chezmoi/private_Library/LaunchAgents/"
-            "com.akira-toriyama.azookey-bridge.plist.tmpl",
-            found,
-        )
 
     def test_every_declared_suffix_has_at_least_one_target(self) -> None:
         for suffix in lint.TMPL_SUFFIXES:
