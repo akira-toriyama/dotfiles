@@ -10,20 +10,35 @@ description: Use when verifying macOS app GUI behavior end-to-end — dump an ap
 ## ホストを乱したくない時は capsule（Tart VM の検証ラボ）
 
 ホスト直の GUI 自動化は focus/Space を奪い、多 display 座標・TCC flakiness で
-非決定的。**ユーザーが作業中のホストを乱せない・クリーンな再現環境が要る時は、
-同じ peekaboo ループを使い捨て Tart VM の中で回す** —— それが
+非決定的。**ユーザーが作業中のホストを乱せない・クリーンな再現環境が要る時は
+capsule で回す** ——
 [capsule](https://github.com/akira-toriyama/capsule)
 （local: `/Volumes/workspace/github.com/akira-toriyama/capsule`、対象 =
 akira-toriyama Swift app family）。
 
-- ループ: `tart clone <base> <ephemeral>` → `tart run --dir=…`（.build /
-  App.app を read-only マウント）→ VM 内で peekaboo + `helpers/click.swift`
-  （middle-click 用）→ `tart delete <ephemeral>`。手順の正典は capsule の
-  README / `verify.sh` / `docs/design.md`。
-- ループ全体で `export TART_NO_AUTO_PRUNE=1` 必須（素の `tart clone`/`pull`
-  は OCI cache を LRU auto-prune し、他 VM を黙って消しうる）。
+- **入口は一発コマンド**（生の tart ループを手組みしない）:
+
+  ```sh
+  cd /Volumes/workspace/github.com/akira-toriyama/capsule
+  make verify PROFILE=<app>   # host build → clone → :ro 共有 → drive → AX assert → 破棄
+  ```
+
+  内訳・設計判断の正典は capsule の README / `docs/design.md`。
+- 調査の 2 変数（知らないと毎回全部やり直しになる）: `CAPSULE_KEEP=1` =
+  clone を残して post-mortem SSH / `CAPSULE_NO_BUILD=1` = 前回の host build を
+  再利用して driver を高速反復。
+- 対象 app の profile が無ければ、profile + driver + fixture の 3 ファイルを
+  書くところから（雛形 = `profiles/wand.toml`、手順 = capsule
+  `docs/design.md` §Adding an app）。
+- base image が無いマシンは先に `make bake`（無人・数分）か、既存イメージの
+  `.tvm` を `make import`。
 - VM は使い捨て前提 — 中身の破壊も VM 削除も OK。ホストへの影響はほぼ無い。
-- 状態は capsule README の Status 節を見てから使う（bring-up 中の部分あり）。
+- capsule の AX tier は peekaboo でなく **`capsule-ax-dump`**（raw AX walk）。
+  SwiftUI (NSHostingView) の subtree は `inspect-ui` だと childless な opaque
+  要素 1 個になる（2026-08-04 facet 実測 — 下の Electron 注意と同族）。
+- 素の `tart` を手で叩く場合だけ `export TART_NO_AUTO_PRUNE=1` 必須
+  （`make verify`/`make bake` は自分で設定する。素の `tart clone`/`pull` は
+  OCI cache を LRU auto-prune し、他 VM を黙って消しうる）。
 
 ## 前提（TCC）
 
@@ -109,6 +124,10 @@ peekaboo press return / peekaboo hotkey cmd,s / peekaboo set-value / peekaboo pe
   「No accessible UI elements found」を返すのに、同じアプリを `see --mode screen` で撮ると
   **517 要素（うち操作可能 400）が取れた**。0 要素は「AX が無い」ではなく
   **`inspect-ui` の経路で見えていないだけ**なので、`see` に切り替えて確かめる。
+- **SwiftUI (NSHostingView) も `inspect-ui` に映らない**（2026-08-04 facet で実測）:
+  subtree 全体が childless の opaque 要素 1 個になる。raw AXUIElement walk なら全階層が
+  見える（`AXOpaqueProviderGroup` 配下に実要素）ので、app 側の AX 欠如と誤診しない。
+  capsule 内なら `capsule-ax-dump`、ホストなら raw walk の薄い Swift CLI が要る。
 
 ## 注意
 
