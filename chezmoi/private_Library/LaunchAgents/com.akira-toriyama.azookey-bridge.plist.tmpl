@@ -9,6 +9,14 @@
 		<string>/usr/bin/python3</string>
 		<string>{{ .chezmoi.homeDir }}/.local/share/azookey-bridge/azookey-bridge.py</string>
 	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<!-- 既定エンジン claude の実体は ~/.local/bin/claude。launchd が渡す
+		     既定 PATH (/usr/bin:/bin:/usr/sbin:/sbin) では見えず、Ctrl+S が
+		     毎回 500 になるため明示する。 -->
+		<key>PATH</key>
+		<string>{{ .chezmoi.homeDir }}/.local/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>KeepAlive</key>

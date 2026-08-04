@@ -8,19 +8,30 @@ JSON 文字列 {"predictions": ["…", …]} しか読まない (OpenAIClient.pa
 ローカル推論エンジンへ渡し、azooKey の期待形で返す。
 
 エンジン (BRIDGE_ENGINE 環境変数):
-- "fm" (既定): 同ディレクトリの fm-predict バイナリ = FoundationModels
-  オンデバイスモデル。~1 秒/回。Apple Intelligence 有効が前提。
-- "claude": claude -p (haiku)。warm でも ~5 秒/回のため不採用だが、
-  FM 不調時の比較用に残す。
+- "claude" (既定): claude -p (haiku)。1 回 4.6-9.7 秒 (中央値 7.3、8 サンプル)。
+- "fm": 同ディレクトリの fm-predict バイナリ = FoundationModels オンデバイス
+  モデル。~1 秒/回と速いが、下記のとおり品質が実用に達しない。比較用。
+
+既定を fm から claude へ移した理由 (2026-08-03 実測、azooKeyMac バイナリから
+復元した実 stock プロンプトで A/B):
+
+- 8 ケース中、claude は 8 正解 / fm は 1-2 正解。fm が当たるのは入力が stock の
+  few-shot 例と字面一致した時だけで、「明日の会議を<えんき>」は天気の候補を、
+  「また明日<えいご>」「よろしくお願いします<ちゅうごくご>」は言語名を無視した
+  日本語を返す。「ありがとう<えいご>」は 3/3 でスペイン語 (stock 最終例の丸写し)。
+- 例文の模倣を断つプロンプトを 2 種書いて fm に投げると 0/5 まで悪化する
+  (<ふらんすご> すら日本語になる)。つまり例文の丸写しが唯一の正解経路で、
+  オンデバイス FM はこのタスク自体を実行できていない。
+- 速度で fm を選んでいた元の判断 (#246) は、品質を測る前のものだった。
 
 これは upstream 修正 (azooKey-Desktop のプロンプト改善、projects t-22se) が
-リリースされるまでのつなぎ。恒久対応後は backend を Foundation Models に
-戻してこのブリッジごと退役させる。設計と検証ログは projects t-85fn。
+リリースされるまでのつなぎ。設計と検証ログは projects t-85fn。
 """
 
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -28,7 +39,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOST = "127.0.0.1"
 PORT = 8787
-ENGINE = os.environ.get("BRIDGE_ENGINE", "fm")
+ENGINE = os.environ.get("BRIDGE_ENGINE", "claude")
 FM_PREDICT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fm-predict")
 CLAUDE_MODEL = "haiku"
 
@@ -100,8 +111,18 @@ def run_engine(prompt: str) -> list[str]:
     if ENGINE == "fm":
         cmd, timeout = [FM_PREDICT], 15
     else:
+        # launchd の既定 PATH (/usr/bin:/bin:/usr/sbin:/sbin) には claude が
+        # 無い (実体は ~/.local/bin)。PATH は plist の EnvironmentVariables が
+        # 与えるが、欠けたときに FileNotFoundError で終わると原因が読めないので
+        # ここで名指しにする。
+        claude = shutil.which("claude")
+        if claude is None:
+            raise RuntimeError(
+                "claude not found in PATH="
+                f"{os.environ.get('PATH', '')!r} — see the LaunchAgent plist"
+            )
         cmd = [
-            "claude",
+            claude,
             "-p",
             "--model",
             CLAUDE_MODEL,
