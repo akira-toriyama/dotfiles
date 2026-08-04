@@ -22,8 +22,8 @@
 常駐が死ぬ。`nounset` は変数名の打ち間違いを拾うだけなので入れる。
 
 該当: `executable_git-stale-check` / `executable_claude-quota-note` /
-`executable_claude-work-report-check` / `executable_zmk-log-capture.sh` /
-`modify_settings.json`。
+`executable_claude-projects-lint-note` / `executable_claude-work-report-check` /
+`executable_zmk-log-capture.sh` / `modify_settings.json`。
 
 `modify_settings.json` はこの分類の極端な例で、失敗時は **stdin を素通しして exit 0**
 する（壊れた settings.json を書くより、何もしない方が安い）。
@@ -58,22 +58,23 @@
 
 ## 機構に守られていない場所（2026-08-03 時点）
 
-全 shell 18 本は `scripts/lint` の `shellcheck` / `shfmt` ゲートを通っている
+全 shell 19 本は `scripts/lint` の `shellcheck` / `shfmt` ゲートを通っている
 （対象集合の正本は `scripts/lint` の `shell_files()`。ここに写しは置かない —— 写すと必ずずれる）。
 
-**テストがあるのは 5 本だけ**:
+**テストがあるのは 6 本だけ**:
 
 | script | テスト |
 |---|---|
 | `executable_git-stale-check` | `scripts/test_git_stale_check.py` |
 | `executable_claude-work-report-check` | `scripts/claude-work-report-check-test.sh` |
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
+| `executable_claude-projects-lint-note` | `scripts/test_claude_projects_lint_note.py` |
 | `modify_settings.json` | `scripts/test_modify_settings.py` |
 | `scripts/lint` 自身 | `scripts/test_lint.py` |
 
 残る 13 本にテストは無い。これは欠陥リストではなく**優先順位を付けるための一覧**で、
 実際に足す基準は CLAUDE.md の「機構化は既に踏んだ失敗の再発防止だけ」に従う。
-上の 5 本はいずれもその基準を満たして足したもの（hook が無言で死ぬと気づけない、
+上の 6 本はいずれもその基準を満たして足したもの（hook が無言で死ぬと気づけない、
 permission allowlist を失う、等）。
 
 テスト無し: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /

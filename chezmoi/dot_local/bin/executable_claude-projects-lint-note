@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# claude-projects-lint-note — Claude Code SessionStart hook: put the projects
+# board lint report into the opening context.
+#
+# WHY: the board's convention lint (projects scripts/projects-lint.sh —
+# reserved boxes, pinned quota, requests awaiting triage) fires on pre-push
+# and post-merge, i.e. only inside the projects checkout. Sessions that start
+# in a code repo would never see "requests は triage 待ち" — this hook is the
+# one surface that reaches every session (same reasoning as claude-quota-note).
+#
+# Output: the lint report verbatim (errors + warnings + summary), or nothing
+# when the board is clean. Fail-open: no furrow config / no checkout / lint
+# unavailable → print nothing, exit 0 (breaking session start is never worth
+# a triage reminder — same asymmetry as modify_settings.json).
+#
+# The projects checkout is derived from furrow's board config (path = ".../
+# .furrow"), overridable for tests via FURROW_CONFIG.
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-projects-lint-note). Wired
+# from ~/.claude/settings.json hooks.SessionStart by modify_settings.json
+# (step 7). Tests: scripts/test_claude_projects_lint_note.py (unittest, CI).
+set -u
+
+cfg="${FURROW_CONFIG:-$HOME/.config/furrow/config.toml}"
+[ -r "$cfg" ] || exit 0
+
+board=$(sed -n 's/^path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg" | head -1)
+[ -n "$board" ] || exit 0
+repo=${board%/.furrow}
+[ -f "$repo/scripts/projects-lint.sh" ] || exit 0
+
+# projects-lint exits 2 on errors — that is a report to surface, not a hook
+# failure. Anything it printed goes to the opening context; we always exit 0.
+out=$(cd "$repo" && sh scripts/projects-lint.sh 2>/dev/null) || true
+[ -n "$out" ] && printf '%s\n' "$out"
+exit 0

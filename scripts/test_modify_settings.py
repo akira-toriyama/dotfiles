@@ -32,6 +32,7 @@ SCRIPT = ROOT / "chezmoi" / "private_dot_claude" / "modify_settings.json"
 STALE_CHECK = "$HOME/.local/bin/git-stale-check"
 WORK_REPORT = "$HOME/.local/bin/claude-work-report-check"
 QUOTA_NOTE = "$HOME/.local/bin/claude-quota-note"
+PJLINT_NOTE = "$HOME/.local/bin/claude-projects-lint-note"
 
 
 def jq_only_path() -> str:
@@ -114,6 +115,7 @@ class Seeds(unittest.TestCase):
         got = json.loads(run("{}").stdout)
         self.assertIn(STALE_CHECK, commands(got, "SessionStart"))
         self.assertIn(QUOTA_NOTE, commands(got, "SessionStart"))
+        self.assertIn(PJLINT_NOTE, commands(got, "SessionStart"))
         self.assertIn(WORK_REPORT, commands(got, "Stop"))
 
     def test_home_stays_literal(self) -> None:
@@ -152,6 +154,7 @@ class Idempotent(unittest.TestCase):
         got = json.loads(settings)
         self.assertEqual(commands(got, "SessionStart").count(STALE_CHECK), 1)
         self.assertEqual(commands(got, "SessionStart").count(QUOTA_NOTE), 1)
+        self.assertEqual(commands(got, "SessionStart").count(PJLINT_NOTE), 1)
         self.assertEqual(commands(got, "Stop").count(WORK_REPORT), 1)
 
     def test_allow_entries_are_not_duplicated(self) -> None:

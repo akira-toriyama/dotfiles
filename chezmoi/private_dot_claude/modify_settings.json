@@ -2,7 +2,7 @@
 # chezmoi modify_ script for ~/.claude/settings.json.
 #
 # chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
-# file. We ensure exactly SIX things and pass everything else (the permissions
+# file. We ensure exactly SEVEN things and pass everything else (the permissions
 # the user accumulates interactively, plugins, env, other hooks) through
 # untouched:
 #   1. a SessionStart hook that runs git-stale-check (so an agent sees a
@@ -66,6 +66,12 @@
 #      model-routing invariant Fable% ≥ Weekly% (global CLAUDE.md
 #      「モデル運用」) is judged from visible data instead of a remembered
 #      file read. Fail-open like the others; see its header.
+#   7. a SessionStart hook that runs claude-projects-lint-note — puts the
+#      projects board's convention-lint report (reserved boxes, pinned quota,
+#      requests awaiting triage — projects docs/reserved-epics.md) into the
+#      opening context. The lint's other firing points (pre-push, post-merge)
+#      only reach sessions inside the projects checkout; this is the surface
+#      that reaches sessions starting in any repo. Fail-open; see its header.
 #
 # Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
@@ -83,6 +89,8 @@ cmd='$HOME/.local/bin/git-stale-check'
 cmd_stop='$HOME/.local/bin/claude-work-report-check'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_quota='$HOME/.local/bin/claude-quota-note'
+# shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
+cmd_pjlint='$HOME/.local/bin/claude-projects-lint-note'
 
 input=$(cat)
 [ -n "$input" ] || input='{}'
@@ -92,10 +100,11 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
   def stop_hook_present: [ (.hooks.Stop // [])[]?.hooks[]?.command ] | any(. == $stop);
   def quota_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $quota);
+  def pjlint_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $pjlint);
 
   ( if hook_present then .
     else
@@ -114,6 +123,12 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
           (.hooks //= {})
         | (.hooks.SessionStart //= [])
         | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $quota } ] } ])
+      end )
+  | ( if pjlint_hook_present then .
+      else
+          (.hooks //= {})
+        | (.hooks.SessionStart //= [])
+        | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $pjlint } ] } ])
       end )
   | (.permissions //= {})
   | (.permissions.allow //= [])
