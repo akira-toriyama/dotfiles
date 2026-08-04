@@ -73,6 +73,9 @@
   next は active epic の member + epic 未所属に絞られる（active が無ければ意図的に空）。
   **active epic の切り替えは申請制 — 勝手に `furrow epic activate` しない**。
   質問・状況共有・相談への返答を作業開始の合図と読まない。
+- 予約箱 epic が各 repo に常設: `mandate`=人間指示 / `parking-lot`=ゴール外の受け皿 /
+  `requests`=**別 repo への要望はここへ**。正本 = projects の docs/reserved-epics.md
+  （機械検査 = projects lint。SessionStart hook・pre-push・日次 CI が表示）。
 - code repo の PR 本文に footer を 1 行:
   `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`
 

@@ -36,6 +36,7 @@
 | projects checkout では明示 `-r projects`（Workflow 節・正典に無い） | 明示する | — | `furrow doctor` が `scope-shadowed` を info 報告するだけで止めない | 📖 |
 | 指示なし時は `furrow brief` の先頭から着手／状況共有を GO と読まない／active epic の切り替えは申請制（Workflow 節） | 既定挙動として従う。勝手に `furrow epic activate` しない | 作業開始の GO・epic 切り替えの裁定 | furrow が next/brief を active epic に scope（epic-multi-active は lint error）。申請制そのものは散文 | 🟡 scope は機構・申請制は 📖 |
 | PR footer `SetStatus-task:`（Workflow 節） | footer を書く | — | [task-status.yml](../.github/workflows/task-status.yml) が lane 自動適用。書き忘れても落ちない | 🟡 |
+| 予約箱 epic（mandate / parking-lot / requests）— 別 repo への要望は requests へ（Workflow 節・正本 = projects docs/reserved-epics.md） | 要望を requests 箱へ起票 | triage の裁定 | projects lint（box 不変条件 = pre-push error block・warn は SessionStart hook [claude-projects-lint-note](../chezmoi/dot_local/bin/executable_claude-projects-lint-note) と日次 CI が表示）+ `reserved-epics.sh` が箱を常備 | 🟡 箱と表示は機構・起票先の選択は 📖 |
 | 品質>速度・一貫性・破壊的変更 OK（開発ポリシー節） | 判断規範として適用 | 好み・リスク受容の裁定 | — | 🙅 |
 | 「できた」は実測とセット（開発ポリシー節） | 実測／未確認を分けて報告 | — | なし | 📖 |
 | 未検証の観測を書かない・反証 1 周（開発ポリシー節） | 反証エージェントを回す。body に出所と検証状態 | — | なし | 📖 |
