@@ -1,21 +1,27 @@
 ---
 name: macos-gui-verify
-description: Use when verifying macOS app GUI behavior end-to-end — dump an app's accessibility (AX) tree as JSON, query elements, and click/type/press via the peekaboo CLI. For "did my UI change actually work" checks on Swift/AppKit/SwiftUI apps.
+description: Use when verifying macOS app GUI behavior end-to-end — for akira-toriyama Swift family apps the DEFAULT route is capsule's `make verify PROFILE=<app>` (Tart VM lab, all family apps racked); host-direct peekaboo (AX tree JSON + click/type/press) is for non-family apps or one-off pokes. For "did my UI change actually work" checks on Swift/AppKit/SwiftUI apps.
 ---
 
-# macOS GUI 検証は peekaboo（AX ツリー JSON + UI 操作）
+# macOS GUI 検証 — family app は capsule が既定、ホスト直は peekaboo
 
 > 出典: エージェント向け CLI 調査（2026-07-03。採用 task = projects t-c0s2・done）。peekaboo = openclaw/Peekaboo（MIT）、homebrew.nix で宣言済み（`steipete/tap/peekaboo`）。
 
-## ホストを乱したくない時は capsule（Tart VM の検証ラボ）
+## family app の GUI 検証は capsule が既定（Tart VM の検証ラボ）
 
 ホスト直の GUI 自動化は focus/Space を奪い、多 display 座標・TCC flakiness で
-非決定的。**ユーザーが作業中のホストを乱せない・クリーンな再現環境が要る時は
-capsule で回す** ——
+非決定的。**akira-toriyama Swift app family の「UI 変更が効いたか」検証は
+capsule を既定経路にする** — ホスト直 peekaboo（下のループ）を使うのは
+family 外の app か、その場限りの手元 1 回だけの確認に限る。
 [capsule](https://github.com/akira-toriyama/capsule)
-（local: `/Volumes/workspace/github.com/akira-toriyama/capsule`、対象 =
-akira-toriyama Swift app family）。
+（local: `/Volumes/workspace/github.com/akira-toriyama/capsule`）。
 
+- **rack は完成済み（2026-08-04 実測）**: wand / facet / sill-prism / chord /
+  halo / perch の 6 profile 全てが `make verify` PASS 済み。「profile がまだ無い
+  から手で」は family には成立しない。gate は app の形で決まる —— SwiftUI・
+  AppKit controls = AX label / custom 描画 + 実 NSWindow = AX geometry /
+  AX reader app = 自前 reader を gate に / headless daemon = control channel +
+  log（正典 = capsule `docs/design.md` §The gate taxonomy）。
 - **入口は一発コマンド**（生の tart ループを手組みしない）:
 
   ```sh
