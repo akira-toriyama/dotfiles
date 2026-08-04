@@ -427,30 +427,25 @@ ghq-get-mine
 - 実体: [home/modules/packages.nix](../home/modules/packages.nix) の
   `writeShellScriptBin`
 
-### 5.13 azooKey いい感じ変換ブリッジ（azookey-bridge）
+### 5.13 azooKey いい感じ変換ブリッジ（azookey-bridge）— 退役済み（2026-08-04）
 
-azooKey の「いい感じ変換」（変換中 Ctrl+S）を **Foundation Models
-（Apple Intelligence のオンデバイスモデル、~1 秒/回）** で動かすローカルブリッジ。
-azooKey の「OpenAI API」backend の endpoint を `127.0.0.1:8787` に向け、
-プロンプトを日本語安定化に書き換えてから FM に渡す
-（stock プロンプトは英語指示のみ + 例文支配で、裸の `<ありがとう>` が
-スペイン語化する。指示追加でなく**対例の追加**で直している）。
+azooKey の「いい感じ変換」（変換中 Ctrl+S）をローカルブリッジ（`127.0.0.1:8787`
+常駐 + azooKey の「OpenAI API」backend の endpoint 差し替え）で動かしていたが、
+**ブリッジ・LaunchAgent・defaults 宣言ごと撤去した**。いい感じ変換は azooKey の
+既定（Off）に戻してある。
 
-- 実体: `~/.local/share/azookey-bridge/`（[chezmoi 管理](../chezmoi/dot_local/share/azookey-bridge/)）
-  - `azookey-bridge.py` — OpenAI 互換 HTTP サーバ（stdlib のみ）
-  - `fm-predict.swift` → `fm-predict` — FoundationModels 呼び出し CLI
-    （[run_onchange_after_azookey-bridge.sh.tmpl](../chezmoi/run_onchange_after_azookey-bridge.sh.tmpl)
-    が swiftc でコンパイル + LaunchAgent を bootstrap）
-- 常駐: LaunchAgent `com.akira-toriyama.azookey-bridge`（KeepAlive）。
-  ログ: `~/Library/Logs/azookey-bridge.log`
-- azooKey 側 defaults（endpoint / aiBackend="OpenAI API"）:
-  [run_onchange_after_configure-azookey.sh](../chezmoi/run_onchange_after_configure-azookey.sh)。
-  API キーは azooKey が空でも送信するので不要
-- 前提: Apple Intelligence 有効（無効だと fm-predict が exit 3 →
-  Ctrl+S にエラーが返る）
-- **位置づけ = つなぎ**: 恒久対応は azooKey-Desktop への upstream プロンプト修正
-  （projects t-22se）。リリース後は backend を Foundation Models に戻し、
-  ブリッジ・LaunchAgent・defaults ごと退役させる。検証ログは projects t-85fn
+作り直したくなった時のために、退役の理由（すべて実機実測）:
+
+- **速度が届かない**。実機の Ctrl+S 1 回で 8.1〜14.9 秒。しかもその下限は
+  推論ではなく `claude` CLI の起動そのもの（`hi` の一言でも 5.3〜6.2 秒）なので、
+  プロンプトを削ってもモデルを替えても縮まない。IME の応答としては使えない。
+- **速い方（オンデバイス FoundationModels、~1 秒）は品質が足りない**。
+  azooKeyMac バイナリから復元した実 stock プロンプト 8 ケースで正解 1〜2。
+  当たるのは入力が stock の few-shot 例と字面一致した時だけで、
+  `明日の会議を<えんき>` は天気の候補を、`ありがとう<えいご>` は 3/3 で
+  スペイン語を返した。例文の模倣を断つプロンプトを 2 種試すと 0/5 に悪化する。
+- つまり**速い経路と正しい経路が両立しない**。恒久対応は azooKey-Desktop への
+  upstream プロンプト修正（projects t-22se）。検証ログは projects t-85fn。
 
 </details>
 

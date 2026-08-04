@@ -334,15 +334,6 @@ dotfiles が **config だけを持つ**自作 macOS アプリ 3 本（アプリ�
 - **Don't call it:** WM スタック（旧 borders/rift/focusfx は drop 済みで別物）、
   ランチャー、オーバーレイ設定
 
-### `azookey-bridge`
-**azooKey いい感じ変換（変換中 Ctrl+S）を Foundation Models で動かすローカル
-OpenAI 互換ブリッジ**。`~/.local/share/azookey-bridge/`（chezmoi 管理）+
-LaunchAgent `com.akira-toriyama.azookey-bridge`（127.0.0.1:8787 常駐）。
-upstream プロンプト修正（projects t-22se）が出るまでの**つなぎ**。
-- 参照: [`docs/operations.md`](operations.md) §5.13
-- **Don't call it:** claude ブリッジ（初期プロトタイプの名残。既定エンジンは FM）、
-  MagicConversion サーバ
-
 ---
 
 ## 既知の落とし穴の正規語彙

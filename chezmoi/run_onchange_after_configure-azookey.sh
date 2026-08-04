@@ -21,9 +21,14 @@ prefix="${domain}.preference"
 defaults write "$domain" "${prefix}.input_style" -data 22637573746f6d22 || true
 defaults write "$domain" "${prefix}.typeHalfSpace" -bool true || true
 
-# いい感じ変換 (MagicConversion): ローカル FM ブリッジ経由 (azookey-bridge、
-# launchd 常駐 127.0.0.1:8787)。upstream プロンプト修正が出るまでのつなぎ。
-# aiBackend = JSON 文字列 "OpenAI API" の Data (0x22... = "OpenAI API")。
-# API キーは Keychain 保存だが azooKey は空でも送信するため設定不要。
-defaults write "$domain" "${prefix}.OpenAiApiEndpoint" "http://127.0.0.1:8787/v1/chat/completions" || true
-defaults write "$domain" "${prefix}.aiBackend" -data 224f70656e41492041504922 || true
+# いい感じ変換 (MagicConversion) は azooKey の既定 (Off) のままにする。
+# ローカルブリッジ経由で動かす試みは 2026-08-04 に退役させた —— Ctrl+S 1 回に
+# 8.1-14.9 秒かかり (実機実測)、その下限は claude CLI の起動そのもの
+# (一言のプロンプトでも 5.3-6.2 秒) なので、プロンプトでもモデルでも縮まない。
+# オンデバイスの FoundationModels は速いが 8 ケース中 1-2 正解で代替にならない。
+# 経緯と実測は projects t-85fn、上流のプロンプト修正案は t-22se。
+#
+# 下の delete は、ブリッジを宣言していた時期のキーが残っているマシンを
+# 既定へ戻すため。キーが無ければ非 0 で返るだけなので毎回走ってよい。
+defaults delete "$domain" "${prefix}.OpenAiApiEndpoint" 2>/dev/null || true
+defaults delete "$domain" "${prefix}.aiBackend" 2>/dev/null || true

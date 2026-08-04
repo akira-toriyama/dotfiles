@@ -3,15 +3,12 @@ target-version = "py313"
 
 exclude = [".git", "result", "result-*"]
 
-# launchd 常駐の azookey-bridge だけは `/usr/bin/python3`（system 3.9）で起動される
-# （LaunchAgents の plist がフルパス指定）。mise の 3.13 には依存させられないので、
-# このファイルだけ下限を 3.9 に落として version 固有ルールを効かせる。
-#
-# ⚠ mypy はこの下限を守れない —— `--python-version 3.9` を拒否する
-#   （実測 2026-07-27, mypy 2.1.0: "Python 3.9 is not supported (must be 3.10 or higher)"）。
-#   つまり **3.9 互換の保証はこの 1 行が唯一の守り**。消すと誰も見なくなる。
-[per-file-target-version]
-"chezmoi/dot_local/share/azookey-bridge/executable_azookey-bridge.py" = "py39"
+# `[per-file-target-version]` は今は空でよい。唯一の住人だった azookey-bridge
+# （launchd が `/usr/bin/python3` = system 3.9 で起動していた）を退役させたので、
+# repo の Python は全部 mise の 3.13 で走る。system python で動かすスクリプトを
+# また置くときは、そのファイルを py39 に落とす行をここへ戻すこと —— mypy は
+# `--python-version 3.9` を拒否する（実測 2026-07-27, mypy 2.1.0）ため、
+# 3.9 互換を見張れるのは ruff のこの設定だけになる。
 
 [lint]
 # 既定（E4/E7/E9 + F）から、1 グループずつ赤の増分を測って広げた結果がこれ。

@@ -81,7 +81,6 @@ ALLOW: dict[str, str] = {
     "~/.config/furrow/config.toml": "home-manager が生成（global 既定ボード）",
     "~/Library/Fonts": "OS のディレクトリ。cask 版フォントの配置先",
     "~/Library/Application Support": "OS のディレクトリ",
-    "~/Library/Logs/azookey-bridge.log": "azookey-bridge が実行時に書く",
     "~/.dotfiles-install/latest": "install.sh が実行時に作る symlink",
     "~/.claude/commands": (
         "未作成。作る前提で convention-command-prefix job が待っている"
