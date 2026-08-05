@@ -20,10 +20,16 @@
     # ため、それ専用のカスタム tap（felixkratz/formulae・barutsrb/tap）も不要になり
     # 削除した。残りの brew は WM と無関係なユーティリティのみ。
     taps = [
+      "hashicorp/tap"  # packer 等のカスタム tap
       # steipete/tap: peekaboo（openclaw/Peekaboo の公式配布 tap）用
       "steipete/tap"
     ];
     brews = [
+      "typos-cli"  # Source code spell checker
+      "shfmt"  # Autoformat shell script source code
+      "lychee"  # Fast, async, resource-friendly link checker
+      "hashicorp/tap/packer"  # Packer
+      "gitleaks"  # Audit git repos for secrets
       "sourcekitten"  # Framework and command-line tool for interacting with SourceKit
       # typos-cli / shfmt / lychee / gitleaks は home/modules/packages.nix へ移した
       # （#297 で「対話でも使えるように」brew 側に置いたが、4 本とも nixpkgs にある
@@ -40,6 +46,7 @@
     ];
 
     casks = [
+      "docker-desktop"  # App to build and share containerised applications and microservices
       # Claude Code CLI は cask/mise/nix いずれも自己更新が効かず版が遅れるため、
       # 公式 native installer 経由に一本化（chezmoi/run_onchange_after_install-claude-code.sh。
       # ~/.local/bin/claude が起動時/定期に自己更新して最新へ張り付く）。
