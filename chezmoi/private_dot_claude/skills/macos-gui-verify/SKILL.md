@@ -46,6 +46,25 @@ family 外の app か、その場限りの手元 1 回だけの確認に限る�
   （`make verify`/`make bake` は自分で設定する。素の `tart clone`/`pull` は
   OCI cache を LRU auto-prune し、他 VM を黙って消しうる）。
 
+## VM への合成キーボードは VNC 経由（2026-08-10/11 実測・facet #448 受け入れ）
+
+SSH 経由の合成キー CGEvent は VM 内 app に**届かない**（マウス系は届く — 非対称）。
+キーが要る検証は `tart run --vnc-experimental` + vncdotool で回す。
+
+- 起動: `TART_NO_AUTO_PRUNE=1 tart run <vm> --no-graphics --vnc-experimental`。
+  **stdout をパイプで加工しない**（`| head` は vnc:// URL とパスワードを飲み込む —
+  実績あり）。URL は生出力から読む。パスワードは run ごとに変わる。
+- **全 vncdo 呼び出しに `--timeout <sec>` 必須**（PreToolUse hook `claude-vncdo-guard`
+  が欠落を deny）。timeout 無しの hang で一晩溶かした実績が起点。
+- **keysym は小文字**（`key down` / `key enter` / `key space`）。大文字 `key Down` は
+  tart の VNC サーバ相手に無限 hang する（実測）。これも hook が deny。
+- **1 呼び出し 1 操作**に分割する。数珠つなぎの Bash が tool timeout を超えて
+  background 化 → 迷子になった実績。各操作の後に capture で即検証。
+- サーバは実質シングルクライアント: hang したクライアントが居座ると後続が全部
+  詰まる。詰まったら `pkill -f "vncdo -s"` してから撮り直す。
+- capture はフレームバッファ直取りで TCC 不要。ホイールは SSH 経由 `peekaboo scroll`
+  でも可。座標系は VM のフレームバッファ実寸（Retina 2x）。
+
 ## 前提（TCC）
 
 - Accessibility + Screen Recording の許可は **CLI 本体でなくホストアプリ（Terminal / IDE）に付与**する（TCC の responsible-code）。ローカルで再ビルドしたバイナリでも同じホストから動く限り再付与不要。

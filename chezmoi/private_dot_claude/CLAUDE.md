@@ -113,6 +113,7 @@
 - 同じコマンドの再実行差分 → `rundiff`（主要 test runner は PreToolUse hook が自動 wrap）
 - findings の PR レビュー投稿 → `revpost`（`--dry-run` あり）
 - 条件待ち → condition-wait skill（wait4x）/ macOS GUI 検証 → macos-gui-verify skill（peekaboo）
+- **外部待ちは deadline 必須**・停滞は即報告・状態質問は実測後に答える
 - **自作 CLI・アプリは source で使う**: CLI は dotfiles `packages.nix` の source-build
   wrapper、GUI アプリは Xcode ビルド。`brew install` しない（brew が wrapper を shadow する）。
 
