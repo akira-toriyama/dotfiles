@@ -12,6 +12,10 @@
    触る（PR #274 が同一 PR 更新を落とした実績）。escape は commit footer
    `Ledger-unchanged: <理由>`。origin/main が引けない環境では skip
    （lint job は fetch-depth: 0 なので CI では常に引ける）。
+4. glossary 同期 — CLAUDE.md か skills/ に触る変更は docs/glossary.md も
+   同一 PR で触る（#274 と同じ日に PR #273 が glossary 追従を落とした実績 —
+   台帳と対の散文ルールで、台帳側だけ機構化されて glossary 側が残っていた）。
+   escape は commit footer `Glossary-unchanged: <理由>`。skip 条件は 3 と同じ。
 """
 
 from __future__ import annotations
@@ -25,6 +29,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CLAUDE_MD = "chezmoi/private_dot_claude/CLAUDE.md"
 LEDGER = "docs/claude-md-ledger.md"
+GLOSSARY = "docs/glossary.md"
+SKILLS_DIR = "chezmoi/private_dot_claude/skills/"
 SETTINGS = "chezmoi/private_dot_claude/modify_settings.json"
 
 # 2026-07-28 の 0 ベース着地 10,180 bytes + 約 13% の余裕。上げる時は「何を足す
@@ -35,6 +41,7 @@ SIZE_LIMIT_BYTES = 11_500
 MODEL_ID_RE = re.compile(r"claude-(?:opus|sonnet|haiku|fable)-[0-9][0-9a-z-]*")
 
 LEDGER_ESCAPE_RE = re.compile(r"^Ledger-unchanged:", re.MULTILINE)
+GLOSSARY_ESCAPE_RE = re.compile(r"^Glossary-unchanged:", re.MULTILINE)
 
 
 def check_size(errors: list[str]) -> None:
@@ -93,6 +100,35 @@ def check_ledger_sync(errors: list[str]) -> str | None:
     return None
 
 
+def touches_glossary_sources(changed: list[str]) -> bool:
+    """glossary 追従義務のある source に触れているか（CLAUDE.md か skills/）。"""
+    return CLAUDE_MD in changed or any(p.startswith(SKILLS_DIR) for p in changed)
+
+
+def check_glossary_sync(errors: list[str]) -> str | None:
+    """CLAUDE.md / skills に触る変更（commit 済み + 作業樹）は glossary も触ること。
+
+    台帳同期（check_ledger_sync）と対のルール。#274 が台帳を落としたのと同じ日に
+    #273 が glossary を落としており、台帳側だけ機構化されて glossary 側が散文の
+    ままだった。skip 契約は台帳側と同一。
+    """
+    base = git_lines("merge-base", "origin/main", "HEAD")
+    if base is None:
+        return "origin/main が引けないため glossary 同期チェックを skip"
+    changed = git_lines("diff", "--name-only", base[0])
+    if changed is None:
+        return "git diff が失敗したため glossary 同期チェックを skip"
+    if touches_glossary_sources(changed) and GLOSSARY not in changed:
+        msgs = git_lines("log", "--format=%B", f"{base[0]}..HEAD") or []
+        if not GLOSSARY_ESCAPE_RE.search("\n".join(msgs)):
+            errors.append(
+                f"CLAUDE.md / skills に触る変更が {GLOSSARY} を更新していない — "
+                "同一 PR で glossary の該当語を追従させるか、footer "
+                "`Glossary-unchanged: <理由>` を commit に書く"
+            )
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--ci", action="store_true", help="GitHub annotations で出力")
@@ -101,9 +137,9 @@ def main() -> int:
     errors: list[str] = []
     check_size(errors)
     check_model_pin(errors)
-    skipped = check_ledger_sync(errors)
-    if skipped:
-        print(f"  note: {skipped}")
+    for skipped in (check_ledger_sync(errors), check_glossary_sync(errors)):
+        if skipped:
+            print(f"  note: {skipped}")
 
     for e in errors:
         print(f"::error ::{e}" if args.ci else f"  {e}")

@@ -60,7 +60,7 @@
 
 ### この台帳自身の機構（2026-07-28〜）
 
-- **CLAUDE.md サイズ上限（11,500 bytes）・具体 model ID pin 禁止・台帳同期（CLAUDE.md に触る PR は台帳も触る。escape = commit footer `Ledger-unchanged: <理由>`）** は lint ゲート claude-md-guard（[scripts/claude_md_guard.py](../scripts/claude_md_guard.py)・CI の `lint` job で毎 PR 実行）が強制する 🔒。どれも既に踏んだ失敗（21 倍肥大・pin ずれ・PR #274 の台帳更新漏れ）の再発防止で rule of two 適合。
+- **CLAUDE.md サイズ上限（11,500 bytes）・具体 model ID pin 禁止・台帳同期（CLAUDE.md に触る PR は台帳も触る。escape = commit footer `Ledger-unchanged: <理由>`）・glossary 同期（CLAUDE.md か skills/ に触る PR は docs/glossary.md も触る。escape = commit footer `Glossary-unchanged: <理由>`）** は lint ゲート claude-md-guard（[scripts/claude_md_guard.py](../scripts/claude_md_guard.py)・CI の `lint` job で毎 PR 実行）が強制する 🔒。どれも既に踏んだ失敗（21 倍肥大・pin ずれ・PR #274 の台帳更新漏れ・同日の PR #273 の glossary 追従漏れ）の再発防止で rule of two 適合。
 
 ## 削除記録（0 ベース再構成 2026-07-28・旧版 = `92e19cc`）
 

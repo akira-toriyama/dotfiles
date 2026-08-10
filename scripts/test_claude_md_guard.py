@@ -37,6 +37,36 @@ class LedgerEscape(unittest.TestCase):
         )
 
 
+class GlossaryEscape(unittest.TestCase):
+    def test_footer_matches_at_line_start_only(self) -> None:
+        self.assertIsNotNone(
+            guard.GLOSSARY_ESCAPE_RE.search("subject\n\nGlossary-unchanged: typo only")
+        )
+        self.assertIsNone(
+            guard.GLOSSARY_ESCAPE_RE.search("mentions Glossary-unchanged: mid-line")
+        )
+
+
+class GlossarySources(unittest.TestCase):
+    def test_claude_md_and_skills_trigger(self) -> None:
+        self.assertTrue(guard.touches_glossary_sources([guard.CLAUDE_MD]))
+        self.assertTrue(
+            guard.touches_glossary_sources(
+                ["chezmoi/private_dot_claude/skills/go-dev/SKILL.md"]
+            )
+        )
+
+    def test_everything_else_does_not(self) -> None:
+        for changed in (
+            [],
+            ["scripts/claude_md_guard.py"],
+            ["docs/glossary.md"],
+            # prefix であって substring ではない — skills の文字列を含む無関係パス
+            ["docs/skills-note.md"],
+        ):
+            self.assertFalse(guard.touches_glossary_sources(changed), changed)
+
+
 class SizeCheck(unittest.TestCase):
     def test_current_file_is_within_limit(self) -> None:
         # ゲートの本丸: いま管理下にある CLAUDE.md が上限内であること。
