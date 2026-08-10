@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# claude-vncdo-guard — PreToolUse guard for vncdo (VNC automation) Bash calls.
+#
+# Refuses a `vncdo` invocation that carries NO explicit deadline, and one that
+# sends an UPPERCASE keysym. Both rules encode one measured incident, not
+# theory (2026-08-11, sill session, facet #448 GUI acceptance in a Tart VM):
+#
+#   - `vncdo ... key Down` (uppercase keysym) hung forever against tart's
+#     experimental VNC server. The same call with `key down` returned in
+#     seconds. Two stuck clients then wedged the single-client server, so
+#     every later call queued behind them.
+#   - none of the calls carried `--timeout`, so the hang had no ceiling: the
+#     session sat blocked OVERNIGHT waiting for a completion notification
+#     that could never arrive, and the agent reported "working" without
+#     verifying — the trust-breaking half of the incident. vncdo has a native
+#     `-t/--timeout SECONDS` ("abort if unable to complete all actions
+#     within TIMEOUT seconds"); with it, the worst case is an N-second abort
+#     instead of an unbounded wait.
+#
+# Scope is deliberately narrow — the literal `vncdo` binary only. The general
+# principle ("every external wait needs a deadline") stays prose in the global
+# CLAUDE.md; a guard that pattern-matches every ssh/curl would cry wolf and
+# get bypassed. This guard covers the one command class that actually burned
+# a night.
+#
+# Fail-open by construction: no jq, unparseable stdin, or a non-Bash tool →
+# allow. Escape hatch for a deliberate raw call (e.g. probing the hang
+# itself): prefix the command text with CLAUDE_ALLOW_RAW_VNCDO=1 — honored as
+# a literal marker because a hook process never sees the Bash call's env
+# (it runs in the harness env; an env-only hatch would be unreachable).
+#
+# Known blind spots (miss a bad call, never block a good one):
+#   - a vncdo invocation assembled from shell variables ("$V" key down) hides
+#     the flag check; the guard only reads the literal command text.
+#   - `--timeout` inside a quoted string that never reaches vncdo satisfies
+#     the pattern.
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-vncdo-guard); wired from
+# the Claude PreToolUse hook in modify_settings.json.
+
+[ "${CLAUDE_ALLOW_RAW_VNCDO:-}" = "1" ] && exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+input=$(cat 2>/dev/null) || exit 0
+[ -n "$input" ] || exit 0
+printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
+
+tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
+[ "$tool" = "Bash" ] || exit 0
+
+cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -n "$cmd" ] || exit 0
+
+# Per-command escape: the env-var form cannot reach this process (hooks run in
+# the harness env, not the Bash call's), so the marker is honored as literal
+# command text — `CLAUDE_ALLOW_RAW_VNCDO=1 vncdo ...`.
+case $cmd in
+*CLAUDE_ALLOW_RAW_VNCDO=1*) exit 0 ;;
+esac
+
+# Command-position match only: vncdo (or .../vncdo) at the start of a shell
+# command segment. A command that merely MENTIONS vncdo in a string — editing
+# this very documentation was the measured false positive (2026-08-11) — must
+# not trip the guard, or it cries wolf and gets bypassed.
+if ! printf '%s' "$cmd" | grep -Eq '(^|[|;&`(]|&&|\|\|)[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*([^[:space:]]*/)?vncdo([[:space:]]|$)'; then
+  exit 0
+fi
+
+# 1) every vncdo call must carry its own deadline (-t N / --timeout N / =N)
+if ! printf '%s' "$cmd" | grep -Eq -- '(^|[[:space:]])(--timeout(=|[[:space:]]+)[0-9]+|-t[[:space:]]*[0-9]+)'; then
+  {
+    echo "vncdo without an explicit deadline is refused (measured 2026-08-11: an"
+    echo "uppercase-keysym call hung a session overnight). Add \`--timeout <sec>\`"
+    echo "(vncdo-native; aborts the whole call after N seconds), e.g.:"
+    echo "  vncdo --timeout 25 -s HOST::PORT -p PASS capture out.png"
+    echo "Deliberate raw call: re-run with CLAUDE_ALLOW_RAW_VNCDO=1."
+  } >&2
+  exit 2
+fi
+
+# 2) keysyms must be lowercase — `key Down` hangs, `key down` works (measured)
+if printf '%s' "$cmd" | grep -Eq '(^|[[:space:]])key[[:space:]]+[A-Z]'; then
+  {
+    echo "vncdo keysyms must be lowercase: \`key down\`, \`key enter\`, \`key space\`."
+    echo "Uppercase (\`key Down\`) hangs against tart's VNC server (measured 2026-08-11)."
+  } >&2
+  exit 2
+fi
+
+exit 0
