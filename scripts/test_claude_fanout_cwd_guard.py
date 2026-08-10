@@ -87,7 +87,9 @@ class FanoutCwdGuard(unittest.TestCase):
             capture_output=True,
             text=True,
             check=False,
-            env={**os.environ, **(env or {})},
+            # 解除フラグは明示したテストだけが持つ。周囲から継承すると
+            # 「たまたま export されていた日だけ deny テストが落ちる」になる。
+            env={**os.environ, "CLAUDE_ALLOW_CROSS_TREE_FANOUT": "", **(env or {})},
         )
         self.assertEqual(p.returncode, 0, f"guard must always exit 0: {p.stderr}")
         if not p.stdout.strip():
@@ -122,6 +124,7 @@ class FanoutCwdGuard(unittest.TestCase):
             capture_output=True,
             text=True,
             check=False,
+            env={**os.environ, "CLAUDE_ALLOW_CROSS_TREE_FANOUT": ""},
         ).stdout
         reason = json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
         self.assertIn(str(self.repo), reason)
@@ -154,6 +157,14 @@ class FanoutCwdGuard(unittest.TestCase):
             env={"CLAUDE_ALLOW_CROSS_TREE_FANOUT": "1"},
         )
         self.assertEqual(d, "allow")
+
+    def test_a_worktree_path_containing_a_space_is_a_known_blind_spot(self) -> None:
+        """通ってしまうことを固定する。パスは散文から pattern で拾うので、空白は
+        語の切れ目と区別できない。将来ここが deny に変わるなら、それは改善であって
+        退行ではない —— そのときはこのテストを書き換える。"""
+        spaced = self.root / "side dir"
+        git(self.repo, "worktree", "add", "-q", "--detach", str(spaced), "HEAD")
+        self.assertEqual(self.decide(text=f"review {spaced}"), "allow")
 
     # --- fail-open ------------------------------------------------------
     def test_unparseable_stdin_allows(self) -> None:

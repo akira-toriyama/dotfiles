@@ -28,6 +28,14 @@
 # would be removed within a day. Escape hatch for a deliberate cross-tree run:
 # CLAUDE_ALLOW_CROSS_TREE_FANOUT=1.
 #
+# Two known blind spots, stated rather than left to be discovered. Both make the
+# guard MISS a bad fan-out; neither makes it stop a good one:
+#   - a worktree path containing a SPACE is not extracted (paths are lifted out
+#     of the tool input by pattern, and the input is prose, so a space cannot be
+#     told from a word break). Measured: such a path is allowed through.
+#   - at most CANDIDATE_LIMIT distinct path-shaped strings are examined, so a
+#     fan-out naming more than that could hide the offender past the cut.
+#
 # Owned by dotfiles (chezmoi → ~/.local/bin/claude-fanout-cwd-guard); wired
 # from the Claude PreToolUse hook in modify_settings.json.
 set -u
@@ -59,16 +67,20 @@ here_common=$(cd "$cwd" 2>/dev/null && git rev-parse --git-common-dir 2>/dev/nul
 here_common=$(cd "$cwd" && cd "$here_common" 2>/dev/null && pwd -P) || exit 0
 
 # Candidate paths named anywhere in the tool input (prompt, script, args).
+# The limit bounds the git calls below; the stat filter in the loop is what
+# keeps the common case (a prose prompt full of non-paths) cheap.
+CANDIDATE_LIMIT=200
 candidates=$(printf '%s' "$payload" |
   jq -r '.tool_input // {} | tostring' 2>/dev/null |
   grep -oE '/[A-Za-z0-9._@+-]+(/[A-Za-z0-9._@+-]+)*' |
-  sort -u | head -n 40) || exit 0
+  sort -u | head -n "$CANDIDATE_LIMIT") || exit 0
 [ -n "$candidates" ] || exit 0
 
 offender=''
 while IFS= read -r p; do
   [ -n "$p" ] || continue
-  [ -d "$p" ] || p=$(dirname "$p")
+  [ -d "$p" ] || p=${p%/*} # a file: fall back to its directory (no subshell)
+  [ -n "$p" ] || continue
   [ -d "$p" ] || continue
   top=$(git -C "$p" rev-parse --show-toplevel 2>/dev/null) || continue
   [ -n "$top" ] || continue
