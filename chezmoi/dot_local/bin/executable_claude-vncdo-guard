@@ -55,7 +55,7 @@ cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)
 # the harness env, not the Bash call's), so the marker is honored as literal
 # command text — `CLAUDE_ALLOW_RAW_VNCDO=1 vncdo ...`.
 case $cmd in
-  *CLAUDE_ALLOW_RAW_VNCDO=1*) exit 0 ;;
+*CLAUDE_ALLOW_RAW_VNCDO=1*) exit 0 ;;
 esac
 
 # Command-position match only: vncdo (or .../vncdo) at the start of a shell
