@@ -112,6 +112,9 @@ global `~/.claude/CLAUDE.md` の source はこの repo（`chezmoi/private_dot_cl
   編集は対象外。全面改稿は `--baseline`（旧版 vs 新版の 2 腕）で測る。
 - ルールを足す・削る・移す PR は [docs/claude-md-ledger.md](docs/claude-md-ledger.md) の
   該当行（削除なら削除記録節）を**同一 PR で**更新する。
+- CLAUDE.md か skills/ に触る PR は [docs/glossary.md](docs/glossary.md) の該当語も**同一
+  PR で**追従させる（不要なら commit footer `Glossary-unchanged: <理由>`）。台帳と対の
+  義務で、どちらも lint ゲート claude-md-guard が強制する。
 - global CLAUDE.md の肥大を再演しない: 追加は「既に踏んだ失敗の再発防止」だけ
   （global の機構化ルールと同じ基準を散文にも適用する）。
 
