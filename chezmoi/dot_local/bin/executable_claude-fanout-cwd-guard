@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# claude-fanout-cwd-guard — PreToolUse guard for Agent/Workflow fan-out.
+#
+# Refuses a fan-out whose input points at ANOTHER WORKTREE OF THE SAME
+# REPOSITORY as the session's cwd, because the subagents will not read it.
+#
+# Why this exists. A subagent's working directory IS the parent session's cwd:
+# there is no cwd parameter on the Agent tool, none in an agent definition, and
+# a path written into the prompt does not steer it. Measured 2026-08-10 on a
+# 17-agent furrow review: the prompt named a worktree checked out at
+# origin/main, and 0 of 17 agents read it while 17 of 17 read the session's own
+# checkout — which was parked 7 commits behind for a schema flag day. Every
+# finding, ~2M output tokens, and 21 tasks written to the shared board were
+# against the wrong tree and had to be discarded. The session had ALREADY
+# detected the staleness and built the worktree as a work-around; the
+# work-around is what silently did nothing. So the check has to refuse the
+# fan-out, not warn about the repo.
+#
+# Scope is deliberately narrow — a sibling worktree of the SAME repo only.
+# That is the confusable case: identical relative paths, identical file names,
+# and findings that look correct at every line. A path in a DIFFERENT
+# repository is an ordinary cross-repo reference and is allowed, because
+# denying those would fire constantly and a guard that cries wolf gets
+# bypassed.
+#
+# Fail-open by construction: no jq, unparseable stdin, cwd outside a work tree,
+# or any git error → allow. A guard that blocks work when it is itself broken
+# would be removed within a day. Escape hatch for a deliberate cross-tree run:
+# CLAUDE_ALLOW_CROSS_TREE_FANOUT=1.
+#
+# Two known blind spots, stated rather than left to be discovered. Both make the
+# guard MISS a bad fan-out; neither makes it stop a good one:
+#   - a worktree path containing a SPACE is not extracted (paths are lifted out
+#     of the tool input by pattern, and the input is prose, so a space cannot be
+#     told from a word break). Measured: such a path is allowed through.
+#   - at most CANDIDATE_LIMIT distinct path-shaped strings are examined, so a
+#     fan-out naming more than that could hide the offender past the cut.
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-fanout-cwd-guard); wired
+# from the Claude PreToolUse hook in modify_settings.json.
+set -u
+
+command -v jq >/dev/null 2>&1 || exit 0
+[ "${CLAUDE_ALLOW_CROSS_TREE_FANOUT:-}" = "1" ] && exit 0
+
+payload=$(cat) || exit 0
+[ -n "$payload" ] || exit 0
+printf '%s' "$payload" | jq -e . >/dev/null 2>&1 || exit 0
+
+tool=$(printf '%s' "$payload" | jq -r '.tool_name // ""')
+case "$tool" in
+Task | Agent | Workflow) ;;
+*) exit 0 ;;
+esac
+
+cwd=$(printf '%s' "$payload" | jq -r '.cwd // ""')
+[ -n "$cwd" ] || cwd=$PWD
+[ -d "$cwd" ] || exit 0
+
+# The session's own tree, and the repository it belongs to. Linked worktrees of
+# one repository share a common git dir; that is what makes "same repo,
+# different tree" decidable without touching the network.
+here=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$here" ] || exit 0
+here_common=$(cd "$cwd" 2>/dev/null && git rev-parse --git-common-dir 2>/dev/null) || exit 0
+[ -n "$here_common" ] || exit 0
+here_common=$(cd "$cwd" && cd "$here_common" 2>/dev/null && pwd -P) || exit 0
+
+# Candidate paths named anywhere in the tool input (prompt, script, args).
+# The limit bounds the git calls below; the stat filter in the loop is what
+# keeps the common case (a prose prompt full of non-paths) cheap.
+CANDIDATE_LIMIT=200
+candidates=$(printf '%s' "$payload" |
+  jq -r '.tool_input // {} | tostring' 2>/dev/null |
+  grep -oE '/[A-Za-z0-9._@+-]+(/[A-Za-z0-9._@+-]+)*' |
+  sort -u | head -n "$CANDIDATE_LIMIT") || exit 0
+[ -n "$candidates" ] || exit 0
+
+offender=''
+while IFS= read -r p; do
+  [ -n "$p" ] || continue
+  [ -d "$p" ] || p=${p%/*} # a file: fall back to its directory (no subshell)
+  [ -n "$p" ] || continue
+  [ -d "$p" ] || continue
+  top=$(git -C "$p" rev-parse --show-toplevel 2>/dev/null) || continue
+  [ -n "$top" ] || continue
+  [ "$top" = "$here" ] && continue
+  common=$(cd "$p" 2>/dev/null && git rev-parse --git-common-dir 2>/dev/null) || continue
+  common=$(cd "$p" && cd "$common" 2>/dev/null && pwd -P) || continue
+  # Same repository, different working tree — the confusable case.
+  if [ "$common" = "$here_common" ]; then
+    offender=$top
+    break
+  fi
+done <<EOF
+$candidates
+EOF
+
+[ -n "$offender" ] || exit 0
+
+here_rev=$(git -C "$here" rev-parse --short HEAD 2>/dev/null || printf '?')
+there_rev=$(git -C "$offender" rev-parse --short HEAD 2>/dev/null || printf '?')
+
+reason=$(printf '%s' "サブエージェントは cwd を継ぐため、この fan-out は指定した木を読みません。
+  session cwd : ${here} (${here_rev})
+  指定された木: ${offender} (${there_rev})
+同一 repo の別 worktree なので、読み違えても出力は正しく見えます（2026-08-10 に実測: 17 体中 0 体しか指定した木を読まず、全結果を破棄）。
+対処: 対象 checkout でセッションを開き直すか /cd で移ってから fan-out する。パスを prompt で渡す方式は効きません。
+意図的に別の木を指している場合のみ CLAUDE_ALLOW_CROSS_TREE_FANOUT=1 を付けて再実行。")
+
+jq -n --arg r "$reason" '{
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    permissionDecision: "deny",
+    permissionDecisionReason: $r
+  }
+}'
+exit 0

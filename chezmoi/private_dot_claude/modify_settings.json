@@ -2,7 +2,7 @@
 # chezmoi modify_ script for ~/.claude/settings.json.
 #
 # chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
-# file. We ensure exactly SEVEN things and pass everything else (the permissions
+# file. We ensure exactly EIGHT things and pass everything else (the permissions
 # the user accumulates interactively, plugins, env, other hooks) through
 # untouched:
 #   1. a SessionStart hook that runs git-stale-check (so an agent sees a
@@ -72,6 +72,18 @@
 #      opening context. The lint's other firing points (pre-push, post-merge)
 #      only reach sessions inside the projects checkout; this is the surface
 #      that reaches sessions starting in any repo. Fail-open; see its header.
+#   8. a PreToolUse hook that runs claude-fanout-cwd-guard on Agent/Workflow
+#      calls — DENIES a fan-out whose input names another worktree of the SAME
+#      repository as the session cwd. A subagent's working directory is the
+#      parent session's cwd and no parameter changes it, so such a fan-out
+#      silently reads the wrong tree: measured 2026-08-10, 0 of 17 agents read
+#      the worktree named in their prompt and 17 read the session's own
+#      7-commits-behind checkout, costing ~2M tokens and 21 discarded board
+#      tasks. This is the only one of the eight that can BLOCK, because that
+#      session had already detected the staleness and built the worktree as a
+#      work-around — a warning was not what was missing. Fail-open, and
+#      CLAUDE_ALLOW_CROSS_TREE_FANOUT=1 is the deliberate-run escape; see its
+#      header for why the scope is same-repo-only.
 #
 # Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
@@ -91,6 +103,8 @@ cmd_stop='$HOME/.local/bin/claude-work-report-check'
 cmd_quota='$HOME/.local/bin/claude-quota-note'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_pjlint='$HOME/.local/bin/claude-projects-lint-note'
+# shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
+cmd_fanout='$HOME/.local/bin/claude-fanout-cwd-guard'
 
 input=$(cat)
 [ -n "$input" ] || input='{}'
@@ -100,11 +114,12 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg fanout "$cmd_fanout" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
   def stop_hook_present: [ (.hooks.Stop // [])[]?.hooks[]?.command ] | any(. == $stop);
   def quota_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $quota);
   def pjlint_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $pjlint);
+  def fanout_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $fanout);
 
   ( if hook_present then .
     else
@@ -129,6 +144,12 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
           (.hooks //= {})
         | (.hooks.SessionStart //= [])
         | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $pjlint } ] } ])
+      end )
+  | ( if fanout_hook_present then .
+      else
+          (.hooks //= {})
+        | (.hooks.PreToolUse //= [])
+        | (.hooks.PreToolUse += [ { matcher: "Task|Agent|Workflow", hooks: [ { type: "command", command: $fanout } ] } ])
       end )
   | (.permissions //= {})
   | (.permissions.allow //= [])

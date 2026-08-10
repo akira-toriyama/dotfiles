@@ -33,6 +33,7 @@ STALE_CHECK = "$HOME/.local/bin/git-stale-check"
 WORK_REPORT = "$HOME/.local/bin/claude-work-report-check"
 QUOTA_NOTE = "$HOME/.local/bin/claude-quota-note"
 PJLINT_NOTE = "$HOME/.local/bin/claude-projects-lint-note"
+FANOUT_GUARD = "$HOME/.local/bin/claude-fanout-cwd-guard"
 
 
 def jq_only_path() -> str:
@@ -118,6 +119,22 @@ class Seeds(unittest.TestCase):
         self.assertIn(PJLINT_NOTE, commands(got, "SessionStart"))
         self.assertIn(WORK_REPORT, commands(got, "Stop"))
 
+    def test_it_adds_the_fanout_guard_as_a_pretooluse_hook(self) -> None:
+        """8 つのうち唯一 deny できる hook。登録が落ちても既存 7 本は動くので、
+        黙って外れたことに気づけない —— ここで固定する。"""
+        got = json.loads(run("{}").stdout)
+        self.assertIn(FANOUT_GUARD, commands(got, "PreToolUse"))
+
+    def test_the_fanout_guard_matches_only_the_fan_out_tools(self) -> None:
+        """matcher が広がると全ツールで git を叩くことになる。"""
+        got = json.loads(run("{}").stdout)
+        matchers = [
+            entry.get("matcher")
+            for entry in got["hooks"]["PreToolUse"]
+            if any(h.get("command") == FANOUT_GUARD for h in entry.get("hooks", []))
+        ]
+        self.assertEqual(matchers, ["Task|Agent|Workflow"])
+
     def test_home_stays_literal(self) -> None:
         """hook の command は Claude が実行時に展開する。生成時に展開すると
         別マシンへ配ったときに他人の $HOME が焼き込まれる。"""
@@ -156,6 +173,7 @@ class Idempotent(unittest.TestCase):
         self.assertEqual(commands(got, "SessionStart").count(QUOTA_NOTE), 1)
         self.assertEqual(commands(got, "SessionStart").count(PJLINT_NOTE), 1)
         self.assertEqual(commands(got, "Stop").count(WORK_REPORT), 1)
+        self.assertEqual(commands(got, "PreToolUse").count(FANOUT_GUARD), 1)
 
     def test_allow_entries_are_not_duplicated(self) -> None:
         allow = json.loads(run(run("{}").stdout).stdout)["permissions"]["allow"]
