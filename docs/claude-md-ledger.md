@@ -32,6 +32,7 @@
 | 質問・報告フロー（一問一答・推奨・委任）（作業の締め節） | 一問一答・推奨つき | 裁定・「残り全部推奨で」の委任 | なし | 📖 |
 | furrow 一本化・wrapper 使用（Workflow 節） | PATH の `furrow` を叩く | — | `packages.nix` の source-build wrapper。brew 版未導入なので shadow は構造的に不発 | 🟡 |
 | 着手前後の `furrow sync`・session start は `furrow sync && furrow brief`（Workflow 節） | 読む前・書いた後に sync。session start は sync && brief で orient | — | なし | 📖 |
+| board の layout が上がった直後は source checkout を `git pull`（Workflow 節） | checkout を board と同じ層に合わせてから furrow を叩く | flag day の順序判断（pins-first の窓では checkout を park する側が正解） | SessionStart hook [claude-furrow-board-note](../chezmoi/dot_local/bin/executable_claude-furrow-board-note)（[modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json) #10 配線）が `furrow board` の `writable:false` を 1 行表示。**READ が全部通る**ので他に発火点が無く、書き込むまで誰も気づけない（2026-08-12 に 1 晩で 2 回発生。1 回はセッション自身、1 回は checkout を共有する別セッションが動かした）。unit 9 ケース | 🟡 warn-only・session start 時点のみ（セッション途中で壊れた分は次回まで出ない） |
 | 進捗の正本は body 一本・中断時 1 行（Workflow 節） | body 更新・複製しない | — | なし | 📖 |
 | projects checkout では明示 `-r projects`（Workflow 節・正典に無い） | 明示する | — | `furrow doctor` が `scope-shadowed` を info 報告するだけで止めない | 📖 |
 | 指示なし時は `furrow brief` の先頭から着手／状況共有を GO と読まない／active epic の切り替えは申請制（Workflow 節） | 既定挙動として従う。勝手に `furrow epic activate` しない | 作業開始の GO・epic 切り替えの裁定 | furrow が next/brief を active epic に scope（epic-multi-active は lint error）。申請制そのものは散文 | 🟡 scope は機構・申請制は 📖 |

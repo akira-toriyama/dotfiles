@@ -2,7 +2,7 @@
 # chezmoi modify_ script for ~/.claude/settings.json.
 #
 # chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
-# file. We ensure exactly NINE things and pass everything else (the permissions
+# file. We ensure exactly TEN things and pass everything else (the permissions
 # the user accumulates interactively, plugins, env, other hooks) through
 # untouched:
 #   1. a SessionStart hook that runs git-stale-check (so an agent sees a
@@ -92,6 +92,17 @@
 #      N seconds. Fail-open, CLAUDE_ALLOW_RAW_VNCDO=1 escape; scope is the
 #      literal vncdo binary only — the general "every external wait needs a
 #      deadline" rule stays prose in the global CLAUDE.md.
+#  10. a SessionStart hook that runs claude-furrow-board-note — warns when the
+#      furrow board is READ-ONLY for this machine's binary. The failure is
+#      ASYMMETRIC: every READ keeps working (`sync`, `brief`, `ls`, `show` all
+#      answer) while every WRITE exits 2, so nothing looks wrong until progress
+#      is recorded. Measured 2026-08-12, twice in one evening: the furrow source
+#      checkout — which the PATH wrapper builds the binary from — was moved off
+#      the version the board was parked at, once by the session itself and once
+#      by a CONCURRENT session sharing that checkout, and the board went
+#      read-only both times with no visible symptom. Warn-only: a mismatch is
+#      normal mid-flag-day and the order to fix it in is the human's.
+#      Fail-open; see its header.
 #
 # Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
@@ -112,6 +123,8 @@ cmd_quota='$HOME/.local/bin/claude-quota-note'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_pjlint='$HOME/.local/bin/claude-projects-lint-note'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
+cmd_board='$HOME/.local/bin/claude-furrow-board-note'
+# shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_fanout='$HOME/.local/bin/claude-fanout-cwd-guard'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_vnc='$HOME/.local/bin/claude-vncdo-guard'
@@ -124,11 +137,12 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg board "$cmd_board" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
   def stop_hook_present: [ (.hooks.Stop // [])[]?.hooks[]?.command ] | any(. == $stop);
   def quota_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $quota);
   def pjlint_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $pjlint);
+  def board_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $board);
   def fanout_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $fanout);
   def vnc_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $vnc);
 
@@ -155,6 +169,12 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
           (.hooks //= {})
         | (.hooks.SessionStart //= [])
         | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $pjlint } ] } ])
+      end )
+  | ( if board_hook_present then .
+      else
+          (.hooks //= {})
+        | (.hooks.SessionStart //= [])
+        | (.hooks.SessionStart += [ { hooks: [ { type: "command", command: $board } ] } ])
       end )
   | ( if fanout_hook_present then .
       else
