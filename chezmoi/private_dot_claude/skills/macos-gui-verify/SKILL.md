@@ -58,8 +58,19 @@ SSH 経由の合成キー CGEvent は VM 内 app に**届かない**（マウス
   が欠落を deny）。timeout 無しの hang で一晩溶かした実績が起点。
 - **keysym は小文字**（`key down` / `key enter` / `key space`）。大文字 `key Down` は
   tart の VNC サーバ相手に無限 hang する（実測）。これも hook が deny。
-- **1 呼び出し 1 操作**に分割する。数珠つなぎの Bash が tool timeout を超えて
-  background 化 → 迷子になった実績。各操作の後に capture で即検証。
+- **Bash 1 回 = vncdo 1 invocation** に分割する。数珠つなぎの Bash が tool timeout を
+  超えて background 化 → 迷子になった実績。各操作の後に capture で即検証。
+- ただし **vncdo は接続（invocation）ごとに pointer/modifier 状態が独立** —
+  invocation を跨いだ `move` は次の `mousedown` に引き継がれず (0,0) クリックに
+  化ける（2026-08-11 実測: ⌘drag のつもりが壁紙 ⌘click → desktop reveal 発動）。
+  **drag・修飾キー付き操作は 1 invocation 内に連鎖必須**:
+  `vncdo --timeout 25 -s … keydown super move X Y mousedown 1 move X2 Y2 mouseup 1 keyup super`。
+  連鎖の途中に `capture out.png` を挟めば mid-drag の視覚も取れる。
+- **修飾キー combo `key super-n` は modifier が落ちて素の `n` になる**（実測）。
+  combo は使わず `keydown super key n keyup super` 連鎖にする — それでも VM 内
+  アプリに cmd+N が届かないことがあり、その場合は SSH 側 `peekaboo menu click
+  --app <App> --item "New"` が確実。マウスも SSH 側 `capsule-click X Y` が
+  pointer 状態問題と無縁で、VNC より信頼できる（キーだけが VNC 必須）。
 - サーバは実質シングルクライアント: hang したクライアントが居座ると後続が全部
   詰まる。詰まったら `pkill -f "vncdo -s"` してから撮り直す。
 - capture はフレームバッファ直取りで TCC 不要。ホイールは SSH 経由 `peekaboo scroll`
