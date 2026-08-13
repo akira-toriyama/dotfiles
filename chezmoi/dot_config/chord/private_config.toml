@@ -220,10 +220,21 @@ input = "TU_LL_D"
 action-shell = "rift-cli execute window prev"
 
 # doc: 次のウィンドウへ（rift フォーカス）
+# TU_LL_F は drag-scroll へ譲り、隣の TU_LL_G へ移動（2026-08-12）。
 [[bindings]]
 name = "rift focus next"
-input = "TU_LL_F"
+input = "TU_LL_G"
 action-shell = "rift-cli execute window next"
+
+# doc: ドラッグスクロール（押している間、マウス移動がスクロールになる）
+# 押している間だけカーソルを固定して、移動量をスクロールに変換する。
+# 離せば終わり。取りこぼしても max-ms で自動解除される。
+# invert = スクロールバーを掴んで動かす向き（下へ動かすと下へ進む）。
+[[bindings]]
+name = "drag-scroll"
+input = "TU_LL_F"
+action-drag-scroll = true
+action-drag-scroll-invert = true
 
 # ---- ZMK 単押し専用キー ----
 
