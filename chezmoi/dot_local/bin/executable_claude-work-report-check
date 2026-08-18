@@ -5,9 +5,10 @@
 # WHAT IT ENFORCES: a work-session close must carry two VERIFIABLE elements,
 # wording otherwise free (the verbatim template was retired 2026-07-28):
 #   1. a やり残し line with at least one furrow task id (t-xxxx) or 「なし」
-#   2. a counts line `closed N / created M`; when M > N (budget is
-#      created ≤ closed − 1, projects/CLAUDE.md「board を収束させる」), a
-#      reason must sit on the counts line or the line right after it.
+#   2. a counts line `closed N / created M`; when M >= N and M > 0 (budget is
+#      created ≤ closed − 1, projects/CLAUDE.md「board を収束させる」, so EQUAL
+#      counts already overrun it), a reason must sit on the counts line or the
+#      line right after it. 0/0 is exempt: it adds nothing to the board.
 #   3. (furrow t-64tw) the counts must not contradict the BOARD: actuals come
 #      from `furrow stats -r '' --since <session-start> --json`'s window
 #      (session start = the transcript's first timestamp), and only the lying
@@ -108,10 +109,17 @@ created_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | tail -1)
 # 「理由」 anywhere in the message (e.g. an error explanation) must not
 # satisfy the check. Without a reason, the repair round is the point:
 # re-triage the new tasks to icebox, or fix them now.
-if [ "$created_n" -gt "$closed_n" ]; then
+# The budget is created ≤ closed − 1, so EQUAL counts are already an overrun —
+# `closed 3 / created 3` slipped through for the whole life of this check.
+# 0/0 is the one exemption: read literally the rule makes every filing a
+# violation when closed is 0, but 0/0 added nothing to the board, and the
+# global CLAUDE.md hands that case to scene judgement instead ("if you are
+# about to write closed 0 / created 0, first doubt that this is a close").
+# Arithmetically the exemption covers exactly that one cell.
+if [ "$created_n" -gt 0 ] && [ "$created_n" -ge "$closed_n" ]; then
   reason_zone=$(printf '%s' "$msg" | grep -iE -A1 "$counts_re" | head -2)
   if ! printf '%s' "$reason_zone" | grep -qE '理由|例外|blocker|ブロッカー'; then
-    jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md「board を収束させる」— 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。新しい task を (a) その場で直す（effort ≤ 2 かつ今触っているコード内）(b) icebox に落とす（`furrow set <id> -s icebox`・復帰可能）のどちらかに振り直して数字を直すか、超過の理由を counts 行かその直後の行に 1 行添えてください。直したらそのまま停止してよい。")}'
+    jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md「board を収束させる」— 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。**起票したあとで数字は下げられません** — furrow に起票の取り消しコマンドは無く、created は lane と無関係に窓内の起票を数えるので、icebox へ落としても実数は変わらず、申告だけ減らすと下の board 実数照合が created 過少申告として弾きます。取れる手は 2 つだけです: (a) まだ起票していないものを起票せずにその場で直す（effort ≤ 2 かつ今触っているコード内）(b) 超過の理由を counts 行かその直後の行に 1 行添える。直したらそのまま停止してよい。")}'
     exit 0
   fi
 fi

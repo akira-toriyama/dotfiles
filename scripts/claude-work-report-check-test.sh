@@ -86,11 +86,24 @@ run "created > closed でも理由が書いてあれば → allow" \
 closed 1 / created 2（理由: 今日の作業が生んだ blocker）
 別セッションで作業お願いします。')" allow
 
-run "created == closed は予算内 → allow" \
+# 予算は created ≤ closed − 1。等号は「予算内」ではなく超過ちょうどで、ここが
+# 2026-08-19 まで素通りしていた（規範を 1 件ぶん常に見逃す off-by-one）。
+run "created == closed は予算内ではない（created ≤ closed − 1）→ block" \
   "$(mk '品質担保できる範囲まで作業続けました。
 やり残しは task 化済: なし
 closed 2 / created 2
-別セッションで作業お願いします。')" allow
+別セッションで作業お願いします。')" block
+
+run "created == closed でも理由が書いてあれば → allow" \
+  "$(mk 'やり残し: なし
+closed 3 / created 3
+理由: 今日の作業が生んだ blocker')" allow
+
+# 0/0 だけは免除する。規範を字義どおり読むと closed 0 のとき created ≤ −1 で
+# あらゆる起票が違反になるが、0/0 は board を増やしていない。
+run "closed 0 / created 0 は免除 → allow" \
+  "$(mk 'やり残し: なし
+closed 0 / created 0')" allow
 
 run "全角混じり・語順どおりなら読める → allow" \
   "$(mk '品質担保できる範囲まで作業続けました。
