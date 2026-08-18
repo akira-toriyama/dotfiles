@@ -78,7 +78,7 @@ if [ -n "$decl" ]; then
 fi
 
 if [ "$ok_decl" -eq 0 ]; then
-  jq -n '{decision: "block", reason: "作業の締めに検証可能な「やり残し」宣言がありません（global CLAUDE.md「作業の締め」— ID は furrow show で検証できるが、文だけでは検証できない）。「やり残し: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「やり残し: なし」と書いてください。作業の締めでないなら、その旨が分かる表現に直してよい。直したらそのまま停止してよい。"}'
+  jq -n '{decision: "block", reason: "作業の締めに検証可能な「やり残し」宣言がありません（global CLAUDE.md「作業の締め」— ID は furrow show で検証できるが、文だけでは検証できない）。「やり残し: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「やり残し: なし」と書いてください。作業の締めでないなら、断り書きを足すのではなく判定語を本文から消してください（「締めではない」と書き添えても語が残る限り次のターンでまた止まります。arming は「やり残し」の語・「closed N / created M」形・旧冒頭文の 3 つで、引用や説明のための出現も区別しません）。直したらそのまま停止してよい。"}'
   exit 0
 fi
 
@@ -95,7 +95,7 @@ fi
 # today either. An overrun stays possible; it just has to be said out loud.
 counts=$(printf '%s' "$msg" | grep -oiE "$counts_re" | head -1)
 if [ -z "$counts" ]; then
-  jq -n '{decision: "block", reason: "作業の締めに増減の実数がありません。「closed N / created M」の行を足してください（board は放っておくと単調増加する — 実測で完了は週 100 件超なのに未完は 95 → 295 に増えた。数字を出さない限り収束しているか誰にも分からない）。作業の締めでないなら、その旨が分かる表現に直してよい。直したらそのまま停止してよい。"}'
+  jq -n '{decision: "block", reason: "作業の締めに増減の実数がありません。「closed N / created M」の行を足してください（board は放っておくと単調増加する — 実測で完了は週 100 件超なのに未完は 95 → 295 に増えた。数字を出さない限り収束しているか誰にも分からない）。作業の締めでないなら、断り書きを足すのではなく判定語を本文から消してください（「締めではない」と書き添えても語が残る限り次のターンでまた止まります。arming は「やり残し」の語・「closed N / created M」形・旧冒頭文の 3 つで、引用や説明のための出現も区別しません）。直したらそのまま停止してよい。"}'
   exit 0
 fi
 
