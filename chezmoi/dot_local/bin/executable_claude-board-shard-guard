@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# claude-board-shard-guard — PreToolUse guard for hand-editing a furrow board.
+#
+# A furrow board's index lives in one JSON shard per entity (.furrow/tasks/*.json,
+# epics/, repos/, and meta.json). Those files are furrow's to write: it keeps the
+# shard and the markdown body consistent, stamps `updated`, and maintains the
+# lane/dep invariants that `furrow lint` then checks. An editor writing one
+# directly can desynchronise the pair silently — nothing fails at write time, and
+# the damage surfaces later as a lint error on a board several machines share.
+#
+# ASK, not deny, and the reason is measured. Across 4048 local transcripts the
+# Edit/Write tools have touched a shard ZERO times, but Bash has rewritten one
+# 104 times — 98 of those resolving a rebase conflict with
+# `git checkout --ours|--theirs`, and 6 rewriting a live board's shard outright
+# (2026-07-21 perl -0pi, 2026-07-28 python write_text, 2026-07-29 sed -i twice).
+# So a legitimate reason to touch a shard by hand exists and has occurred four
+# times; a hard deny would only push the next one back onto the Bash path, where
+# nothing records it. `ask` costs one keystroke and leaves the decision visible.
+#
+# DELIBERATE BLIND SPOT: the Bash path is NOT covered. That is where every
+# measured incident happened, and covering it means pattern-matching arbitrary
+# shell — a guard that fires on `git checkout --ours .furrow/tasks/x.json`, the
+# CORRECT fix, would cry wolf on the common case to catch the rare one. This
+# guard covers the tool path where a write is unambiguously wrong, and says so
+# rather than pretending to cover the class.
+#
+# Scratchpad boards are exempt. Verification sessions copy a whole board into a
+# temp dir (`cp -R projects/.furrow "$SP/.../.furrow"`); 25 such boards holding
+# 14797 shard files exist under /private/tmp right now, and prompting on those
+# would make the guard noise. Temp roots are excluded before the shard match.
+#
+# The `*/.furrow/` prefix is required on purpose: furrow's own test fixture
+# lives at internal/store/fsstore/testdata/frozen-board/{tasks,epics,repos}/*.json
+# with no .furrow/ component, so updating it stays untouched (measured).
+#
+# Fail-open by construction: no jq, unparseable stdin, another tool, or a missing
+# file_path → allow. tool_input.file_path is always absolute (measured: zero
+# relative examples across every transcript), so the prefix match is sound.
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-board-shard-guard); wired from
+# the Claude PreToolUse hook in modify_settings.json (step 11).
+# Tests: scripts/test_claude_board_shard_guard.py (unittest, CI).
+set -u
+
+command -v jq >/dev/null 2>&1 || exit 0
+
+input=$(cat 2>/dev/null) || exit 0
+[ -n "$input" ] || exit 0
+printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
+
+tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
+case "$tool" in
+Edit | Write | MultiEdit) ;;
+*) exit 0 ;;
+esac
+
+f=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+[ -n "$f" ] || exit 0
+
+# Temp roots first: a copied board under one of these is a fixture, not the board.
+case "$f" in
+/tmp/* | /private/tmp/* | /var/folders/* | /private/var/folders/*) exit 0 ;;
+esac
+
+case "$f" in
+*/.furrow/tasks/*.json | */.furrow/epics/*.json | */.furrow/repos/*.json | */.furrow/meta.json) ;;
+*) exit 0 ;;
+esac
+
+jq -n --arg f "$f" '{
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    permissionDecision: "ask",
+    permissionDecisionReason: ("furrow の board shard を直接書こうとしています: \($f)\n"
+      + "shard は furrow が body と対で書くもので、手で書くと index と body が黙ってずれ、"
+      + "共有 board の lint エラーとして後から出ます。まず furrow のコマンド"
+      + "（set / move / note / done など）で意図を表現できないか確かめてください。\n"
+      + "rebase で conflict marker が残った場合は `git checkout --ours|--theirs <shard> && git add <shard>` "
+      + "が実運用の定石です（実測 104 件中 98 件がこれで解決）。それでも手で直す必要があるなら許可してください。")
+  }
+}'
+exit 0

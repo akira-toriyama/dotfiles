@@ -411,10 +411,20 @@ frontmatter の `description` が「いつ発火するか」を決める。
 - **Don't call it:** サブエージェント設定, ペルソナ
 
 ### Stop hook（`claude-work-report-check`）
-**セッション終了時に走る判定スクリプト**。作業報告の定型に task ID が無ければ停止をブロックする。
-実体 = [`chezmoi/dot_local/bin/executable_claude-work-report-check`](../chezmoi/dot_local/bin/executable_claude-work-report-check)、
+**セッション終了時に走る判定スクリプト**。作業報告に task ID（か「なし」）と増減の実数が
+無ければ停止をブロックする。実体 =
+[`chezmoi/dot_local/bin/executable_claude-work-report-check`](../chezmoi/dot_local/bin/executable_claude-work-report-check)、
 回帰テストは CI の `hook scripts test`。
 - **Don't call it:** 終了フック, 報告チェッカー
+
+### PreToolUse guard（`claude-*-guard`）
+**ツール呼び出しの直前に走り、通す / 訊く / 拒む を決めるスクリプト**。
+現在 3 本 —— [`claude-fanout-cwd-guard`](../chezmoi/dot_local/bin/executable_claude-fanout-cwd-guard)（別 worktree へのファンアウトを拒む）/
+[`claude-vncdo-guard`](../chezmoi/dot_local/bin/executable_claude-vncdo-guard)（deadline の無い vncdo を拒む）/
+[`claude-board-shard-guard`](../chezmoi/dot_local/bin/executable_claude-board-shard-guard)（furrow の board shard 直編集を訊く）。
+どれも **fail-open**（自身が壊れたら通す）で **narrow scope**（誤検知した guard は
+guard 全体を無視させる）。配線は `modify_settings.json`。
+- **Don't call it:** 事前フック, パーミッションフィルタ, ツールガード
 
 ### `claude-md-eval`
 **CLAUDE.md の散文変更を配る前に測るハーネス**。baseline（節なし）と candidate（節あり）の
