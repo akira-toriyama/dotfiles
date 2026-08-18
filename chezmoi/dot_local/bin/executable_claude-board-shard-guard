@@ -25,9 +25,10 @@
 # rather than pretending to cover the class.
 #
 # Scratchpad boards are exempt. Verification sessions copy a whole board into a
-# temp dir (`cp -R projects/.furrow "$SP/.../.furrow"`); 25 such boards holding
-# 14797 shard files exist under /private/tmp right now, and prompting on those
-# would make the guard noise. Temp roots are excluded before the shard match.
+# temp dir (`cp -R projects/.furrow "$SP/.../.furrow"`); 112 such boards holding
+# 20885 task shards existed under /private/tmp when this was measured
+# (2026-08-19), and the count grows with every verification session — prompting
+# on those would drown the guard. Temp roots are excluded before the shard match.
 #
 # The `*/.furrow/` prefix is required on purpose: furrow's own test fixture
 # lives at internal/store/fsstore/testdata/frozen-board/{tasks,epics,repos}/*.json

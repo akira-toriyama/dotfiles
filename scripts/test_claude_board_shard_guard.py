@@ -7,8 +7,9 @@ PreToolUse guard の契約は「本物の board shard への Edit/Write だけ�
 ここで固定するのは:
 
   1. 本物の board shard（tasks / epics / repos / meta.json）→ ask
-  2. scratchpad にコピーされた board → allow（検証セッションが 25 board・
-     14797 shard を temp に作る。ここで訊くと毎回のノイズになる）
+  2. scratchpad にコピーされた board → allow（検証セッションが temp に board を
+     丸ごとコピーする。実測 2026-08-19 で 112 board・20885 shard あり、
+     ここで訊くと毎回のノイズになる）
   3. `.furrow/` を含まない frozen-board fixture → allow（furrow の test 資産）
   4. Bash は対象外 → allow（実測の事故は全部 Bash 経路だが、正しい直し方の
      `git checkout --ours` まで巻き込むので意図的に非カバー）
