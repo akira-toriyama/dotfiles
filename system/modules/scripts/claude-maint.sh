@@ -238,6 +238,12 @@ RUN_LOG="$WT/.claude-maint-run.log"
   --output-format text \
   "$PROMPT") >"$RUN_LOG" 2>&1 || CLAUDE_RC=$?
 sed "s/^/$LOG_PREFIX claude| /" "$RUN_LOG" 2>/dev/null || true
+# 失敗の証拠はレポート (= PR 本文) に載せる。ここで捨てると診断材料が二重に消える:
+# RUN_LOG は直後に rm され、唯一の写しである launchd の /tmp/claude-maint.log も
+# 再起動で消える。実際 2026-08 の第 1 回は「rc=1」という自己申告だけが残り、
+# 原因を特定できないまま t-8tkm になった。
+CLAUDE_TAIL=""
+[ "$CLAUDE_RC" -eq 0 ] || CLAUDE_TAIL=$(tail -n 20 "$RUN_LOG" 2>/dev/null || true)
 rm -f "$RUN_LOG" # PR に含めない
 [ "$CLAUDE_RC" -eq 0 ] || log "claude exited rc=$CLAUDE_RC (続行: レポート有無で判断)"
 
@@ -249,6 +255,18 @@ if [ ! -s "$WT/$REPORT_REL" ]; then
     echo
     echo "- 実行: $(date '+%F %T')"
     echo "- ⚠️ claude による判断が完了しなかった (rc=$CLAUDE_RC)。使用統計のみ記録。"
+    if [ -n "$CLAUDE_TAIL" ]; then
+      echo
+      echo '## 失敗の記録 (claude の出力・末尾 20 行)'
+      echo
+      echo "rc=$CLAUDE_RC。よくある原因は予算 (\$${MAX_BUDGET_USD}) 到達で、"
+      echo "その場合 claude は Error: Exceeded USD budget を出して rc=1 で終わる"
+      echo "(2026-08-19 実測)。上限は CLAUDE_MAINT_MAX_USD で上げられる。"
+      echo
+      echo '```'
+      echo "$CLAUDE_TAIL"
+      echo '```'
+    fi
     echo
     echo '## 使用統計'
     echo '```'
