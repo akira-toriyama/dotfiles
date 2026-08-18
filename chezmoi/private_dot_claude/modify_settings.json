@@ -104,6 +104,16 @@
 #      normal mid-flag-day and the order to fix it in is the human's.
 #      Fail-open; see its header.
 #
+#  11. a PreToolUse hook that runs claude-board-shard-guard on Edit/Write/
+#      MultiEdit — ASKS before an editor writes a furrow board shard directly
+#      (.furrow/{tasks,epics,repos}/*.json, meta.json). furrow writes those in
+#      lockstep with the markdown body; a hand write desynchronises the pair
+#      silently and surfaces as a lint error on a board several machines share.
+#      Ask rather than deny: resolving a rebase conflict by hand is legitimate
+#      and has happened four times, and a deny would only move it to the Bash
+#      path where nothing records it. Temp roots are exempt (verification
+#      sessions copy whole boards into scratchpads). Fail-open; see its header.
+#
 # Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
 # survive. The SessionStart hook command is stored literally as `$HOME/...` and
@@ -128,6 +138,8 @@ cmd_board='$HOME/.local/bin/claude-furrow-board-note'
 cmd_fanout='$HOME/.local/bin/claude-fanout-cwd-guard'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_vnc='$HOME/.local/bin/claude-vncdo-guard'
+# shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
+cmd_shard='$HOME/.local/bin/claude-board-shard-guard'
 
 input=$(cat)
 [ -n "$input" ] || input='{}'
@@ -137,7 +149,7 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg board "$cmd_board" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg board "$cmd_board" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" --arg shard "$cmd_shard" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
   def stop_hook_present: [ (.hooks.Stop // [])[]?.hooks[]?.command ] | any(. == $stop);
   def quota_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $quota);
@@ -145,6 +157,7 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
   def board_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $board);
   def fanout_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $fanout);
   def vnc_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $vnc);
+  def shard_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $shard);
 
   ( if hook_present then .
     else
@@ -187,6 +200,12 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
           (.hooks //= {})
         | (.hooks.PreToolUse //= [])
         | (.hooks.PreToolUse += [ { matcher: "Bash", hooks: [ { type: "command", command: $vnc, timeout: 10 } ] } ])
+      end )
+  | ( if shard_hook_present then .
+      else
+          (.hooks //= {})
+        | (.hooks.PreToolUse //= [])
+        | (.hooks.PreToolUse += [ { matcher: "Edit|Write|MultiEdit", hooks: [ { type: "command", command: $shard, timeout: 10 } ] } ])
       end )
   | (.permissions //= {})
   | (.permissions.allow //= [])
