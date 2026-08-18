@@ -24,19 +24,26 @@
 # guard covers the tool path where a write is unambiguously wrong, and says so
 # rather than pretending to cover the class.
 #
-# Scratchpad boards are exempt. Verification sessions copy a whole board into a
-# temp dir (`cp -R projects/.furrow "$SP/.../.furrow"`); 112 such boards holding
-# 20885 task shards existed under /private/tmp when this was measured
-# (2026-08-19), and the count grows with every verification session — prompting
-# on those would drown the guard. Temp roots are excluded before the shard match.
+# ONLY the boards this machine is configured to use are in scope, read from
+# furrow's own config (the same derivation claude-projects-lint-note uses). A
+# path-shape match was tried first and was wrong: `*/.furrow/tasks/*.json`
+# matches every COPY of a board too, and copies vastly outnumber the real one —
+# 112 boards holding 20885 task shards under /private/tmp alone on 2026-08-19,
+# plus caches and any other scratch root. Blocklisting temp roots cannot be
+# completed; within an hour of shipping that version, a verification agent
+# writing to ~/Library/Caches/askprobe/.furrow/tasks/ tripped it and hung,
+# because a non-interactive subagent has nobody to answer an ask. Scoping to the
+# configured board makes every copy out of scope by construction, and drops the
+# blocklist entirely.
 #
-# The `*/.furrow/` prefix is required on purpose: furrow's own test fixture
-# lives at internal/store/fsstore/testdata/frozen-board/{tasks,epics,repos}/*.json
-# with no .furrow/ component, so updating it stays untouched (measured).
+# It also keeps furrow's own fixture out: it lives at
+# internal/store/fsstore/testdata/frozen-board/ with no .furrow/ component and
+# under no configured board.
 #
-# Fail-open by construction: no jq, unparseable stdin, another tool, or a missing
-# file_path → allow. tool_input.file_path is always absolute (measured: zero
-# relative examples across every transcript), so the prefix match is sound.
+# Fail-open by construction: no jq, unparseable stdin, another tool, a missing
+# file_path, or no readable furrow config → allow. tool_input.file_path is
+# always absolute (measured: zero relative examples across every transcript),
+# so the prefix match is sound.
 #
 # Owned by dotfiles (chezmoi → ~/.local/bin/claude-board-shard-guard); wired from
 # the Claude PreToolUse hook in modify_settings.json (step 11).
@@ -58,15 +65,27 @@ esac
 f=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 [ -n "$f" ] || exit 0
 
-# Temp roots first: a copied board under one of these is a fixture, not the board.
-case "$f" in
-/tmp/* | /private/tmp/* | /var/folders/* | /private/var/folders/*) exit 0 ;;
-esac
-
+# Shape first (cheap), so a non-shard write never pays for the config read.
 case "$f" in
 */.furrow/tasks/*.json | */.furrow/epics/*.json | */.furrow/repos/*.json | */.furrow/meta.json) ;;
 *) exit 0 ;;
 esac
+
+# Then scope: the write must land inside a board this machine is CONFIGURED to
+# use. Every other .furrow/ on disk is a copy, a fixture, or someone else's.
+cfg="${FURROW_CONFIG:-$HOME/.config/furrow/config.toml}"
+[ -r "$cfg" ] || exit 0
+
+in_scope=0
+while IFS= read -r board; do
+  [ -n "$board" ] || continue
+  case "$f" in
+  "$board"/*) in_scope=1 ;;
+  esac
+done <<EOF
+$(sed -n 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg")
+EOF
+[ "$in_scope" -eq 1 ] || exit 0
 
 jq -n --arg f "$f" '{
   hookSpecificOutput: {
