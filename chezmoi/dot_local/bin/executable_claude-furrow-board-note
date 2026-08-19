@@ -27,7 +27,8 @@
 # claude-projects-lint-note).
 #
 # Owned by dotfiles (chezmoi → ~/.local/bin/claude-furrow-board-note). Wired from
-# ~/.claude/settings.json hooks.SessionStart by modify_settings.json (step 9).
+# ~/.claude/settings.json hooks.SessionStart by modify_settings.json (the step
+# number is not repeated here — a copied "step 9" went stale when steps grew).
 # Tests: scripts/test_claude_furrow_board_note.py (unittest, CI).
 set -u
 

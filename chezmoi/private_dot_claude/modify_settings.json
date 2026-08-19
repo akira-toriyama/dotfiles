@@ -2,7 +2,8 @@
 # chezmoi modify_ script for ~/.claude/settings.json.
 #
 # chezmoi pipes the CURRENT settings.json on stdin; our stdout becomes the new
-# file. We ensure exactly TEN things and pass everything else (the permissions
+# file. We ensure exactly the numbered things below (the list is the count —
+# a prose total here went stale once) and pass everything else (the permissions
 # the user accumulates interactively, plugins, env, other hooks) through
 # untouched:
 #   1. a SessionStart hook that runs git-stale-check (so an agent sees a
