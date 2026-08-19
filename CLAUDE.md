@@ -73,7 +73,7 @@ flowchart TD
 
 - **`main` は唯一の永続ブランチ**（2026-05-27 に `rebuild` を統合・削除。CI も main へ単発）。作業は短命な feature ブランチを切り、**PR 経由で `main` に squash-merge** する（直 push はしない）。
 - **フロー**: `git checkout -b <type>/<topic>` → 論理単位で commit → `git push -u origin <branch>` → `gh pr create` → CI green → `gh pr merge --squash`（`--auto` 可）。実例は [docs/operations.md](docs/operations.md)。
-- **コミットメッセージは gitmoji-driven**（`<:gitmoji:>[(<scope>)][!] <subject>`。Conventional の `<type>` 語は退役済み）。規約の正本は [docs/commit-convention.md](docs/commit-convention.md) と `glyph rules`。**push 前に `glyph lint --range origin/main..HEAD`**（履歴には退役形式の commit が残っているので `git log` を手本にしない）。
+- **コミットメッセージは gitmoji-driven**（`<:gitmoji:>[(<scope>)][!] <subject>`。Conventional の `<type>` 語は退役済み）。規約の正本は [docs/commit-convention.md](docs/commit-convention.md)（機械検査 = `glyph lint`）。**push 前に `glyph lint --range origin/main..HEAD`**（履歴には退役形式の commit が残っているので `git log` を手本にしない）。
 - **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
   - `lint` — `scripts/lint` 一本（ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` は render 後に shellcheck・plist 構文 / コードスパン内のパス実在）。**ローカルでも同じコマンドが走る**: `nix develop .#lint --command scripts/lint`
