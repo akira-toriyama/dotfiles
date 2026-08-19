@@ -134,13 +134,13 @@
 - **Fable 枠**: 独立バケットではなく全体 Weekly と同一原資（Fable 枠 ≈ 全体の 50%・
   重さ ≈ Opus の 2 倍）。不変条件 `Fable% ≥ Weekly%`、目標は約 4 日で Fable 週枠 100%
   （均等割りしない・前倒し可）。枠が尽きたら Opus で粘る（追加課金しない）— これは
-  「コストは制約ではない」より上。枠の読み方: `~/.claude.json` の
-  `cachedUsageUtilization.utilization.limits[]`（`kind=weekly_all` と Fable scoped の
-  `percent`。鮮度は同オブジェクトの `fetchedAtMs`）。
+  「コストは制約ではない」より上。枠の実数は SessionStart hook が毎セッション冒頭に
+  出す（読み方の正本 = claude-quota-note script）。
 - Opus が難所で失敗したら都度 task body に「Opus で N 回失敗（原因）」と書く
   （会話記憶はセッションを跨がない）。ユーザーの「これ Fable で」は割合判断に優先する。
 - Fable セッションのサブエージェントは既定継承させない（探索 = `sonnet` + low・
-  検証 = `opus` を明示。漏れると黙って全員 Fable になる）。検証・レビューは常に Opus 側。
+  検証 = `opus` を明示。漏れると Plan・general-purpose は黙って Fable を継承する —
+  実測 2026-08-19。Explore 等は継承しない）。検証・レビューは常に Opus 側。
 
 ## Mac アプリ（Swift）
 

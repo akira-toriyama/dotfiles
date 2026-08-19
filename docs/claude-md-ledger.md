@@ -56,7 +56,7 @@
 | Fable のファンアウト禁止（モデル運用節） | `fable-architect` 経由でのみ | — | [agents/fable-architect.md](../chezmoi/private_dot_claude/agents/fable-architect.md) の `tools:` に Agent 非搭載 → harness が拒否 | 🔒 Agent 経路のみ |
 | Fable%≥Weekly% 不変条件・約 4 日で 100%・尽きたら Opus（モデル運用節・正典に無い） | 開幕 quota 行を見て委譲判断 | 「これ Fable で」の発令・課金判断 | SessionStart hook [claude-quota-note](../chezmoi/dot_local/bin/executable_claude-quota-note) が Weekly% / Fable% と不変条件の充足/割れを毎セッション冒頭に提示（fail-open・fixture テストつき） | 🟡 数字は毎回出るが、委譲判断そのものは散文 |
 | Opus 失敗の body 記録（モデル運用節） | 都度 task body に書く | — | なし | 📖 |
-| 分担・Fable セッションで既定継承させない・検証は Opus 側（モデル運用節） | サブエージェントの model/effort を明示 | `/model fable` への切替 | なし。指定漏れは黙って全員 Fable | 📖 |
+| 分担・Fable セッションで既定継承させない・検証は Opus 側（モデル運用節） | サブエージェントの model/effort を明示 | `/model fable` への切替 | なし。指定漏れの継承は subagent_type 依存（Plan・general-purpose のみ — 2026-08-19 の 4081 transcript 実測。旧文言「全員 Fable」は誇張だった） | 📖 |
 | SwiftUI+Sill・AppKit は essential floor・最新 macOS のみ（Mac アプリ節） | 設計・実装時に適用 | — | なし | 📖 |
 | 他 repo は慣習に従う・自分の規約を持ち込まない（他リポジトリ節） | repo の CLAUDE.md/CONTRIBUTING/履歴を先に読む | — | なし | 📖 |
 
@@ -91,6 +91,7 @@
 | N 宣言・入口フィルタ 4 分類（質問フロー細則） | 縮約 | 一問一答・推奨・委任の核だけ残存 | 質問の質が落ちる実害が出たら |
 | 現在地ワンショットの読み方解説（`# branch.ab` の意味等） | nice-to-have | コマンド自体は残存 | — |
 | pare/cifail/rundiff の詳細解説（フラグ・profile の理由） | 縮約 | トリガー→コマンド 1 行ずつに | ツールの誤用が頻発したら |
+| 枠の読み方の jq 詳細（モデル運用節・2026-08-19） | 移設 | 実数は SessionStart hook が毎セッション出す — 読み方の正本は claude-quota-note script 自身 | hook が退役したら global へ戻す |
 
 ## ユーザーの手番（一覧）
 
