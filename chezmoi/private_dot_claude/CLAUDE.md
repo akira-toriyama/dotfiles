@@ -13,7 +13,7 @@
   | topic | 正典 |
   |---|---|
   | task 運用ルール | [projects/CLAUDE.md](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md) |
-  | commit 規約 | [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md) + `glyph rules`（機械正本） |
+  | commit 規約 | [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md)（機械検査 = `glyph lint`） |
   | fleet 変更の段取り | [fleet-change-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/fleet-change-policy.md) |
   | Sill の library 契約 | [Sill](https://github.com/akira-toriyama/sill) の `Package.swift` |
   | ルールの強制状態・削除記録 | dotfiles の [claude-md-ledger.md](https://github.com/akira-toriyama/dotfiles/blob/main/docs/claude-md-ledger.md) |
@@ -66,9 +66,6 @@
 - 起票の既定 lane は `icebox`（backlog 以上に置くのは「戻る価値」を 1 行で言えるものだけ。
   迷ったら icebox — 消去ではなく `furrow set <id> -s backlog` で戻せる）。
   ユーザーが明示的に依頼した起票はこの既定の対象外。
-- code repo 内では global 既定ボードが repo を自動付与・自動フィルタする。
-  **projects checkout の中だけは local `.furrow` が優先されて auto が効かない —
-  tracker 自身の作業は明示 `-r projects` が必須**（正典に無い）。
 - 指示が無ければ `furrow brief`（= next の先頭）から着手し、何を選んだか 1 行報告。
   next は active epic の member + epic 未所属に絞られる（active が無ければ意図的に空）。
   **active epic の切り替えは申請制 — 勝手に `furrow epic activate` しない**。
@@ -119,7 +116,7 @@
 
 ## Commits
 
-- gitmoji-driven: `<:gitmoji:>[(<scope>)][!] <subject>`。規約は暗記せず `glyph rules` を引く。
+- gitmoji-driven: `<:gitmoji:>[(<scope>)][!] <subject>`。規約は暗記せず CONTRIBUTING.md（正典マップ）を引く。
 - **push 前に `glyph lint --range origin/main..HEAD`**（push 後に CI で落ちるのは
   1 往復の無駄 — 実際に起きた）。
 - subject も body も英語。和訳は付けない（2026-08-02 廃止）。
