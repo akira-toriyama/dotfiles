@@ -66,6 +66,15 @@ if ! printf '%s' "$cmd" | grep -Eq '(^|[|;&`(]|&&|\|\|)[[:space:]]*([A-Za-z_][A-
   exit 0
 fi
 
+# A help/version probe cannot hang on the VNC server (it never connects), so
+# it needs no deadline. The flag must sit in the same pipeline segment as the
+# vncdo token — `vncdo capture x.png; foo --help` still lacks a deadline and
+# stays refused. Measured misfire this closed: `vncdo --help 2>&1 | grep
+# timeout` was denied (2026-08-19).
+if printf '%s' "$cmd" | grep -Eq 'vncdo[^|;&]*[[:space:]](--help|--version|-h)([[:space:]]|$)'; then
+  exit 0
+fi
+
 # 1) every vncdo call must carry its own deadline (-t N / --timeout N / =N)
 if ! printf '%s' "$cmd" | grep -Eq -- '(^|[[:space:]])(--timeout(=|[[:space:]]+)[0-9]+|-t[[:space:]]*[0-9]+)'; then
   {
