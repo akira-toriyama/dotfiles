@@ -49,15 +49,5 @@ description: Use when developing, modifying, or debugging a macOS app in Swift (
 - ホスト影響変更・新規許可フローの検証は **VM**（Tart・APFS-COW clone + suspend snapshot）でクリーン環境実証。
 - 二層ログ: 常時 `Log.line` ＋ env-gate `Log.debug`（off は bool 1回）。temp file へ書き、gate on の時だけ stderr へミラー。
 
-## 開発前提（mandate 2026-07-29 コメント / 2026-08-02 全体へ拡張）
-- **この repo 群を人間は開発しない** — 書き手・読み手・保守者は Claude Code。人間は
-  製品の利用者としてだけ現れる（GUI 文言・エラー表示は利用者品質を保つ）。
-- **人間開発者向けの整備をしない**: contributor 向け onboarding・tutorial 文書・
-  human 向け DocC 体裁の丁寧化はしない。README は利用者向け usage と保守に効く
-  事実だけ。人間の学習コスト・muscle memory を理由に API・内部構造を温存しない
-  （破壊的変更 OK は global 準拠）。
-- **コメントの読者は Claude Code。人間向けの説明コメントは書かない** — tutorial 調の
-  逐語説明・コードの言い換え・飾りの区切り見出しは書かない。既存コードで見つけたら削る。
-- 書く・残すのは**保守に効くコメントだけ**: コードに表せない制約・不変条件・
-  型/module 冒頭の層契約（役割と禁止事項）・外部仕様への追随点・「なぜこうしないか」。
-- 迷ったら書かない。コードで表せる情報は naming・型・test に載せる。
+## 開発前提 → global CLAUDE.md「Development policy」参照
+書き手・読み手・保守者は Claude Code（コメント規律・contributor 向け整備をしない、を含む）。正本は global の「No humans develop these repos」bullet ＝ここに複製しない。

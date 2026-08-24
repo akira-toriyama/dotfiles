@@ -97,6 +97,20 @@ Canon for operating rules = projects/CLAUDE.md (canon map).
 - **Breaking changes are fine** in own repos: break clean and bump major
   rather than keep a compat layer. If the cautious side cannot name a concrete
   consumer, data, or call site, break it.
+- **No humans develop these repos**: writer, reader, and maintainer are Claude
+  Code; humans appear only as product users — user-facing text (CLI help, GUI
+  strings, error messages) keeps product quality. Build nothing for human
+  developers: no contributor onboarding, no tutorials, no polished
+  human-oriented API-doc formatting; README = user-facing usage plus facts
+  that aid maintenance. Don't preserve APIs or internals for human learning
+  cost or muscle memory. Code comments (in code only — conversation, reports,
+  and task bodies follow "Output shape") address Claude Code: write only what
+  aids maintenance and code cannot express — constraints, invariants, layer
+  contracts at package/type/module heads (role + prohibitions), external-spec
+  follow-ups, why-nots. No tutorial-style narration, no paraphrase of the
+  code, no decorative divider headings; delete such comments where found. If
+  unsure, leave the comment out; put the information in naming, types, or
+  tests.
 - **"Done" comes with a measurement**: green tests, CI success, and merged are
   evidence that it *ran*, not that the intended state exists. Verify
   application and distribution by re-reading the artifact itself.

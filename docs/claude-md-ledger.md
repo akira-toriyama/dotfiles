@@ -38,6 +38,7 @@
 | PR footer `SetStatus-task:`（Workflow 節） | footer を書く | — | [task-status.yml](../.github/workflows/task-status.yml) が lane 自動適用。書き忘れても落ちない | 🟡 |
 | 予約箱 epic（mandate / parking-lot / requests）— 別 repo への要望は requests へ（Workflow 節・正本 = projects docs/reserved-epics.md） | 要望を requests 箱へ起票 | triage の裁定 | projects lint（box 不変条件 = pre-push error block・warn は SessionStart hook [claude-projects-lint-note](../chezmoi/dot_local/bin/executable_claude-projects-lint-note) と日次 CI が表示）+ `reserved-epics.sh` が箱を常備 | 🟡 箱と表示は機構・起票先の選択は 📖 |
 | 品質>速度・一貫性・破壊的変更 OK（Development policy 節） | 判断規範として適用 | 好み・リスク受容の裁定 | — | 🙅 |
+| 人間開発者向けを作らない・コメントの読者は Claude Code（Development policy 節・元 mandate 2026-07-29 / 2026-08-02。2026-08-24 に go-dev / mac-app-dev skill の「開発前提」ブロックを統合し skill 側はポインタ化 — 内容は複製の一本化だが、**発火は skill 条件ロード → 常時ロードへ拡大**（全 repo・全言語。旧 skill も自己限定は「この repo 群」で、対象 repo の実質は同じ — 広がるのはロード頻度） | コメント・README・API doc を規律どおりに書く/削る | — | なし（配布前に claude-md-eval 2 腕で測定 — 検証状態節参照） | 📖 |
 | 「できた」は実測とセット（Development policy 節） | 実測／未確認を分けて報告 | — | なし | 📖 |
 | 未検証の観測を書かない・反証 1 周（Development policy 節） | 反証エージェントを回す。body に出所と検証状態 | — | なし | 📖 |
 | **機構化は rule of two・予算内**（Development policy 節・2026-07-28 新設） | 「既に踏んだ失敗の再発防止」以外の機構・ルールを作らない | — | Stop hook の created 予算が件数側を縛る | 🟡 |
@@ -116,6 +117,7 @@
 
 ## 検証状態
 
+- **2026-08-25（開発前提ブロックの統合・t-gjej）**: go-dev / mac-app-dev の「開発前提」を Development policy 節へ統合（skill 側はポインタ化）。claude-md-eval 2 腕（統合前 vs 統合後・model pin claude-opus-5・44 ペア・$5.73・応答生成は 2026-08-24）: 既定 gate（expect=improve・全 case）は tally 24:20 ながら削り勝ち超過 +14% で BLOCKED。内訳 = 会話フレーム 36 ペア 18:18・cut 超過 +2.8% ／ dev 8 ペア candidate 6:2・cut 超過 +62%（cut flag が勝者側にしか付かないバイアス — 該当 flag は全部「敗者に追加の 1 点」型・margin=small）。この実測を受けて harness に観測専用 case（`"gate": false`）と `--expect neutral` を実装（同一 PR の前 commit・unit 53）し、**既収 verdicts への再適用（`--from-verdicts` = 再ロールなし）で PASS**（gated 18:18・敗け幅 0 ≤ 10%・cut 超過 +2.8% ≤ 10%）。効能側の観測: dev-onboarding の fire（応答が開発者 = Claude Code を名指し）は candidate のみ 2/2・観測 tally candidate 6:2。**測定モード（neutral）は結果の一部としてここに記録**。統合の忠実性は Opus 独立エージェントの反証 1 周（BLOCKER 4 / MINOR 7 — 層契約の中身脱落・適用面拡大の未申告等を検出し反映）。
 - 2026-07-26 の初回実測（glyph 和訳非強制 / Stop hook fixture+変異 / brew shadow 不在 / `-l` ガード）と 2026-07-27 の追加実測（日本語 subject 素通り / `:fire:` footer 強制 / `furrow doctor` info 止まり）は旧版台帳の記録どおり（`git show 92e19cc:docs/claude-md-ledger.md` の「検証状態」節）。
 - **2026-08-24（段 3・全面英語化 + KISS 削減・t-gjej）**: 旧（日本語）11,254 bytes → 新（英語）9,910 bytes は `wc -c` 実測。claude-md-eval 2 腕（旧版 vs 新版・model pin claude-opus-5・36 ペア・$4.14）: tally candidate 20 / baseline 16・削り勝ち差 +3/36 = 8.3%（< 10%）で release gate PASS。候補応答 36 本の日本語比率を機械確認 — 英語化で応答言語が引きずられる回帰なし。訳の忠実性は Opus 独立エージェントの反証 1 周（BLOCKER 1 件 = go run 例外の受け皿欠落を検出・修正済み）。
 - **2026-07-28（本再構成）**: Stop hook 契約化は fixture 19 + 変異検証 3/3 で実測（PR #294）。旧版 33,805 bytes → 新版 9,873 bytes は `wc -c` 実測。散文の実効は claude-md-eval の 2 腕比較（旧版 vs 新版）で測定 — 結果は PR 本文に記録。
