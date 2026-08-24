@@ -19,7 +19,7 @@ description: Use when developing, modifying, or debugging a macOS app in Swift (
   ② 既存 AppKit コードの **legacy 保守**。下の落とし穴節はこの 2 つに効く実装知識。
 - **足りない部品はアプリ側に one-off で足す前に Sill への PR を検討する**（共通化できるものを
   各アプリに散らさない）。
-- OS サポートは**最新 macOS のみ**。古い OS 向けの availability 分岐は書かない。
+- OS サポートは**最新 macOS のみ**。古い OS 向けの分岐・workaround は書かない。
 
 ## GUI 検証 → `macos-gui-verify` skill 参照
 

@@ -354,7 +354,7 @@ dotfiles が **config だけを持つ**自作 macOS アプリ 3 本（アプリ�
 いずれも akira-toriyama 製で、[`home/modules/packages.nix`](../home/modules/packages.nix) の
 `sourceBuiltCLI`（呼ぶたび clone を incremental build する wrapper）で PATH に載る。
 **brew 版は入れない**（`/opt/homebrew/bin` が nix profile より前なので wrapper を shadow する）。
-使いどころの正典は global CLAUDE.md の「自作 CLI」節 — ここは呼び名の定義だけ。
+使いどころの正典は global CLAUDE.md の Tools 節 — ここは呼び名の定義だけ。
 
 ### `furrow`
 **タスク管理 CLI**。この repo のタスクの正本は furrow + private tracker repo `projects`。

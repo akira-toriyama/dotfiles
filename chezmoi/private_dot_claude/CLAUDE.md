@@ -1,153 +1,181 @@
-# akira-toriyama のリポジトリに対して
+# For akira-toriyama repositories
 
-## この文書の読み方
+## How to read this document
 
-毎セッション全文ロードされる、全 repo 共通の既定ルール。
+Loaded in full every session, in every repo — the fleet-wide defaults.
 
-- **規範が食い違ったら上が勝つ**: ①ユーザーのその場の指示 ②作業中 repo の CLAUDE.md
-  ③リンク先の正典 ④この文書。
-- **正典に無い事実は、この文書が一次の置き場**（該当箇所に「正典に無い」と明記してある。
-  そこから削ると常時ロードの文脈から消える）。
-- **正典マップ**:
+- **When norms conflict, the higher one wins**: ① the user's in-session
+  instruction ② the working repo's CLAUDE.md ③ the linked canon ④ this document.
+- **Facts that have no canon live here first** (marked "no canon" where they
+  appear — deleting them removes them from the always-loaded context).
+- **Canon map**:
 
-  | topic | 正典 |
+  | topic | canon |
   |---|---|
-  | task 運用ルール | [projects/CLAUDE.md](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md) |
-  | commit 規約 | [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md)（機械検査 = `glyph lint`） |
-  | fleet 変更の段取り | [fleet-change-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/fleet-change-policy.md) |
-  | Sill の library 契約 | [Sill](https://github.com/akira-toriyama/sill) の `Package.swift` |
-  | ルールの強制状態・削除記録 | dotfiles の [claude-md-ledger.md](https://github.com/akira-toriyama/dotfiles/blob/main/docs/claude-md-ledger.md) |
-  | 文書の一貫性・言語（英語のみ・翻訳を持たない） | [doc-consistency-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md) |
+  | task operations | [projects/CLAUDE.md](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md) |
+  | commit convention | [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md) (machine check = `glyph lint`) |
+  | fleet-wide change procedure | [fleet-change-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/fleet-change-policy.md) |
+  | Sill library contract | [Sill](https://github.com/akira-toriyama/sill) `Package.swift` |
+  | rule enforcement status / deletion log | dotfiles [claude-md-ledger.md](https://github.com/akira-toriyama/dotfiles/blob/main/docs/claude-md-ledger.md) |
+  | doc consistency / language (English only, no translations) | [doc-consistency-policy.md](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md) |
 
-## 出力の形
+## Output shape
 
-**正確さと安全が短さに優先する。**調べる深さは制限しない — 制限するのは会話に出す分量だけ。
+**Accuracy and safety outrank brevity.** Depth of investigation is uncapped —
+only what goes into the conversation is.
 
-- 1 行目は結論・コマンド・パスから。理由は後。
-- 1 回の返答はスクロールなしで読み切れる長さ。ただし、頼まれた列挙・網羅 /
-  リスク・破壊的副作用の指摘 / 実測と未確認を分ける報告は、削らない。
-- 質問は 1 問ずつ。既定値で進められる場面では聞かずに成果物を出し、置いた前提を添える。
-- 複数手順の作業では現在地を毎ターン書く（「5 中 3 完了」）。
-- エラーは淡々と、原因 → 修正の順。
-- 送信前に、予告するだけの最初の一文と「他にありますか」系の最後の一文を削る。
-  本物の不確かさを表すぼかしは残す（消すと確信の捏造になる）。
+- Line 1 is the conclusion, command, or path. Reasons come after.
+- Keep one reply readable without scrolling. Never trim: enumerations or
+  exhaustive coverage the user asked for, warnings about risk or destructive
+  side effects, and reports that separate measured from unverified.
+- Ask one question at a time. Where a default lets you proceed, ship the
+  deliverable without asking and state the assumptions you made.
+- In multi-step work, state your position every turn (「5 中 3 完了」).
+- Errors: matter-of-fact, cause → fix.
+- Before sending, delete a first sentence that only announces what follows and
+  a closing 「他にありますか」-type sentence. Keep hedges that mark real
+  uncertainty — deleting them fabricates confidence.
 
-## 作業の締め（依頼された作業を実行して終えた時だけ）
+## Work closing (only after executing requested work)
 
-- 締めを付けるのは、依頼された作業を実行して終えた時だけ。質問への回答・エラー報告・
-  相談・壁打ち・状況共有は普通の会話 — 締めの 2 要素も counts も付けない
-  （`closed 0 / created 0` と書きたくなったら、まず締めの場面かを疑う）。
-- 締めに必須の 2 要素（文面自由・Stop hook が検査）:
+- Attach a closing only when you executed requested work and finished it.
+  Answers to questions, error reports, consultations, sparring, and status
+  shares are plain conversation — no closing elements, no counts (the urge to
+  write `closed 0 / created 0` is a cue to first doubt whether this is a
+  closing at all).
+- The two required elements (wording free; the Stop hook checks):
 
   ```
   やり残し: t-xxxx, t-yyyy（無ければ「なし」）
   closed N / created M
   ```
 
-  予算は `created ≤ closed − 1`。超えてよいのは今日の作業が生んだ blocker だけで、
-  counts 行かその直後に理由 1 行。超える分は、その場で直す（effort ≤ 2 かつ今触っている
-  コード内）か icebox に落とす。
-- 質問・報告は一問一答・推奨つき（「XXX です。推奨は ZZZ です」）。ユーザーの
-  「残り全部推奨で」で残りを推奨値で確定。終わったら決定事項と自分で決めた事項を開示。
+  Budget: `created ≤ closed − 1`. Only blockers born from today's work may
+  exceed it, with a one-line reason on or right after the counts line.
+  Anything else over budget: fix it on the spot (effort ≤ 2 and inside the
+  code at hand) or drop it to icebox.
+- Questions and reports: one at a time, with a recommendation
+  (「XXX です。推奨は ZZZ です」). The user's 「残り全部推奨で」 settles the
+  rest at the recommended values. When done, disclose what was decided and
+  what you decided on your own.
 
-## Workflow（タスク管理）
+## Workflow (task management)
 
-運用ルールの正典は projects/CLAUDE.md（正典マップ参照）。
+Canon for operating rules = projects/CLAUDE.md (canon map).
 
-- タスク管理は furrow + private repo `projects` に一本化。furrow は PATH の wrapper
-  （常に source 反映）で叩く。furrow 自身を開発する時だけ source dir で
-  `go run ./cmd/furrow`。board の layout が上がった直後は各マシンで furrow の
-  source checkout を `git pull` してから叩く（古い HEAD のままだと `schema-too-new`
-  で board に書けない）。
-- 読む前・書いた後に `furrow sync`。session start は `furrow sync && furrow brief`
-  で orient（active epic・next の先頭・lint 件数が 1 読で出る）。
-- 進捗の正本はその task body 一本（memory・ブランチ上のファイルに複製しない）。
-  中断時は body のチェックを更新し、次セッションへの希望を 1 行残す。
-- 起票の既定 lane は `icebox`（backlog 以上に置くのは「戻る価値」を 1 行で言えるものだけ。
-  迷ったら icebox — 消去ではなく `furrow set <id> -s backlog` で戻せる）。
-  ユーザーが明示的に依頼した起票はこの既定の対象外。
-- 指示が無ければ `furrow brief`（= next の先頭）から着手し、何を選んだか 1 行報告。
-  next は active epic の member + epic 未所属に絞られる（active が無ければ意図的に空）。
-  **active epic の切り替えは申請制 — 勝手に `furrow epic activate` しない**。
-  質問・状況共有・相談への返答を作業開始の合図と読まない。
-- 予約箱 epic が各 repo に常設: `mandate`=人間指示 / `parking-lot`=ゴール外の受け皿 /
-  `requests`=**別 repo への要望はここへ**。正本 = projects の docs/reserved-epics.md
-  （機械検査 = projects lint。SessionStart hook・pre-push・日次 CI が表示）。
-- code repo の PR 本文に footer を 1 行:
+- Task management lives in furrow + the private repo `projects`, nowhere else.
+- `furrow sync` before reading and after writing. Session start:
+  `furrow sync && furrow brief` to orient.
+- The single source of progress is the task body (no copies in memory or in
+  files on a branch). On interruption, update the body's checkboxes and leave
+  one line of what you hope the next session does.
+- Default lane for new tasks is `icebox` (backlog or above only when the
+  reason to return fits one line; if torn, icebox — it is not deletion,
+  `furrow set <id> -s backlog` brings it back). Filings the user explicitly
+  asked for are exempt from this default.
+- Without instructions, start from `furrow brief` (= head of next; it is
+  intentionally empty when no epic is active) and report your pick in one
+  line. **Switching the active epic is by request — never run
+  `furrow epic activate` on your own.** Do not read a reply to a question,
+  status share, or consultation as a GO signal.
+- Reserved box epics exist in every repo: `mandate` = human orders /
+  `parking-lot` = catch-all for anything outside the goal / `requests` =
+  **wishes toward another repo go here**. Canon = projects
+  docs/reserved-epics.md.
+- One footer line in code-repo PR bodies:
   `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`
 
-## 開発ポリシー
+## Development policy
 
-- **品質 > 速度**。コストは制約ではない（ユーザー明言:「コストより品質」）。
-- **迷ったら一貫性**: 既存の設計・慣習・過去の決定と揃う側を選ぶ。
-- **成果物は英語のみ**: committed な文書・commit・PR・issue は英語で書き、翻訳ファイル
-  （README.ja 等）を持たない（正本 = doc-consistency-policy）。会話と furrow task は日本語。
-- **破壊的変更 OK**: 自分の repo では互換レイヤーを残すより綺麗に壊して major。
-  保守側の理由が具体的な消費者・データ・利用箇所を指せないなら壊す方を採る。
-- **「できた」は実測とセット**: test 緑・CI success・merged は「実行できた」証拠であって
-  「意図した状態になった」証拠ではない。適用・配布は成果物側を読み直して数える
-  （memory に書いた翌日に同じ罠を踏んだ実績 — 散文の記憶では止まらない）。
-- **未検証の観測を task や報告に書かない**: 自分で再現・実測していないシステム挙動の
-  主張は、独立エージェントに「refute しろ」と明示して反証 1 周してから書く。自己申告
-  confidence でのスキップ禁止（11 件中 6 件否定の実績）。task body には出所と検証状態を書く。
-- **機構化（lint / hook / test / ルール追加）は、①既に踏んだ失敗の再発防止で
-  ②created 予算内のものに限る**。1 回目の失敗はその場で直して終わり。
-  あったら便利そうな機構・ルールは作らない。
-- 全 repo に波及する変更（glyph・fleet canonical 等）は fleet-change-policy.md の段を踏む。
-- 許可: 調査のための clone・ドキュメント DL は自由 / Tart VM の中は sudo 含め全操作 OK
-  （ホストの sudo は対象外・コマンド提示までにする）/ GitHub Packages への配布 OK。
+- **Quality > speed**. Cost is not a constraint (user's words:
+  「コストより品質」).
+- **When torn, pick consistency**: the side that matches existing design,
+  conventions, and past decisions.
+- **Deliverables are English only**: committed docs, commits, PRs, and issues
+  are written in English, with no translation files (README.ja and the like;
+  canon = doc-consistency-policy). Conversation and furrow tasks are Japanese.
+- **Breaking changes are fine** in own repos: break clean and bump major
+  rather than keep a compat layer. If the cautious side cannot name a concrete
+  consumer, data, or call site, break it.
+- **"Done" comes with a measurement**: green tests, CI success, and merged are
+  evidence that it *ran*, not that the intended state exists. Verify
+  application and distribution by re-reading the artifact itself.
+- **No unverified observations in tasks or reports**: a claim about system
+  behavior you did not reproduce or measure yourself gets one refutation pass
+  first, by an independent agent explicitly told to refute it. No skipping on
+  self-declared confidence (6 of 11 such claims fell). Write the source and
+  verification status into the task body.
+- **Mechanization (lint / hook / test / new rule) only when ① it prevents
+  recurrence of an already-hit failure and ② it fits the created budget.** A
+  first-time failure is fixed on the spot, and that is all. Never build
+  might-be-useful mechanisms or rules.
+- Changes that ripple across every repo (glyph, fleet canonicals, …) follow
+  the steps in fleet-change-policy.md.
+- Allowed: cloning repos and downloading docs for research, freely / every
+  operation including sudo inside a Tart VM (host sudo excluded — present the
+  command and stop) / publishing to GitHub Packages.
 
-## 道具（生ログ・手書きループより先に）
+## Tools (before raw logs or hand-written loops)
 
-- repo 現在地ワンショット:
+- Repo one-shot:
 
   ```sh
   git status --porcelain=v2 --branch --show-stash; echo ---; git log --format='%h|%cs|%s' -5; echo ---; git worktree list --porcelain
   ```
 
-- 長い出力 → `<cmd> 2>&1 | pare`（test 実行は `| pare --profile test`）
-- CI 失敗の要点 → `cifail`（`wait` = 終了まで待つ / `delta` = 直近の緑との差分 / `flake` = flaky 判定）
-- 同じコマンドの再実行差分 → `rundiff`（主要 test runner は PreToolUse hook が自動 wrap）
-- findings の PR レビュー投稿 → `revpost`（`--dry-run` あり）
-- 条件待ち → condition-wait skill（wait4x）/ macOS GUI 検証 → macos-gui-verify skill（peekaboo）
-- **外部待ちは deadline 必須**・停滞は即報告・状態質問は実測後に答える
-- **自作 CLI・アプリは source で使う**: CLI は dotfiles `packages.nix` の source-build
-  wrapper、GUI アプリは Xcode ビルド。`brew install` しない（brew が wrapper を shadow する）。
+- Long output → `<cmd> 2>&1 | pare` (test runs: `| pare --profile test`)
+- CI failure digest → `cifail` (`wait` = block until it ends / `delta` = diff
+  against the last green / `flake` = flakiness verdict)
+- Re-run diff of the same command → `rundiff` (major test runners are
+  auto-wrapped by a PreToolUse hook)
+- Posting findings as a PR review → `revpost` (has `--dry-run`)
+- Waiting on a condition → condition-wait skill (wait4x) / macOS GUI
+  verification → macos-gui-verify skill (peekaboo)
+- **External waits require a deadline**; report stalls immediately; answer
+  state questions after measuring, not before.
+- **Run self-built CLIs and apps from source**: CLIs via the source-build
+  wrappers in dotfiles `packages.nix`, GUI apps via Xcode builds. Never
+  `brew install` them — brew shadows the wrapper. Exception: while developing
+  the tool itself, run it from its source dir (furrow:
+  `go run ./cmd/furrow`).
 
 ## Commits
 
-- gitmoji-driven: `<:gitmoji:>[(<scope>)][!] <subject>`。規約は暗記せず CONTRIBUTING.md（正典マップ）を引く。
-- **push 前に `glyph lint --range origin/main..HEAD`**（push 後に CI で落ちるのは
-  1 往復の無駄 — 実際に起きた）。
-- subject も body も英語。和訳は付けない（2026-08-02 廃止）。
+- gitmoji-driven: `<:gitmoji:>[(<scope>)][!] <subject>`. Don't recite the
+  convention from memory — open CONTRIBUTING.md (canon map).
+- **Before pushing: `glyph lint --range origin/main..HEAD`** (failing in CI
+  after the push wastes a round trip — it has happened).
+- Subject and body in English; no Japanese translation attached.
 
-## モデル運用（この節の事実は正典に無い — ここが一次の置き場）
+## Model operations (facts here have no canon — this is their primary home)
 
-既定 = 最新 Opus（`opus[1m]` alias）+ effort xhigh。ultracode は毎セッション手動
-（恒久設定は Claude Code 仕様上不可）。settings にもこの文書にも具体版 ID を書かない
-（pin して実体とずれた実績）。メインループのモデルは Claude からは切り替え不可で、
-難易度を検知して自動で切り替える機構も存在しない。
+Default = latest Opus (`opus[1m]` alias) + effort xhigh. ultracode is manual
+every session (a permanent setting is impossible by Claude Code design). No
+concrete version IDs in settings or in this document (a pin has drifted from
+reality). Claude cannot switch the main-loop model, and no mechanism detects
+difficulty and switches it automatically.
 
-- **分担**: 最新 Opus = メインループ・並列網羅・レビュー・検証 / Sonnet = 機械的
-  サブエージェント（`effort: low`）/ Fable = 単独深考のみ・`fable-architect` 経由
-  （ファンアウト禁止 — Agent 経路は harness が拒否する）。
-- **Fable 枠**: 独立バケットではなく全体 Weekly と同一原資（Fable 枠 ≈ 全体の 50%・
-  重さ ≈ Opus の 2 倍）。不変条件 `Fable% ≥ Weekly%`、目標は約 4 日で Fable 週枠 100%
-  （均等割りしない・前倒し可）。枠が尽きたら Opus で粘る（追加課金しない）— これは
-  「コストは制約ではない」より上。枠の実数は SessionStart hook が毎セッション冒頭に
-  出す（読み方の正本 = claude-quota-note script）。
-- Opus が難所で失敗したら都度 task body に「Opus で N 回失敗（原因）」と書く
-  （会話記憶はセッションを跨がない）。ユーザーの「これ Fable で」は割合判断に優先する。
-- Fable セッションのサブエージェントは既定継承させない（探索 = `sonnet` + low・
-  検証 = `opus` を明示。漏れると Plan・general-purpose は黙って Fable を継承する —
-  実測 2026-08-19。Explore 等は継承しない）。検証・レビューは常に Opus 側。
+- **Division of labor**: latest Opus = main loop, parallel sweeps, review,
+  verification / Sonnet = mechanical subagents (`effort: low`) / Fable = solo
+  deep thinking only, via `fable-architect` (no fan-out — the harness refuses
+  the Agent path).
+- **Fable quota**: not a separate bucket — it draws on the same pool as the
+  overall Weekly. Invariant: `Fable% ≥ Weekly%`. Target: reach 100% of the
+  Fable weekly quota in about 4 days (do not pace it evenly; front-loading is
+  allowed). When it runs dry, persist on Opus — do not buy extra quota; this
+  outranks "cost is not a constraint". The real numbers appear at every
+  session start via the SessionStart hook (canon for reading them = the
+  claude-quota-note script).
+- When Opus fails at a hard spot, write 「Opus で N 回失敗（原因）」 into the
+  task body each time (conversation memory does not cross sessions). The
+  user's 「これ Fable で」 overrides any ratio judgment.
+- In Fable sessions, never let subagents inherit the default model (state it
+  explicitly: exploration = `sonnet` + low / verification = `opus`. Left
+  unstated, Plan and general-purpose silently inherit Fable — measured
+  2026-08-19; Explore and the rest do not). Verification and review always sit
+  on the Opus side.
 
-## Mac アプリ（Swift）
+# For repositories outside akira-toriyama
 
-- UI は SwiftUI + Sill（契約の正本は Sill の `Package.swift`）。AppKit は SwiftUI で
-  届かない essential floor に限る（判断基準は software-architecture skill）。
-- ターゲットは最新 macOS のみ（古い OS 向けの分岐・workaround を書かない）。
-
-# akira-toriyama 以外のリポジトリに対して
-
-- その repo の慣習に従う。自分の規約（gitmoji・furrow・skill）を持ち込まない。
+- Follow that repo's conventions. Leave your own (gitmoji, furrow, skills) at
+  the door.
