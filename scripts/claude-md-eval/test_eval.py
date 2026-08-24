@@ -153,6 +153,90 @@ class TestTwoArmGate(unittest.TestCase):
         self.assertFalse(judge.gate(verdicts, two_arm=True, cut_delta=0.1)[0])
 
 
+class TestNeutralGate(unittest.TestCase):
+    """expect="neutral" refuses harm instead of demanding a win.
+
+    Motivated by a measured structural block (2026-08-24, 44 pairs): a
+    conversation-neutral consolidation tied 18:18 in the gated frame, which
+    "must beat baseline" can never pass, while its whole effect lived in
+    observation cases.
+    """
+
+    def test_a_tie_passes_neutral_but_blocks_improve(self) -> None:
+        verdicts = [v("candidate")] * 5 + [v("baseline")] * 5
+        self.assertFalse(judge.gate(verdicts, two_arm=True)[0])
+        self.assertTrue(judge.gate(verdicts, two_arm=True, expect="neutral")[0])
+
+    def test_a_loss_beyond_the_bound_blocks(self) -> None:
+        passed, reasons = judge.gate(
+            [v("candidate")] * 4 + [v("baseline")] * 6,
+            two_arm=True,
+            expect="neutral",
+        )
+        self.assertFalse(passed)
+        self.assertIn("neutral bound", " ".join(reasons))
+
+    def test_a_small_loss_within_the_bound_passes(self) -> None:
+        passed, _ = judge.gate(
+            [v("candidate")] * 10 + [v("baseline")] * 11,
+            two_arm=True,
+            expect="neutral",
+        )
+        self.assertTrue(passed)
+
+    def test_the_cut_delta_still_applies_in_neutral(self) -> None:
+        passed, reasons = judge.gate(
+            [v("candidate", cut=True)] * 5 + [v("baseline")] * 5,
+            two_arm=True,
+            expect="neutral",
+        )
+        self.assertFalse(passed)
+        self.assertIn("excess", " ".join(reasons))
+
+    def test_the_loss_bound_is_a_parameter(self) -> None:
+        verdicts = [v("candidate")] * 3 + [v("baseline")] * 7
+        self.assertTrue(
+            judge.gate(verdicts, two_arm=True, expect="neutral", loss_delta=0.5)[0]
+        )
+        self.assertFalse(
+            judge.gate(verdicts, two_arm=True, expect="neutral", loss_delta=0.1)[0]
+        )
+
+
+class TestSplitGated(unittest.TestCase):
+    """Observation cases are judged and reported but never gated.
+
+    Cut flags attach only to winners, so a case subset the candidate is
+    supposed to win inflates its cut count mechanically (measured 2026-08-24:
+    +62% excess in the dev subset vs +3% in the conversational frame).
+    """
+
+    CASES = {
+        "conv": {},
+        "obs": {"gate": False},
+        "explicit": {"gate": True},
+    }
+
+    def test_gate_defaults_to_true(self) -> None:
+        gated, observed = judge.split_gated(
+            [{"case_id": "conv"}, {"case_id": "explicit"}], self.CASES
+        )
+        self.assertEqual(len(gated), 2)
+        self.assertEqual(observed, [])
+
+    def test_observation_cases_are_split_out(self) -> None:
+        gated, observed = judge.split_gated(
+            [{"case_id": "conv"}, {"case_id": "obs"}], self.CASES
+        )
+        self.assertEqual([r["case_id"] for r in gated], ["conv"])
+        self.assertEqual([r["case_id"] for r in observed], ["obs"])
+
+    def test_an_unknown_case_id_stays_gated(self) -> None:
+        gated, observed = judge.split_gated([{"case_id": "ghost"}], self.CASES)
+        self.assertEqual(len(gated), 1)
+        self.assertEqual(observed, [])
+
+
 class TestResolveMode(unittest.TestCase):
     """Guessing one-arm for an unlabelled two-arm run is the silent failure."""
 

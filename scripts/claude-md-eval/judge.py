@@ -204,6 +204,7 @@ def judge_one(
 
 DEFAULT_CUT_RATE = 0.25
 DEFAULT_CUT_DELTA = 0.10
+DEFAULT_LOSS_DELTA = 0.10
 
 
 def _cut_wins(scored: list[dict[str, Any]], arm: str) -> int:
@@ -214,11 +215,33 @@ def _cut_wins(scored: list[dict[str, Any]], arm: str) -> int:
     )
 
 
+def split_gated(
+    verdicts: list[dict[str, Any]], cases: dict[str, Any]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(gated, observation) verdicts. ``"gate": false`` cases are never gated.
+
+    Added after a measured failure (2026-08-24, 44 pairs): cut flags attach
+    only to winners, so a case subset the candidate is *supposed* to win
+    (dev-context cases probing a code-comment rule) inflates the candidate's
+    cut count mechanically — +62% excess inside that subset against +3% in the
+    conversational frame — and blocked a change that showed no harm where harm
+    was possible. Observation cases are still judged, fire-counted and printed;
+    their merit is argued from that report, not from the gate.
+    """
+    gated = [v for v in verdicts if cases.get(v["case_id"], {}).get("gate", True)]
+    observed = [
+        v for v in verdicts if not cases.get(v["case_id"], {}).get("gate", True)
+    ]
+    return gated, observed
+
+
 def gate(
     verdicts: list[dict[str, Any]],
     two_arm: bool = False,
     cut_rate: float = DEFAULT_CUT_RATE,
     cut_delta: float = DEFAULT_CUT_DELTA,
+    expect: str = "improve",
+    loss_delta: float = DEFAULT_LOSS_DELTA,
 ) -> tuple[bool, list[str]]:
     """A candidate ships only if it wins on merit, not by deleting substance.
 
@@ -234,9 +257,23 @@ def gate(
         rate blocks a candidate that is no worse than its baseline. Here only
         the *excess over baseline* can be laid at the candidate's feet.
 
-    ``cut_delta`` is provisional and uncalibrated: it comes from one run, not
-    from a calibration sweep. It is a flag so a sweep can replace it without
-    touching this function.
+    Two acceptance modes, because two kinds of edit make claims of different
+    shape (measured 2026-08-24: a consolidation that is conversation-neutral by
+    design tied 18:18 in the gated frame — "must beat baseline" can never pass
+    it, yet the edit's whole effect lives in observation cases):
+
+      ``expect="improve"`` — the edit claims to better the gated responses, so
+        the candidate must beat the baseline outright.
+
+      ``expect="neutral"`` — the edit claims the gated responses are untouched
+        (moves, consolidations, pointerizations), so the gate only refuses
+        harm: a tally loss beyond ``loss_delta`` of judged pairs blocks, and
+        the cut checks still apply. Positive merit is argued outside the gate
+        (observation cases, fire counts, reading the responses).
+
+    ``cut_delta`` and ``loss_delta`` are provisional and uncalibrated: each
+    comes from one run, not from a calibration sweep. They are flags so a sweep
+    can replace them without touching this function.
     """
     scored = [v for v in verdicts if v.get("winner")]
     tally = Counter(v["winner"] for v in scored)
@@ -246,8 +283,17 @@ def gate(
     reasons = []
     if len(scored) != len(verdicts):
         reasons.append(f"{len(verdicts) - len(scored)} pairs failed to judge")
-    if cand_wins <= base_wins:
-        reasons.append(f"candidate did not beat baseline ({cand_wins} vs {base_wins})")
+    if expect == "improve":
+        if cand_wins <= base_wins:
+            reasons.append(
+                f"candidate did not beat baseline ({cand_wins} vs {base_wins})"
+            )
+    elif scored and (base_wins - cand_wins) / len(scored) > loss_delta:
+        reasons.append(
+            f"candidate lost the gated tally beyond the neutral bound "
+            f"({cand_wins} vs {base_wins} — "
+            f"{(base_wins - cand_wins) / len(scored):+.0%} > {loss_delta:.0%})"
+        )
     if scored and two_arm:
         excess = (cand_cut - base_cut) / len(scored)
         if excess > cut_delta:
@@ -306,6 +352,31 @@ def main(argv: list[str] | None = None) -> int:
         help="two-arm gate: max excess of candidate cut-wins over the "
         "baseline's, as a share of judged pairs (provisional — see gate())",
     )
+    ap.add_argument(
+        "--expect",
+        choices=("improve", "neutral"),
+        default="improve",
+        help="what the edit claims about the gated responses: improve = must "
+        "beat the baseline; neutral = a move/consolidation that must merely "
+        "not harm them (see gate()). The choice is part of the result — "
+        "record it wherever the numbers go",
+    )
+    ap.add_argument(
+        "--loss-delta",
+        type=float,
+        default=DEFAULT_LOSS_DELTA,
+        help="neutral gate: max tally loss as a share of judged gated pairs "
+        "(provisional — see gate())",
+    )
+    ap.add_argument(
+        "--from-verdicts",
+        type=Path,
+        default=None,
+        help="re-apply the gate to verdicts already judged (a JSON file this "
+        "script wrote) instead of judging again. Changing the gate frame or "
+        "acceptance mode is a re-read of the same data — re-judging would "
+        "re-roll the LLM verdicts, which invites running until one passes",
+    )
     args = ap.parse_args(argv)
 
     cases = {c["id"]: c for c in json.loads(args.cases.read_text())}
@@ -335,20 +406,33 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"warning: {unpaired} case/trial slots lack both conditions and are skipped"
         )
-    print(f"judging {len(pairs)} pairs", flush=True)
+    if not args.from_verdicts:
+        print(f"judging {len(pairs)} pairs", flush=True)
 
-    # verdict は 1 件ごとに書き出す。全 pair 完了後に一括保存していたころは、
-    # 終盤の 1 本が落ちるとそれまでの judge 結果（= API 呼び出し数十回分）が
-    # まるごと消えた。逐次書き出しなら中断しても手元に残る。
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    verdicts: list[dict[str, Any]] = []
-    with ThreadPoolExecutor(max_workers=args.workers) as ex:
-        for verdict in ex.map(
-            lambda p: judge_one(p[0][0], p[0][1], p[1], args.model, args.retries),
-            pairs,
-        ):
-            verdicts.append(verdict)
-            args.out.write_text(json.dumps(verdicts, ensure_ascii=False, indent=2))
+    verdicts: list[dict[str, Any]]
+    if args.from_verdicts:
+        verdicts = json.loads(args.from_verdicts.read_text())
+        stale = sorted({v["case_id"] for v in verdicts if v["case_id"] not in cases})
+        if stale:
+            print(
+                f"warning: dropping {len(stale)} verdict case id(s) no longer "
+                f"in --cases: {', '.join(stale)}"
+            )
+            verdicts = [v for v in verdicts if v["case_id"] in cases]
+        print(f"re-applying the gate to {len(verdicts)} saved verdicts")
+    else:
+        # verdict は 1 件ごとに書き出す。全 pair 完了後に一括保存していたころは、
+        # 終盤の 1 本が落ちるとそれまでの judge 結果（= API 呼び出し数十回分）が
+        # まるごと消えた。逐次書き出しなら中断しても手元に残る。
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        verdicts = []
+        with ThreadPoolExecutor(max_workers=args.workers) as ex:
+            for verdict in ex.map(
+                lambda p: judge_one(p[0][0], p[0][1], p[1], args.model, args.retries),
+                pairs,
+            ):
+                verdicts.append(verdict)
+                args.out.write_text(json.dumps(verdicts, ensure_ascii=False, indent=2))
 
     agg: dict[Any, Any] = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -382,7 +466,10 @@ def main(argv: list[str] | None = None) -> int:
         probes = ",".join(cases[cid].get("probes", []))
         cut = any(v.get("lost_correctness") or v.get("lost_safety") for v in vs)
         wins = [v.get("winner") for v in vs]
-        print(f"{cid:<18}{probes:<14}{str(wins):<34}{'content cut' if cut else ''}")
+        obs = "" if cases[cid].get("gate", True) else " (observation)"
+        print(
+            f"{cid:<22}{probes:<14}{str(wins):<34}{'content cut' if cut else ''}{obs}"
+        )
 
     fires = fire_counts(rows, cases)
     if fires:
@@ -395,17 +482,33 @@ def main(argv: list[str] | None = None) -> int:
     two_arm, warning = resolve_mode(rows)
     if warning:
         print(f"\nwarning: {warning}")
-    passed, reasons = gate(verdicts, two_arm, args.cut_rate, args.cut_delta)
-    print(f"\ntally: {dict(Counter(v.get('winner') for v in verdicts))}")
+    gated, observed = split_gated(verdicts, cases)
+    passed, reasons = gate(
+        gated, two_arm, args.cut_rate, args.cut_delta, args.expect, args.loss_delta
+    )
+    print(f"\ntally (all): {dict(Counter(v.get('winner') for v in verdicts))}")
+    if observed:
+        obs_ids = sorted({v["case_id"] for v in observed})
+        print(
+            f"gate frame: {len(gated)} gated pairs — {len(observed)} observation "
+            f"pairs excluded ({', '.join(obs_ids)})"
+        )
+        print(f"tally (gated): {dict(Counter(v.get('winner') for v in gated))}")
+        print(
+            f"tally (observation): {dict(Counter(v.get('winner') for v in observed))}"
+        )
     # Both arms' cut counts, always — the two-arm gate is only readable next to
     # them, and in one-arm mode the baseline's count is the sanity check that
     # the judge is not simply flagging everything.
-    scored = [v for v in verdicts if v.get("winner")]
+    scored = [v for v in gated if v.get("winner")]
     print(
-        f"cut-bought wins: candidate {_cut_wins(scored, 'candidate')} / "
+        f"cut-bought wins (gated): candidate {_cut_wins(scored, 'candidate')} / "
         f"baseline {_cut_wins(scored, 'baseline')} of {len(scored)} judged"
     )
-    print(f"gate mode: {'two-arm (baseline_mode=file)' if two_arm else 'one-arm'}")
+    print(
+        f"gate mode: {'two-arm (baseline_mode=file)' if two_arm else 'one-arm'}, "
+        f"expect={args.expect}"
+    )
     print(f"release gate: {'PASS' if passed else 'BLOCKED'}")
     for r in reasons:
         print(f"  - {r}")
