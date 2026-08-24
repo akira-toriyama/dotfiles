@@ -108,6 +108,32 @@ baseline 8 / candidate 11 の削り勝ちとなり、絶対率 25% は「置き�
 フィールドが**無い**行（実装前に書かれた行）は、黙って片腕モードに落とすと 2 腕の run を
 静かに誤判定するので、警告を出す。
 
+### 観測専用 case（`"gate": false`）と受入モード（`--expect`）
+
+移設型の変更（会話に中立で、効果は dev 文脈にだけ出る統合）が 2 つの構造要因で通らない
+ことが実測で分かった（2026-08-24・44 ペア）:
+
+1. cut flag は**勝者側にしか付かない**ので、candidate が勝つ*べき* case 群（dev 文脈）が
+   cut-delta を機械的に押し上げる（dev subset +62% vs 会話フレーム +3%。flag の中身は
+   「敗者に追加の 1 点があった」型の margin=small ばかりだった）。
+2. その case 群を gate から外すと、会話フレームは設計どおり tie になり
+   「candidate did not beat baseline」で止まる。
+
+対処は 2 つで対:
+
+- case の `"gate": false` は**観測専用**の宣言: 判定・fire 集計・per-case 表示はされるが
+  gate 統計から除外される。効能は gate でなくレポート（fire 数・観測 tally・応答本文を
+  読む）で論証する。W1/W2 の「fire はゲートに入れない」と同じ思想を tally にも広げたもの。
+- `--expect neutral` は「gated 応答を変えない」と主張する編集（移設・統合・ポインタ化）用:
+  beats-baseline の代わりに敗け幅バウンド `--loss-delta`（既定 0.10）で**害だけを拒否**
+  する。既定の `--expect improve` は従来どおり勝ちを要求する。**どちらのモードで測ったかは
+  結果の一部** — 数値と一緒に記録する。`--loss-delta` も cut-delta と同じく較正なしの
+  暫定値。
+
+`--from-verdicts <verdicts.json>` は判定済み verdicts に gate だけを再適用する。frame や
+mode の変更は**同じデータの読み直し**であって、再判定（= LLM verdict の引き直し）にすると
+通るまで回す誘惑が生まれるため。
+
 ## 隔離（壊すと測定が無意味になる）
 
 - `--setting-sources ""` —— これが無いと、operator 自身の CLAUDE.md・plugin・hook が
