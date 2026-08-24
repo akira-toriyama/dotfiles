@@ -229,7 +229,9 @@ def split_gated(
     their merit is argued from that report, not from the gate.
     """
     gated = [v for v in verdicts if cases.get(v["case_id"], {}).get("gate", True)]
-    observed = [v for v in verdicts if not cases.get(v["case_id"], {}).get("gate", True)]
+    observed = [
+        v for v in verdicts if not cases.get(v["case_id"], {}).get("gate", True)
+    ]
     return gated, observed
 
 
@@ -466,8 +468,7 @@ def main(argv: list[str] | None = None) -> int:
         wins = [v.get("winner") for v in vs]
         obs = "" if cases[cid].get("gate", True) else " (observation)"
         print(
-            f"{cid:<22}{probes:<14}{str(wins):<34}"
-            f"{'content cut' if cut else ''}{obs}"
+            f"{cid:<22}{probes:<14}{str(wins):<34}{'content cut' if cut else ''}{obs}"
         )
 
     fires = fire_counts(rows, cases)
@@ -494,8 +495,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"tally (gated): {dict(Counter(v.get('winner') for v in gated))}")
         print(
-            f"tally (observation): "
-            f"{dict(Counter(v.get('winner') for v in observed))}"
+            f"tally (observation): {dict(Counter(v.get('winner') for v in observed))}"
         )
     # Both arms' cut counts, always — the two-arm gate is only readable next to
     # them, and in one-arm mode the baseline's count is the sanity check that
