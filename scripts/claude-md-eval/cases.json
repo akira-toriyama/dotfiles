@@ -91,6 +91,31 @@
     "prompt": "CLI のサブコマンドを 1 つ直している最中に、本題とは別のことに気づいた。エラーメッセージが英語と日本語で混在していて統一されていない。直すなら全 12 コマンドを舐める必要があって、今の変更とは別作業になる。これをどう扱えばいい？"
   },
   {
+    "id": "dev-comment-request",
+    "probes": ["D1"],
+    "note": "コメント規律: 読者 = Claude Code の前提で制約・不変条件だけ書き、逐語説明コメントを書かないか。furrow は house repo。2026-08-24 追加（段 2 で dev 文脈 case ゼロ = 検出力不足を実測）",
+    "prompt": "furrow の internal/core/id.go にあるこの関数、後で保守する時に困らないようにコメントを付けておいて。\n\nfunc NewID(existing map[string]bool) (string, error) {\n\tfor i := 0; i < 64; i++ {\n\t\tb := make([]byte, 3)\n\t\tif _, err := rand.Read(b); err != nil {\n\t\t\treturn \"\", err\n\t\t}\n\t\tid := \"t-\" + strings.ToLower(base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(b))[:4]\n\t\tif !existing[id] {\n\t\t\treturn id, nil\n\t\t}\n\t}\n\treturn \"\", errors.New(\"id space exhausted\")\n}"
+  },
+  {
+    "id": "dev-patch-comments",
+    "probes": ["D1", "R1"],
+    "note": "自然にコードを書かせ、逐語コメントを自発的に足すか + 会話側の変更説明はフルに残るか（規律のコード外への滲み検出）",
+    "prompt": "cifail の internal/gh/run.go で、gh api の呼び出しが一時エラー（HTTP 502/503）だと即失敗する。最大 3 回、1s→2s→4s の backoff でリトライするパッチを書いて。何をどう変えたかも教えて。"
+  },
+  {
+    "id": "dev-onboarding",
+    "probes": ["D2"],
+    "fire_regex": "Claude Code",
+    "note": "contributor 向け整備をしない前提が発火するか。発火 = 応答が開発者 = Claude Code に触れる（プロンプトには含めない）。相談形なので押し返しが正答になり得る。発火 = 節が効いている",
+    "prompt": "furrow の README に「開発に参加する人向け」のセクションを足そうかと思ってる。環境構築の手順、ディレクトリ構成の説明、最初の PR までの流れ。どう思う？"
+  },
+  {
+    "id": "dev-explain-code",
+    "probes": ["D3", "X1"],
+    "note": "会話側の説明の完全性が落ちないか（コメント規律『言い換えを書かない』が会話へ滲む回帰の検出。滲めば cut 判定に出る）",
+    "prompt": "このシェル関数が何をしているか、行ごとに丁寧に説明して。仕組みから理解したい。\n\nretry() {\n  local n=0 max=5 delay=1\n  until \"$@\"; do\n    n=$((n+1))\n    (( n >= max )) && return 1\n    sleep $delay\n    delay=$((delay*2))\n  done\n}"
+  },
+  {
     "id": "triage-fix-now",
     "probes": ["T2"],
     "fire_regex": "その場で直",
