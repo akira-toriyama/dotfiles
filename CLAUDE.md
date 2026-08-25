@@ -1,167 +1,173 @@
-# Claude 向け作業指針（このリポジトリ用）
+# Working instructions for Claude (for this repository)
 
-個人 macOS 環境の dotfiles（aarch64-darwin / user: `tommy`）。
-スタック: **nix-darwin + home-manager + chezmoi + 1Password**。
+dotfiles for a personal macOS environment (aarch64-darwin / user: `tommy`).
+Stack: **nix-darwin + home-manager + chezmoi + 1Password**.
 
-## 用語
+## Vocabulary
 
-このリポジトリで使う正規語彙は [`docs/glossary.md`](docs/glossary.md) に従う
-— 所有レイヤー（`nix-darwin` / `home-manager` / `chezmoi` / `1Password`）、
-chezmoi prefix（`executable_` / `private_` / `modify_` / `create_` / `encrypted_` /
-`run_once_` / `run_onchange_`）、ビルド / 適用コマンド（`darwin-rebuild build/switch` /
-`chezmoi diff/apply/re-add`）、配布（`install.sh` / `aarch64-darwin`）、
-運用（`main` / `feature branch` / `pre-push hook`）など。`Don't call it:`
-側の同義語は使わない。用語の追加・改名はコード変更と **同一 PR で** この
-ファイルへ反映する。
-詳細: [docs/reproduction-architecture.md](docs/reproduction-architecture.md) /
-進捗: [docs/roadmap.md](docs/roadmap.md) /
-環境素材: [docs/system-inventory.md](docs/system-inventory.md) /
-運用: [docs/operations.md](docs/operations.md) /
-global CLAUDE.md ルールの強制状態: [docs/claude-md-ledger.md](docs/claude-md-ledger.md)
+The canonical vocabulary used in this repository follows [`docs/glossary.md`](docs/glossary.md)
+— ownership layers (`nix-darwin` / `home-manager` / `chezmoi` / `1Password`),
+chezmoi prefixes (`executable_` / `private_` / `modify_` / `create_` / `encrypted_` /
+`run_once_` / `run_onchange_`), build / apply commands (`darwin-rebuild build/switch` /
+`chezmoi diff/apply/re-add`), distribution (`install.sh` / `aarch64-darwin`),
+operations (`main` / `feature branch` / `pre-push hook`), and so on. Do not use the
+synonyms on the `Don't call it:` side. Reflect additions and renames of terms
+into that file **in the same PR** as the code change.
+Details: [docs/reproduction-architecture.md](docs/reproduction-architecture.md) /
+progress: [docs/roadmap.md](docs/roadmap.md) /
+environment materials: [docs/system-inventory.md](docs/system-inventory.md) /
+operations: [docs/operations.md](docs/operations.md) /
+enforcement status of the global CLAUDE.md rules: [docs/claude-md-ledger.md](docs/claude-md-ledger.md)
 
-**最終目標**: このマシンを破棄しても新しい Mac で `install.sh` ワンコマンドで同等の環境が再現できる状態を維持する。
+**The ultimate goal**: keep the state where, even if this machine is discarded, a new Mac reproduces an equivalent environment with the one command `install.sh`.
 
-## アーキテクチャ（責務分担、絶対の鉄則）
+## Architecture (ownership split — the absolute iron rules)
 
-| 領域 | 所有 | 場所 |
+| Area | Owner | Location |
 |---|---|---|
-| パッケージ（nixpkgs にあるもの） | **home-manager** | `home/modules/packages.nix` |
-| GUI / cask / カスタム tap / mas | **nix-darwin homebrew** | `system/modules/homebrew.nix` |
+| Packages (whatever is in nixpkgs) | **home-manager** | `home/modules/packages.nix` |
+| GUI / cask / custom tap / mas | **nix-darwin homebrew** | `system/modules/homebrew.nix` |
 | macOS defaults | **nix-darwin** | `system/modules/defaults.nix` |
-| DSL のあるプログラム設定（zsh など） | **home-manager** `programs.*` | `home/modules/*.nix` |
-| 手編集の生 dotfile / バイナリ資産 | **chezmoi** | `chezmoi/dot_*` |
-| シークレット（SSH 鍵 / PAT 等） | **chezmoi + 1Password `op`** | `chezmoi/private_*.tmpl` |
-| Claude の指示書 / skill / agent / hook | **chezmoi** | `chezmoi/private_dot_claude/`・`chezmoi/dot_local/bin/` |
+| Program configs that have a DSL (zsh etc.) | **home-manager** `programs.*` | `home/modules/*.nix` |
+| Hand-edited raw dotfiles / binary assets | **chezmoi** | `chezmoi/dot_*` |
+| Secrets (SSH keys / PATs etc.) | **chezmoi + 1Password `op`** | `chezmoi/private_*.tmpl` |
+| Claude instructions / skills / agents / hooks | **chezmoi** | `chezmoi/private_dot_claude/` + `chezmoi/dot_local/bin/` |
 
-**1 ファイル 1 所有**。Nix と chezmoi の両方が同じファイルを管理してはいけない（事故の主因）。
+**One file, one owner.** Nix and chezmoi must never both manage the same file (the main cause of accidents).
 
-## インストール先の判断フロー
+## Install-target decision flow
 
 ```mermaid
 flowchart TD
-    Start([追加したい]) --> Q1{種類は?}
-    Q1 -->|GUI アプリ| Q2{cask 経路}
-    Q1 -->|CLI ツール| Q3{nixpkgs に<br/>あるか?}
-    Q1 -->|ランタイム<br/>node/python/deno等| M[programs.mise.globalConfig.tools]
-    Q2 -->|普通の cask| C1[homebrew.casks]
-    Q2 -->|カスタム tap 経由| C2[homebrew.taps + casks]
-    Q2 -->|Mac App Store のみ| C3[homebrew.masApps]
-    Q3 -->|あり & 汎用 CLI| N1[home.packages]
-    Q3 -->|macOS 専用 / nixpkgs 古い| C4[homebrew.brews]
+    Start([Want to add something]) --> Q1{What kind?}
+    Q1 -->|GUI app| Q2{cask route}
+    Q1 -->|CLI tool| Q3{Available in<br/>nixpkgs?}
+    Q1 -->|Runtime<br/>node/python/deno etc.| M[programs.mise.globalConfig.tools]
+    Q2 -->|Ordinary cask| C1[homebrew.casks]
+    Q2 -->|Via a custom tap| C2[homebrew.taps + casks]
+    Q2 -->|MAS only| C3[homebrew.masApps]
+    Q3 -->|Yes & general-purpose CLI| N1[home.packages]
+    Q3 -->|macOS-only / nixpkgs is stale| C4[homebrew.brews]
 ```
 
-**原則: 迷ったら Nix**（reproducibility / Linux 互換 / hash pin）。GUI と macOS 統合（SSH agent / Spotlight / pkg-installer 等）が要るものは無理に Nix にしない。
+**Principle: when in doubt, Nix** (reproducibility / Linux compatibility / hash pin). Do not force into Nix what needs GUI and macOS integration (SSH agent / Spotlight / pkg-installer etc.).
 
-グレーゾーン例:
+Gray-zone examples:
 
-| 対象 | 採用 | 理由 |
+| Target | Choice | Why |
 |---|---|---|
-| `_1password-cli` (op) | Nix | CLI、nixpkgs にある、`onepasswordRead` template の前提 |
-| `1password` GUI | Brew cask | `.app`、SSH agent / op CLI 連携が cask に乗る |
-| `font-*-nerd-font` | Brew cask | cask 版は `~/Library/Fonts` に置くので Spotlight / 他アプリから見える |
-| `docker` CLI | Nix | colima 経由、CLI のみ必要 |
-| `mise` 本体 | home-manager `programs.mise` | `enable = true` で zsh init まで自動 wiring |
+| `_1password-cli` (op) | Nix | CLI, in nixpkgs, the prerequisite of the `onepasswordRead` template |
+| `1password` GUI | Brew cask | `.app`; SSH agent / op CLI integration rides on the cask |
+| `font-*-nerd-font` | Brew cask | the cask edition places fonts in `~/Library/Fonts`, so Spotlight / other apps can see them |
+| `docker` CLI | Nix | via colima; only the CLI is needed |
+| `mise` itself | home-manager `programs.mise` | `enable = true` auto-wires as far as zsh init |
 
-## レイアウト規約
+## Layout conventions
 
-- `.chezmoiroot = chezmoi` — リポジトリ直下は Nix flake、dotfile ソースは `chezmoi/` 配下。
-- リポジトリ運用ファイル（`README.md` `install.sh` `docs/` `.github/` `CLAUDE.md` 等）は `chezmoi/` の**外**にあるため `$HOME` に適用されない。
-- `chezmoi/` 配下のスクリプトは `executable_` 接頭辞で +x を再現（**CI で強制**）。
-- 例外的に `run_*` と `.chezmoiscripts/` 配下は chezmoi 自身が実行するので接頭辞不要。
+- `.chezmoiroot = chezmoi` — the repository root is the Nix flake; dotfile sources live under `chezmoi/`.
+- Repository-operations files (`README.md` `install.sh` `docs/` `.github/` `CLAUDE.md` etc.) are **outside** `chezmoi/` and therefore not applied to `$HOME`.
+- Scripts under `chezmoi/` reproduce +x with the `executable_` prefix (**enforced by CI**).
+- As the exception, `run_*` and anything under `.chezmoiscripts/` are executed by chezmoi itself, so they need no prefix.
 
 ## GitHub / CI
 
-- **`main` は唯一の永続ブランチ**（2026-05-27 に `rebuild` を統合・削除。CI も main へ単発）。作業は短命な feature ブランチを切り、**PR 経由で `main` に squash-merge** する（直 push はしない）。
-- **フロー**: `git checkout -b <type>/<topic>` → 論理単位で commit → `git push -u origin <branch>` → `gh pr create` → CI green → `gh pr merge --squash`（`--auto` 可）。実例は [docs/operations.md](docs/operations.md)。
-- **コミットメッセージは gitmoji-driven**（`<:gitmoji:>[(<scope>)][!] <subject>`。Conventional の `<type>` 語は退役済み）。規約の正本は .github の [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md)（[docs/commit-convention.md](docs/commit-convention.md) は fleet 配布のポインタ・機械検査 = `glyph lint`）。**push 前に `glyph lint --range origin/main..HEAD`**（履歴には退役形式の commit が残っているので `git log` を手本にしない）。
-- **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
-  - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
-  - `lint` — `scripts/lint` 一本（ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` は render 後に shellcheck・plist 構文 / コードスパン内のパス実在）。**ローカルでも同じコマンドが走る**: `nix develop .#lint --command scripts/lint`
-  - `script test` — Stop hook の fixture テスト + `scripts/` と `scripts/claude-md-eval/` の unittest
-  - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞を強制（例外: `run_*` / `modify_*` / `.chezmoiscripts/`）
-  - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
-- **CI green を確認してからマージ**。失敗したら**新規コミットで修正**する（`--amend` / `--force` push / 履歴改変の可否は「作業時の絶対ルール」4 が正本）。
-- **push 時、pre-push フック（[.githooks/pre-push](.githooks/pre-push)）は chezmoi/ を触る push で `chezmoi verify` を実行し、乖離があれば警告するが止めない（warn-only、2026-07-03〜。Claude 主導運用のため）**。気づいたら `chezmoi apply` で live を追従する。恒久ゲートは CI（darwin build/switch smoke + chezmoi apply + templates render）と main のブランチ保護が担う。詳細 → [docs/operations.md §5.11](docs/operations.md)。
+- **`main` is the only permanent branch** (`rebuild` was absorbed and deleted on 2026-05-27; CI is also a single run against main). Cut a short-lived feature branch for work, and **squash-merge it into `main` through a PR** (no direct push).
+- **Flow**: `git checkout -b <type>/<topic>` → commit in logical units → `git push -u origin <branch>` → `gh pr create` → CI green → `gh pr merge --squash` (`--auto` is fine). Worked examples are in [docs/operations.md](docs/operations.md).
+- **Commit messages are gitmoji-driven** (`<:gitmoji:>[(<scope>)][!] <subject>`; the Conventional `<type>` words are retired). The canonical source of the convention is .github's [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md) ([docs/commit-convention.md](docs/commit-convention.md) is the fleet-distributed pointer; the machine check = `glyph lint`). **Before pushing: `glyph lint --range origin/main..HEAD`** (history still carries commits in the retired format, so do not take `git log` as a model).
+- **CI jobs ([.github/workflows/ci.yml](.github/workflows/ci.yml), triggered on push and PR)**:
+  - `nix flake check --no-build` — Nix type/eval checks (Linux runner)
+  - `lint` — `scripts/lint` in one shot (ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` gets shellcheck and plist-syntax checks after rendering / existence of the paths inside code spans). **The same command runs locally**: `nix develop .#lint --command scripts/lint`
+  - `script test` — the Stop hook's fixture tests + the unittests of `scripts/` and `scripts/claude-md-eval/`
+  - Convention check — enforces the `executable_` prefix on shebang scripts under `chezmoi/` (exceptions: `run_*` / `modify_*` / `.chezmoiscripts/`)
+  - `chezmoi templates render` — `execute-template` verification of every `.tmpl`
+- **Confirm CI green before merging.** On failure, fix with a **new commit** (rule 4 of "Absolute rules when working" is the canonical source for whether `--amend` / `--force` push / history rewriting are allowed).
+- **On push, the pre-push hook ([.githooks/pre-push](.githooks/pre-push)) runs `chezmoi verify` for a push that touches chezmoi/ and warns on drift but does not stop the push (warn-only, since 2026-07-03, for Claude-led operation).** When you notice drift, bring live back in line with `chezmoi apply`. The permanent gates are carried by CI (darwin build/switch smoke + chezmoi apply + templates render) and main's branch protection. Details → [docs/operations.md §5.11](docs/operations.md).
 
-## シークレット取扱（YOU MUST）
+## Secret handling (YOU MUST)
 
-- **YOU MUST NOT** secret 値（API トークン / 鍵 / パスワード / PAT 等）を **print / log / echo / コミットメッセージ / コマンド文字列 / テンプレートにリテラル化** しない。
-- secret は常に **参照** で扱う: `$(op read "op://Vault/Item/field")` / `$(gh auth token)` / `$ENV_VAR`。
-- chezmoi テンプレで秘密を扱うときは `onepasswordRead "op://..."` を使い、`op signin` は既に通っている前提とする。
-- **`home.file.*.text` に secret を書かない**（`/nix/store` は world-readable）。
-- secret ファイルを chezmoi に置く場合は `private_` 接頭辞（権限 600）か `encrypted_` 接頭辞（age/gpg）必須。
+- **YOU MUST NOT** print / log / echo secret values (API tokens / keys / passwords / PATs etc.), nor turn them into literals in **commit messages / command strings / templates**.
+- Always handle a secret **by reference**: `$(op read "op://Vault/Item/field")` / `$(gh auth token)` / `$ENV_VAR`.
+- When a chezmoi template handles a secret, use `onepasswordRead "op://..."` and assume `op signin` has already been done.
+- **Do not write a secret into `home.file.*.text`** (`/nix/store` is world-readable).
+- A secret file placed in chezmoi requires the `private_` prefix (mode 600) or the `encrypted_` prefix (age/gpg).
 
-## 作業時の絶対ルール
+## Absolute rules when working
 
-1. **検証ゲートを必ず通す**:
-   - chezmoi 編集後 → `chezmoi diff` でソース⇔実体一致を確認してから commit
-   - Nix 編集後 → `nix flake check` ＋ `darwin-rebuild build`（非破壊）通過後に switch
-2. **`switch` は sudo パスワード入力が要るので、コマンドを提示してユーザーに実行させる**（このセッションからは sudo を直接呼ばない）。
-3. **生成パイプラインを再導入しない**。設定は静的ファイルとして表現する。
-4. **破壊的 git 操作を避ける**: `--force` push / 履歴改変 / `--amend`（push 済みコミットへ）はユーザー明示指示なしに禁止。
-5. **この repo は Claude 主導運用（2026-07-03〜）**: 通常の git / gh / chezmoi / PR 操作（branch 作成・commit・push・PR open/merge・`chezmoi diff/apply`）は都度ユーザー確認を取らず実行してよい。例外は上のルールが押さえる: ① `darwin-rebuild switch`（sudo）はルール 2 のとおりコマンド提示してユーザーに実行させる ② 破壊的 git はルール 4 のとおりユーザー明示指示時のみ ③ 検証ゲート（ルール 1）は「聞く」のでなく「自分で通す」。
+1. **Always pass the verification gates**:
+   - After editing chezmoi → confirm source ⇔ live agreement with `chezmoi diff` before committing
+   - After editing Nix → switch only after `nix flake check` plus `darwin-rebuild build` (non-destructive) pass
+2. **`switch` needs a sudo password entry, so present the command and have the user run it** (as of this session, do not call sudo directly).
+3. **Do not reintroduce a generation pipeline.** Express configuration as static files.
+4. **Avoid destructive git operations**: `--force` push / history rewriting / `--amend` (onto a pushed commit) are forbidden without the user's explicit instruction.
+5. **This repo is Claude-led (since 2026-07-03)**: ordinary git / gh / chezmoi / PR operations (branch creation, commit, push, PR open/merge, `chezmoi diff/apply`) may be executed without asking the user each time. The rules above hold the exceptions: ① `darwin-rebuild switch` (sudo) — present the command and have the user run it, per rule 2 ② destructive git — only on the user's explicit instruction, per rule 4 ③ the verification gates (rule 1) are "passed yourself", not "asked about".
 
-## global CLAUDE.md / skill の散文を変えるとき（この repo 固有の義務）
+## When changing the prose of the global CLAUDE.md or a skill (obligations specific to this repo)
 
-global `~/.claude/CLAUDE.md` の source はこの repo（`chezmoi/private_dot_claude/CLAUDE.md`）に
-あるため、その変更義務はここに置く（常時ロードされる global 側には置かない）。
+The source of the global `~/.claude/CLAUDE.md` is in this repo
+(`chezmoi/private_dot_claude/CLAUDE.md`), so the obligations around changing it sit here
+(not on the always-loaded global side).
 
-- **挙動を狙う散文**（出力の形・作業の締め・skill の description 級）を変えたら、配る前に
-  [`scripts/claude-md-eval`](scripts/claude-md-eval/README.md) で測る（読んだだけでは効くか
-  分からない — 初稿 8 規則中 2 つが不良品だった実績）。事実の訂正・ポインタ化・圧縮だけの
-  編集は対象外。全面改稿は `--baseline`（旧版 vs 新版の 2 腕）で測る。
-- ルールを足す・削る・移す PR は [docs/claude-md-ledger.md](docs/claude-md-ledger.md) の
-  該当行（削除なら削除記録節）を**同一 PR で**更新する。
-- CLAUDE.md か skills/ に触る PR は [docs/glossary.md](docs/glossary.md) の該当語も**同一
-  PR で**追従させる（不要なら commit footer `Glossary-unchanged: <理由>`）。台帳と対の
-  義務で、どちらも lint ゲート claude-md-guard が強制する。
-- global CLAUDE.md の肥大を再演しない: 追加は「既に踏んだ失敗の再発防止」だけ
-  （global の機構化ルールと同じ基準を散文にも適用する）。
+- After changing **behavior-targeting prose** (output shape, work closing, anything of
+  skill-description grade), measure it with
+  [`scripts/claude-md-eval`](scripts/claude-md-eval/README.md) before distributing (reading
+  alone cannot tell whether it works — a track record of 2 defective rules among the first
+  draft's 8). Edits that only correct facts, turn prose into pointers, or compress are out
+  of scope. A full rewrite is measured with `--baseline` (two arms, old version vs new version).
+- A PR that adds, deletes, or moves a rule updates the relevant row of
+  [docs/claude-md-ledger.md](docs/claude-md-ledger.md) (for a deletion, the deletion-log
+  section) **in the same PR**.
+- A PR that touches CLAUDE.md or skills/ also makes the relevant terms of
+  [docs/glossary.md](docs/glossary.md) follow **in the same PR** (when unnecessary, commit
+  footer `Glossary-unchanged: <理由>`). A paired obligation with the ledger; both are
+  enforced by the lint gate claude-md-guard.
+- Do not replay the bloat of the global CLAUDE.md: an addition is only "prevention of the
+  recurrence of an already-hit failure" (apply the same standard as global's
+  mechanization rule to prose as well).
 
-## 既知の落とし穴（読まずに「修正」を試みない）
+## Known pitfalls (do not attempt a "fix" without reading)
 
-- `sudo darwin-rebuild` は PATH を引き継がないので **`sudo /run/current-system/sw/bin/darwin-rebuild ...`** とフルパス指定する。
-- Determinate Nix と二重管理しないため **`nix.enable = false`**（host nix に設定済）。`/etc/nix/nix.custom.conf` には触らない。
-- switch 直後の親シェルでは `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` を継承して PATH 異常に見える false positive がある。**検証は新ターミナル or `env -i HOME=$HOME /bin/zsh -l -c '...'`** で行う。
-- `homebrew.onActivation.cleanup = "none"` 据え置き。`"zap"` 化は Phase 4 残りを全部宣言化してからユーザー確認の上で。
-- `homebrew.masApps` は未使用（MAS アプリ利用ゼロ）。宣言しても flake.nix の `bootstrapBrewOverride`（`lib.mkForce { }`。App Store 未サインインの bootstrap/CI/VM で switch を落とさないため）で live は常に空になる — 「宣言したのに入らない」は不具合ではない。詳細 → [docs/operations.md](docs/operations.md) のセクション 3。
-- `system.defaults` は **ByHost ドメイン（`-currentHost`）には書けない**。Display 配置や一部 Finder 詳細は activationScripts で `defaults -currentHost write` を使う以外手がない。
-- macOS の **TCC/sandbox で保護されたアプリ**（Mail / Safari / Calendar 等）の defaults は switch が成功しても無音で適用されない。AI は「修正」追加で深追いしない。
-- chezmoi run スクリプトは **`run_onchange_` 既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap でのみ使う。
-- chord config パス（`dot_config/chord/private_config.toml`）は `.tmpl` の `{{ include }}`・`verify-chord-*.yml` の `paths:`・`gen-chord-doc.py` の **4 箇所**が指す。リネーム時は同時更新（PR #123 で古参照を踏んだ）。config 文法を released chord より先行させると `verify-chord-validate.yml`（tap の chord で strict 検証）が落ちる。`.tmpl` 自体は read-only で他リポに副作用なし。詳細 → [docs/operations.md §5.7](docs/operations.md)。
-- 編集を許したい AI/ユーザー共有ファイル（例: `~/.claude/settings.json`）は home.file に直接書かない（Nix store は immutable で AI が編集できなくなる）。**実機構は chezmoi の `modify_` スクリプト** — [`chezmoi/private_dot_claude/modify_settings.json`](chezmoi/private_dot_claude/modify_settings.json) が live を stdin で受けて必要なキーだけ保証し、残りは pass-through する。`mkOutOfStoreSymlink` はこの repo では **1 箇所も使っていない**（実測）ので、それを前提に書かない。
+- `sudo darwin-rebuild` does not carry PATH over, so spell the full path: **`sudo /run/current-system/sw/bin/darwin-rebuild ...`**.
+- **`nix.enable = false`** to avoid double management with Determinate Nix (already set for the host nix). Do not touch `/etc/nix/nix.custom.conf`.
+- The parent shell right after a switch inherits `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` and shows a false positive that looks like a PATH anomaly. **Verify in a new terminal or with `env -i HOME=$HOME /bin/zsh -l -c '...'`**.
+- `homebrew.onActivation.cleanup = "none"` stays as is. Moving to `"zap"` comes only after the rest of Phase 4 is all declarative, with the user's confirmation.
+- `homebrew.masApps` is unused (zero MAS apps in use). Even when declared, flake.nix's `bootstrapBrewOverride` (`lib.mkForce { }`, which keeps switch from failing in bootstrap/CI/VM where the App Store is not signed in) makes live always empty — "declared but it does not get installed" is not a defect. Details → section 3 of [docs/operations.md](docs/operations.md).
+- `system.defaults` **cannot write ByHost domains (`-currentHost`)**. Display arrangement and some Finder details have no way other than `defaults -currentHost write` in activationScripts.
+- defaults of macOS apps **protected by TCC/sandbox** (Mail / Safari / Calendar etc.) are silently not applied even when switch succeeds. The AI must not chase them by adding "fixes".
+- chezmoi run scripts default to **`run_onchange_`** (idempotent). Use `run_once_` only for genuinely one-time bootstrap.
+- The chord config path (`dot_config/chord/private_config.toml`) is pointed at from **4 places**: the `.tmpl`'s `{{ include }}`, the `paths:` of `verify-chord-*.yml`, and `gen-chord-doc.py`. Update them together on a rename (PR #123 stepped on a stale reference). Letting the config syntax run ahead of released chord breaks `verify-chord-validate.yml` (strict validation with the tap's chord). The `.tmpl` itself is read-only, with no side effects on other repos. Details → [docs/operations.md §5.7](docs/operations.md).
+- Do not write an AI/user-shared file that should stay editable (e.g. `~/.claude/settings.json`) directly into home.file (the Nix store is immutable, so the AI can no longer edit it). **The real mechanism is a chezmoi `modify_` script** — [`chezmoi/private_dot_claude/modify_settings.json`](chezmoi/private_dot_claude/modify_settings.json) receives live on stdin, guarantees only the keys it must, and passes the rest through. `mkOutOfStoreSymlink` is used in **not one place** in this repo (measured), so do not write anything that presumes it.
 
-## よく使うコマンド（Claude が推測できないもの）
+## Frequently used commands (the ones Claude cannot guess)
 
 ```sh
-# Nix 側（システム/パッケージ）
-nix flake check --no-build                                                       # eval のみ
-nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure            # 非破壊ビルド
-sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure # 実適用
-sudo /run/current-system/sw/bin/darwin-rebuild --rollback                        # 1世代戻す
+# Nix side (system/packages)
+nix flake check --no-build                                                       # eval only
+nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure            # non-destructive build
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure # actually takes effect
+sudo /run/current-system/sw/bin/darwin-rebuild --rollback                        # back one generation
 
-# chezmoi 側（手編集 dotfile）
-chezmoi diff                                                                     # ソース⇔実体（必ず apply 前に）
-chezmoi --source ./chezmoi execute-template < <file.tmpl>                        # tmpl レンダ検証（CI と同じ）
+# chezmoi side (hand-edited dotfiles)
+chezmoi diff                                                                     # source ⇔ live (always before apply)
+chezmoi --source ./chezmoi execute-template < <file.tmpl>                        # execute-template verification (same as CI)
 chezmoi apply -v
-chezmoi add <path>                                                               # 実体取り込み（chezmoi/ 配下へ）
+chezmoi add <path>                                                               # bring a live file in (under chezmoi/)
 
-# 1Password（secret 注入の前提として op signin 済を想定）
+# 1Password (secret injection assumes op signin is done)
 op read "op://Vault/Item/field"
 ```
 
 ## Roadmap board / task tracker
 
-dotfiles の作業タスク（バックログ・設計メモ・引き継ぎ）の**正本は furrow + private repo
-[`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**。
-この repo での入口は `furrow ls -r dotfiles`（着手候補 = ready / in-progress）/ `furrow show <id>` /
-起票は `furrow add "…" -r dotfiles -s icebox -e <epic>`（lane と箱は明示 — projects Standing orders 4・5。省略すると `inbox` 落ち + lint error `epic-required`）。
+For dotfiles work tasks (backlog, design notes, handovers), **the canonical source is furrow + the private repo
+[`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**.
+The entrance in this repo is `furrow ls -r dotfiles` (candidates to start = ready / in-progress) / `furrow show <id>` /
+filing is `furrow add "…" -r dotfiles -s icebox -e <epic>` (lane and box are explicit — projects Standing orders 4 and 5; omitting them means falling to `inbox` + the lint error `epic-required`).
 
-**帰属・ラベル・board 自動導出・sync・PR footer の規約はここに複製しない** —— 全 repo 共通の作法は
-global `~/.claude/CLAUDE.md` の Workflow 節、運用ルールの正典は
-[`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md)。
+**Do not duplicate the conventions for attribution, labels, board auto-derivation, sync, or the PR footer here** — the fleet-wide practice is
+the Workflow section of the global `~/.claude/CLAUDE.md`, and the canon of the operating rules is
+[`projects/CLAUDE.md`](https://github.com/akira-toriyama/projects/blob/main/CLAUDE.md).
 
-issue 運用（集約 Project「roadmap」#5・Inbox/Status フロー・`Closes #N`）は family 共通ポリシー
-の名残で、**task の正本は furrow に移行済み**。**Project #5 / 残 open issue は手動 mirror 扱い**
-（破壊しない）。dotfiles の PR は furrow task を `SetStatus-task:` footer で閉じる
-（`.github/workflows/task-status.yml` は fleet 同期済）。
+The issue operation (the aggregate Project "roadmap" #5, the Inbox/Status flow, `Closes #N`) is a remnant of the family-wide
+policy; **the canonical source of tasks has moved to furrow**. **Project #5 and the remaining open issues are treated as a manual mirror**
+(do not destroy them). A dotfiles PR closes its furrow task with the `SetStatus-task:` footer
+(`.github/workflows/task-status.yml` is fleet-synced).

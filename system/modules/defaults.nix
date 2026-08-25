@@ -8,7 +8,7 @@
   #   - spctl --master-disable (Gatekeeper 無効化) — セキュリティ低下を伴うため。
   #   - com.apple.screensaver askForPassword=0 (復帰時パスワード省略) — 2026-07-19 に
   #     自宅・自室の据え置き機を前提に「ロック解除する」へ方針転換したが、宣言化は
-  #     不可能: ByHost 域のため system.defaults では書けず（CLAUDE.md 既知の落とし穴）、
+  #     不可能: ByHost 域のため system.defaults では書けず（CLAUDE.md の Known pitfalls 節）、
   #     現代 macOS のロック設定の正は sysadminctl。適用は手動 1 回
   #     `sysadminctl -screenLock off -password -`（この機体には適用済み。新 Mac でも手動）。
   # どうしても必要になったら個別に再考し、理由を本コメントに残すこと。
