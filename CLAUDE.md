@@ -124,7 +124,7 @@ global `~/.claude/CLAUDE.md` の source はこの repo（`chezmoi/private_dot_cl
 - Determinate Nix と二重管理しないため **`nix.enable = false`**（host nix に設定済）。`/etc/nix/nix.custom.conf` には触らない。
 - switch 直後の親シェルでは `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` を継承して PATH 異常に見える false positive がある。**検証は新ターミナル or `env -i HOME=$HOME /bin/zsh -l -c '...'`** で行う。
 - `homebrew.onActivation.cleanup = "none"` 据え置き。`"zap"` 化は Phase 4 残りを全部宣言化してからユーザー確認の上で。
-- `homebrew.masApps` は未使用（MAS アプリ利用ゼロ）。宣言しても flake.nix の `bootstrapBrewOverride`（`lib.mkForce { }`。App Store 未サインインの bootstrap/CI/VM で switch を落とさないため）で live は常に空になる — 「宣言したのに入らない」は不具合ではない。詳細 → [docs/operations.md](docs/operations.md) の「Mac App Store 限定アプリ」節。
+- `homebrew.masApps` は未使用（MAS アプリ利用ゼロ）。宣言しても flake.nix の `bootstrapBrewOverride`（`lib.mkForce { }`。App Store 未サインインの bootstrap/CI/VM で switch を落とさないため）で live は常に空になる — 「宣言したのに入らない」は不具合ではない。詳細 → [docs/operations.md](docs/operations.md) のセクション 3。
 - `system.defaults` は **ByHost ドメイン（`-currentHost`）には書けない**。Display 配置や一部 Finder 詳細は activationScripts で `defaults -currentHost write` を使う以外手がない。
 - macOS の **TCC/sandbox で保護されたアプリ**（Mail / Safari / Calendar 等）の defaults は switch が成功しても無音で適用されない。AI は「修正」追加で深追いしない。
 - chezmoi run スクリプトは **`run_onchange_` 既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap でのみ使う。

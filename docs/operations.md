@@ -1,89 +1,89 @@
-# dotfiles 運用ガイド
+# dotfiles operations guide
 
-> 鉄則・責務分担・判定フローは [CLAUDE.md](../CLAUDE.md) を参照。本書は「実際にどう操作するか」のレシピ集。
-> いずれの作業も **main 一本運用 + PR フロー**（[CLAUDE.md の GitHub / CI 節](../CLAUDE.md)）。
+> For the iron rules, the ownership split and the decision flows, see [CLAUDE.md](../CLAUDE.md). This document is a recipe book for "how to actually operate things".
+> Every task here runs on **main alone + the PR flow** ([the GitHub / CI section of CLAUDE.md](../CLAUDE.md)).
 
 ---
 
 <details>
-<summary><b>1. <code>~/.config/&lt;app&gt;/...</code> を編集した場合（chezmoi）</b></summary>
+<summary><b>1. When you edited <code>~/.config/&lt;app&gt;/...</code> (chezmoi)</b></summary>
 
-### シナリオ
-`~/.config/chord/config.toml` や `~/.config/wand/config.toml` を直接編集した、または上流（chord / wand 等）の最新挙動に合わせて手で変えた状態を、dotfiles リポへ流す。
+### Scenario
+`~/.config/chord/config.toml` or `~/.config/wand/config.toml` was edited directly, or changed by hand to match the latest behavior of the upstream (chord / wand, etc.). Feed that state into the dotfiles repository.
 
-dot_config 配下の管理ファイルは **全て plain（`.tmpl` なし）** に統一済み。チェック内容に template 変数が登場しないので、`chezmoi re-add` で安全に取り込める。
+The managed files under dot_config are now unified to **all plain (no `.tmpl`)**. No template variable appears in what is checked, so they can be safely re-added with `chezmoi re-add`.
 
-### 手順
+### Procedure
 
 ```sh
-# ── ① ~/.config を編集（実体 = target を直接いじった状態）
+# ── ① Edit ~/.config (the live file = the target, edited directly)
 
-# ② 乖離を確認
-chezmoi status      # 各行 MM = source/target 両方変更あり
-chezmoi diff        # 何が違うか
+# ② Check for drift
+chezmoi status      # MM on a line = both source and target changed
+chezmoi diff        # what differs
 
-# ③ live を source に取り込む（実体 ──▶ source）
+# ③ Re-add live into source (live ──▶ source)
 chezmoi re-add ~/.config/chord/config.toml
-# 例: ~/.config/wand/config.toml・~/.config/facet/config.toml・~/.config/halo/config.toml も同様
-#   ※ 実体を編集したら必ず re-add が先。先に apply すると古い source で
-#     実体を上書きして編集が消える。
+# e.g. ~/.config/wand/config.toml, ~/.config/facet/config.toml and ~/.config/halo/config.toml likewise
+#   Note: once you edit the live file, re-add always comes first. Applying first overwrites
+#     the live file from the stale source and the edit is lost.
 
-# ④ source ──▶ live を反映（= apply）。本体一致でも run_onchange 検証が走り、
-#    chezmoi status の "R"（chord-validate 等）が消える。
+# ④ Reflect source ──▶ live (= apply). Even when the bodies match, the run_onchange
+#    verification runs and the "R" in chezmoi status (chord-validate etc.) clears.
 chezmoi apply -v
-chezmoi status      # クリーン（差分なし）を確認
+chezmoi status      # confirm it is clean (no diff)
 
-# ⑤ ここから git 側（source を main に刻む）。chezmoi 側とは独立した工程。
+# ⑤ The git side starts here (record the source on main). A step independent of the chezmoi side.
 cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 git status
 git checkout -b chore/sync-chord-config
 git add chezmoi/dot_config/chord/private_config.toml
-glyph lint --range origin/main..HEAD   # push 前に必ず
+glyph lint --range origin/main..HEAD   # always before pushing
 git commit -m ":memo:(chord) sync the chord config into the chezmoi source"
-git push -u origin chore/sync-chord-config   # pre-push フックが chezmoi verify で乖離を警告（warn-only、§5.11）
+git push -u origin chore/sync-chord-config   # the pre-push hook warns about drift via chezmoi verify (warn-only, §5.11)
 gh pr create --title "..." --body "..."
 gh pr merge --auto --squash
 ```
 
-### ⚠️ apply と commit は別物（2 つの台帳）
+### ⚠️ apply and commit are different things (two ledgers)
 
-`chezmoi apply`（③④の live 反映）と `git commit`（⑤の source を main へ）は**連動しない**:
+`chezmoi apply` (reflecting to live in ③④) and `git commit` (source to main in ⑤) are **not linked**:
 
-- `chezmoi apply` しても **git の差分は消えない**（apply は source→live の同期で、commit ではない）
-- `git commit` しても **`chezmoi status` の "R" は消えない**（commit は source を履歴に刻むだけ）
+- `chezmoi apply` does **not clear the git diff** (apply writes source→live, it is not a commit)
+- `git commit` does **not clear the "R" in `chezmoi status`** (commit only records the source in history)
 
-両方やって初めてクリーン。**②③で実体を編集したら必ず apply してから push**（apply 忘れは §5.11 の pre-push フックが警告する＝warn-only。乖離ゼロの恒久保証は CI）。
+Only doing both makes it clean. **Once you edit the live file in ②③, always apply before pushing** (a forgotten apply is warned about by the pre-push hook in §5.11 = warn-only. The permanent guarantee of zero drift is CI).
 
 </details>
 
 ---
 
 <details>
-<summary><b>2. GUI アプリ（<code>.app</code> バンドル）を追加したい</b></summary>
+<summary><b>2. You want to add a GUI app (a <code>.app</code> bundle)</b></summary>
 
-### 手順
+### Procedure
 
 ```sh
-# 1. cask が存在するか確認
+# 1. Check whether the cask exists
 brew search foo
 brew info --cask foo
 
-# 2. (任意) 試用 install
+# 2. (optional) trial install
 brew install --cask foo
-# 起動して試す → 良ければ続行、ダメなら brew uninstall して終了
+# Launch it and try → continue if it is good, brew uninstall and stop if it is not
 
-# 3. system/modules/homebrew.nix の casks に追記（1 行コメント必須）
+# 3. Append to casks in system/modules/homebrew.nix (a one-line comment is required)
 #    casks = [
 #      ...
-#      "foo"             # 何のアプリか／なぜ入れるか
+#      "foo"             # what the app is / why it goes in
 #    ];
 
-# 4. chezmoi 連携の要否を判定
-#    ~/Library/Containers/...      → 不要（sandbox 配下、追跡しづらい）
-#    ~/.config/<app>/...           → 必要、セクション 1 の手順で取り込む
-#    ~/Library/Preferences/*.plist → defaults.nix で書く（chezmoi ではない）
+# 4. Decide whether chezmoi needs to be involved
+#    ~/Library/Containers/...      → not needed (under the sandbox, hard to track)
+#    ~/.config/<app>/...           → needed, follow the procedure in section 1
+#    ~/Library/Preferences/*.plist → write it in defaults.nix (not chezmoi)
 
-# 5. ローカルで非破壊チェック
+# 5. Non-destructive check locally
 cd "$(ghq root)/github.com/akira-toriyama/dotfiles"
 nix flake check --no-build
 nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure
@@ -91,388 +91,388 @@ nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure
 # 6. PR
 git checkout -b feat/add-foo-cask
 git add system/modules/homebrew.nix
-glyph lint --range origin/main..HEAD   # push 前に必ず
+glyph lint --range origin/main..HEAD   # always before pushing
 git commit -m ":sparkles:(homebrew) declare the foo cask"
 git push -u origin feat/add-foo-cask
 gh pr create
-# CI の "Verify casks installed" が cask 名のタイポを検知
+# CI's "Verify casks installed" catches a typo in the cask name
 
-# 7. merge 後、手元に反映
+# 7. After the merge, reflect it on this machine
 gh pr merge <PR#> --auto --squash
 git checkout main && git pull
 sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure
-# 既に手で試用 install してた場合は実質 no-op
+# Effectively a no-op if you already trial-installed it by hand
 ```
 
-### カスタム tap の cask の場合
+### For a cask from a custom tap
 
-`homebrew.taps = [ "owner/repo" ]` も追加。既存例: `barutsrb/tap` for `omniwm`。
-
-</details>
-
----
-
-<details>
-<summary><b>3. Mac App Store 限定アプリを追加したい</b></summary>
-
-現在 MAS アプリの利用はゼロで、`homebrew.masApps` 経由の install は使っていない。
-
-**⚠️ 生きている制約**: `flake.nix` の `bootstrapBrewOverride` が `homebrew.masApps` を
-`lib.mkForce { }` で強制的に空にする（App Store 未サインインの bootstrap/CI/VM で
-switch を落とさないため。PR #108 で常用 + bootstrap 共通方針に統一）。
-**masApps に何を宣言しても live では `{}`** — 「宣言したのに入らない」は不具合ではない。
-
-将来 MAS アプリが必要になったら:
-
-- (a) 手動で App Store からインストール（最も確実）、または
-- (b) `mas` CLI を一時導入して（nixpkgs にあり。利用ゼロのため常設はしていない）
-  `mas install <id>` を手で叩く
-- 宣言的に戻したい場合は `bootstrapBrewOverride` の緩め方（サインイン済み前提の
-  構成分離等）の設計から始める
+Add `homebrew.taps = [ "owner/repo" ]` as well. Existing example: `barutsrb/tap` for `omniwm`.
 
 </details>
 
 ---
 
 <details>
-<summary><b>4. その他のもの（CLI / ランタイム / DSL 設定 / カスタム tap / macOS defaults / secret）</b></summary>
+<summary><b>3. You want to add a Mac App Store-only app</b></summary>
 
-判定は [CLAUDE.md のインストール先の判断フロー](../CLAUDE.md) に従う。ここでは編集先のファイルだけ早見表:
+No MAS app is in use right now, and installing via `homebrew.masApps` is not used.
 
-| 種類 | 編集ファイル | 例 |
+**⚠️ A constraint still in force**: `bootstrapBrewOverride` in `flake.nix` force-empties `homebrew.masApps`
+with `lib.mkForce { }` (so that switch does not fail on a bootstrap/CI/VM that is not signed in to
+the App Store. PR #108 unified this into one policy shared by everyday use and bootstrap).
+**Whatever you declare in masApps, live is `{}`** — "declared but not installed" is not a defect.
+
+If a MAS app becomes necessary in the future:
+
+- (a) install it manually from the App Store (the most reliable), or
+- (b) bring in the `mas` CLI temporarily (it is in nixpkgs; not kept around because usage is zero)
+  and run `mas install <id>` by hand
+- If you want to go back to declarative, start from designing how to relax `bootstrapBrewOverride`
+  (splitting the configuration on a signed-in assumption, etc.)
+
+</details>
+
+---
+
+<details>
+<summary><b>4. Everything else (CLI / runtime / DSL config / custom tap / macOS defaults / secret)</b></summary>
+
+The decision follows [the install-target decision flow in CLAUDE.md](../CLAUDE.md). Here is just a quick reference for which file to edit:
+
+| Kind | File to edit | Example |
 |---|---|---|
-| nixpkgs にある汎用 CLI | `home/modules/packages.nix` | `jq`, `gh`, `chezmoi`, `docker`, `_1password-cli` |
-| nixpkgs に無い / macOS 専用 CLI | `system/modules/homebrew.nix` の `brews = [ ... ]` | `blueutil`, `duti` 等（現状空） |
-| カスタム tap | `system/modules/homebrew.nix` の `taps = [ ... ]` + 対応 `casks/brews` | `barutsrb/tap` → `omniwm` |
-| ランタイム（node / python / deno / ruby） | `home/modules/mise.nix` の `globalConfig.tools` | `node = "lts"`, `python = "3.13"` |
-| DSL のあるプログラム設定（zsh / git / mise 等） | `home/modules/*.nix` の `programs.*` | `programs.zsh.*`, `programs.mise.*` |
-| macOS defaults（dock / finder / -g 等） | `system/modules/defaults.nix` | `system.defaults.dock.autohide` 等 |
-| 手編集の生 dotfile / バイナリ資産 | `chezmoi/dot_*` | `chezmoi/dot_config/chord/...` |
-| シークレット（鍵 / トークン / PAT） | `chezmoi/private_*.tmpl` | `{{ onepasswordRead "op://..." }}` |
+| A general-purpose CLI available in nixpkgs | `home/modules/packages.nix` | `jq`, `gh`, `chezmoi`, `docker`, `_1password-cli` |
+| A CLI not in nixpkgs / macOS-only | `brews = [ ... ]` in `system/modules/homebrew.nix` | `blueutil`, `duti`, etc. (currently empty) |
+| Custom tap | `taps = [ ... ]` in `system/modules/homebrew.nix` + the matching `casks/brews` | `barutsrb/tap` → `omniwm` |
+| Runtime (node / python / deno / ruby) | `globalConfig.tools` in `home/modules/mise.nix` | `node = "lts"`, `python = "3.13"` |
+| Program config that has a DSL (zsh / git / mise, etc.) | `programs.*` in `home/modules/*.nix` | `programs.zsh.*`, `programs.mise.*` |
+| macOS defaults (dock / finder / -g, etc.) | `system/modules/defaults.nix` | `system.defaults.dock.autohide`, etc. |
+| Hand-edited raw dotfile / binary asset | `chezmoi/dot_*` | `chezmoi/dot_config/chord/...` |
+| Secret (key / token / PAT) | `chezmoi/private_*.tmpl` | `{{ onepasswordRead "op://..." }}` |
 
-### 編集後の反映パターン
+### How each edit is reflected
 
-| 編集したもの | 反映コマンド |
+| What was edited | Command that reflects it |
 |---|---|
-| `*.nix`（flake / system / home 配下） | `darwin-rebuild switch` |
+| `*.nix` (under flake / system / home) | `darwin-rebuild switch` |
 | `chezmoi/...` | `chezmoi apply` |
-| 両方 | `darwin-rebuild switch` → `chezmoi apply`（順序重要、`op` CLI などは Nix が先に置く） |
+| Both | `darwin-rebuild switch` → `chezmoi apply` (the order matters; Nix puts things like the `op` CLI in place first) |
 
 </details>
 
 ---
 
 <details>
-<summary><b>5. その他運用</b></summary>
+<summary><b>5. Other operations</b></summary>
 
-### 5.1 アンインストール
+### 5.1 Uninstalling
 
 ```sh
-# cask の場合
-# 1. system/modules/homebrew.nix から該当行を削除 → PR → merge
-# 2. cleanup="none" なので live は残る、手で消す:
+# For a cask
+# 1. Delete the line from system/modules/homebrew.nix → PR → merge
+# 2. cleanup="none", so live keeps it; remove it by hand:
 brew uninstall --cask foo
 
-# Nix package の場合
-# 1. home/modules/packages.nix から削除 → PR → merge
-# 2. darwin-rebuild switch で自動的に消える
+# For a Nix package
+# 1. Delete it from home/modules/packages.nix → PR → merge
+# 2. darwin-rebuild switch removes it automatically
 ```
 
-`homebrew.onActivation.cleanup = "zap"` に切り替えれば未宣言の brew/cask を自動 uninstall。**現状は `"none"` 据え置き**（フェーズ 4 残りを宣言化してからユーザー確認の上で切り替える方針、[CLAUDE.md「既知の落とし穴」節](../CLAUDE.md#既知の落とし穴読まずに修正を試みない)）。
+Switching `homebrew.onActivation.cleanup` to `"zap"` auto-uninstalls undeclared brews/casks. **It is left at `"none"` for now** (the policy is to change it only after the rest of phase 4 is declarative and the user has confirmed, [the "Known pitfalls" section of CLAUDE.md](../CLAUDE.md#既知の落とし穴読まずに修正を試みない)).
 
 ### 5.2 darwin-rebuild rollback
 
 ```sh
 sudo /run/current-system/sw/bin/darwin-rebuild --rollback
-# 1 世代戻る。switch 後に問題が出たときの即時退避。
+# Goes back one generation. The immediate escape when something goes wrong after a switch.
 ```
 
-世代一覧は:
+To list the generations:
 ```sh
 darwin-rebuild --list-generations
 ```
 
-### 5.3 drift 検知（手元で即チェック）
+### 5.3 Drift detection (an instant check on this machine)
 
 ```sh
-# chezmoi 側（source ↔ live の差分）
-chezmoi status      # 乖離一覧
-chezmoi diff        # 詳細
+# chezmoi side (the source ↔ live diff)
+chezmoi status      # drift list
+chezmoi diff        # details
 
-# Nix 側
-nix flake check --no-build                                          # eval/型
-nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure  # 非破壊 build
+# Nix side
+nix flake check --no-build                                          # eval/types
+nix run nix-darwin#darwin-rebuild -- build --flake .#default --impure  # non-destructive build
 
-# brew 側（宣言 vs 実 install）
-brew list --cask | sort                                                          # 実 install
+# brew side (declared vs actually installed)
+brew list --cask | sort                                                          # actually installed
 nix eval --json '.#darwinConfigurations.default.config.homebrew.casks' --impure \
-  | jq -r '.[].name' | sort                                                           # 宣言
+  | jq -r '.[].name' | sort                                                           # declared
 diff <(brew list --cask | sort) \
      <(nix eval --json '.#darwinConfigurations.default.config.homebrew.casks' --impure | jq -r '.[].name' | sort)
 ```
 
-### 5.4 別 PC ブートストラップ
+### 5.4 Bootstrapping another PC
 
-新 Mac で（Apple Silicon の chip transfer 後、ターミナル一発）:
+On a new Mac (after the Apple Silicon chip transfer, one shot in the terminal):
 ```sh
 sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)
 ```
 
-これだけで:
+That alone does:
 1. Xcode CLT install
-2. Nix install（Determinate）
-3. flake clone → git hooks 有効化（`core.hooksPath = .githooks`、§5.11）→ `darwin-rebuild switch --flake .#default --impure`（cask / brew / macOS defaults を一括、masApps は `bootstrapBrewOverride` で `{}` forced のためスキップ）
-4. chezmoi init → apply（dot_* / private_* を配置、`op signin` 済の前提で secret も注入）
-5. `run_onchange_` 自動実行（VSCode 拡張 install / chord-validate 等）
+2. Nix install (Determinate)
+3. flake clone → git hooks enabled (`core.hooksPath = .githooks`, §5.11) → `darwin-rebuild switch --flake .#default --impure` (casks / brews / macOS defaults in one go; masApps is skipped because `bootstrapBrewOverride` forces it to `{}`)
+4. chezmoi init → apply (places dot_* / private_*, and injects secrets on the assumption that `op signin` is done)
+5. `run_onchange_` runs automatically (VSCode extension install / chord-validate, etc.)
 
-詳細: [docs/reproduction-architecture.md](reproduction-architecture.md)
+Details: [docs/reproduction-architecture.md](reproduction-architecture.md)
 
-### 5.5 secret 取り扱い（YOU MUST）
+### 5.5 Secret handling (YOU MUST)
 
-[CLAUDE.md「シークレット取扱」節](../CLAUDE.md#シークレット取扱you-must) より:
+From [the "Secret handling" section of CLAUDE.md](../CLAUDE.md#シークレット取扱you-must):
 
-- 平文を `print / log / echo / コミット / template リテラル` しない
-- chezmoi template で参照: `{{ onepasswordRead "op://Vault/Item/field" }}`
-- shell から参照: `$(op read "op://...")` / `$(gh auth token)` / `$ENV_VAR`
-- ファイルとして置く場合は `private_*`（権限 600）または `encrypted_*`（age/gpg）接頭辞必須
-- `home.file.*.text` に secret を書かない（`/nix/store` は world-readable）
+- Never `print / log / echo / commit` a plaintext value, or write one literally into a template
+- Reference it from a chezmoi template: `{{ onepasswordRead "op://Vault/Item/field" }}`
+- Reference it from a shell: `$(op read "op://...")` / `$(gh auth token)` / `$ENV_VAR`
+- When placing it as a file, the `private_*` (mode 600) or `encrypted_*` (age/gpg) prefix is required
+- Do not write a secret into `home.file.*.text` (`/nix/store` is world-readable)
 
-### 5.6 CI ジョブの意味
+### 5.6 What each CI job means
 
-[.github/workflows/ci.yml](../.github/workflows/ci.yml) ＋ chord 専用 verify-* ワークフロー:
+[.github/workflows/ci.yml](../.github/workflows/ci.yml) plus the chord-specific verify-* workflows:
 
-`ci.yml` の job は 11 本。**表に無い job があれば ci.yml が正**（この表は説明用の写し）。
+`ci.yml` has 11 jobs. **If a job is missing from the table, ci.yml is authoritative** (this table is an explanatory copy).
 
-| ジョブ | 内容 | runner |
+| Job | What it does | runner |
 |---|---|---|
-| `nix flake check (eval only)` | Nix の eval/型検査 | ubuntu-latest |
-| `lint` | `scripts/lint --ci`（ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks の 14 ゲート） | ubuntu-latest |
-| `convention / executable_ prefix` | `chezmoi/` の shebang スクリプトに `executable_` 接頭辞を強制（例外: `run_*` / `modify_*` / `.chezmoiscripts/`） | ubuntu-latest |
-| `script test` | Stop hook の fixture + `scripts/**` と `scripts/claude-md-eval/` の unittest | ubuntu-latest |
-| `chezmoi templates render` | 全 `.tmpl` の execute-template 検証（get.chezmoi.io の最新版で） | ubuntu-latest |
-| `docs link check (external URLs)` | 外部 URL 込みの lychee。**nightly / 手動のみ**・`ci-gate` の needs 外 | ubuntu-latest |
-| `detect flake-affecting changes` | PR が flake/nix/ci.yml を触ったかを判定し、下 2 本の実行可否を出す | ubuntu-latest |
-| `darwin-rebuild build (macOS)` | 実 build（cask DL 含む・非破壊） | macos-latest |
-| `darwin-rebuild switch smoke (macOS)` | 実 switch＋PATH/cask 検証＋`chezmoi apply`（ephemeral runner なので副作用 OK） | macos-latest |
-| `ci-gate` | 上を全部 needs。**branch protection の必須チェックはこれ 1 本だけ** | ubuntu-latest |
-| `notify red main` | 非 PR の赤を固定タイトル issue に集約（PR では走らない） | ubuntu-latest |
+| `nix flake check (eval only)` | Nix eval/type checking | ubuntu-latest |
+| `lint` | `scripts/lint --ci` (the 14 gates: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks) | ubuntu-latest |
+| `convention / executable_ prefix` | Enforces the `executable_` prefix on shebang scripts under `chezmoi/` (exceptions: `run_*` / `modify_*` / `.chezmoiscripts/`) | ubuntu-latest |
+| `script test` | The Stop hook fixtures + the unittests in `scripts/**` and `scripts/claude-md-eval/` | ubuntu-latest |
+| `chezmoi templates render` | execute-template verification of every `.tmpl` (with the latest version from get.chezmoi.io) | ubuntu-latest |
+| `docs link check (external URLs)` | lychee including external URLs. **nightly / manual only**, outside `ci-gate`'s needs | ubuntu-latest |
+| `detect flake-affecting changes` | Decides whether the PR touched flake/nix/ci.yml and emits whether the two jobs below may run | ubuntu-latest |
+| `darwin-rebuild build (macOS)` | A real build (cask downloads included; non-destructive) | macos-latest |
+| `darwin-rebuild switch smoke (macOS)` | A real switch + PATH/cask verification + `chezmoi apply` (side effects are fine on an ephemeral runner) | macos-latest |
+| `ci-gate` | Needs all of the above. **The only required check in branch protection** | ubuntu-latest |
+| `notify red main` | Aggregates non-PR reds into a fixed-title issue (does not run on PRs) | ubuntu-latest |
 
-chord 専用の別ワークフロー:
+The separate chord-specific workflows:
 
-| ジョブ | 内容 | runner |
+| Job | What it does | runner |
 |---|---|---|
-| `validate` (verify-chord-validate.yml) | chord config strict validation | macos-15（Swift 6 toolchain 必須） |
-| `verify` (verify-chord-doc.yml) | chord doc 同期検証 | ubuntu-latest |
+| `validate` (verify-chord-validate.yml) | chord config strict validation | macos-15 (Swift 6 toolchain required) |
+| `verify` (verify-chord-doc.yml) | chord doc sync verification | ubuntu-latest |
 
-### 5.6.1 lint を手元で回す / gitleaks が赤くなったら
+### 5.6.1 Running lint on this machine / when gitleaks goes red
 
 ```sh
-nix develop .#lint --command scripts/lint            # CI と同一コマンド・同一バイナリ
-nix develop .#lint --command scripts/lint python     # 一部だけ（docs / python / secret / shell / tmpl / workflow）
-nix develop .#lint --command scripts/lint external   # 外部 URL のリンク検査（既定では走らない）
+nix develop .#lint --command scripts/lint            # the same command and the same binaries as CI
+nix develop .#lint --command scripts/lint python     # only part of it (docs / python / secret / shell / tmpl / workflow)
+nix develop .#lint --command scripts/lint external   # link checking of external URLs (does not run by default)
 ```
 
-**`external` は opt-in**。ネットワークを叩くゲートは他人のサーバの 5xx / rate limit で
-落ちるので、PR の合否に混ぜない（`ci-gate` の needs に入っていない）。回すのは nightly と
-`workflow_dispatch` の `docs link check (external URLs)` job で、赤は `notify-red-main` が
-issue に集約する。素の `scripts/lint` がネットワークを叩かないことは `test_lint.py` が固定。
+**`external` is opt-in**. A gate that hits the network fails on someone else's 5xx / rate limit,
+so do not mix it into the PR verdict (it is not in `ci-gate`'s needs). What runs it is the
+`docs link check (external URLs)` job, on nightly and `workflow_dispatch`, and reds are aggregated
+into an issue by `notify-red-main`. That a bare `scripts/lint` does not hit the network is pinned by `test_lint.py`.
 
-**素で `scripts/lint` を叩かないこと** —— PATH は `/opt/homebrew/bin` が nix profile より
-前なので、brew 版の shfmt / typos / lychee / gitleaks が混ざって CI と結果がずれる。
-ツールの版の正本は `flake.lock` 1 本で、`devShells.lint`（[flake.nix](../flake.nix)）が配る。
-**開発機で PATH に居るだけのツールを devShell の宣言と混同しないこと** —— `chezmoi` は
-`home.packages` からも来るので、devShell に足し忘れても手元は緑になり CI だけが落ちる。
+**Do not run `scripts/lint` bare** — on PATH, `/opt/homebrew/bin` comes before the nix profile,
+so the brew builds of shfmt / typos / lychee / gitleaks get mixed in and the results diverge from CI.
+The single canonical source for tool versions is `flake.lock`, distributed by `devShells.lint` ([flake.nix](../flake.nix)).
+**Do not confuse a tool that merely happens to be on PATH on the dev machine with a devShell declaration** — `chezmoi`
+also comes from `home.packages`, so forgetting to add it to the devShell still goes green here and only CI fails.
 
-**gitleaks が真陽性を出したら**（履歴は書き換えない — 絶対ルール 4）:
+**When gitleaks reports a true positive** (do not rewrite history — absolute rule 4):
 
-1. **まず鍵を rotate する**（public repo なので、push された時点で漏れている前提で動く）
-2. `.gitleaksignore` に fingerprint を追記して CI を緑に戻す
-3. `gitleaks git` は全 ref の全履歴を毎回見るので、**真陽性を放置すると `ci-gate` が恒久的に赤**になる
+1. **Rotate the key first** (this is a public repo, so act on the assumption that it leaked the moment it was pushed)
+2. Append the fingerprint to `.gitleaksignore` to bring CI back to green
+3. `gitleaks git` looks at the whole history of every ref every time, so **leaving a true positive alone keeps `ci-gate` permanently red**
 
-> push **後**にしか走らないのが CI の限界。push 時点で止めるのは GitHub の
-> secret scanning push protection の役目で、そちらは repo 設定（Settings → Code security）。
+> CI's limit is that it only runs **after** a push. Stopping it at push time is the job of GitHub's
+> secret scanning push protection, and that lives in the repo settings (Settings → Code security).
 
-### 5.7 run_onchange_ スクリプト
+### 5.7 run_onchange_ scripts
 
-`chezmoi/run_onchange_*` は **「rendered 後の本文 hash が変わったら再走」** の仕組み。`.tmpl` 接尾辞は任意（必要な時だけ）。現状:
+`chezmoi/run_onchange_*` is the mechanism **"re-run when the hash of the rendered body changes"**. The `.tmpl` suffix is optional (only when it is needed). Current state:
 
-- `run_onchange_after_chord-validate.sh.tmpl` — chord config 変更時に `chord --validate --strict` 検証。`{{ include "..." | sha256sum }}` で **外部** chord config の hash を埋め込むため **`.tmpl` 必須**。
-- `run_onchange_install-vscode-extensions.sh` — 拡張リスト変更時に `code --install-extension`。拡張リストは script 本文の `for ext in ...` の右辺に直書き → 本文 hash で再走判定するため **`.tmpl` 不要** (PR #108 で plain 化)。
+- `run_onchange_after_chord-validate.sh.tmpl` — validates with `chord --validate --strict` when the chord config changes. It embeds the hash of the **external** chord config via `{{ include "..." | sha256sum }}`, so **`.tmpl` is required**.
+- `run_onchange_install-vscode-extensions.sh` — runs `code --install-extension` when the extension list changes. The extension list is written straight into the right-hand side of `for ext in ...` in the script body → the re-run decision uses the body hash, so **`.tmpl` is unnecessary** (made plain in PR #108).
 
-外部ファイルの内容変化を再走トリガにしたい場合のみ `.tmpl` + `{{ include "..." | sha256sum }}` を使う。スクリプト本文内の宣言で済むなら plain `.sh` で良い。
+Use `.tmpl` + `{{ include "..." | sha256sum }}` only when you want a change in an external file's content to be the re-run trigger. If a declaration inside the script body is enough, plain `.sh` is fine.
 
-新規追加する場合は `run_once_` ではなく **`run_onchange_` を既定**（idempotent）。`run_once_` は本当に一度きりの bootstrap 用。
+For a new one, **`run_onchange_` is the default** (idempotent), not `run_once_`. `run_once_` is for a bootstrap that truly happens only once.
 
-#### 家訓: `.tmpl` / chord config を動かすときの影響範囲
+#### House rule: the blast radius when moving `.tmpl` / the chord config
 
-- **`.tmpl` 自体は read-only**: `run_onchange_after_chord-validate.sh.tmpl` は chord config を `include` で読んで `chord --validate` するだけで、**他リポへ書き込まないので副作用は出ない**。`verify-chord-validate.yml` も apply target を `~/.config/chord` に絞っている。「`.tmpl` 編集で他リポが壊れる」心配は不要。
-- **chord config パスは 4 箇所が同じファイルを指す**ので、リネーム/移動は同時に直す（PR #108 の `.tmpl` 廃止後、PR #123 で古参照を踏んだ実績あり）:
-  1. `chezmoi/run_onchange_after_chord-validate.sh.tmpl` の `{{ include "dot_config/chord/private_config.toml" | sha256sum }}`
-  2. `.github/workflows/verify-chord-validate.yml` の `paths:` フィルタ
-  3. `.github/workflows/verify-chord-doc.yml` の `paths:` フィルタ
-  4. `scripts/gen-chord-doc.py` の `CONFIG`
-- **config 文法は released chord と歩調を合わせる**: `verify-chord-validate.yml` は brew tap (`akira-toriyama/tap`) の **released** chord を install して strict 検証する。config の文法が released 版を追い越すと CI が落ちる。tap が追いつくまでは §5.10 の手元 build を使うか、文法変更と tap release を揃える。
+- **The `.tmpl` itself is read-only**: `run_onchange_after_chord-validate.sh.tmpl` only reads the chord config with `include` and runs `chord --validate`, so **it does not write to another repo and produces no side effects**. `verify-chord-validate.yml` also narrows its apply target to `~/.config/chord`. There is no need to worry that "editing the `.tmpl` breaks another repo".
+- **Four places point at the same chord config path**, so fix a rename/move in all of them at once (after the `.tmpl` was dropped in PR #108, PR #123 actually hit a stale reference):
+  1. `{{ include "dot_config/chord/private_config.toml" | sha256sum }}` in `chezmoi/run_onchange_after_chord-validate.sh.tmpl`
+  2. the `paths:` filter in `.github/workflows/verify-chord-validate.yml`
+  3. the `paths:` filter in `.github/workflows/verify-chord-doc.yml`
+  4. `CONFIG` in `scripts/gen-chord-doc.py`
+- **Keep the config syntax in step with the released chord**: `verify-chord-validate.yml` installs the **released** chord from the brew tap (`akira-toriyama/tap`) and runs strict validation. If the config syntax runs ahead of the released version, CI fails. Until the tap catches up, use the local build in §5.10, or land the syntax change together with a tap release.
 
-### 5.8 よく使うコマンド早見表
+### 5.8 Quick reference of frequently used commands
 
 ```sh
-# 確認系
-chezmoi status                                                 # source ↔ live の乖離
-chezmoi diff                                                   # 内容差分
+# Checking
+chezmoi status                                                 # source ↔ live drift
+chezmoi diff                                                   # content diff
 nix flake check --no-build                                     # Nix eval
-darwin-rebuild build --flake .#default --impure                  # 非破壊 Nix build
+darwin-rebuild build --flake .#default --impure                  # non-destructive Nix build
 
-# 反映系
-chezmoi apply [-v] [--force]                                   # chezmoi 適用
+# Reflecting
+chezmoi apply [-v] [--force]                                   # write the chezmoi source out to live
 sudo /run/current-system/sw/bin/darwin-rebuild switch \
-  --flake .#default --impure                                     # Nix 適用（sudo 必要）
+  --flake .#default --impure                                     # switch the Nix system (sudo required)
 
-# 取り込み系
-chezmoi add <path>                                             # 新規取り込み
-chezmoi re-add <path>                                          # 既存ファイルの更新
-chezmoi chattr +template <path>                                # .tmpl 化
+# Into the source
+chezmoi add <path>                                             # add something new
+chezmoi re-add <path>                                          # update an existing file
+chezmoi chattr +template <path>                                # turn it into a .tmpl
 
 # 1Password
-op signin                                                      # まず最初に
+op signin                                                      # first of all
 op read "op://Vault/Item/field"
 
-# リポジトリ
-ghq-get-mine                                                   # 自リポジトリ(active)を workspace へ一括 clone（冪等・§5.12）
+# Repositories
+ghq-get-mine                                                   # bulk-clone one's own (active) repositories into workspace (idempotent, §5.12)
 ```
 
-### 5.9 トラブルシュート定番
+### 5.9 Standard troubleshooting
 
-| 症状 | 確認すること |
+| Symptom | What to check |
 |---|---|
-| `darwin-rebuild switch` が PATH 関連で失敗 | sudo は PATH 引き継がない → **フルパスで呼ぶ** `sudo /run/current-system/sw/bin/darwin-rebuild ...` |
-| switch 後の親シェルで PATH 異常に見える | `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` 継承の false positive → **新ターミナル**または `env -i HOME=$HOME /bin/zsh -l -c '...'` |
-| `chezmoi apply` が prompt で止まる | MM 状態 → `--force` で source 優先、または re-add で live 優先 |
-| cask が CI で fail | cask 名タイポ / 廃止 / macOS 要件不一致 → `brew info --cask <name>` で確認 |
-| `system.defaults` がアプリに反映されない | TCC/sandbox 保護領域（Mail/Safari/Calendar 等）は switch 成功でも適用されない、深追いしない |
+| `darwin-rebuild switch` fails on something PATH-related | sudo does not inherit PATH → **call it with the full path** `sudo /run/current-system/sw/bin/darwin-rebuild ...` |
+| PATH looks broken in the parent shell after a switch | a false positive from inheriting `__NIX_DARWIN_SET_ENVIRONMENT_DONE=1` → **a new terminal** or `env -i HOME=$HOME /bin/zsh -l -c '...'` |
+| `chezmoi apply` stops at a prompt | the MM state → `--force` to prefer source, or re-add to prefer live |
+| a cask fails in CI | typo in the cask name / discontinued / macOS requirement mismatch → check with `brew info --cask <name>` |
+| `system.defaults` does not reach an app | TCC/sandbox-protected areas (Mail/Safari/Calendar, etc.) are not applied even when switch succeeds; do not chase it |
 
-### 5.10 chord daemon を手元 build で入れ替え（AX 維持）
+### 5.10 Swapping the chord daemon for a local build (keeping AX)
 
-chord 本体に PR が ship されたけど tap formula がまだ古い、という過渡期に「手元 build を brew install の代わりに走らせる」手順。chord-dev 自己署名で再署名すれば既存 AX (Accessibility) 許可が引き継がれる。
+The procedure for "running a local build in place of the brew install" during the transition where a PR has shipped in chord itself but the tap formula is still old. Re-signing with the chord-dev self-signed identity carries the existing AX (Accessibility) grant over.
 
 ```sh
-# 1. 最新 chord (PR 含む main) を release build
+# 1. Release-build the latest chord (main, including the PR)
 cd "$(ghq root)/github.com/akira-toriyama/chord"
 git switch main && git pull
 swift build -c release
 
-# 2. daemon 停止
+# 2. Stop the daemon
 brew services stop chord
 sleep 1
 
-# 3. brew install の Chord.app 中の binary を swap
-#    `/opt/homebrew/opt/chord` は現バージョンへの symlink (例: ../Cellar/chord/0.5.0)
-#    なので version 数字を埋め込まずに済む。
+# 3. Swap the binary inside the brew-installed Chord.app
+#    `/opt/homebrew/opt/chord` is a symlink to the current version (e.g. ../Cellar/chord/0.5.0),
+#    so there is no need to embed the version number.
 CHORD_APP="$(brew --prefix chord)/Chord.app"
 NEW="$(ghq root)/github.com/akira-toriyama/chord/.build/release/chord"
 cp "$CHORD_APP/Contents/MacOS/chord" "$CHORD_APP/Contents/MacOS/chord.bak"
 cp "$NEW" "$CHORD_APP/Contents/MacOS/chord"
 
-# 4. chord-dev で再署名 (TCC が同一 identity として認識 → AX 維持)
+# 4. Re-sign with chord-dev (TCC recognizes it as the same identity → AX preserved)
 codesign --force --sign chord-dev "$CHORD_APP"
 
-# 5. daemon 再起動 + 確認
+# 5. Restart the daemon and check
 brew services start chord
 sleep 2
 chord --doctor
-# bindings: N loaded, ... 0 dropped (期待値)
+# bindings: N loaded, ... 0 dropped (the expected value)
 ```
 
-戻すとき: `cp "$CHORD_APP/Contents/MacOS/chord.bak" "$CHORD_APP/Contents/MacOS/chord" && codesign --force --sign chord-dev "$CHORD_APP" && brew services restart chord`
+To revert: `cp "$CHORD_APP/Contents/MacOS/chord.bak" "$CHORD_APP/Contents/MacOS/chord" && codesign --force --sign chord-dev "$CHORD_APP" && brew services restart chord`
 
-正規 tap release が出たら `brew upgrade chord && chord --resign` で本来の運用に戻る。
+Once a proper tap release is out, `brew upgrade chord && chord --resign` returns to the normal operation.
 
-### 5.11 pre-push フック（apply 忘れ warn-only 通知）
+### 5.11 The pre-push hook (warn-only notice for a forgotten apply)
 
-`~/.config` を編集 → `chezmoi re-add` → **`chezmoi apply` を忘れて push** すると、「リポは新しいのに自分のマシンは古い」「run_onchange の検証ゲート（chord-validate 等）が未実行のまま push」といった事故になり得る。これに気づけるよう [`.githooks/pre-push`](../.githooks/pre-push) が push 前に `chezmoi --source ./chezmoi verify` を実行し、source ↔ live に乖離があれば**警告する（`chezmoi status` の "R" 保留も検知）**。
+Editing `~/.config` → `chezmoi re-add` → **pushing while forgetting `chezmoi apply`** can become an accident such as "the repo is new but this machine is old" or "pushed with the run_onchange verification gate (chord-validate etc.) never run". So that you can notice this, [`.githooks/pre-push`](../.githooks/pre-push) runs `chezmoi --source ./chezmoi verify` before the push and **warns if source ↔ live have drifted (it also detects a pending "R" in `chezmoi status`)**.
 
-**warn-only（2026-07-03〜）**: 以前は乖離で push を止めていたが、この repo は Claude Code 主導で運用するため「止めない（常に通す・警告のみ）」に緩めた。理由 = source 編集→apply→push の Claude 主導フローでは apply 忘れ型事故が起きにくく、facet 等 開発中ツールの恒常 drift で無関係な chezmoi/ push まで止まる誤発火（PR #185 で `--no-verify` を強いた）の摩擦が実害だったため。乖離ゼロの恒久保証は CI（darwin build/switch smoke + `chezmoi apply` + templates render）と main のブランチ保護が担う。ローカル live の追従は警告を見て `chezmoi apply` で。
+**warn-only (since 2026-07-03)**: it used to stop the push on drift, but because this repo is run Claude-Code-led, it was relaxed to "do not stop (always let it through, warn only)". The reason = in the Claude-led flow of edit source → apply → push the forgotten-apply kind of accident rarely happens, while the real damage was the friction of false firing, where the constant drift of tools under development such as facet stopped even unrelated chezmoi/ pushes (PR #185 forced `--no-verify`). The permanent guarantee of zero drift is carried by CI (darwin build/switch smoke + `chezmoi apply` + templates render) and main's branch protection. Bring local live along by watching the warning and running `chezmoi apply`.
 
-#### 有効化（`core.hooksPath` の設定）
+#### Enabling it (setting `core.hooksPath`)
 
-git は **clone 同梱の hook/設定を自動では有効化しない**（悪意あるリポを clone した瞬間にコードが走るのを防ぐセキュリティ仕様）。そのため `core.hooksPath` は次の経路で自動設定する:
+git **does not automatically enable a hook/setting that ships inside a clone** (a security design that prevents code from running the moment you clone a malicious repo). So `core.hooksPath` is set automatically through these routes:
 
-- **新 PC**: `install.sh` が clone 直後に設定（§3.5）。
-- **それ以外の clone（ghq / 手動 `git clone` 等）**: [`chezmoi/run_onchange_after_enable-git-hooks.sh`](../chezmoi/run_onchange_after_enable-git-hooks.sh) が **`chezmoi apply` のたび**に `CHEZMOI_SOURCE_DIR` から「いま使っている clone」の repo root を特定し、best-effort で設定する。`chezmoi source-path` が指す = 実際に push する clone なので確実に当たる。
+- **A new PC**: `install.sh` sets it right after the clone (§3.5).
+- **Any other clone (ghq / a manual `git clone`, etc.)**: [`chezmoi/run_onchange_after_enable-git-hooks.sh`](../chezmoi/run_onchange_after_enable-git-hooks.sh) identifies the repo root of "the clone currently in use" from `CHEZMOI_SOURCE_DIR` **on every `chezmoi apply`** and sets it best-effort. What `chezmoi source-path` points at = the clone you actually push from, so it always hits.
 
-手動でやるなら（上記が走る前に効かせたい等）:
+To do it by hand (e.g. when you want it in effect before the above runs):
 ```sh
 git config core.hooksPath .githooks
 ```
 
-その他:
+Other notes:
 
-- **警告のみ**: 乖離があっても push は止まらない（warn-only）。警告文も出したくない時だけ `git push --no-verify` でフック自体を skip。
-- chezmoi 未導入環境（CI / bootstrap 途中）ではフックは何もせず通す（`command -v chezmoi` で skip）。
-- **スコープ**: 検査するのは chezmoi/ を触る push だけ（`docs/` や `*.nix` のみの push は verify せず即通す）。旧仕様の「全乖離で無関係な push まで止まる」問題は解消済み。
+- **Warning only**: drift does not stop the push (warn-only). Only when you do not even want the warning text, skip the hook itself with `git push --no-verify`.
+- In an environment without chezmoi (CI / mid-bootstrap) the hook does nothing and lets it through (skipped via `command -v chezmoi`).
+- **Scope**: only a push that touches chezmoi/ is inspected (a push of only `docs/` or `*.nix` goes straight through without verify). The old behavior's problem of "any drift stops even an unrelated push" is resolved.
 
-### 5.12 自リポジトリ一括 clone（ghq-get-mine）
+### 5.12 Bulk-cloning one's own repositories (ghq-get-mine)
 
-GitHub 上の自分の active（非 archived）repo を `/Volumes/workspace` へ
-ghq レイアウトで一括 SSH clone するコマンド。fork・private を含む。
+A command that bulk SSH-clones one's own active (non-archived) repos on GitHub into `/Volumes/workspace`
+in the ghq layout. Forks and private repos included.
 
 ```sh
 ghq-get-mine
 ```
 
-- **いつ**: 新 repo を作った後の追従 / 新 Mac では install.sh §6.5 が自動実行
-  （対話モードのみ、CI は skip）
-- **冪等**: clone 済み repo は no-op（`-u` は付けない = working copy 不可侵）
-- **前提**: gh 認証（or `GITHUB_TOKEN`）+ GitHub への SSH 疎通。未整備なら
-  1 行 warn で fail-fast → 整備後に再実行すれば欠けた分だけ補完される
-- 実体: [home/modules/packages.nix](../home/modules/packages.nix) の
-  `writeShellScriptBin`
+- **When**: following along after creating a new repo / on a new Mac, install.sh §6.5 runs it automatically
+  (interactive mode only, skipped on CI)
+- **Idempotent**: an already-cloned repo is a no-op (`-u` is not passed = the working copy is inviolable)
+- **Prerequisites**: gh authentication (or `GITHUB_TOKEN`) + SSH reachability to GitHub. If they are not in place it
+  fail-fasts with a one-line warning → re-running it once they are in place fills in only what is missing
+- The real thing: `writeShellScriptBin` in
+  [home/modules/packages.nix](../home/modules/packages.nix)
 
-### 5.13 azooKey いい感じ変換ブリッジ（azookey-bridge）— 退役済み（2026-08-04）
+### 5.13 The azooKey smart conversion bridge (azookey-bridge) — retired (2026-08-04)
 
-azooKey の「いい感じ変換」（変換中 Ctrl+S）をローカルブリッジ（`127.0.0.1:8787`
-常駐 + azooKey の「OpenAI API」backend の endpoint 差し替え）で動かしていたが、
-**ブリッジ・LaunchAgent・defaults 宣言ごと撤去した**。いい感じ変換は azooKey の
-既定（Off）に戻してある。
+azooKey's 「いい感じ変換」 (smart conversion, Ctrl+S while converting) used to run through a local bridge (a resident on
+`127.0.0.1:8787` + swapping the endpoint of azooKey's "OpenAI API" backend), but
+**the bridge, the LaunchAgent and the defaults declarations were all removed**. Smart conversion is back at
+azooKey's default (Off).
 
-作り直したくなった時のために、退役の理由（すべて実機実測）:
+In case it is ever wanted again, the reasons for retiring it (all measured on the real machine):
 
-- **速度が届かない**。実機の Ctrl+S 1 回で 8.1〜14.9 秒。しかもその下限は
-  推論ではなく `claude` CLI の起動そのもの（`hi` の一言でも 5.3〜6.2 秒）なので、
-  プロンプトを削ってもモデルを替えても縮まない。IME の応答としては使えない。
-- **速い方（オンデバイス FoundationModels、~1 秒）は品質が足りない**。
-  azooKeyMac バイナリから復元した実 stock プロンプト 8 ケースで正解 1〜2。
-  当たるのは入力が stock の few-shot 例と字面一致した時だけで、
-  `明日の会議を<えんき>` は天気の候補を、`ありがとう<えいご>` は 3/3 で
-  スペイン語を返した。例文の模倣を断つプロンプトを 2 種試すと 0/5 に悪化する。
-- つまり**速い経路と正しい経路が両立しない**。恒久対応は azooKey-Desktop への
-  upstream プロンプト修正（projects t-22se）。検証ログは projects t-85fn。
+- **The speed does not get there**. One Ctrl+S on the real machine takes 8.1–14.9 seconds. And that floor is
+  not the inference but the startup of the `claude` CLI itself (even a one-word `hi` takes 5.3–6.2 seconds), so
+  it does not shrink by trimming the prompt or swapping the model. Unusable as an IME response.
+- **The fast path (on-device FoundationModels, ~1 second) is not good enough in quality**.
+  Against the 8 real stock prompt cases restored from the azooKeyMac binary, 1–2 were correct.
+  It only hits when the input matches a stock few-shot example literally.
+  `明日の会議を<えんき>` returned weather candidates, and `ありがとう<えいご>` returned
+  Spanish 3/3. Two prompt variants that cut off the imitation of the examples made it worse, 0/5.
+- In other words, **the fast path and the correct path cannot both hold**. The permanent fix is an
+  upstream prompt correction to azooKey-Desktop (projects t-22se). The verification log is projects t-85fn.
 
 </details>
 
 ---
 
-## 5.14 `~/.claude` の一時ファイルを恒久保管先にしない（不変条件）
+## 5.14 Do not make the temporary files in `~/.claude` a permanent store (invariant)
 
-`~/.claude/` は Claude Code の**実行時ディレクトリ**であり、宣言管理の対象は
-`chezmoi/private_dot_claude/` 配下（`CLAUDE.md` / `agents/` / `skills/` /
-`modify_settings.json`）だけ。それ以外にできたファイルは**どこにもバックアップされない**。
+`~/.claude/` is Claude Code's **runtime directory**, and the only things under declarative management are
+those under `chezmoi/private_dot_claude/` (`CLAUDE.md` / `agents/` / `skills/` /
+`modify_settings.json`). Any other file that ends up there is **backed up nowhere**.
 
-- **`~/.claude/plans/` とホーム直下の一時メモ（`tmp-*.txt` 等）を恒久保管先にしない。**
-  作業計画・引き継ぎの正本は **furrow の task body**（大きい資料は `furrow attach` で
-  `bodies/assets/` へ）。実例: 2026-07-27 に `plans/` の 4 本を整理し、生きている 2 本は
-  `furrow attach` で t-8qqz / t-j8ek に移送、完了 2 本は削除した。
-- **memory の slug は必ず `MEMORY.md` の索引から link されていること。** 索引に載らない
-  memory は次のセッションで読まれず、書いた事実が静かに消える。`claude-maint` の
-  月次レーンは memory を見ていない（skills / commands / agents のみ）ので、
-  ここは今のところ**散文頼み**。
+- **Do not make `~/.claude/plans/` or the temporary notes directly under home (`tmp-*.txt` etc.) a permanent store.**
+  The canonical source for work plans and handovers is **the furrow task body** (large material goes to
+  `bodies/assets/` via `furrow attach`). Real example: on 2026-07-27 the 4 files in `plans/` were sorted out;
+  the 2 still alive were moved to t-8qqz / t-j8ek with `furrow attach`, and the 2 finished ones were deleted.
+- **Every memory slug must be linked from the index in `MEMORY.md`.** A memory that is not on the index
+  is not read in the next session, and the fact you wrote quietly disappears. `claude-maint`'s
+  monthly lane does not look at memory (skills / commands / agents only), so for now this
+  rests **on prose alone**.
 
-## 完了済の大きな migration
+## Completed large migrations
 
-- **chord `[input-aliases]` 機能 + 論理名移行** — chord 本体で `[input-aliases]` 機能が ship 済 ([PR #4](https://github.com/akira-toriyama/chord/pull/4) v0.5.0 初版、[PR #7](https://github.com/akira-toriyama/chord/pull/7) で v0.6.0 として `$prefix` 必須 + `[aliases]` → `[action-aliases]` rename + schema v2 → v3)。`chezmoi/dot_config/chord/private_config.toml` は `[action-aliases]` + `[input-aliases]` + `$prefix` 参照 (`input = "$ULTRA_LL - c"`) に移行済。`scripts/gen-chord-doc.py` の hardcoded dict は削除済 (chord 自身が alias 解決)。daemon 入れ替えは `brew upgrade chord && chord --resign` か 5.10 の手元 build 手順を参照。
+- **The chord `[input-aliases]` feature + the migration to logical names** — the `[input-aliases]` feature has shipped in chord itself ([PR #4](https://github.com/akira-toriyama/chord/pull/4) as the first version in v0.5.0, and [PR #7](https://github.com/akira-toriyama/chord/pull/7) as v0.6.0 with `$prefix` required + the `[aliases]` → `[action-aliases]` rename + schema v2 → v3). `chezmoi/dot_config/chord/private_config.toml` has migrated to `[action-aliases]` + `[input-aliases]` + `$prefix` references (`input = "$ULTRA_LL - c"`). The hardcoded dict in `scripts/gen-chord-doc.py` has been deleted (chord resolves aliases itself). To swap the daemon, use `brew upgrade chord && chord --resign` or see the local build procedure in 5.10.
 
-## 参考
+## References
 
-- [CLAUDE.md](../CLAUDE.md) — 鉄則・責務分担・判断フロー・既知の落とし穴
-- [docs/reproduction-architecture.md](reproduction-architecture.md) — 全体アーキテクチャ・新 PC bootstrap の設計
-- [docs/roadmap.md](roadmap.md) — 進捗・未決事項
-- [docs/system-inventory.md](system-inventory.md) — 環境素材一覧
+- [CLAUDE.md](../CLAUDE.md) — iron rules, ownership split, decision flows, known pitfalls
+- [docs/reproduction-architecture.md](reproduction-architecture.md) — the overall architecture, the design of the new-PC bootstrap
+- [docs/roadmap.md](roadmap.md) — progress, open questions
+- [docs/system-inventory.md](system-inventory.md) — the inventory of environment source material
