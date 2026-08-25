@@ -184,7 +184,7 @@ brew uninstall --cask foo
 # 2. darwin-rebuild switch で自動的に消える
 ```
 
-`homebrew.onActivation.cleanup = "zap"` に切り替えれば未宣言の brew/cask を自動 uninstall。**現状は `"none"` 据え置き**（フェーズ 4 残りを宣言化してからユーザー確認の上で切り替える方針、[CLAUDE.md「既知の落とし穴」節](../CLAUDE.md#既知の落とし穴読まずに修正を試みない)）。
+`homebrew.onActivation.cleanup = "zap"` に切り替えれば未宣言の brew/cask を自動 uninstall。**現状は `"none"` 据え置き**（フェーズ 4 残りを宣言化してからユーザー確認の上で切り替える方針、[CLAUDE.md「既知の落とし穴」節](../CLAUDE.md#known-pitfalls-do-not-attempt-a-fix-without-reading)）。
 
 ### 5.2 darwin-rebuild rollback
 
@@ -235,7 +235,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 
 ### 5.5 secret 取り扱い（YOU MUST）
 
-[CLAUDE.md「シークレット取扱」節](../CLAUDE.md#シークレット取扱you-must) より:
+[CLAUDE.md「シークレット取扱」節](../CLAUDE.md#secret-handling-you-must) より:
 
 - 平文を `print / log / echo / コミット / template リテラル` しない
 - chezmoi template で参照: `{{ onepasswordRead "op://Vault/Item/field" }}`

@@ -178,7 +178,7 @@ brew uninstall --cask foo
 # 2. darwin-rebuild switch removes it automatically
 ```
 
-Switching `homebrew.onActivation.cleanup` to `"zap"` auto-uninstalls undeclared brews/casks. **It is left at `"none"` for now** (the policy is to change it only after the rest of phase 4 is declarative and the user has confirmed, [the "Known pitfalls" section of CLAUDE.md](../CLAUDE.md#既知の落とし穴読まずに修正を試みない)).
+Switching `homebrew.onActivation.cleanup` to `"zap"` auto-uninstalls undeclared brews/casks. **It is left at `"none"` for now** (the policy is to change it only after the rest of phase 4 is declarative and the user has confirmed, [the "Known pitfalls" section of CLAUDE.md](../CLAUDE.md#known-pitfalls-do-not-attempt-a-fix-without-reading)).
 
 ### 5.2 darwin-rebuild rollback
 
@@ -229,7 +229,7 @@ Details: [docs/reproduction-architecture.md](reproduction-architecture.md)
 
 ### 5.5 Secret handling (YOU MUST)
 
-From [the "Secret handling" section of CLAUDE.md](../CLAUDE.md#シークレット取扱you-must):
+From [the "Secret handling" section of CLAUDE.md](../CLAUDE.md#secret-handling-you-must):
 
 - Never `print / log / echo / commit` a plaintext value, or write one literally into a template
 - Reference it from a chezmoi template: `{{ onepasswordRead "op://Vault/Item/field" }}`
