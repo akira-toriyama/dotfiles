@@ -110,11 +110,11 @@ in
     # scripts/lint の各ゲートが起動する実体。CI は devShells.lint（flake.lock 固定）から
     # 供給するので、ここは **開発機で素の `scripts/lint` を叩ける** ための供給源。
     # 同じ flake.lock 由来なので CI とローカルでバージョンが一致する。
-    # 4 本（shfmt / typos / lychee / gitleaks）は #297 で homebrew.brews に置かれて
-    # いたが、いずれも nixpkgs にある汎用 CLI ＝ 判断フローでは home.packages 側。
-    # brew bundle は 1 つの cask が壊れると bundle 全体を道連れにする（2026-08-02〜の
-    # CI 赤で実際に道連れになった）ので、Nix で足りるものは Nix に置く。
-    # switch 後に brew 版を uninstall すること。
+    # 4 本（shfmt / typos / lychee / gitleaks）はいずれも nixpkgs にある汎用 CLI
+    # ＝ 判断フローでは home.packages 側。brew bundle は 1 つの cask が壊れると
+    # bundle 全体を道連れにする（2026-08-02〜の CI 赤で実際に道連れになった）ので、
+    # Nix で足りるものは Nix に置く。ただし現在も homebrew.nix の brews と二重宣言
+    # で brew 実体も残存（解消は projects t-nmdj）。
     shellcheck # shell の lint。system/modules/scripts/*.sh 等の自己検証にも使う
     shfmt      # shell の formatter（scripts/lint の shfmt ゲート）
     actionlint # GitHub Actions workflow の静的チェック。push 前にローカルで拾う
@@ -156,7 +156,7 @@ in
     # ghq-get-mine: GitHub 上の自分の active(非 archived)repo を GHQ_ROOT
     # (/Volumes/workspace) へ ghq レイアウトで一括 SSH clone。clone 済みは
     # no-op(冪等・-u なし = 既存 working copy 不可侵)。新 repo 作成後の追従や
-    # 新 Mac ブートストラップ (install.sh §6.5) で実行。fork・private は含み
+    # 新 Mac ブートストラップ (install.sh の df_step ghq-get-mine) で実行。fork・private は含み
     # archived は除外。前提 = gh 認証 (or GITHUB_TOKEN) + GitHub への SSH 疎通。
     # 未整備なら 1 行 warn で fail-fast(SSH の 1Password 整備は projects t-eep4)。
     # pipefail はグローバルには効かせない: 前段の `ssh -T | grep` は ssh -T が

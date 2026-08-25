@@ -16,27 +16,27 @@
   system.defaults = {
     # === Finder ===
     finder = {
-      AppleShowAllFiles = true;                  # 隠しファイル表示
-      ShowStatusBar = true;                      # ステータスバー表示
-      ShowPathbar = true;                        # パスバー表示
-      AppleShowAllExtensions = true;             # 全拡張子表示（finder ドメインにもある）
-      ShowExternalHardDrivesOnDesktop = false;   # デスクトップ: 外付け HDD 非表示
-      ShowHardDrivesOnDesktop = false;           # デスクトップ: 内蔵 HDD 非表示
-      ShowMountedServersOnDesktop = false;       # デスクトップ: サーバ非表示
-      ShowRemovableMediaOnDesktop = false;       # デスクトップ: リムーバブル非表示
+      AppleShowAllFiles = true;
+      ShowStatusBar = true;
+      ShowPathbar = true;
+      AppleShowAllExtensions = true;             # NSGlobalDomain にも同キーを宣言（両ドメイン意図的に重複）
+      ShowExternalHardDrivesOnDesktop = false;
+      ShowHardDrivesOnDesktop = false;
+      ShowMountedServersOnDesktop = false;
+      ShowRemovableMediaOnDesktop = false;
     };
 
     # === Dock ===
     dock = {
-      autohide = true;                           # 自動非表示
-      autohide-delay = 0.0;                      # マウスオン遅延ゼロ
+      autohide = true;
+      autohide-delay = 0.0;
       mru-spaces = false;                        # Space を使用順で並べ替えない
     };
 
     # === NSGlobalDomain（全アプリ横断）===
     NSGlobalDomain = {
-      AppleShowAllExtensions = true;             # 全拡張子表示
-      _HIHideMenuBar = true;                     # メニューバー非表示
+      AppleShowAllExtensions = true;
+      _HIHideMenuBar = true;
       "com.apple.swipescrolldirection" = false;  # ナチュラルスクロール OFF（従来方向）
       NSAutomaticWindowAnimationsEnabled = false; # 余計な window アニメ抑制（任意・健康的）
     };
@@ -49,7 +49,7 @@
     # === 個別ドメイン（typed option に無いもの）===
     CustomUserPreferences = {
       "com.apple.finder" = {
-        ShowTabView = true;                      # タブバー表示
+        ShowTabView = true;
       };
       "com.apple.LaunchServices" = {
         LSQuarantine = false;                    # 未確認アプリ警告（download quarantine）無効
