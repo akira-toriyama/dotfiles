@@ -1,0 +1,216 @@
+<!--
+この文書は reproduction-architecture.md（英語・正本）の和訳です。人間向け。
+最新とは限りません — 基準: 英語版 @ d72c104。
+同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
+-->
+
+# 再現アーキテクチャ設計（nix-darwin + home-manager + chezmoi + 1Password）
+
+最終目標: **このPCを破棄しても、新しい Mac で同等の環境をコマンド数発で再現できる。**
+
+確定方針（ユーザー決定）:
+
+- 再現の土台 = **nix-darwin + home-manager（flakes）**
+- シークレット = **1Password CLI（`op`）連携**
+- 進め方 = コアなのでゆっくり・段階的・各段で検証ゲート
+
+本書は設計のみ。実装はロードマップ（[roadmap.md](roadmap.md)）の各フェーズで行う。
+
+---
+
+## 1. 責務分担マトリクス（誰が何を持つか）
+
+> 鉄則: **1つのファイル／パッケージは必ず1レイヤーだけが所有する**。home-manager が生成する設定を chezmoi が再度管理しない（逆も同様）。重複が運用破綻の主因。
+
+| 対象 | 所有 | 理由 |
+|---|---|---|
+| Nix でビルド可能な CLI（jq, gh, ghq, direnv, ripgrep 等） | **home-manager** `home.packages` | クロスプラットフォーム・宣言的 |
+| GUI アプリ / cask / Mac App Store | **nix-darwin** `homebrew.casks` / `masApps` | Nix は cask をビルド不可 |
+| Homebrew 本体 | **nix-homebrew** モジュール | brew バイナリ導入も再現可能に（任意だが推奨） |
+| カスタム tap のツール（現行は `steipete/tap/peekaboo` のみ） | **nix-darwin** `homebrew.brews` + `taps` | nixpkgs に無い→ brew 維持 |
+| macOS defaults（Dock/Finder/NSGlobalDomain 等） | **nix-darwin** `system.defaults` / `CustomUserPreferences` | 宣言的に再現。system-inventory が入力 |
+| zsh / starship / git のプログラム設定（DSL あり） | **home-manager** `programs.zsh` / `starship` / `git` | DSL で生成。現 `.zshrc` は刷新（後述） |
+| アプリ固有の手編集 dotfile（chord, facet, halo, wand, claude） | **chezmoi** | Nix DSL が無い・アプリ所有の生 TOML/JSON。現状維持 |
+| シークレット（SSH 鍵, PAT, トークン） | **chezmoi + 1Password** `onepasswordRead` テンプレート | リポジトリに置かず apply 時に注入 |
+| 効果音等の不透明アセット（dot_local/share/sounds） | **chezmoi** | バイナリ資産 |
+| LaunchAgent（border-cycle 等） | **chezmoi**（現状の run_onchange 方式）/ システム級は nix-darwin | 既存資産を尊重 |
+
+境界ルール（複数ソースで一致）: **home-manager = パッケージ + DSL を持つプログラム設定 / chezmoi = 手編集の生設定 + シークレット**。
+
+---
+
+## 2. リポジトリレイアウト（実例 budimanjojo/nix-config 準拠）
+
+目標スタックの実例（278★, Nix flakes + chezmoi 併用）が採る**正準パターン**:
+
+```
+dotfiles/                       # 1リポジトリに flake と chezmoi 源を同居
+├── .chezmoiroot   → "chezmoi"  # ★これにより直下の Nix 群が $HOME に流出しない
+├── flake.nix  flake.lock
+├── system/                     # nix-darwin
+│   ├── hosts/generic.nix       #   マシン別エントリ
+│   └── modules/                #   homebrew.nix / defaults.nix / power.nix /
+│                               #   launchd-drift.nix / claude-maint.nix / zmk-log.nix
+├── home/                       # home-manager
+│   └── modules/                #   zsh.nix / git.nix / packages.nix / mise.nix /
+│                               #   chezmoi.nix / furrow.nix
+├── chezmoi/                    # ★ chezmoi source root（.chezmoiroot の指す先）
+│   ├── .chezmoiignore  .chezmoiversion
+│   ├── dot_config/{chord,facet,halo,wand}/...  # アプリ所有の生設定
+│   ├── private_dot_claude/     #   CLAUDE.md / agents / skills /
+│   │                           #   modify_settings.json（★ live を書き換える modify_ スクリプト）
+│   ├── dot_local/bin/executable_*   # 手書きの helper（claude-work-report-check 等）
+│   ├── dot_local/share/sounds/...
+│   ├── private_Library/private_Containers/...
+│   ├── private_dot_ssh/{private_config,create_private_known_hosts}
+│   └── run_onchange_after_*.sh(.tmpl)
+├── scripts/                    # repo 運用スクリプト（lint / doc_paths.py / claude-md-eval 等）
+├── docs/  README.md  CLAUDE.md  install.sh  LICENSE
+└── .githooks/  .github/  ruff.toml  lychee.toml  _typos.toml  .taplo.toml
+```
+
+> このツリーは **2026-07-27 時点の現物**（`ls -A` で実測）。設計当初に置く予定だった
+> `.chezmoi.toml.tmpl` は採用せず（単一機のため prompt 化不要 — [roadmap.md](roadmap.md) 参照）、
+> 代わりに `.chezmoiversion` を置いている。`.justfile` は「埋める材料が無い＝YAGNI」で
+> クローズ済み。`dot_config/{borders,rift,focusfx}` は WM スタックごと drop 済み
+> （[roadmap.md](roadmap.md) の「カスタム tap 由来 brew は全 drop」）。
+
+### ⚠️ 重要な設計判断: `.chezmoiroot` を採用（過去決定の見直し）
+
+以前「`.chezmoiroot` 見送り・フラット維持」と決めたが、それは **chezmoi 単独前提**の判断だった。
+nix-darwin の `flake.nix` / `system/` / `home/` が同じリポジトリに同居する以上、
+`.chezmoiroot` 無しでは chezmoi がこれらを `$HOME` に展開しようとする（重大な流出）。
+実例リポジトリも例外なく `.chezmoiroot=chezmoi` で解決している。
+→ **本目標下では `.chezmoiroot` 採用が正解。フラット維持の旧決定は撤回を推奨。**
+
+移行は `git mv` で既存 `dot_config/` 等を `chezmoi/` 配下へ移すだけ（破壊的だが一度きり）。
+
+---
+
+## 3. 新 Mac ブートストラップ順序
+
+```bash
+# 1. Xcode Command Line Tools
+xcode-select --install
+
+# 1.5 workspace volume（case-sensitive APFS）を内蔵 SSD に追加。
+# macOS デフォルト APFS は case-insensitive → Linux 由来コードの import 解決や
+# git の case-only rename と相性が悪い。Mac dev 専用領域として固定。
+sudo diskutil apfs addVolume "$(diskutil info / | awk -F': *' '/APFS Container:/ {print $2; exit}')" \
+  "Case-sensitive APFS" workspace
+
+# 2. Nix（Determinate Systems インストーラ。既に同方式で導入済み）
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+# 3. flake リポジトリ取得（chezmoi 導入前なので手動 clone）
+git clone <repo-url> ~/dotfiles
+
+# 4. nix-darwin 初回適用（パッケージ・cask・defaults が入る）
+sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/dotfiles#<hostname>
+
+# 5. 1Password CLI サインイン（chezmoi テンプレート解決の前提）
+op account add --address my.1password.com --email <email>
+eval "$(op signin)"
+
+# 6. dotfile 適用＋秘密注入
+chezmoi init --apply --source ~/dotfiles
+
+# 以降の更新
+sudo darwin-rebuild switch --flake ~/dotfiles#<hostname>   # システム/パッケージ
+chezmoi apply                                              # dotfile
+```
+
+順序の要点:
+- **workspace volume を Nix より前**で作る — `ghq.root`（home-manager で `GHQ_ROOT=/Volumes/workspace` 宣言）が指す path を darwin-rebuild より先に実在させる。Nix 自体は `/nix` 用に case-sensitive APFS Volume を自前で作るが、ユーザー作業領域はこちら側で用意する。
+- **chezmoi を最後**にする（`op signin` 済みでないと秘密テンプレートが失敗するため）。
+- 実装は [install.sh](../install.sh) の §1.5 を参照（冪等: 既に case-sensitive 領域があれば skip）。
+
+### 3.1 無人実行の前提条件（変更時は必ずここを見る）
+
+`install.sh` は単一ステージの**無人**一気通貫で、`clone` を在席ステージに分けていない。
+その設計が成立する根拠は 1 つだけ:
+
+> **実行中ずっと 1Password が解錠されたままであること。**
+
+SSH gate（`P-onepassword`）が 1Password agent の実署名を要求するため、run 中に
+一度でも施錠されると `✓ 完了` に到達できない。しかも**無人での復帰手段が無い**
+（新 Mac は Touch ID 未登録・システム解錠 無効 = GUI で人がパスワードを打つ以外に無い）。
+したがって「施錠されたら諦める」ではなく「**施錠させない**」でしか守れない。
+
+この前提を破り得る要素と、現在の守り:
+
+| 破る要素 | 守り | 場所 |
+|---|---|---|
+| 1Password の自動ロックタイマー | 事前準備で OFF にさせる | [README](../README.md) 事前準備 2 |
+| 画面オフ → `autolock.onDeviceLock` で施錠 | `caffeinate -dis` を run 全体に張る | [install.sh](../install.sh) logging prelude 直後 |
+| idle system sleep | 同上（`-i` / `-s`） | 同上 |
+
+**注意**: [power.nix](../system/modules/power.nix) の `power.sleep.display = 5` は
+`darwin-switch` の最中に適用される。つまり **run 自身が「5 分放置で画面オフ」を仕込む**。
+端末への出力は HID 入力ではないのでタイマーを戻さず、20 分の switch を挟むと確実に
+画面が消える。2026-07-20 の実測ではこれが原因で `P-onepassword` が落ちた
+（画面オフ 08:06:27 → 1Password 施錠 → gate 08:17:33 で承認プロンプト時間切れ）。
+
+**この前提は commit body にしか書かれておらず（`e2ff5a2` / #219）、同日の別 PR
+（`e74cbbc` / #220、`power.sleep` 導入）が無言で無効化した。**同じ事故を繰り返さないため、
+電源・ロック・スリープ・1Password 設定に触る変更は必ずこの節と突き合わせること。
+
+---
+
+## 4. 落とし穴と回避（コミュニティ既知）
+
+| 落とし穴 | 回避 |
+|---|---|
+| home-manager と chezmoi が両方 `~/.zshrc` を管理 | 単一所有。zsh は home-manager に寄せ chezmoi で `dot_zshrc` を持たない |
+| chezmoi が flake/モジュールを `$HOME` 展開 | **`.chezmoiroot=chezmoi`**（§2） |
+| 既存 brew 環境と nix-homebrew 衝突 | `nix-homebrew.autoMigrate = true` |
+| standalone home-manager と darwin モジュール二重管理 | **nix-darwin モジュールのみ**使用（`darwin-rebuild` 一本） |
+| 秘密が `/nix/store`（誰でも読める）に載る | 秘密は chezmoi `private_*.tmpl`（0600）のみ。Nix に載せない |
+| Brewfile→Nix 自動変換は無い | 名前単位で手動変換。旧 `dot_Brewfile` は移行検証まで参照保持 |
+
+---
+
+## 5. 現状からの移行メモ（歴史的記録・移行は完了済み）
+
+> ⚠️ **この節は移行前（2026-05）のスナップショット**。当時の `dot_Brewfile` と旧 WM スタックを
+> 前提に書かれており、**現物の所在としては読まない**（現在の配置は §2 のツリー、所有レイヤーは
+> [CLAUDE.md](../CLAUDE.md) の責務分担表が正）。移行判断の経緯を残すために保存している。
+
+**Nix 化する（現 `dot_Brewfile` から）**
+
+- nixpkgs にある CLI（jq, gh, ghq, direnv, shellcheck, cmake, act, trash 等）→ `home.packages`
+- cask（chrome, raycast, vscode 等）→ `homebrew.casks`（karabiner-elements は不採用で drop）
+- mas → 対象なし（PopClip 等は不要判断で drop。`homebrew.masApps` は未使用）
+- カスタム tap（borders=felixkratz, rift=acsandmann, skhd=jackielii 等）→ `homebrew.brews`+`taps`
+- `sleepwatcher (restart_service)` → `homebrew.brews`（service 扱いの正確な option 名は nix-darwin manual で要確認）
+- macOS defaults（system-inventory の表）→ `system.defaults` / `CustomUserPreferences`
+  - ⚠️ system-inventory で警告済みの2項目（Gatekeeper 無効化 / 復帰時パスワード省略）は
+    **持ち込み前にセキュリティ再考**。安易に再現しない。
+- `run_onchange_install-packages.sh.tmpl`（brew bundle 実行）は **役目消滅**→ `darwin-rebuild` に置換。
+  `dot_Brewfile` は移行完了・検証後に削除（それまで参照保持）。
+
+**chezmoi に残す（Nix 化しない）**
+
+- `dot_config/{borders,rift,focusfx}` … アプリ所有の生設定
+- `dot_claude/settings.json`, `dot_local/share/*`
+- `run_onchange_border-cycle.sh.tmpl`（パッケージ導入ではなく挙動制御）
+- 新規: `private_*.tmpl`（SSH 鍵等を `onepasswordRead` で注入。`known_hosts` は非秘密で平文可）
+
+**zsh 刷新（現状が壊れている）**
+
+- 現 `~/.zshrc` は廃止済み `_/zsh` 構造を source していて**何も読まれていない**。
+- `~/.zprofile` は `brew shellenv` が3重複。
+- → home-manager `programs.zsh`（+ starship）で**ゼロから宣言的に再構築**。
+  旧 `.zshrc`/`.zprofile` は破棄。chezmoi では zsh を持たない（単一所有）。
+
+---
+
+## 6. 不確実点（実装前に一次情報で要確認）
+
+- `system.defaults` の launchd/service 関連の正確な option 名、`restart_service` の nix-darwin 対応
+- `darwinSystem` に `system = "aarch64-darwin"` 指定が今も必須か（バージョン依存）
+- nix-homebrew は任意。`homebrew.*` は単体でも動くが nix-homebrew で brew 本体も再現可
+- nix 側の秘密が必要になった場合の方式（sops-nix / agenix）。当面 SSH 等は chezmoi+op で足りる想定
+
+出典: nix-darwin manual / GitHub, nix-homebrew, home-manager, chezmoi 1Password docs,
+budimanjojo/nix-config（実例）, twpayne/dotfiles, evantravers / davi.sh / blog.menanno ほか。

@@ -1,0 +1,134 @@
+<!--
+この文書は README.md（英語・正本）の和訳です。人間向け。
+最新とは限りません — 基準: 英語版 @ d72c104。
+同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
+-->
+
+# dotfiles
+
+個人 macOS 環境（aarch64-darwin）の宣言的構成。
+スタック: **nix-darwin + home-manager + chezmoi + 1Password**。
+詳細設計は [docs/reproduction-architecture.md](docs/reproduction-architecture.md)、
+用語は [docs/glossary.md](docs/glossary.md)。
+
+## 環境再現（新しい Mac）
+
+### 事前準備（初期化直後・在席。GUI 操作はここに全部 front-load）
+
+#### 1. Terminal にフルディスクアクセスを付与
+
+- システム設定 → プライバシーとセキュリティ → **フルディスクアクセス** → Terminal を ON
+- 付与後、Terminal を **Cmd-Q で再起動**する
+- 目的: 実行中に macOS の管理ダイアログを出さないため
+
+#### 2. 1Password をセットアップ
+
+- 1Password.app を手動インストールし、**iPhone の QR でサインイン**（Secret Key の手打ちは不要）
+- 設定 → 開発者 → **SSH agent を ON**
+- 設定 → セキュリティ → **自動ロックのタイマーを OFF**（スリープ時ロックは残す）
+  - 目的: 実行中のロックで clone が止まるのを防ぐため
+- `~/.ssh/config` を **正本（chezmoi 宣言）そのまま**で置く（判断・GUI 操作なし）:
+
+  ```sh
+  mkdir -p ~/.ssh && curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/chezmoi/private_dot_ssh/private_config -o ~/.ssh/config && chmod 600 ~/.ssh/config
+  ```
+
+  - 中身は 1Password SSH agent への IdentityAgent 指定。これが無いと ssh は
+    素の macOS agent（鍵ゼロ）を向いてしまう
+  - 正本は `chezmoi/private_dot_ssh/private_config` の 1 箇所（上の curl はそれを
+    取るだけ）。install 中の `chezmoi apply` 以降は宣言が enforce する（1Password は
+    読者に徹し、アプリの「自動編集」ボタンは使わない — 使うと drift になり
+    `chezmoi verify` が警告する）
+- 動作確認として次を 1 回実行し、承認ダイアログで「**すべてのアプリで承認する**」を選んで認証する
+
+  ```sh
+  ssh -o StrictHostKeyChecking=accept-new -T git@github.com
+  ```
+
+#### 3. GitHub PAT を環境変数に入れる
+
+- 1Password の item **`DOTFILES_BOOTSTRAP`**（Personal vault・fine-grained PAT）の credential を
+  コピーし、次のワンライナーと同じターミナルで実行する
+
+  ```sh
+  export GH_TOKEN=<PAT>
+  ```
+
+- 権限は **All repositories / Metadata: Read-only** で足りる
+- 用途: `ghq-get-mine` の repo 一覧取得と clone 完全性検証（gh API）
+- 無い場合は序盤の P1-ghtoken gate で即 fail する（長い処理が走ってから死なない）
+- token は**無期限**（切れる心配は無い。実測 2026-07-20: 期限ヘッダ無し）。
+  万一 revoke / rotate した場合は GitHub → Settings → Developer settings →
+  Fine-grained tokens → `DOTFILES_BOOTSTRAP` を **Regenerate** し、新しい値で
+  1Password の同名 item を更新する
+
+### 実行
+
+```sh
+sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
+```
+
+- **パスワード入力は先頭の `sudo -v` の 1 回だけ**（貼り付け直後に聞かれる）。
+  それ以降はパスワード入力・GUI 操作ゼロで無人完走する
+- **`✓ 完了` は全 phase + 事後条件検証を通過した時だけ出る**
+  （スキップ・失敗があれば必ず FAILED / PARTIAL になる）
+
+### リカバリ
+
+- 途中で失敗したら**同じワンライナーを再実行**する（全 phase 冪等。導入済みは skip される）
+- SSH gate（1Password）起因の失敗だけを直した後は近道がある:
+
+  ```sh
+  export GH_TOKEN=<PAT>   # 別ターミナルなら再 export が要る（下記）
+  sh ~/dotfiles/install.sh --phase2
+  ```
+
+  - **`--phase2` も P1-ghtoken gate を通る**。`GH_TOKEN` はシェル変数なので、
+    ターミナルを開き直した／再起動した後は消えている。再 export せずに叩くと
+    SSH を直した直後に `P1-ghtoken` で即 fail する（二段の徒労）
+
+### ログと結果（機械可読）
+
+すべての実行は `~/.dotfiles-install/<run-id>/` に記録される。
+
+- `summary.txt` — 結果・失敗 step・環境情報（LLM / 人間がまずここを読む）
+- `install.log` — 全出力（1 行目から）
+- `events.tsv` — phase / step の開始・終了・exit code
+- `detail/<step>.log` — ノイズの多い step（chezmoi apply 等）の隔離出力
+
+`~/.dotfiles-install/latest` が最新 run を指す。
+
+### `✓ 完了` 後に手で残るもの
+
+タイミングで 2 グループに分かれる。**まず install.sh 後の作業を済ませ、最後にログアウト → 再ログインして azooKey を有効化**する。
+
+#### install.sh 後（そのまま・再ログイン不要）
+
+- **1Password の自動ロックタイマーを元に戻す**（事前準備 2 で OFF にしたもの。戻さないと無期限で解錠されたままになる）
+- **TCC / アクセシビリティの再付与**（chord の AX daemon 等。付与が要るアプリは起動時に要求してくる）
+
+#### ログアウト → 再ログイン後
+
+- **azooKey（日本語 IME）を入力ソースとして有効化**（cask による `.app` 導入は自動。有効化は手動）
+  - 手順（[azooKey 公式 README](https://github.com/azooKey/azooKey-Desktop) 準拠）:
+    1. **macOS からログアウト → 再ログイン**
+    2. システム設定 → キーボード → 入力ソースを**編集 → `+` → 日本語 → azooKey → 追加 → 完了**
+    3. メニューバーアイコンから azooKey を選択
+  - **なぜログアウトが要るか**: macOS は `/Library/Input Methods` の IME を**ログイン時にスキャンして登録**する。
+    install.sh 実行中（＝ログイン後）に入った azooKey は、再ログインするまで入力ソースの一覧（手順 2 の `+`）に現れない。
+    アプリを起動しても `TISRegisterInputSource` を呼んでも登録されず、再ログインが唯一の登録契機（実機で確認済）。
+  - **なぜ自動化できないか**: macOS 26 は 3rd party IME の**プログラムからの有効化を「成功」を装って無視する**設計
+    （silent keylogger 対策）。`defaults write AppleEnabledInputSources` も `TISEnableInputSource` も no-op で
+    `install.sh` には組み込めない（Tart VM で検証済。task t-1t2e）。登録も有効化も GUI／ログインセッション依存で、ここだけ自動化から漏れる。
+
+### 補足
+
+- workspace volume（`/Volumes/workspace`・case-sensitive APFS）はワンライナーが作成し、
+  ghq の clone 先（`GHQ_ROOT`）として home-manager から参照される。
+  macOS 既定の case-insensitive APFS と Linux 由来コードの相性問題への対処。
+  既に存在すれば skip される（冪等）
+
+## 作業ルール
+
+作業ルール / 規約は [CLAUDE.md](CLAUDE.md) に集約し、機械検知できるものは
+[.github/workflows/ci.yml](.github/workflows/ci.yml) で強制している。
