@@ -106,7 +106,7 @@ sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure
 
 ### For a cask from a custom tap
 
-Add `homebrew.taps = [ "owner/repo" ]` as well. Existing example: `barutsrb/tap` for `omniwm`.
+Add `homebrew.taps = [ "owner/repo" ]` as well. Existing example: `steipete/tap` for `peekaboo` (a brew — no cask currently comes from a custom tap).
 
 </details>
 
@@ -143,7 +143,7 @@ The decision follows [the install-target decision flow in CLAUDE.md](../CLAUDE.m
 |---|---|---|
 | A general-purpose CLI available in nixpkgs | `home/modules/packages.nix` | `jq`, `gh`, `chezmoi`, `docker`, `_1password-cli` |
 | A CLI not in nixpkgs / macOS-only | `brews = [ ... ]` in `system/modules/homebrew.nix` | `blueutil`, `duti`, etc. (currently empty) |
-| Custom tap | `taps = [ ... ]` in `system/modules/homebrew.nix` + the matching `casks/brews` | `barutsrb/tap` → `omniwm` |
+| Custom tap | `taps = [ ... ]` in `system/modules/homebrew.nix` + the matching `casks/brews` | `steipete/tap` → `peekaboo` |
 | Runtime (node / python / deno / ruby) | `globalConfig.tools` in `home/modules/mise.nix` | `node = "lts"`, `python = "3.13"` |
 | Program config that has a DSL (zsh / git / mise, etc.) | `programs.*` in `home/modules/*.nix` | `programs.zsh.*`, `programs.mise.*` |
 | macOS defaults (dock / finder / -g, etc.) | `system/modules/defaults.nix` | `system.defaults.dock.autohide`, etc. |
@@ -246,7 +246,7 @@ From [the "Secret handling" section of CLAUDE.md](../CLAUDE.md#secret-handling-y
 | Job | What it does | runner |
 |---|---|---|
 | `nix flake check (eval only)` | Nix eval/type checking | ubuntu-latest |
-| `lint` | `scripts/lint --ci` (the 14 gates: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks) | ubuntu-latest |
+| `lint` | `scripts/lint --ci` (the 13 PR/push gates: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks — the 14th, `lychee-external`, is the nightly job below) | ubuntu-latest |
 | `convention / executable_ prefix` | Enforces the `executable_` prefix on shebang scripts under `chezmoi/` (exceptions: `run_*` / `modify_*` / `.chezmoiscripts/`) | ubuntu-latest |
 | `script test` | The Stop hook fixtures + the unittests in `scripts/**` and `scripts/claude-md-eval/` | ubuntu-latest |
 | `chezmoi templates render` | execute-template verification of every `.tmpl` (with the latest version from get.chezmoi.io) | ubuntu-latest |
