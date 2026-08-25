@@ -185,48 +185,48 @@ action-shell = "echo \"$(date '+%T') IST_BTN5\" >> /tmp/ist-vkey-test.log"
 
 # ---- ULTRA_LL レイヤ（ZMK 右側 ALT+SHIFT+CTRL チョード） ----
 
-# doc: タブを左へ（Chrome: Ctrl+Shift+Tab）
+# doc: Tab left (Chrome: Ctrl+Shift+Tab)
 [[bindings]]
 name = "tab-left (Chrome)"
 input = "TU_LL_C"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl + shift - tab"
 
-# doc: タブを左へ（VS Code: Cmd+Shift+[）
+# doc: Tab left (VS Code: Cmd+Shift+[)
 [[bindings]]
 name = "tab-left (VS Code)"
 input = "TU_LL_C"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ["
 
-# doc: タブを右へ（Chrome: Ctrl+Tab）
+# doc: Tab right (Chrome: Ctrl+Tab)
 [[bindings]]
 name = "tab-right (Chrome)"
 input = "TU_LL_V"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl - tab"
 
-# doc: タブを右へ（VS Code: Cmd+Shift+]）
+# doc: Tab right (VS Code: Cmd+Shift+])
 [[bindings]]
 name = "tab-right (VS Code)"
 input = "TU_LL_V"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ]"
 
-# doc: 前のウィンドウへ（rift フォーカス）
+# doc: Previous window (rift focus)
 [[bindings]]
 name = "rift focus prev"
 input = "TU_LL_D"
 action-shell = "rift-cli execute window prev"
 
-# doc: 次のウィンドウへ（rift フォーカス）
+# doc: Next window (rift focus)
 # TU_LL_F は drag-scroll へ譲り、隣の TU_LL_G へ移動（2026-08-12）。
 [[bindings]]
 name = "rift focus next"
 input = "TU_LL_G"
 action-shell = "rift-cli execute window next"
 
-# doc: ドラッグスクロール（押している間、マウス移動がスクロールになる）
+# doc: Drag scroll (while held, mouse movement becomes scrolling)
 # 押している間だけカーソルを固定して、移動量をスクロールに変換する。
 # 離せば終わり。取りこぼしても max-ms で自動解除される。
 # invert = スクロールバーを掴んで動かす向き（下へ動かすと下へ進む）。
@@ -238,7 +238,7 @@ action-drag-scroll-invert = true
 
 # ---- ZMK 単押し専用キー ----
 
-# doc: Mission Control（全ワークスペースをグリッド表示）
+# doc: Mission Control (grid view of all workspaces)
 # X_1 = ZMK の L 右隣。DEFAULT 単押しは &vkey 0x01 として届く（[v-key-aliases] VK_X1=0x01）。
 [[bindings]]
 name = "rift mission-control show-all"
@@ -278,7 +278,7 @@ name = "ctrl-h → backspace"
 input = "ctrl - h"
 action-keys = "backspace"
 
-# doc: 前方削除（Forward Delete）
+# doc: Forward Delete
 [[bindings]]
 name = "ctrl-d → ⌦"
 input = "ctrl - d"
@@ -304,7 +304,7 @@ action-keys = "return"
 # PATH に /opt/homebrew/bin を載せるため home-manager の home.sessionPath で
 # 通している (dotfiles home/modules/default.nix)。これで bare `facet` が解決する。
 
-# doc: スペース右へ移動しつつ facet tree 表示（ctrl+→）
+# doc: Move a space right and show the facet tree (ctrl+→)
 # action-shell が先に発火（facet 起動・撃ちっぱなし）→ 直後に action-keys で
 # ctrl+→ を再送してスペース右移動。元イベントは consume、再送分は synthetic
 # タグ付きなので matcher に再入せずループしない。出力側にも fn を明記するのは、
@@ -319,7 +319,7 @@ input = "ctrl + fn - right"
 action-shell = "facet --view tree --loading 5000"
 action-keys = "ctrl + fn - right"
 
-# doc: スペース左へ移動しつつ facet tree 表示（ctrl+←）
+# doc: Move a space left and show the facet tree (ctrl+←)
 # 上の space-right と同じ仕組み（fn 明記の理由・ループしない理由は同上）。
 [[bindings]]
 name = "space-left + facet tree"

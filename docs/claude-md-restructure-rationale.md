@@ -1,148 +1,148 @@
-# global CLAUDE.md 再構成 — 設計根拠（restructure-rationale）
+# global CLAUDE.md restructure — design rationale (restructure-rationale)
 
-対象: `/Volumes/workspace/github.com/akira-toriyama/dotfiles/chezmoi/private_dot_claude/CLAUDE.md`
-（PR #273 反映後・263 行を base に Read。system-reminder に載る配布済コピーは #273 前で stale — 本作業は source 側を正とした）
-適用先: `chezmoi/private_dot_claude/CLAUDE.md`（本 PR で差し替え済み）
+Target: `/Volumes/workspace/github.com/akira-toriyama/dotfiles/chezmoi/private_dot_claude/CLAUDE.md`
+(read with the post-PR #273, 263-line version as the base. The distributed copy carried in the system-reminder predates #273 and is stale — this work treated the source side as authoritative)
+Applied to: `chezmoi/private_dot_claude/CLAUDE.md` (already replaced in this PR)
 
 ---
 
-## 1. 結論サマリ
+## 1. Conclusion summary
 
-- **削除 0 件**（§5 に機械検証の証拠）。変換は「並び替え・分割・折返し正規化・precedence の明示」のみ。
-- **規範文の言い換え 0 件**。文字が変わったのは正典参照の表記 2 箇所だけ（§4 の L12 / L240 行を参照 — どちらも「どの文書が正典か」の指し先修正で、監査指摘 5 の解消そのもの）。
-- 新設は 3 つ: 冒頭「この文書の読み方」節（precedence ＋正典マップ）、Workflow 節のグループ見出し「auto が効かない場所を誤解しない」、Workflow 節末尾の「正典未収載 3 点」注記。いずれも応答の形を変える規則ではない（測定要否は §6）。
+- **0 deletions** (§5 has the machine-verification evidence). The transformation is only reordering, splitting, wrap normalization, and making precedence explicit.
+- **0 rewordings of normative text**. The only characters that changed are 2 canon references (see the L12 / L240 rows in §4 — both are corrections to which document is canon, i.e. the resolution of audit finding 5 itself).
+- Three things are new: the leading "How to read this document" section (precedence + canon map), the group heading 「auto が効かない場所を誤解しない」 (don't misread where auto does not apply) in the Workflow section, and the "three points absent from canon" note at the end of the Workflow section. None of them is a rule that changes the shape of a response (whether measurement is needed: §6).
 
-## 2. 節の並び順 — 決定軸
+## 2. Section ordering — decision axes
 
-**主軸 = 発火頻度**（そのルールがセッション中に適用機会を持つ回数）。
-**副軸 = 参照結合**（`↑`・「次節」で結ばれた節は隣接を維持）。
-**第三軸 = 機構カバー率**（[claude-md-ledger.md](claude-md-ledger.md) で 🔒/🟡 の規則は lint / hook / CI が押さえるため後方でも事故らない。primacy は 📖=散文頼みの規則に割り当てる）。
+**Primary axis = firing frequency** (how many times that rule has an occasion to apply during a session).
+**Secondary axis = reference coupling** (sections tied together by `↑` or 「次節」 ("the next section") stay adjacent).
+**Third axis = mechanism coverage** (rules marked 🔒/🟡 in [claude-md-ledger.md](claude-md-ledger.md) are held by lint / hook / CI, so they cause no accident even placed late. Primacy is allocated to 📖 = rules that rely on prose alone).
 
-| # | 節 | 発火頻度 | 備考 |
+| # | Section | Firing frequency | Notes |
 |---|---|---|---|
-| 1 | この文書の読み方 | メタ（全節を枠付け） | precedence は他節より先に固定する必要があるため唯一の例外 |
-| 2 | 出力の形 | 毎返答 | 台帳 📖 |
-| 3 | 作業・task 依頼への返し方 | 毎作業依頼 | 「↑ 出力の形」参照のため直後に固定 |
-| 4 | Workflow | 毎セッション（開始・中断・起票） | 📖 多数 |
-| 5 | 開発ポリシー | 作業中随時（判断のたび） | 📖/🙅 |
-| 6 | Repo 現在地ワンショット | 作業中随時 | 7 が「↑ Repo 現在地節」を参照するため 7 の前 |
-| 7 | 自作 CLI | 作業中随時（bash 出力・CI 確認のたび） | 8 を「次節」で参照 |
-| 8 | source を使う | 導入時のみ（低頻度） | 7 との結合で繰り上げ（副軸 > 主軸の唯一の適用） |
-| 9 | Commits | commit 時 | glyph lint + CI の 🟡 機構カバーが厚く後方で安全 |
-| 10 | モデル運用 | セッション数回（枠点検・委譲判断） | 最長節。旧配置（中盤）が監査指摘 2 の主犯 |
-| 11 | Mac アプリ | Swift repo のみ | 場面限定 |
-| 12 | akira-toriyama 以外 | — | H1 スコープ境界。末尾のまま |
+| 1 | How to read this document | meta (frames every section) | the sole exception, because precedence must be fixed before the other sections |
+| 2 | Output shape | every reply | ledger 📖 |
+| 3 | How to respond to work and task requests | every work request | pinned immediately after, because it refers to 「↑ 出力の形」 (↑ Output shape) |
+| 4 | Workflow | every session (start, interruption, filing) | many 📖 |
+| 5 | Development policy | throughout the work (at every judgment) | 📖/🙅 |
+| 6 | Repo current-state one-shot | throughout the work | before 7, because 7 refers to 「↑ Repo 現在地節」 (↑ the Repo current-state section) |
+| 7 | Self-built CLIs | throughout the work (at every bash output and CI check) | refers to 8 as 「次節」 (the next section) |
+| 8 | Use source | only at setup time (low frequency) | moved up by its coupling with 7 (the only place the secondary axis beats the primary) |
+| 9 | Commits | at commit time | thick 🟡 mechanism coverage from glyph lint + CI, so it is safe late |
+| 10 | Model operations | a few times per session (quota check, delegation decision) | the longest section. Its old placement (mid-document) was the main culprit behind audit finding 2 |
+| 11 | Mac apps | Swift repos only | situational |
+| 12 | Outside akira-toriyama | — | H1 scope boundary. Stays at the end |
 
-**選ばなかった軸**（各一行）:
+**Axes not chosen** (one line each):
 
-- 意思決定の時系列（セッション開始→作業→commit→報告）: 「毎返答」規則（出力の形）の置き場が無く、最頻の規則が中盤に沈む。
-- 参照頻度（人間が lookup する順）: 毎セッション全文ロードの文書では lookup が発生せず、軸として空回り。
-- 重要度: 全節が「絶対ルール」を自称しており順序付け不能。頻度は観測可能で、台帳とも突き合わせられる。
+- Decision chronology (session start → work → commit → report): there is no place for the "every reply" rule (Output shape), and the most frequent rule sinks into the middle.
+- Reference frequency (the order in which a human would look things up): in a document loaded in full every session no lookup happens, so the axis spins idle.
+- Importance: every section calls itself an 「絶対ルール」 (absolute rule), so they cannot be ordered. Frequency is observable and can be cross-checked against the ledger.
 
-## 3. 監査 5 指摘への対応
+## 3. Response to the 5 audit findings
 
-| 指摘 | 対応 |
+| Finding | Response |
 |---|---|
-| 1. 793 文字・9 ルールの bullet | 3 bullet ＋ サブ bullet 4 個に分割（§4 の L15 行）。粒度 = 「意味のまとまりでネスト」を採用: データモデル（repos/ラベル）／auto の作用 3 種／auto が効かない 2 場面／ガード、の 4 まとまり。1 ルール 1 bullet 案は 9 個のフラット列挙になり「どれが auto の話か」の構造が消えるため不採用 |
-| 2. 節順が書かれた順 | §2 の頻度順に全面再配置。最長・低頻度のモデル運用節を後方へ |
-| 3. 折返し幅バラバラ | 全節を開発ポリシー節の既存スタイル（連続行 2 スペースインデント・90 桁前後）に正規化。未折返しだった Commits / Workflow / source / 現在地の各長行を再折返し。既に整っていた節（出力の形・依頼・ポリシー・モデル・Mac）は byte 不変 |
-| 4. 薄いポインタと「ここにしか無い」の混在 | 冒頭に規約を宣言:「正典に無い事実は該当節に明記・この文書が一次の置き場」。Workflow 節末尾に正典未収載 3 点（`auto_filter` 既定値・`-l` ガード exit 2＋`candidates`・`.furrow-pointer.toml` 近い方優先）を名指しで注記 |
-| 5. 正典の所在矛盾 | 冒頭「正典マップ」1 表で言い切り（節内表記はこの表の複製と宣言）。矛盾していた 2 箇所を表に整合: Workflow 節前文は正典宣言を保持、自作 CLI 節の furrow 行は「（→ ↑ Workflow 節。正典は projects/CLAUDE.md）」に修正 |
+| 1. A 793-character, 9-rule bullet | Split into 3 bullets + 4 sub-bullets (the L15 row in §4). Granularity = 「意味のまとまりでネスト」 (nest by unit of meaning): the data model (repos/labels) / the 3 effects of auto / the 2 situations where auto does not apply / the guard — 4 units. The "one rule, one bullet" alternative was rejected because it becomes a flat list of 9 items in which the structure of 「どれが auto の話か」 (which of these is about auto) disappears |
+| 2. Sections in the order they were written | Fully rearranged into the frequency order of §2. The longest, lowest-frequency Model operations section moved to the back |
+| 3. Inconsistent wrap widths | Every section normalized to the existing style of the Development policy section (2-space indent on continuation lines, around 90 columns). Re-wrapped the long unwrapped lines in Commits / Workflow / source / current-state. Sections that were already tidy (Output shape, requests, policy, model, Mac) are byte-identical |
+| 4. Thin pointers mixed with "this exists only here" | Declared the convention at the top: 「正典に無い事実は該当節に明記・この文書が一次の置き場」 (facts that have no canon are stated in the relevant section; this document is their primary home). At the end of the Workflow section, the three points absent from canon (the `auto_filter` default, the `-l` guard's exit 2 + `candidates`, `.furrow-pointer.toml` nearer-wins) are noted by name |
+| 5. Contradictory location of canon | Settled in the single "canon map" table at the top (in-section mentions are declared to be copies of this table). The 2 contradictory spots are aligned to the table: the Workflow section preamble keeps its canon declaration; the furrow line in the Self-built CLIs section is corrected to 「（→ ↑ Workflow 節。正典は projects/CLAUDE.md）」 |
 
-指摘 4 の実測裏付け（2026-07-27、本セッションで grep）:
-`projects/CLAUDE.md` は did-you-mean ガードに言及するが exit 2／`candidates` の細部は無く、
-`auto_filter`・`furrow-pointer` は 0 hit。furrow README には 3 点とも存在
-（L429 `auto_filter = true …(default true)` / L280 ガード exit 2＋candidates / L298 doctor の
-「a nearer `.furrow`/pointer wins」）。よって「正典（projects/CLAUDE.md）に無い・furrow README 側の事実」
-という注記の文言は実測準拠。
+Measured backing for finding 4 (2026-07-27, grepped in this session):
+`projects/CLAUDE.md` mentions the did-you-mean guard but has none of the details of exit 2 or `candidates`, and
+`auto_filter` / `furrow-pointer` are 0 hits. All three exist in the furrow README
+(L429 `auto_filter = true …(default true)` / L280 guard exit 2 + candidates / L298 doctor's
+「a nearer `.furrow`/pointer wins」). So the note's wording — that these are facts absent from canon
+(projects/CLAUDE.md) and present on the furrow README side — is measurement-backed.
 
-## 4. 旧 → 新の全対応表（削除 0 件）
+## 4. Full old → new mapping (0 deletions)
 
-旧 = 現ファイルの行番号。「byte 同一」= 位置以外無変更。「折返しのみ」= 空白（改行位置・スペース）以外無変更。
+Old = line numbers in the current file. "byte-identical" = unchanged apart from position. "wrap only" = unchanged apart from whitespace (line-break positions and spaces).
 
-| 旧行 | 内容 | 新配置 | 変換 |
+| Old line | Content | New placement | Transformation |
 |---|---|---|---|
-| L1 | H1「akira-toriyama のリポジトリに対して」 | 新 L1 | byte 同一 |
-| L3 | 見出し Commits | 節 9 | 位置のみ |
-| L5 | gitmoji-driven・形式・legacy token | 節 9 bullet 1 | 折返しのみ |
-| L6 | 版を動かす gitmoji（major/minor/patch/なし・機械正本・undeclared-removal） | 節 9 bullet 2（親＋子 5 個に分割） | 分割。「／」区切り→子 bullet 化、「全75 code…hard error」→親の括弧内へ移動。内容語の増減なし（断片検証 §5） |
-| L7 | 英語・和訳 footer | 節 9 bullet 3 | 折返しのみ |
-| L8 | 全文リンク CONTRIBUTING.md | 節 9 bullet 4 ＋ 正典マップ行に複製 | byte 同一＋複製 |
-| L10 | 見出し Workflow | 節 4 | 位置のみ |
-| L12 | 一本化・projects 実体・「正典は projects/CLAUDE.md —— ここはその薄いポインタ」 | 前 3 文 → 節 4 bullet 1（折返しのみ）。正典宣言文 → 節 4 前文へ移設（「ここは」→「この節は」、＋「正典に無い細部」の持ち分明記） | 分割＋移設 |
-| L13 | furrow source・wrapper・go run | 節 4 bullet 2（親＋子 2 個に分割） | 分割。文字は不変 |
-| L14 | furrow sync | 節 4 bullet 3 | 折返しのみ |
-| L15 | 793 字 bullet（9 ルール） | 節 4 bullet 4（repos＋ラベル）／bullet 5（auto 作用、子 3 個）／bullet 6（auto が効かない 2 場面、グループ見出し新設）／bullet 7（`-l` ガード） | 分割。ルールの相対順序は原文どおり。文字は不変（読点・「：」の分割点処理のみ） |
-| L16 | 進捗の正本は body 一本 | 節 4 bullet 8 | 折返しのみ |
-| L17 | セッション粒度 | 節 4 bullet 9 | 折返しのみ |
-| L18-20 | セッションの作法（開始時・中断時） | 節 4 bullet 10 | byte 同一 |
-| L21 | PR footer SetStatus-task | 節 4 bullet 11 | 折返しのみ |
-| L22 | 遠慮なく task 化 | 節 4 bullet 12 | 折返しのみ |
-| L23 | 指示が無ければ task を進める | 節 4 bullet 13 | 折返しのみ |
-| L25-79 | 開発ポリシー全 12 bullet | 節 5 | byte 同一（全行） |
-| L81-104 | 出力の形（前文＋7 bullet） | 節 2 | byte 同一 |
-| L106-132 | 作業・task 依頼への返し方 | 節 3 | byte 同一 |
-| L134-193 | モデル運用（前文 2 段落＋担当分担・枠の仕組み・起用条件 1-4・枠の読み方・Fable セッション・検証は Opus） | 節 10 | byte 同一（枠の会計 = 不変条件・使い切り条件・読み方・キャッシュ注意を本文に保持 — 制約どおり skill 退避なし） |
-| L195-205 | Mac アプリ（Sill 13 library・AppKit 禁止・最新 macOS） | 節 11 | byte 同一 |
-| L207-216 | Repo 現在地ワンショット | 節 6 | L215（読み方）と L216（condition-wait/GUI）のみ折返し、他 byte 同一 |
-| L218-247 | 自作 CLI（前文・pare・cifail・rundiff・revpost・furrow・glyph・adopt 済） | 節 7 | L240（furrow 行）のみ表記修正（下記）、他 byte 同一 |
-| L240 | 「furrow — タスク管理（↑ Workflow 節が正典）」 | 節 7 furrow 行 | **表記修正**: 「（→ ↑ Workflow 節。正典は projects/CLAUDE.md — 冒頭の正典マップ）」。旧文の「正典」は「この文書内の該当節」の意で使われ L12 と矛盾していた（監査指摘 5）。指し先の明示のみで規範は不変 |
-| L249-256 | source を使う（起動者分岐・clone 使用・wrapper・GUI・tap 位置づけ・Claude 自身にも適用） | 節 8 | 折返しのみ |
-| L258-262 | H1 以外のリポジトリ＋Rule | 節 12 | byte 同一 |
-| （新設） | 「この文書の読み方（優先順位と正典）」: 発火頻度順の宣言・優先順位 4 段・「正典に無い事実は一次の置き場」規約・正典マップ 5 行 | 節 1 | 追加のみ。既存規範の変更なし。正典マップの各行は既存節内の正典表記（L8・L12・L61・L200）の集約＋ ledger への新規ポインタ 1 件（下記グレー②） |
-| （新設） | Workflow 節末尾「正典未収載 3 点」注記 | 節 4 末尾 bullet | 追加のみ（監査指摘 4 の解消装置。事実は実測済み — §3） |
+| L1 | H1 「akira-toriyama のリポジトリに対して」 | new L1 | byte-identical |
+| L3 | heading Commits | section 9 | position only |
+| L5 | gitmoji-driven, format, legacy token | section 9 bullet 1 | wrap only |
+| L6 | version-moving gitmoji (major/minor/patch/none, machine canon, undeclared-removal) | section 9 bullet 2 (split into a parent + 5 children) | Split. The 「／」 separators become child bullets; 「全75 code…hard error」 moved into the parent's parentheses. No content words added or removed (fragment verification in §5) |
+| L7 | English, translation footer | section 9 bullet 3 | wrap only |
+| L8 | full link CONTRIBUTING.md | section 9 bullet 4 + copied into the canon map row | byte-identical + copy |
+| L10 | heading Workflow | section 4 | position only |
+| L12 | consolidation, projects as the real store, 「正典は projects/CLAUDE.md —— ここはその薄いポインタ」 | first 3 sentences → section 4 bullet 1 (wrap only). The canon declaration sentence → moved into the section 4 preamble (「ここは」→「この節は」, plus explicit ownership of 「正典に無い細部」) | split + move |
+| L13 | furrow source, wrapper, go run | section 4 bullet 2 (split into a parent + 2 children) | Split. Characters unchanged |
+| L14 | furrow sync | section 4 bullet 3 | wrap only |
+| L15 | the 793-character bullet (9 rules) | section 4 bullet 4 (repos + labels) / bullet 5 (auto's effects, 3 children) / bullet 6 (the 2 situations where auto does not apply, new group heading) / bullet 7 (the `-l` guard) | Split. The relative order of the rules is as in the original. Characters unchanged (only the handling of the split points at the commas and 「：」) |
+| L16 | the task body is the single source of progress | section 4 bullet 8 | wrap only |
+| L17 | session granularity | section 4 bullet 9 | wrap only |
+| L18-20 | session etiquette (at start, on interruption) | section 4 bullet 10 | byte-identical |
+| L21 | PR footer SetStatus-task | section 4 bullet 11 | wrap only |
+| L22 | file tasks without hesitation | section 4 bullet 12 | wrap only |
+| L23 | with no instructions, advance a task | section 4 bullet 13 | wrap only |
+| L25-79 | all 12 bullets of Development policy | section 5 | byte-identical (every line) |
+| L81-104 | Output shape (preamble + 7 bullets) | section 2 | byte-identical |
+| L106-132 | How to respond to work and task requests | section 3 | byte-identical |
+| L134-193 | Model operations (2 preamble paragraphs + division of labor, how the quota works, engagement conditions 1-4, how to read the quota, Fable sessions, verification on Opus) | section 10 | byte-identical (the quota accounting = invariant, exhaustion condition, how to read it, and the cache caveat are kept in the body — no offloading to a skill, as constrained) |
+| L195-205 | Mac apps (Sill 13 library, AppKit prohibition, latest macOS) | section 11 | byte-identical |
+| L207-216 | Repo current-state one-shot | section 6 | only L215 (how to read it) and L216 (condition-wait/GUI) re-wrapped, the rest byte-identical |
+| L218-247 | Self-built CLIs (preamble, pare, cifail, rundiff, revpost, furrow, glyph, already adopted) | section 7 | only L240 (the furrow line) has its wording corrected (below), the rest byte-identical |
+| L240 | 「furrow — タスク管理（↑ Workflow 節が正典）」 | the furrow line in section 7 | **wording correction**: 「（→ ↑ Workflow 節。正典は projects/CLAUDE.md — 冒頭の正典マップ）」. The old sentence used 「正典」 to mean "the relevant section within this document", which contradicted L12 (audit finding 5). Only the pointer is made explicit; the norm is unchanged |
+| L249-256 | Use source (launcher branching, using clones, wrapper, GUI, how taps are positioned, applies to Claude itself too) | section 8 | wrap only |
+| L258-262 | repositories outside the H1 + Rule | section 12 | byte-identical |
+| (new) | 「この文書の読み方（優先順位と正典）」 (How to read this document — precedence and canon): the declaration of firing-frequency order, the 4-level precedence, the 「正典に無い事実は一次の置き場」 convention, 5 canon-map rows | section 1 | addition only. No change to existing norms. Each canon-map row aggregates the canon references already inside existing sections (L8, L12, L61, L200) plus 1 new pointer to the ledger (gray item ② below) |
+| (new) | the "three points absent from canon" note at the end of the Workflow section | last bullet of section 4 | addition only (the device that resolves audit finding 4. The facts are measured — §3) |
 
-**削除: 0 件。**
+**Deletions: 0.**
 
-## 5. 削っていない証明（機械検証）
+## 5. Proof that nothing was cut (machine verification)
 
-whitespace-insensitive の全数チェックを実施（本セッション、python3）:
+A whitespace-insensitive exhaustive check was run (this session, python3):
 
-- 手順: 旧ファイルの非空 228 行それぞれから空白を全除去し、新ファイル全文（空白全除去）の**連続部分文字列**として存在するか検査。
-- 結果: **223/228 行が連続一致**（= 改行・スペース以外 1 文字も変わっていない）。不一致 5 行は L6・L12・L13・L15（分割）と L240（表記修正）で、事前予告と完全一致。
-- 不一致 5 行は断片単位で再検証: 31 断片すべて新ファイルに存在（missing 0）。消えた文字列は分割点の区切り記号（「／」「、」）と L240 の「が正典」の 3 文字のみで、いずれも §4 に変換として記載済み。
+- Procedure: strip all whitespace from each of the 228 non-empty lines of the old file and test whether it exists as a **contiguous substring** of the entire new file (also with all whitespace stripped).
+- Result: **223/228 lines match contiguously** (= not a single character other than newlines and spaces changed). The 5 non-matching lines are L6, L12, L13, L15 (splits) and L240 (wording correction), exactly as announced in advance.
+- The 5 non-matching lines were re-verified fragment by fragment: all 31 fragments exist in the new file (missing 0). The only strings that disappeared are the separators at the split points (「／」「、」) and the 3 characters 「が正典」 in L240, and both are already recorded as transformations in §4.
 
-再現コマンドは検証スクリプトごと呼び出し元へ渡せる（上記 2 つの python3 ワンライナー。旧 path と
-`CLAUDE.md.restructured` を比較するだけ・依存なし）。
+The reproduction commands can be handed to the caller together with the verification scripts (the 2 python3 one-liners above — they only compare the old path against
+`CLAUDE.md.restructured`, with no dependencies).
 
-## 6. 測定が要る／要らないの切り分け
+## 6. Separating what needs measurement from what does not
 
-判定基準（依頼文＋ `scripts/claude-md-eval/README.md` を読了の上）: 応答の形を変える規則の追加・削除・言い換え → 要。順序・分割・折返し・precedence 明示 → 不要。
+Criterion (after reading the request text plus `scripts/claude-md-eval/README.md`): adding, deleting, or rewording a rule that changes the shape of a response → needed. Reordering, splitting, wrapping, making precedence explicit → not needed.
 
-**不要（本再編の全変換が該当）**:
+**Not needed (every transformation in this restructure falls here)**:
 
-- 節順の入替・折返し正規化・分割・見出し追加 — 規則本文は byte 同一 or 空白のみの差。
-- precedence 4 段と正典マップ — 会話応答の形の規則ではない。
-- 「出力の形」「作業・task 依頼への返し方」— byte 同一なので、既存の測定結果（初稿 8 規則→測定で 2 つ排除、の経緯を経た現行文）がそのまま有効。**再測定は不要**。
+- Section reordering, wrap normalization, splitting, heading additions — the rule bodies are byte-identical or differ only in whitespace.
+- The 4-level precedence and the canon map — they are not rules about the shape of a conversational reply.
+- "Output shape" and "How to respond to work and task requests" — byte-identical, so the existing measurement results (the current text, which came through a process where measurement eliminated 2 of the first draft's 8 rules) remain valid as they are. **No re-measurement needed.**
 
-**要measured に該当: 0 件**（規則の言い換えを 1 件もしていないため）。
+**Items that require measurement: 0** (because not a single rule was reworded).
 
-**グレー（基準上は不要だが、慎重に行くなら安価な保険がある）**:
+**Gray (not needed by the criterion, but cheap insurance if you want to be careful)**:
 
-1. **新設「この文書の読み方」節** — 規則ではなく読み方だが、新規散文が毎セッション載る。害（誤発火・応答形の変化）ゼロの確認をしたければ、この節だけを candidate に claude-md-eval を 1 run（12 ケース・約 10 分・$6）。期待値は「勝ちも負けもしない」（ゲート 2 で BLOCKED になり得るが、それは「効果なし」の意で、この節は効果を狙っていないので問題ない — この場合はゲートの exit code でなく delta の中身を読むこと）。
-2. **正典マップの ledger 行** — 既存 CLAUDE.md に無かった新規ポインタ（claude-md-ledger.md への参照）。挙動規則ではないが「追加」ではあるので、不要と判断した根拠ごと呼び出し元の判断に委ねる。外すなら表から 1 行消すだけで他に波及しない。
-3. **Workflow 節の分割そのもの** — 意味不変でも「規則が読み取れるようになった」ことが遵守率を変えるなら、それは狙いどおりの挙動変化。測るなら旧 Workflow 節と新 Workflow 節を**各々** candidate にして 2 run し勝率を突き合わせる（harness は候補同士の直接比較を持たないため）。
-4. **節順の効果** — claude-md-eval は「節なし vs 節あり」の単発応答比較で、**ファイル全体の順序効果は測定範囲外**（README「測れないこと」）。「測って不要と確認した」のではなく「この harness では測れない」。測るなら複数ターン・実作業込みの別ケース設計が要る — 本再編では順序を「効かせる」ことに依存した規範変更はしていないので、測れないままでも安全側。
+1. **The new "How to read this document" section** — it is a way of reading rather than a rule, but new prose now loads every session. If you want to confirm zero harm (misfiring, a changed response shape), run claude-md-eval once with only this section as the candidate (12 cases, about 10 minutes, $6). The expected value is "neither a win nor a loss" (it may come out BLOCKED at gate 2, but that means "no effect", and since this section is not aiming for an effect that is not a problem — in that case read the contents of the delta, not the gate's exit code).
+2. **The ledger row in the canon map** — a new pointer that was not in the existing CLAUDE.md (a reference to claude-md-ledger.md). It is not a behavioral rule, but it is an addition, so the decision is left to the caller along with the reasoning for judging it unnecessary. Dropping it is just deleting one row from the table, with no other ripple.
+3. **The Workflow split itself** — even with the meaning unchanged, if "the rules having become readable" changes the compliance rate, that is the intended behavior change. To measure it, make the old Workflow section and the new Workflow section **each** a candidate, run twice, and compare the win rates (the harness has no direct candidate-vs-candidate comparison).
+4. **The effect of section order** — claude-md-eval compares single responses "without the section vs with the section", and **whole-file ordering effects are outside its measurement scope** (README 「測れないこと」, "what cannot be measured"). This is not "measured and confirmed unnecessary" but "cannot be measured with this harness". Measuring it would require a different case design spanning multiple turns and real work — this restructure makes no normative change that depends on order taking effect, so leaving it unmeasured is on the safe side.
 
-## 7. 言い換えたいが制約により触らなかった箇所（次工程への申し送り）
+## 7. Places I wanted to reword but left untouched due to constraints (handover to the next step)
 
-すべて「意味を変える言い換え」に該当するため見送り。着手するなら claude-md-eval を通す工程で。
+All of them count as "rewording that changes meaning", so they were deferred. If picked up, do it in a step that goes through claude-md-eval.
 
-1. **`-l` ガードの但し書き** — 本文「did-you-mean ガードが受け止める」は、台帳の検証どおり「board データに repo 名 label が残存していると不発」（t-mztn で実際に 13 件不発）。不変条件込みの正確な文に直したい（機構化は furrow t-jbrr）。
-2. **「Repo 現在地ワンショット」節の condition-wait / GUI 検証 bullet** — 節名（現在地把握）と中身（待機・GUI 検証の skill 指名）がずれている。自作 CLI 節側の「adopt 済」bullet と統合するのが素直だが、内容の移動＋統合は意味再編なので見送り（今回は参照 `↑ Repo 現在地節の bullet` を壊さない配置のみ実施）。
-3. **「ファンアウト」の 2 義** — 開発ポリシー「並列調査やファンアウトに token を使い切ってよい」（Opus workflow の話）とモデル運用「Fable はファンアウト禁止」が同語で逆符号。修飾語で区別したい。
-4. **fleet bullet の「薄いポインタ」句** — 正典マップと二重表現になった。マップに寄せて句を畳めるが、文言変更なので見送り（現状は「節内表記はマップの複製」宣言で矛盾はない）。
-5. **モデル運用の「未実測」（Bash 迂回）** — 実測して断定へ直すか、fable-architect の prompt 側で散文禁止済みである旨を反映するか。実測が先。
-6. **和訳 footer の非強制** — 台帳で 📖（glyph は和訳無し body を exit 0 で通す実測あり）。lint 化を task に上げる価値あり。
-7. **正常終了定型と「送信前に2つ削る」の関係** — 定型の締め文が「やったことを要約し直す最後の一文」に該当しないことは暗黙。明文化するなら測定込みで。
-8. **rundiff bullet の hook 記述** — `settings.json` の PreToolUse 詳細が modify_settings.json 側と二重管理気味。機構の記述は台帳へ寄せる整理があり得る。
+1. **The proviso on the `-l` guard** — the body says 「did-you-mean ガードが受け止める」 (the did-you-mean guard catches it), but per the ledger's verification it 「board データに repo 名 label が残存していると不発」 (fails to fire while repo-name labels remain in the board data) (13 actual failures-to-fire under t-mztn). I want to fix it into an accurate sentence that includes the invariant (mechanization is furrow t-jbrr).
+2. **The condition-wait / GUI verification bullet in the "Repo current-state one-shot" section** — the section name (grasping the current state) and the content (naming skills for waiting and GUI verification) are out of alignment. Merging it with the 「adopt 済」 (already adopted) bullet in the Self-built CLIs section is the natural move, but moving plus merging content is a semantic reorganization, so it was deferred (this time only a placement that does not break the reference `↑ Repo 現在地節の bullet` was carried out).
+3. **The two senses of 「ファンアウト」 (fan-out)** — Development policy's 「並列調査やファンアウトに token を使い切ってよい」 (it is fine to burn tokens on parallel investigation and fan-out; about the Opus workflow) and Model operations' 「Fable はファンアウト禁止」 (Fable must not fan out) use the same word with opposite signs. I want to distinguish them with a modifier.
+4. **The 「薄いポインタ」 (thin pointer) phrase in the fleet bullet** — it became a duplicate expression alongside the canon map. The phrase could be folded into the map, but that is a wording change, so it was deferred (as it stands there is no contradiction, thanks to the declaration that in-section references are copies of the map).
+5. **The 「未実測」 (not measured) in Model operations (the Bash bypass)** — either measure it and change it to an assertion, or reflect the fact that prose is already prohibited on the fable-architect prompt side. Measurement comes first.
+6. **The translation footer is not enforced** — 📖 in the ledger (measured: glyph passes a body with no Japanese translation with exit 0). Worth raising as a task to make it a lint.
+7. **The relationship between the normal-completion boilerplate and 「送信前に2つ削る」 (delete two things before sending)** — that the boilerplate's closing sentence does not count as 「やったことを要約し直す最後の一文」 (a final sentence that re-summarizes what was done) is implicit. If it is to be spelled out, do it with measurement.
+8. **The hook description in the rundiff bullet** — the PreToolUse details in `settings.json` are somewhat doubly managed with the modify_settings.json side. A cleanup that moves mechanism descriptions to the ledger is conceivable.
 
-## 8. 呼び出し元への検証観点（このレビューは私では回さない）
+## 8. Verification points for the caller (I do not run this review myself)
 
-- §5 の 2 スクリプトを再実行し、削除 0 を独立再確認（期待: 不一致 5 行・断片 missing 0）。
-- 表記修正 2 箇所（L12 移設・L240）が規範を変えていないかの精読。
-- 正典マップ URL 5 本の実在確認（projects/CLAUDE.md・CONTRIBUTING.md・fleet-change-policy.md・sill・claude-md-ledger.md）。
-- 「正典未収載 3 点」の再グレップ（私の実測は 2026-07-27。projects/CLAUDE.md が今後追記されたら注記が stale になる）。
-- claude-md-ledger.md の節名参照が全て解決すること（既存見出しは全て名称不変。新設「この文書の読み方」節の台帳行を同一 PR で足すか判断 — 台帳運用ルール上は足すのが作法。印は 🙅 か 📖）。
-- グレー 4 点（§6）の測定要否の裁定。
-- 配布時: chezmoi diff → apply → `~/.claude/CLAUDE.md` を読み直して数える（「できた」は実測とセット）。
+- Re-run the 2 scripts in §5 and independently re-confirm 0 deletions (expected: 5 non-matching lines, 0 missing fragments).
+- Close reading of whether the 2 wording corrections (the L12 move, L240) changed any norm.
+- Confirm that the 5 canon-map URLs exist (projects/CLAUDE.md, CONTRIBUTING.md, fleet-change-policy.md, sill, claude-md-ledger.md).
+- Re-grep the "three points absent from canon" (my measurement is 2026-07-27. If projects/CLAUDE.md gains text later, the note goes stale).
+- That every section-name reference in claude-md-ledger.md resolves (all existing headings keep their names. Decide whether to add the ledger row for the new "How to read this document" section in the same PR — by the ledger's operating rules, adding it is the correct practice. The mark is 🙅 or 📖).
+- Adjudicate whether the 4 gray items (§6) need measurement.
+- At distribution time: chezmoi diff → apply → re-read `~/.claude/CLAUDE.md` and count (「できた」 ("done") comes paired with a measurement).

@@ -1,128 +1,128 @@
 # dotfiles
 
-個人 macOS 環境（aarch64-darwin）の宣言的構成。
-スタック: **nix-darwin + home-manager + chezmoi + 1Password**。
-詳細設計は [docs/reproduction-architecture.md](docs/reproduction-architecture.md)、
-用語は [docs/glossary.md](docs/glossary.md)。
+Declarative configuration of a personal macOS environment (aarch64-darwin).
+Stack: **nix-darwin + home-manager + chezmoi + 1Password**.
+Detailed design is in [docs/reproduction-architecture.md](docs/reproduction-architecture.md),
+terminology in [docs/glossary.md](docs/glossary.md).
 
-## 環境再現（新しい Mac）
+## Environment reproduction (new Mac)
 
-### 事前準備（初期化直後・在席。GUI 操作はここに全部 front-load）
+### Preparation (right after initialization, attended. All GUI operations are front-loaded here)
 
-#### 1. Terminal にフルディスクアクセスを付与
+#### 1. Grant Full Disk Access to Terminal
 
-- システム設定 → プライバシーとセキュリティ → **フルディスクアクセス** → Terminal を ON
-- 付与後、Terminal を **Cmd-Q で再起動**する
-- 目的: 実行中に macOS の管理ダイアログを出さないため
+- System Settings → Privacy & Security → **Full Disk Access** → turn Terminal ON
+- After granting, **restart Terminal with Cmd-Q**
+- Purpose: to avoid macOS management dialogs appearing mid-run
 
-#### 2. 1Password をセットアップ
+#### 2. Set up 1Password
 
-- 1Password.app を手動インストールし、**iPhone の QR でサインイン**（Secret Key の手打ちは不要）
-- 設定 → 開発者 → **SSH agent を ON**
-- 設定 → セキュリティ → **自動ロックのタイマーを OFF**（スリープ時ロックは残す）
-  - 目的: 実行中のロックで clone が止まるのを防ぐため
-- `~/.ssh/config` を **正本（chezmoi 宣言）そのまま**で置く（判断・GUI 操作なし）:
+- Install 1Password.app manually and **sign in via the QR code on your iPhone** (no need to type the Secret Key by hand)
+- Settings → Developer → turn **SSH agent ON**
+- Settings → Security → turn the **auto-lock timer OFF** (keep lock on sleep)
+  - Purpose: to prevent a lock mid-run from stalling the clone
+- Place `~/.ssh/config` **exactly as the canonical source declares it (chezmoi)** (no judgment calls, no GUI operations):
 
   ```sh
   mkdir -p ~/.ssh && curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/chezmoi/private_dot_ssh/private_config -o ~/.ssh/config && chmod 600 ~/.ssh/config
   ```
 
-  - 中身は 1Password SSH agent への IdentityAgent 指定。これが無いと ssh は
-    素の macOS agent（鍵ゼロ）を向いてしまう
-  - 正本は `chezmoi/private_dot_ssh/private_config` の 1 箇所（上の curl はそれを
-    取るだけ）。install 中の `chezmoi apply` 以降は宣言が enforce する（1Password は
-    読者に徹し、アプリの「自動編集」ボタンは使わない — 使うと drift になり
-    `chezmoi verify` が警告する）
-- 動作確認として次を 1 回実行し、承認ダイアログで「**すべてのアプリで承認する**」を選んで認証する
+  - Its content is the IdentityAgent directive pointing at the 1Password SSH agent. Without it, ssh points at
+    the bare macOS agent (which holds zero keys)
+  - The canonical source is the single file `chezmoi/private_dot_ssh/private_config` (the curl above just
+    fetches it). From `chezmoi apply` during install onward, the declaration enforces it (1Password stays
+    a reader only — do not use the app's "edit automatically" button; using it creates drift and
+    `chezmoi verify` warns)
+- As a check, run the following once and authenticate by choosing "**Approve for all applications**" in the approval dialog
 
   ```sh
   ssh -o StrictHostKeyChecking=accept-new -T git@github.com
   ```
 
-#### 3. GitHub PAT を環境変数に入れる
+#### 3. Put the GitHub PAT into an environment variable
 
-- 1Password の item **`DOTFILES_BOOTSTRAP`**（Personal vault・fine-grained PAT）の credential を
-  コピーし、次のワンライナーと同じターミナルで実行する
+- Copy the credential from the 1Password item **`DOTFILES_BOOTSTRAP`** (Personal vault, fine-grained PAT) and
+  run this in the same terminal as the one-liner below
 
   ```sh
   export GH_TOKEN=<PAT>
   ```
 
-- 権限は **All repositories / Metadata: Read-only** で足りる
-- 用途: `ghq-get-mine` の repo 一覧取得と clone 完全性検証（gh API）
-- 無い場合は序盤の P1-ghtoken gate で即 fail する（長い処理が走ってから死なない）
-- token は**無期限**（切れる心配は無い。実測 2026-07-20: 期限ヘッダ無し）。
-  万一 revoke / rotate した場合は GitHub → Settings → Developer settings →
-  Fine-grained tokens → `DOTFILES_BOOTSTRAP` を **Regenerate** し、新しい値で
-  1Password の同名 item を更新する
+- **All repositories / Metadata: Read-only** is enough scope
+- Used for: retrieving the repo list for `ghq-get-mine` and verifying clone completeness (gh API)
+- Without it, the early P1-ghtoken gate fails immediately (it does not die after a long run)
+- The token is **non-expiring** (no need to worry about expiry; measured 2026-07-20: no expiry header).
+  If it is ever revoked / rotated, go to GitHub → Settings → Developer settings →
+  Fine-grained tokens → `DOTFILES_BOOTSTRAP`, **Regenerate** it, and update the
+  1Password item of the same name with the new value
 
-### 実行
+### Run
 
 ```sh
 sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 ```
 
-- **パスワード入力は先頭の `sudo -v` の 1 回だけ**（貼り付け直後に聞かれる）。
-  それ以降はパスワード入力・GUI 操作ゼロで無人完走する
-- **`✓ 完了` は全 phase + 事後条件検証を通過した時だけ出る**
-  （スキップ・失敗があれば必ず FAILED / PARTIAL になる）
+- **The password is entered exactly once, at the leading `sudo -v`** (asked right after you paste).
+  After that it runs unattended to completion with zero password entry and zero GUI operations
+- **`✓ 完了` is printed only when every phase plus the postcondition verification has passed**
+  (any skip or failure necessarily yields FAILED / PARTIAL)
 
-### リカバリ
+### Recovery
 
-- 途中で失敗したら**同じワンライナーを再実行**する（全 phase 冪等。導入済みは skip される）
-- SSH gate（1Password）起因の失敗だけを直した後は近道がある:
+- If it fails partway, **re-run the same one-liner** (all phases are idempotent; what is already installed is skipped)
+- After fixing only an SSH gate (1Password) failure, there is a shortcut:
 
   ```sh
-  export GH_TOKEN=<PAT>   # 別ターミナルなら再 export が要る（下記）
+  export GH_TOKEN=<PAT>   # a different terminal needs a re-export (see below)
   sh ~/dotfiles/install.sh --phase2
   ```
 
-  - **`--phase2` も P1-ghtoken gate を通る**。`GH_TOKEN` はシェル変数なので、
-    ターミナルを開き直した／再起動した後は消えている。再 export せずに叩くと
-    SSH を直した直後に `P1-ghtoken` で即 fail する（二段の徒労）
+  - **`--phase2` goes through the P1-ghtoken gate too**. `GH_TOKEN` is a shell variable, so it is gone
+    after you reopen the terminal or reboot. Invoking without re-exporting it fails immediately at
+    `P1-ghtoken` right after you fixed SSH (two rounds of wasted effort)
 
-### ログと結果（機械可読）
+### Logs and results (machine-readable)
 
-すべての実行は `~/.dotfiles-install/<run-id>/` に記録される。
+Every run is recorded under `~/.dotfiles-install/<run-id>/`.
 
-- `summary.txt` — 結果・失敗 step・環境情報（LLM / 人間がまずここを読む）
-- `install.log` — 全出力（1 行目から）
-- `events.tsv` — phase / step の開始・終了・exit code
-- `detail/<step>.log` — ノイズの多い step（chezmoi apply 等）の隔離出力
+- `summary.txt` — result, failed step, environment info (the first thing an LLM / a human reads)
+- `install.log` — the full output (from line 1)
+- `events.tsv` — start / end / exit code of each phase and step
+- `detail/<step>.log` — isolated output of noisy steps (chezmoi apply, etc.)
 
-`~/.dotfiles-install/latest` が最新 run を指す。
+`~/.dotfiles-install/latest` points at the newest run.
 
-### `✓ 完了` 後に手で残るもの
+### What is left to do by hand after `✓ 完了`
 
-タイミングで 2 グループに分かれる。**まず install.sh 後の作業を済ませ、最後にログアウト → 再ログインして azooKey を有効化**する。
+These split into two groups by timing. **First finish the post-install.sh items, then log out → log back in last to enable azooKey.**
 
-#### install.sh 後（そのまま・再ログイン不要）
+#### After install.sh (as-is, no re-login needed)
 
-- **1Password の自動ロックタイマーを元に戻す**（事前準備 2 で OFF にしたもの。戻さないと無期限で解錠されたままになる）
-- **TCC / アクセシビリティの再付与**（chord の AX daemon 等。付与が要るアプリは起動時に要求してくる）
+- **Restore the 1Password auto-lock timer** (the one turned OFF in preparation step 2; if not restored it stays unlocked indefinitely)
+- **Re-grant TCC / Accessibility** (chord's AX daemon, etc. Apps that need it will request it on launch)
 
-#### ログアウト → 再ログイン後
+#### After log out → log back in
 
-- **azooKey（日本語 IME）を入力ソースとして有効化**（cask による `.app` 導入は自動。有効化は手動）
-  - 手順（[azooKey 公式 README](https://github.com/azooKey/azooKey-Desktop) 準拠）:
-    1. **macOS からログアウト → 再ログイン**
-    2. システム設定 → キーボード → 入力ソースを**編集 → `+` → 日本語 → azooKey → 追加 → 完了**
-    3. メニューバーアイコンから azooKey を選択
-  - **なぜログアウトが要るか**: macOS は `/Library/Input Methods` の IME を**ログイン時にスキャンして登録**する。
-    install.sh 実行中（＝ログイン後）に入った azooKey は、再ログインするまで入力ソースの一覧（手順 2 の `+`）に現れない。
-    アプリを起動しても `TISRegisterInputSource` を呼んでも登録されず、再ログインが唯一の登録契機（実機で確認済）。
-  - **なぜ自動化できないか**: macOS 26 は 3rd party IME の**プログラムからの有効化を「成功」を装って無視する**設計
-    （silent keylogger 対策）。`defaults write AppleEnabledInputSources` も `TISEnableInputSource` も no-op で
-    `install.sh` には組み込めない（Tart VM で検証済。task t-1t2e）。登録も有効化も GUI／ログインセッション依存で、ここだけ自動化から漏れる。
+- **Enable azooKey (Japanese IME) as an input source** (the cask installs the `.app` automatically; enabling is manual)
+  - Procedure (per the [azooKey official README](https://github.com/azooKey/azooKey-Desktop)):
+    1. **Log out of macOS → log back in**
+    2. System Settings → Keyboard → **Edit** input sources → **`+` → Japanese → azooKey → Add → Done**
+    3. Select azooKey from the menu bar icon
+  - **Why the logout is required**: macOS **scans and registers** IMEs in `/Library/Input Methods` **at login time**.
+    azooKey, which arrives during the install.sh run (i.e. after login), does not appear in the input source list (the `+` in step 2) until you log back in.
+    Neither launching the app nor calling `TISRegisterInputSource` registers it; logging back in is the only registration trigger (confirmed on real hardware).
+  - **Why it cannot be automated**: macOS 26 is designed to **ignore programmatic enabling of 3rd party IMEs while pretending it succeeded**
+    (an anti-silent-keylogger measure). Both `defaults write AppleEnabledInputSources` and `TISEnableInputSource` are no-ops, so this cannot be
+    built into `install.sh` (verified in a Tart VM; task t-1t2e). Registration and enabling both depend on the GUI / login session, so this is the one thing that escapes automation.
 
-### 補足
+### Notes
 
-- workspace volume（`/Volumes/workspace`・case-sensitive APFS）はワンライナーが作成し、
-  ghq の clone 先（`GHQ_ROOT`）として home-manager から参照される。
-  macOS 既定の case-insensitive APFS と Linux 由来コードの相性問題への対処。
-  既に存在すれば skip される（冪等）
+- The workspace volume (`/Volumes/workspace`, case-sensitive APFS) is created by the one-liner and
+  referenced from home-manager as ghq's clone destination (`GHQ_ROOT`).
+  It works around compatibility problems between macOS's default case-insensitive APFS and Linux-originated code.
+  If it already exists it is skipped (idempotent)
 
-## 作業ルール
+## Working rules
 
-作業ルール / 規約は [CLAUDE.md](CLAUDE.md) に集約し、機械検知できるものは
-[.github/workflows/ci.yml](.github/workflows/ci.yml) で強制している。
+Working rules and conventions are consolidated in [CLAUDE.md](CLAUDE.md), and whatever can be
+machine-detected is enforced in [.github/workflows/ci.yml](.github/workflows/ci.yml).

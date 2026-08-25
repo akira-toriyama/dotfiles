@@ -1,70 +1,70 @@
-# スクリプトの `set` 規約と現在地
+# Script `set` conventions and current state
 
-このリポジトリの shell スクリプトは `set` 行が 5 通りに割れていた（`set -u` / `set -eu` /
-`set -e` / `set -euo pipefail` / 無し）。割れていること自体より、**どれを選ぶべきかの基準が
-どこにも書かれていない**のが問題だった。この文書はその基準と、現時点で機構に守られて
-いない場所を置く。
+The shell scripts in this repository were split across 5 different `set` lines (`set -u` / `set -eu` /
+`set -e` / `set -euo pipefail` / none). The problem was not the split itself, but that **the criterion for
+which one to choose was written down nowhere**. This document holds that criterion, plus the places not
+currently guarded by machinery.
 
-言語の選択（Python 既定 / shell は Python を保証できない場所だけ）は
-[CLAUDE.md](../CLAUDE.md) が正典。ここは shell を選んだ後の話。
+The choice of language (Python by default / shell only where Python cannot be guaranteed) is governed by
+[CLAUDE.md](../CLAUDE.md). This document is about what comes after shell has been chosen.
 
-## 基準: 呼び出し元が誰かで決まる
+## Criterion: it is decided by who the caller is
 
-`set -e` を付けるかどうかは好みではなく、**非 0 で終わったときに誰が困るか**で決まる。
+Whether to add `set -e` is not a matter of taste — it is decided by **who is hurt when it exits non-zero**.
 
-### ① hook / 常駐 — `set -u` のみ、常に `exit 0`
+### ① hook / resident — `set -u` only, always `exit 0`
 
-`zsh` の `chpwd`・Claude の `SessionStart` / `Stop` / `PreToolUse`・launchd の常駐。
+`zsh`'s `chpwd`, Claude's `SessionStart` / `Stop` / `PreToolUse`, launchd residents.
 
-呼び出し元がスクリプトの exit code を見て挙動を変える。`errexit` を入れると、
-**正常な制御フローの非 0**（`grep` の不一致、`ioreg` の一時失敗、まだ生えていない
-デバイス）でスクリプトが途中終了し、prompt が汚れる・セッション開始が騒がしくなる・
-常駐が死ぬ。`nounset` は変数名の打ち間違いを拾うだけなので入れる。
+The caller looks at the script's exit code and changes its behavior accordingly. With `errexit` in place,
+**a non-zero from normal control flow** (a `grep` miss, a transient `ioreg` failure, a device that has not
+appeared yet) aborts the script partway, dirtying the prompt, making session start noisy, or killing the
+resident. `nounset` only catches typos in variable names, so keep it.
 
-該当: `executable_git-stale-check` / `executable_claude-quota-note` /
+Applies to: `executable_git-stale-check` / `executable_claude-quota-note` /
 `executable_claude-projects-lint-note` / `executable_claude-work-report-check` /
 `executable_zmk-log-capture.sh` / `executable_claude-fanout-cwd-guard` /
-`executable_claude-board-shard-guard` / `modify_settings.json`。
+`executable_claude-board-shard-guard` / `modify_settings.json`.
 
-`modify_settings.json` はこの分類の極端な例で、失敗時は **stdin を素通しして exit 0**
-する（壊れた settings.json を書くより、何もしない方が安い）。
+`modify_settings.json` is the extreme case of this category: on failure it **passes stdin through and exits 0**
+(doing nothing is cheaper than writing a broken settings.json).
 
-### ② 一発実行 — `set -euo pipefail`
+### ② one-shot execution — `set -euo pipefail`
 
-`install.sh`・`chezmoi/run_onchange_*`・`system/modules/scripts/*.sh`・`.githooks/pre-push`。
+`install.sh`, `chezmoi/run_onchange_*`, `system/modules/scripts/*.sh`, `.githooks/pre-push`.
 
-人か chezmoi が明示的に走らせ、途中で失敗したら止まってほしいもの。`pipefail` を外す
-なら**理由をその場に書く**（下記の例外を参照）。
+Things a human or chezmoi runs explicitly, and which should stop when they fail partway. If you drop
+`pipefail`, **write the reason on the spot** (see the exceptions below).
 
-### ③ Nix 内蔵 wrapper — `writeShellApplication` に任せる
+### ③ Nix built-in wrapper — leave it to `writeShellApplication`
 
-`home/modules/packages.nix` の wrapper は `writeShellApplication` が
-`errexit` / `nounset` / `pipefail` を注入し、build 時に shellcheck を通す。
-手書きの `set` 行は書かない。外す必要があれば `bashOptions` で明示する。
+For the wrappers in `home/modules/packages.nix`, `writeShellApplication` injects
+`errexit` / `nounset` / `pipefail` and runs shellcheck at build time.
+Do not write a hand-written `set` line. If you need to drop one, state it explicitly via `bashOptions`.
 
-### `pipefail` を外してよい場合（実例）
+### When it is OK to drop `pipefail` (real examples)
 
-- `ghq-get-mine`: 前段の `ssh -T` は**成功時にも exit 1** を返す
-  （"GitHub does not provide shell access"）。`| grep -q` での成功判定が
-  `pipefail` だと潰れる。→ `bashOptions = [ "errexit" "nounset" ]`。
-- 一般に、パイプ前段の非 0 が正常系に含まれるとき。`|| true` で個別に潰せるなら
-  そちらが優先（`check-dotfiles-drift.sh` は 17 本中 15 本がこの形なので
-  `pipefail` を入れられた）。
+- `ghq-get-mine`: the upstream `ssh -T` **returns exit 1 even on success**
+  ("GitHub does not provide shell access"). The success check via `| grep -q` is
+  destroyed by `pipefail`. → `bashOptions = [ "errexit" "nounset" ]`.
+- In general, when a non-zero from an upstream pipe stage is part of the normal path. If it can be
+  suppressed individually with `|| true`, that takes priority (`check-dotfiles-drift.sh` has 15 of its 17
+  in that form, so `pipefail` could be enabled).
 
-### 2 経路から走るスクリプトの注意
+### Note on scripts that run through 2 paths
 
-`check-dotfiles-drift.sh` と `add-homebrew.sh` は launchd（`/bin/bash` 直起動）と
-`home.packages` の wrapper の**両方**から走る。wrapper 側にだけ効く注入では 2 経路の
-挙動がずれるので、**`.sh` 側の `set` 行を正本**にして揃える。
+`check-dotfiles-drift.sh` and `add-homebrew.sh` run from **both** launchd (launched directly by `/bin/bash`)
+and the `home.packages` wrapper. Injection that only takes effect on the wrapper side makes the two paths
+diverge in behavior, so **treat the `set` line in the `.sh` as canonical** and align to it.
 
-## 機構に守られていない場所（2026-08-03 時点）
+## Places not guarded by machinery (as of 2026-08-03)
 
-全 shell 23 本は `scripts/lint` の `shellcheck` / `shfmt` ゲートを通っている
-（対象集合の正本は `scripts/lint` の `shell_files()`。ここに写しは置かない —— 写すと必ずずれる）。
+All 23 shell scripts pass the `shellcheck` / `shfmt` gates in `scripts/lint`
+(the canonical target set is `shell_files()` in `scripts/lint`. No copy is kept here — a copy always drifts).
 
-**テストがあるのは 8 本だけ**:
+**Only 8 have tests**:
 
-| script | テスト |
+| script | test |
 |---|---|
 | `executable_git-stale-check` | `scripts/test_git_stale_check.py` |
 | `executable_claude-work-report-check` | `scripts/claude-work-report-check-test.sh` |
@@ -74,18 +74,18 @@
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
 | `executable_claude-projects-lint-note` | `scripts/test_claude_projects_lint_note.py` |
 | `modify_settings.json` | `scripts/test_modify_settings.py` |
-| `scripts/lint` 自身 | `scripts/test_lint.py` |
+| `scripts/lint` itself | `scripts/test_lint.py` |
 
-残る 15 本にテストは無い。これは欠陥リストではなく**優先順位を付けるための一覧**で、
-実際に足す基準は CLAUDE.md の「機構化は既に踏んだ失敗の再発防止だけ」に従う。
-上の 6 本はいずれもその基準を満たして足したもの（hook が無言で死ぬと気づけない、
-permission allowlist を失う、等）。
+The remaining 15 have no tests. This is not a defect list but **a list for setting priorities**; the actual
+criterion for adding one follows CLAUDE.md's "mechanization only to prevent recurrence of an already-hit
+failure". The 6 above were all added because they met that criterion (a hook dying silently goes unnoticed,
+the permission allowlist gets lost, etc.).
 
-テスト無し: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /
+No tests: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /
 `executable_zmk-log-capture.sh` / `run_onchange_after_configure-azookey.sh` /
 `run_onchange_after_enable-git-hooks.sh` / `run_onchange_after_install-claude-code.sh` /
 `run_onchange_after_provision-op-sa-token.sh` / `run_onchange_install-vscode-extensions.sh` /
-`install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh` / `claude-maint.sh`。
+`install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh` / `claude-maint.sh`.
 
-`install.sh` だけは間接的に守られている —— CI の `darwin-rebuild switch smoke` が
-実質の結合テストになっている。
+Only `install.sh` is indirectly guarded — CI's `darwin-rebuild switch smoke` effectively serves as its
+integration test.

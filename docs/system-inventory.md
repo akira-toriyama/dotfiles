@@ -1,66 +1,66 @@
-# system inventory（環境インベントリ）
+# system inventory (environment inventory)
 
-再現したい macOS 環境の **パッケージ / macOS defaults の素材台帳**。
-**nix パッケージ層 / nix-darwin defaults を構築する際の入力**として使う（[reproduction-architecture.md](reproduction-architecture.md) 参照）。
+A **source-material ledger of the packages / macOS defaults** of the macOS environment to reproduce.
+Used as **input when building the nix package layer / nix-darwin defaults** (see [reproduction-architecture.md](reproduction-architecture.md)).
 
-構築方針との対応: zsh=刷新 / ssh=1Password / IME=Azookey予定 / yabai=不採用 / karabiner=不採用。
+Correspondence with the build policy: zsh=rebuild / ssh=1Password / IME=Azookey planned / yabai=not adopted / karabiner=not adopted.
 
 ## Homebrew taps
 
-| tap | 用途 | 方針 |
+| tap | purpose | plan |
 |---|---|---|
-| felixkratz/formulae | borders | 維持（focusfx が borders 使用） |
-| homebrew/bundle, homebrew/services | brew 基盤 | nix の homebrew モジュールで代替検討 |
-| koekeishiya/formulae | yabai | **破棄**（yabai 不採用） |
+| felixkratz/formulae | borders | keep (focusfx uses borders) |
+| homebrew/bundle, homebrew/services | brew infrastructure | consider replacing with nix's homebrew module |
+| koekeishiya/formulae | yabai | **drop** (yabai not adopted) |
 
-## Homebrew formulae（brew）
+## Homebrew formulae (brew)
 
-| formula | 用途 | 方針 |
+| formula | purpose | plan |
 |---|---|---|
-| asdf | バージョン管理 | **要判断**（nix / mise / devbox で置換候補） |
-| chezmoi | dotfiles 管理 | 維持（nix で導入） |
-| colima, docker | コンテナ | 要判断（dev、nix 候補） |
-| f2 | 一括リネーム CLI | 任意 |
-| gh | GitHub CLI | 維持候補 |
-| ghq | リポジトリ管理 | 維持候補 |
-| jq | JSON CLI | 維持候補 |
-| mas | App Store CLI | mas アプリ導入に必要なら維持 |
-| sleepwatcher (restart_service) | スリープ/復帰フック | 要判断（旧 wakeup 系依存） |
-| trash | 安全削除（rm 代替） | 維持候補（環境で使用中） |
-| watchman | ファイル監視 | **破棄候補**（旧 alt-tab スクリプト用、その用途は廃止） |
-| felixkratz/formulae/borders | アクティブ枠 | **維持**（focusfx で使用） |
-| koekeishiya/formulae/yabai | WM | **破棄**（決定） |
+| asdf | version management | **needs decision** (nix / mise / devbox are replacement candidates) |
+| chezmoi | dotfiles management | keep (install via nix) |
+| colima, docker | containers | needs decision (dev, nix candidate) |
+| f2 | bulk rename CLI | optional |
+| gh | GitHub CLI | keep candidate |
+| ghq | repository management | keep candidate |
+| jq | JSON CLI | keep candidate |
+| mas | App Store CLI | keep if needed to install mas apps |
+| sleepwatcher (restart_service) | sleep/wake hooks | needs decision (old wakeup-related dependency) |
+| trash | safe delete (rm replacement) | keep candidate (in use in the environment) |
+| watchman | file watching | **drop candidate** (was for the old alt-tab script; that use is retired) |
+| felixkratz/formulae/borders | active window border | **keep** (used by focusfx) |
+| koekeishiya/formulae/yabai | WM | **drop** (decided) |
 
 ## Homebrew casks
 
-| cask | 用途 | 方針 |
+| cask | purpose | plan |
 |---|---|---|
-| alt-tab | ウィンドウ切替 | 維持候補 |
-| appcleaner | アンインストーラ | 任意 |
-| font-hack-nerd-font | フォント | 維持候補 |
-| fsnotes | ノート | 任意 |
-| google-chrome | ブラウザ | 維持候補 |
-| google-japanese-ime | IME | **破棄**（Azookey 予定） |
-| karabiner-elements | キー/マウス再マップ | **破棄**（不採用決定） |
-| raycast | ランチャー | 維持候補 |
-| the-unarchiver | 解凍 | 任意 |
-| transmission | BitTorrent | 任意 |
-| visual-studio-code | エディタ | 維持候補 |
-| vlc | メディア | 任意 |
-| warp | ターミナル | 要判断 |
-| zed | エディタ | 要判断 |
+| alt-tab | window switching | keep candidate |
+| appcleaner | uninstaller | optional |
+| font-hack-nerd-font | font | keep candidate |
+| fsnotes | notes | optional |
+| google-chrome | browser | keep candidate |
+| google-japanese-ime | IME | **drop** (Azookey planned) |
+| karabiner-elements | key/mouse remapping | **drop** (decided not to adopt) |
+| raycast | launcher | keep candidate |
+| the-unarchiver | extraction | optional |
+| transmission | BitTorrent | optional |
+| visual-studio-code | editor | keep candidate |
+| vlc | media | optional |
+| warp | terminal | needs decision |
+| zed | editor | needs decision |
 
-## Mac App Store（mas）
+## Mac App Store (mas)
 
-| アプリ | id | 方針 |
+| app | id | plan |
 |---|---|---|
-| Be Focused Pro | 961632517 | 任意 |
-| Dropover | 1355679052 | 任意 |
-| EdgeView 2 | 1206246482 | 任意 |
-| Flashcards | 307840670 | 任意 |
-| **PopClip** | **445189367** | **維持（ユーザー決定）** |
+| Be Focused Pro | 961632517 | optional |
+| Dropover | 1355679052 | optional |
+| EdgeView 2 | 1206246482 | optional |
+| Flashcards | 307840670 | optional |
+| **PopClip** | **445189367** | **keep (user decision)** |
 
-## VS Code 拡張（要判断: nix/home-manager 管理 or 手動）
+## VS Code extensions (needs decision: managed by nix/home-manager or manual)
 
 ```
 bierner.markdown-mermaid, bierner.markdown-preview-github-styles,
@@ -76,31 +76,31 @@ styled-components.vscode-styled-components, stylelint.vscode-stylelint,
 yoavbls.pretty-ts-errors, yzane.markdown-pdf, znck.vue
 ```
 
-## macOS defaults（nix-darwin で再構築する際の入力）
+## macOS defaults (input for rebuilding under nix-darwin)
 
-| domain / コマンド | キー | 値 | 目的 |
+| domain / command | key | value | purpose |
 |---|---|---|---|
-| com.apple.finder | AppleShowAllFiles | true | 隠しファイル表示 |
-| com.apple.dock | autohide | true | Dock 自動非表示 |
-| com.apple.Dock | autohide-delay | 0 | Dock マウスオン遅延無し |
-| com.apple.finder | ShowStatusBar | true | ステータスバー表示 |
-| com.apple.finder | ShowPathbar | true | パスバー表示 |
-| com.apple.finder | ShowTabView | true | タブバー表示 |
-| (chflags) | `nohidden ~/Library` | — | ライブラリ表示 |
-| com.apple.LaunchServices | LSQuarantine | false | 未確認アプリ警告無効 |
-| NSGlobalDomain | AppleShowAllExtensions | true | 全拡張子表示 |
-| NSGlobalDomain | _HIHideMenuBar | true | メニューバー非表示 |
-| com.apple.desktopservices | DSDontWriteNetworkStores | true | ネットワークに .DS_Store を書かない |
-| com.apple.screensaver | askForPassword | 0 | ⚠️ 復帰時パスワード要求しない（セキュリティ要再考） |
-| (spctl) | `--master-disable` | — | ⚠️ Gatekeeper 無効化（セキュリティ要再考） |
-| NSGlobalDomain | NSAppSleepDisabled | yes | 省エネ（App Nap）無効 |
-| NSGlobalDomain | com.apple.swipescrolldirection | false | スクロール方向（ナチュラル無効） |
-| com.apple.finder | ShowExternalHardDrivesOnDesktop | false | デスクトップ: 外付けHDD非表示 |
-| com.apple.finder | ShowHardDrivesOnDesktop | false | デスクトップ: HDD非表示 |
-| com.apple.finder | ShowMountedServersOnDesktop | false | デスクトップ: サーバ非表示 |
-| com.apple.finder | ShowRemovableMediaOnDesktop | false | デスクトップ: リムーバブル非表示 |
-| com.apple.dock | mru-spaces | false | Space を使用順で並べ替えない |
-| com.apple.WindowManager | EnableStandardClickToShowDesktop | false | デスクトップクリックで隠さない |
+| com.apple.finder | AppleShowAllFiles | true | show hidden files |
+| com.apple.dock | autohide | true | auto-hide the Dock |
+| com.apple.Dock | autohide-delay | 0 | no delay on Dock mouse-over |
+| com.apple.finder | ShowStatusBar | true | show the status bar |
+| com.apple.finder | ShowPathbar | true | show the path bar |
+| com.apple.finder | ShowTabView | true | show the tab bar |
+| (chflags) | `nohidden ~/Library` | — | show the Library folder |
+| com.apple.LaunchServices | LSQuarantine | false | disable the unverified-app warning |
+| NSGlobalDomain | AppleShowAllExtensions | true | show all file extensions |
+| NSGlobalDomain | _HIHideMenuBar | true | hide the menu bar |
+| com.apple.desktopservices | DSDontWriteNetworkStores | true | don't write .DS_Store on network volumes |
+| com.apple.screensaver | askForPassword | 0 | ⚠️ don't require a password on wake (security needs reconsideration) |
+| (spctl) | `--master-disable` | — | ⚠️ disable Gatekeeper (security needs reconsideration) |
+| NSGlobalDomain | NSAppSleepDisabled | yes | disable power saving (App Nap) |
+| NSGlobalDomain | com.apple.swipescrolldirection | false | scroll direction (natural disabled) |
+| com.apple.finder | ShowExternalHardDrivesOnDesktop | false | desktop: hide external HDDs |
+| com.apple.finder | ShowHardDrivesOnDesktop | false | desktop: hide HDDs |
+| com.apple.finder | ShowMountedServersOnDesktop | false | desktop: hide servers |
+| com.apple.finder | ShowRemovableMediaOnDesktop | false | desktop: hide removable media |
+| com.apple.dock | mru-spaces | false | don't rearrange Spaces by most recent use |
+| com.apple.WindowManager | EnableStandardClickToShowDesktop | false | don't hide windows when clicking the desktop |
 
-> ⚠️ 印の2項目（Gatekeeper 無効化 / 復帰時パスワード省略）はセキュリティを下げる。
-> nix-darwin へ持ち込む前に必要性を再考すること。
+> ⚠️ The two marked items (disabling Gatekeeper / skipping the password on wake) lower security.
+> Reconsider whether they are needed before carrying them into nix-darwin.

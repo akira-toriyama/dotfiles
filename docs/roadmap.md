@@ -1,178 +1,178 @@
-# ロードマップ（このPC破棄 → 新Mac 再現）
+# Roadmap (discard this PC → reproduce on a new Mac)
 
-設計: [reproduction-architecture.md](reproduction-architecture.md) / 台帳: [system-inventory.md](system-inventory.md)
+Design: [reproduction-architecture.md](reproduction-architecture.md) / Ledger: [system-inventory.md](system-inventory.md)
 
-**進め方の原則**
+**Principles for how to proceed**
 
-- dotfiles はコア。**急がない**。各フェーズに「検証ゲート」を置き、通るまで次へ進まない。
-- ~~このロードマップ自体が管理方法~~ **（2026-07 に撤回。タスク管理の正本は furrow + private repo `projects` へ移行済み — [CLAUDE.md の Roadmap board 節](../CLAUDE.md)。本書は Phase 0〜6 の到達記録＝歴史文書として残す）**: リポジトリ内 Markdown のチェックリスト。
-  git diff でレビューでき、追加ツール不要。完了は `- [x]` にしてコミット。
-- 破壊的変更は必ず「実機 → 新環境を別途検証 → 旧を捨てる」順（旧を先に壊さない）。
-- ゴール判定 = **使い捨て VM か予備機で `clone → bootstrap` し、同等環境が再現**できたら完了。
+- dotfiles are the core. **Don't rush.** Put a "verification gate" on each phase and do not move to the next one until it passes.
+- ~~This roadmap itself is the management method~~ **(Retracted in 2026-07. The canonical source for task management has moved to furrow + the private repo `projects` — [the Roadmap board section of CLAUDE.md](../CLAUDE.md). This document remains as the record of what Phases 0–6 reached = a historical document.)**: a Markdown checklist inside the repository.
+  Reviewable with git diff, no extra tooling required. Mark completion with `- [x]` and commit.
+- Destructive changes always follow the order "real machine → verify the new environment separately → discard the old" (never break the old one first).
+- Goal criterion = complete when a **`clone → bootstrap` on a disposable VM or a spare machine reproduces an equivalent environment**.
 
-凡例: `[ ]` 未 / `[~]` 着手中 / `[x]` 完了・検証済 / ⚠️ = 要判断・リスク
-
----
-
-## フェーズ 0: 足場（低リスク・独立）
-
-- [ ] 現状の壊れを記録（完了: 本ロードマップに記載）
-  - `~/.zshrc` が廃止済み `_/zsh` を source → zsh 設定が無効
-  - `~/.zprofile` に `brew shellenv` 3重複
-- [ ] `.editorconfig` / `README` は導入済み（前コミット）。`LICENSE` 追加検討（⚠️ 公開可否を決める）
-- [ ] `webpro/awesome-dotfiles` / `budimanjojo/nix-config` をブックマーク（参照用）
-
-**検証ゲート**: なし（記録のみ）
+Legend: `[ ]` not started / `[~]` in progress / `[x]` done and verified / ⚠️ = needs a decision / risk
 
 ---
 
-## フェーズ 1: 構成判断の確定（コア・最重要）
+## Phase 0: Scaffolding (low risk, independent)
 
-- [x] **`.chezmoiroot=chezmoi` 採用**（ユーザー決定 / commit f9b1800）
-  - `git mv` で `dot_*` `Library/` `run_onchange_*` `.chezmoi*` を `chezmoi/` へ集約
-  - 検証ゲート通過: 再配置前後で `chezmoi managed`(28件) と `chezmoi diff` が**完全一致**（$HOME 不変。※既存の未適用 .Brewfile 差分は再配置と無関係に元から存在）
-- [x] flake スケルトン作成（switch せず `darwin-rebuild build` のみ / commit 546d2c8）
-  - `flake.nix`（nix-darwin/master + home-manager + nix-homebrew, follows 固定）
-  - `system/hosts/<hostname>.nix`（旧: 当初は LocalHostName 固定モジュール。後にホスト依存をやめ `system/hosts/generic.nix` に統一）
-  - `system/modules/` `home/modules/` 雛形（空）。Determinate 共存で `nix.enable=false`
-  - 強化検証ゲート通過（非破壊）: `nix flake check` ＋ **`darwin-rebuild build` 成功**（switch せず・実機でクロージャ生成確認）
-- [ ] ホスト名・ユーザー名・メールを `.chezmoi.toml.tmpl` の prompt 化方針を決定（→ 単一機なら据え置き可。複数機対応時に着手）
+- [ ] Record the current breakage (done: written up in this roadmap)
+  - `~/.zshrc` sources the retired `_/zsh` → zsh configuration is inactive
+  - `~/.zprofile` has `brew shellenv` three times
+- [ ] `.editorconfig` / `README` are already in place (previous commit). Consider adding `LICENSE` (⚠️ decide whether to publish)
+- [ ] Bookmark `webpro/awesome-dotfiles` / `budimanjojo/nix-config` (for reference)
 
-**検証ゲート**: ✅ 達成 — `nix flake check` ＋ `darwin-rebuild build`（当初案より一段強化）成功。`chezmoi diff` は再配置で不変を確認済み。switch/apply はまだしない
+**Verification gate**: none (recording only)
 
 ---
 
-## フェーズ 2: シークレット基盤（1Password）
+## Phase 1: Fixing the structural decisions (core, most important)
 
-**方針確定**: SSH 鍵は**移植せず新PCで新規発行**する。フェーズ2 は op CLI + GitHub CLI の宣言導入と新PCワークフローの確立に絞る（既存 `~/.ssh/*.pem` は Udemy サンプルで dotfiles 責務外、放置）。
+- [x] **Adopt `.chezmoiroot=chezmoi`** (user decision / commit f9b1800)
+  - Use `git mv` to consolidate `dot_*` `Library/` `run_onchange_*` `.chezmoi*` under `chezmoi/`
+  - Verification gate passed: `chezmoi managed` (28 entries) and `chezmoi diff` are **exactly identical** before and after the relocation ($HOME unchanged. Note: the pre-existing unapplied .Brewfile diff existed beforehand and is unrelated to the relocation)
+- [x] Create the flake skeleton (`darwin-rebuild build` only, no switch / commit 546d2c8)
+  - `flake.nix` (nix-darwin/master + home-manager + nix-homebrew, follows pinned)
+  - `system/hosts/<hostname>.nix` (old: initially a module pinned to LocalHostName. Host dependence was later dropped and unified into `system/hosts/generic.nix`)
+  - `system/modules/` `home/modules/` templates (empty). `nix.enable=false` for coexistence with Determinate
+  - Strengthened verification gate passed (non-destructive): `nix flake check` + **`darwin-rebuild build` succeeded** (no switch; closure generation confirmed on the real machine)
+- [ ] Decide the policy for turning hostname / username / email into `.chezmoi.toml.tmpl` prompts (→ can stay as-is for a single machine. Start when supporting multiple machines)
 
-- [x] `op` 導入方式を決定 → **Nix 化**（home.packages `_1password-cli`、unfree は個別ホワイトリスト）
-- [x] `gh`（GitHub CLI）も同じ home.packages へ（commit 5adc5ed）
-- [x] `darwin-rebuild switch` で op 2.34.0 / gh 2.92.0 が `/etc/profiles/per-user/tommy/bin` に乗ることを確認（世代2 生成）
-- [x] **1Password 8 デスクトップを `homebrew.casks` で宣言導入**（commit 359e126、世代3、8.12.21 確認）— 新PC ではこの宣言だけで `/Applications/1Password.app` が降臨
-- [ ] 1Password アカウント/ vault 構造を決定（**ユーザー外部作業**）
-  - 推奨: `Private` vault に `GitHub PAT` / `SSH (新PC用)` 等のアイテムを置く
-- [ ] アプリ設定: Developer → 「Integrate with 1Password CLI」/「Use the SSH agent」を有効化（**ユーザー外部作業**）
-- [ ] `op signin` / `op whoami` でこの PC からアクセスできることを確認（ユーザー手）
+**Verification gate**: ✅ achieved — `nix flake check` + `darwin-rebuild build` (one step stronger than the original plan) succeeded. `chezmoi diff` confirmed unchanged by the relocation. switch/apply not done yet
 
-**新PCワークフロー（このフェーズで確立する手順）**
+---
+
+## Phase 2: Secret foundation (1Password)
+
+**Policy fixed**: SSH keys are **not migrated; new ones are issued on the new PC**. Phase 2 is narrowed to declaratively introducing op CLI + GitHub CLI and establishing the new-PC workflow (the existing `~/.ssh/*.pem` are Udemy samples, outside the dotfiles' responsibility, left alone).
+
+- [x] Decide how to install `op` → **Nix** (home.packages `_1password-cli`, unfree whitelisted individually)
+- [x] `gh` (GitHub CLI) goes into the same home.packages (commit 5adc5ed)
+- [x] Confirmed that `darwin-rebuild switch` puts op 2.34.0 / gh 2.92.0 into `/etc/profiles/per-user/tommy/bin` (generation 2 created)
+- [x] **Declaratively install the 1Password 8 desktop app via `homebrew.casks`** (commit 359e126, generation 3, 8.12.21 confirmed) — on a new PC this declaration alone brings down `/Applications/1Password.app`
+- [ ] Decide the 1Password account / vault structure (**user work, outside this repo**)
+  - Recommended: put items such as `GitHub PAT` / `SSH (新PC用)` in the `Private` vault
+- [ ] App settings: enable Developer → "Integrate with 1Password CLI" / "Use the SSH agent" (**user work, outside this repo**)
+- [ ] Confirm access from this PC with `op signin` / `op whoami` (by hand, user)
+
+**New-PC workflow (the procedure established in this phase)**
 
 ```
-1. install.sh で flake が走り op + gh が入る
-2. ユーザーが 1Password 8 アプリにログイン → op の biometric/desktop 連携を有効化
-3. ssh-keygen で新規鍵生成 → 1Password に保存（Item 名は決め打ち）
+1. install.sh runs the flake and op + gh get installed
+2. The user logs into the 1Password 8 app → enables op's biometric/desktop integration
+3. Generate a new key with ssh-keygen → store it in 1Password (the item name is fixed in advance)
 4. gh auth login --with-token <<< "$(op read 'op://Private/GitHub PAT/credential')"
-5. ~/.ssh/config は chezmoi で配布（鍵ファイル本体は新規発行物・gitignore 対象）
+5. ~/.ssh/config is distributed by chezmoi (the key files themselves are newly issued and gitignored)
 ```
 
-PAT/トークン等で chezmoi テンプレが要るようになったら `chezmoi/private_*.tmpl` + `onepasswordRead` を都度追加（雛形は新PC で実鍵生成時に作る）。
+Once PATs/tokens require chezmoi templates, add `chezmoi/private_*.tmpl` + `onepasswordRead` as needed (the template is created on the new PC when the real keys are generated).
 
-**検証ゲート**: 新規シェルで `op --version` / `gh --version` 解決。op signin 成功（ユーザー作業後）
-
----
-
-## フェーズ 3: zsh 刷新（壊れの解消）
-
-- [x] home-manager `programs.zsh` をバニラで有効化（commit 13f75ab）— starship/プラグインは育成フェーズへ
-- [x] 旧 `~/.zshrc`（廃止済 `_/zsh` を source）/ `~/.zprofile`（brew shellenv 三重複）を破棄
-- [x] **初回 `darwin-rebuild switch` 達成**: `/run/current-system` 第1世代生成、home-manager 第1世代生成、`/etc/zshrc` 引き取り、`/opt/homebrew` を nix-homebrew が autoMigrate で吸収
-- [ ] エイリアス/関数の追加は次フェーズ以降に育成（[未決事項](#未決事項判断待ち随時更新)へ）
-
-**検証ゲート**: ✅ 達成 — clean env での新規 zsh -l で `which darwin-rebuild` 解決可、PATH に `/run/current-system/sw/bin` 含む、brew shellenv 重複は home-manager の `typeset -U path` で吸収
+**Verification gate**: `op --version` / `gh --version` resolve in a new shell. op signin succeeds (after the user's work)
 
 ---
 
-## フェーズ 4: パッケージの Nix 化
+## Phase 3: zsh overhaul (resolving the breakage)
 
-- [x] **CLI を `home.packages` へ**: op, gh, chezmoi, ghq, jq, mas（commit 5adc5ed/e26d65b）
-- [x] **cask を `nix-darwin homebrew.casks` へ**: 20本宣言済（残: `google-japanese-ime` は破棄方針で意図的に未宣言）
-- [x] **カスタム tap 由来 brew は全 drop**（ユーザー方針: 新PC で WM スタック再構築。rift / skhd-zig / borders / yabai / krp / akira-toriyama 自作4本すべて未宣言、commit d8dd2d2）
-  - 波及: focusfx は borders 前提 → 新PC で no-op、chezmoi/dot_config/{rift, focusfx} は orphan ソースとして残置
-- [x] **mas を `homebrew.masApps` へ**: `brew upgrade mas` で 1.8.6 → 7.0.0 化により macOS 15+ の破損が解消。EdgeView 3 (id=1580323719) を declare 復活、switch で正常動作確認（21 deps complete）
-- [x] **要判断項目を決着**: docker stack(docker/docker-compose/colima)のみ Nix 化保持、残 formula leaves(act/asdf/cliclick/cmake/ninja/gperf/direnv/f2/gifski/git-cliff/node/pipx/shellcheck/sleepwatcher/watchman/yt-dlp/trash/yabai 18本)は全 drop(新PC で install されない)
-- [x] **`nix-homebrew` 採用**: `autoMigrate=true` で既存 brew 吸収（commit 13f75ab）
-- [x] **VSCode 拡張**: `anthropic.claude-code` を chezmoi `run_onchange` で idempotent install
+- [x] Enable home-manager `programs.zsh` in vanilla form (commit 13f75ab) — starship/plugins deferred to the growth phase
+- [x] Discard the old `~/.zshrc` (sourcing the retired `_/zsh`) / `~/.zprofile` (brew shellenv three times)
+- [x] **First `darwin-rebuild switch` achieved**: `/run/current-system` generation 1 created, home-manager generation 1 created, `/etc/zshrc` taken over, `/opt/homebrew` absorbed by nix-homebrew via autoMigrate
+- [ ] Adding aliases/functions is grown from the next phase onward (→ [open questions](#open-questions-pending-decisions-updated-as-needed))
 
-**検証ゲート**: ✅ 部分達成 — switch で宣言済みアプリ/CLI は揃う。`cleanup="none"` のため未宣言の既存 brew は温存。
-旧 `dot_Brewfile` / `run_onchange_install-packages` はまだ削除しない（残 brew の参照素材）
+**Verification gate**: ✅ achieved — in a fresh zsh -l in a clean env, `which darwin-rebuild` resolves, PATH contains `/run/current-system/sw/bin`, and the duplicated brew shellenv is absorbed by home-manager's `typeset -U path`
 
 ---
 
-## フェーズ 5: macOS defaults の宣言化
+## Phase 4: Moving packages to Nix
 
-- [x] system-inventory の defaults 表を `system.defaults` / `CustomUserPreferences` へ（commit 7004512、`system/modules/defaults.nix`）
-- [x] ⚠️ セキュリティ低下2項目（Gatekeeper 無効化 / 復帰時パスワード省略）は方針通り**持ち込まない**ことを明文化
-- [x] `darwin-rebuild switch`（世代5）で defaults 反映確認（Finder/Dock/MenuBar/LSQuarantine/Library 全て期待通り）
-- [x] `~/Library` 可視化（`chflags nohidden`）を `system.activationScripts.unhideLibrary` で冪等処理
+- [x] **CLIs into `home.packages`**: op, gh, chezmoi, ghq, jq, mas (commit 5adc5ed/e26d65b)
+- [x] **casks into `nix-darwin homebrew.casks`**: 20 declared (remaining: `google-japanese-ime` is intentionally undeclared since the policy is to drop it)
+- [x] **All brews from custom taps dropped** (user policy: rebuild the WM stack on the new PC. rift / skhd-zig / borders / yabai / krp and all 4 akira-toriyama self-made tools are undeclared, commit d8dd2d2)
+  - Ripple effect: focusfx depends on borders → it is a no-op on the new PC; chezmoi/dot_config/{rift, focusfx} are left behind as orphan sources
+- [x] **mas into `homebrew.masApps`**: `brew upgrade mas` moving 1.8.6 → 7.0.0 fixed the breakage on macOS 15+. EdgeView 3 (id=1580323719) was declared again and confirmed working after switch (21 deps complete)
+- [x] **Settled the items needing a decision**: only the docker stack (docker/docker-compose/colima) is kept on Nix; the remaining formula leaves (act/asdf/cliclick/cmake/ninja/gperf/direnv/f2/gifski/git-cliff/node/pipx/shellcheck/sleepwatcher/watchman/yt-dlp/trash/yabai, 18 of them) are all dropped (not installed on the new PC)
+- [x] **Adopt `nix-homebrew`**: absorb the existing brew with `autoMigrate=true` (commit 13f75ab)
+- [x] **VSCode extension**: `anthropic.claude-code` installed idempotently via a chezmoi `run_onchange`
 
-**検証ゲート**: ✅ 達成 — `defaults read` で主要項目が宣言値に一致、`~/Library` flags 空（nohidden）確認
-
----
-
-## フェーズ 6: 再現テスト（ゴール判定）
-
-- [x] **使い捨て VM (Tart) で設計 §3 のブートストラップ通し実行 → 完走** (2026-05-27)
-  - `cirruslabs/macos-sequoia-base` を Tart VM 化、`install.sh` ワンコマンドで全工程再現
-  - `CI=true` 投入で対話 skip、約 14 分で `✓ 完了。` 到達
-  - 配置物: home.packages 10 種 / cask 19 本 (1Password〜zed)/ chezmoi seed 9 ファイル (mode 維持: chord 0600, eventfx scripts +x)
-- [x] **差分洗い出し → 該当フェーズへ反映** (今回 5 つの fix を install.sh / flake.nix に投入):
-  - `a1ff163` :bug: install.sh: `darwin-rebuild switch` 失敗許容 (cask DL 失敗で Phase 6 が skip される問題)
-  - `2993144` :bug: install.sh: chezmoi 呼び出し前に `/etc/profiles/per-user/$USER/bin` を PATH 注入
-  - `f4bc63c` :bug: host modules: `tart` を `allowUnfreePredicate` に追加 (switch eval 失敗回避)
-  - `0b23dc6` :bug: install.sh: brew bundle 一括失敗時の per-tap/cask フォールバック (1 件失敗 → 全体 skip の救済)
-  - `1c19955` :sparkles: install.sh: `GITHUB_TOKEN` env → nix `access-tokens` 注入 (api.github.com の rate limit 60 req/hr 回避、5000 req/hr 化)
-- [x] **`flake.nix` の `default` を動的 user 解決へ昇格** (`1f55e96`)
-  - 旧: ホスト固定 alias (LocalHostName 名) で `username = "tommy"` ハードコード → tommy 以外の Mac で `system.primaryUser` エラー
-  - 新: `detectUser` (FLAKE_USER → USER → "tommy") を `builtins.getEnv` で読む `.#default`。新 PC で任意ユーザー名対応、会社 PC 固定名は `FLAKE_USER` で override
-- [x] **`tart` を `home.packages` に追加** (`a6d6c3e`) — 新 PC でも再現テスト用 VM をすぐ立てられる
-- [x] **`rebuild` → `main` 昇格** (`44417f4`) — bootstrap URL を `/rebuild/` → `/main/` に切替、`install.sh` の `BRANCH` 既定も `main`
-- [x] **README に `CI=true` / `GITHUB_TOKEN` 解説追加** (`f0097dc`)
-- [x] **chord/eventfx/facet/wand を chezmoi に取り込み** (rebuild フェーズ後半で完了、`/Volumes/.../canon` 側から chord 設定を完全移管)
-- [x] 旧 `dot_Brewfile` / `run_onchange_install-packages` を削除（commit 41ecb56、役目消滅確認・install.sh も Nix-first フローに書き換え）
-- [x] CI 導入（`.github/workflows/ci.yml`、4ジョブ全グリーン）
-  - `nix flake check --no-build`（型/eval）/ `shellcheck`（install.sh）/ 規約検知（`executable_` 接頭辞 grep）/ `chezmoi execute-template` レンダ
-  - ⚠️ macOS cask/defaults は Linux CI で完全検証不可。CI は部分保証、本命は実機テスト ← Tart VM 検証で補完
-- [x] **chord 専用 CI 追加**: `verify-chord-validate.yml` (macos-15 で `chord --validate --strict`) + `verify-chord-doc.yml` (`docs/chord.md` 同期検証)
-- [x] 規約は [CLAUDE.md](../CLAUDE.md) + CI に集約し、README から重複削除
-
-**検証ゲート（=最終ゴール）**: ✅ **達成** — Tart VM の admin user で `install.sh` ワンコマンドで同等環境再現、claude / user の二重検証で完走確認 (2026-05-27)
+**Verification gate**: ✅ partially achieved — switch brings in all declared apps/CLIs. Because of `cleanup="none"`, undeclared existing brews are preserved.
+The old `dot_Brewfile` / `run_onchange_install-packages` are not deleted yet (reference material for the remaining brews)
 
 ---
 
-## 未決事項（判断待ち・随時更新）
+## Phase 5: Declaring macOS defaults
 
-- [x] `.chezmoiroot` 採用の最終 GO → 採用決定・実施済み（commit f9b1800）
-- [x] **ブランチ運用** → `rebuild` を `main` へ force-push 統合、`install.sh` URL も `/main/` に正式昇格 (2026-05-27、commit `44417f4`)。**rebuild ブランチ削除 + main 単発運用へ移行** (2026-05-27、commit `08bee4d`、CI workflow も `branches: [main]` 単発化)。CLAUDE.md にも反映済
+- [x] Move the defaults table from system-inventory into `system.defaults` / `CustomUserPreferences` (commit 7004512, `system/modules/defaults.nix`)
+- [x] ⚠️ Explicitly state that the 2 security-lowering items (disabling Gatekeeper / skipping the password on wake) are **not carried over**, per policy
+- [x] Confirmed defaults take effect via `darwin-rebuild switch` (generation 5) (Finder/Dock/MenuBar/LSQuarantine/Library all as expected)
+- [x] Make `~/Library` visible (`chflags nohidden`) idempotently via `system.activationScripts.unhideLibrary`
 
-### 別セッションで検討するもの (2026-05-27 切り出し)
+**Verification gate**: ✅ achieved — `defaults read` shows the main items matching the declared values, and `~/Library` flags confirmed empty (nohidden)
 
-以下 4 項目は roadmap 達成 (Phase 6 完了) 後に独立検討するテーマ。それぞれ独立しているので個別 PR/セッションで判断可。
+---
 
-- [ ] **LICENSE / リポジトリ公開範囲**
-  - 現状: LICENSE 無し、リポジトリは public (誰でも clone 可能、ただし二次利用権は不明確)
-  - 選択肢: (a) MIT/Apache-2.0 を付けて二次利用許可、(b) UNLICENSED/All-Rights-Reserved を明示、(c) リポジトリを private 化
-  - 論点: 個人 dotfiles のため利用者は基本自分のみ。ただし install.sh / flake / chord 設定等の汎用度が高いものは参考に使われる可能性あり。公開判断と LICENSE はセット
-  - 必要情報: 「他人に使わせて OK か」「forked 派生物の扱い」「業務 PC 設定が混ざる可能性」
-  - 参考: `webpro/awesome-dotfiles` の慣例は MIT
+## Phase 6: Reproduction test (goal criterion)
 
-- [x] **asdf の置換先 (nix / mise / devbox)** → **mise 採用で確定クローズ** (2026-05-27)
-  - 判定: per-directory で Node / Python / Deno を切替えたいニーズあり (旧 asdf の用途と同等)。
-    mise は (a) `.tool-versions` 互換で asdf 資産流用可、(b) Deno が core plugin、
-    (c) home-manager の `programs.mise.enable` で宣言性が本リポジトリの流儀 (`programs.zsh.enable` 等)
-    と整合、(d) `[env]` / `[tasks]` で direnv / just 相当を吸収可 (ツール肥大化予防)
-  - 実装: [home/modules/mise.nix](../home/modules/mise.nix) で `programs.mise.enable` + globalConfig.tools 宣言。
-    プロジェクト個別バージョンは `mise use <tool>@<ver>` で `.mise.toml` を生成して上書き
+- [x] **Run the bootstrap from design §3 end to end on a disposable VM (Tart) → completed** (2026-05-27)
+  - Turned `cirruslabs/macos-sequoia-base` into a Tart VM, reproduced the whole process with the single command `install.sh`
+  - Passing `CI=true` skips the interactive parts; reached `✓ 完了。` in about 14 minutes
+  - What was placed: 10 home.packages / 19 casks (1Password–zed)/ 9 chezmoi seed files (modes preserved: chord 0600, eventfx scripts +x)
+- [x] **Enumerate the gaps → feed them back into the relevant phases** (5 fixes went into install.sh / flake.nix this time):
+  - `a1ff163` :bug: install.sh: tolerate `darwin-rebuild switch` failure (Phase 6 was being skipped when a cask download failed)
+  - `2993144` :bug: install.sh: inject `/etc/profiles/per-user/$USER/bin` into PATH before calling chezmoi
+  - `f4bc63c` :bug: host modules: add `tart` to `allowUnfreePredicate` (avoid switch eval failure)
+  - `0b23dc6` :bug: install.sh: per-tap/cask fallback when the bulk brew bundle fails (rescue for 1 failure → everything skipped)
+  - `1c19955` :sparkles: install.sh: inject `GITHUB_TOKEN` env → nix `access-tokens` (avoid api.github.com's 60 req/hr rate limit, raising it to 5000 req/hr)
+- [x] **Promote `flake.nix`'s `default` to dynamic user resolution** (`1f55e96`)
+  - Old: a host-pinned alias (LocalHostName name) with `username = "tommy"` hardcoded → `system.primaryUser` error on any Mac other than tommy's
+  - New: `.#default` reads `detectUser` (FLAKE_USER → USER → "tommy") via `builtins.getEnv`. Supports any username on a new PC, and a fixed name on a work PC can be overridden with `FLAKE_USER`
+- [x] **Add `tart` to `home.packages`** (`a6d6c3e`) — so a reproduction-test VM can be brought up immediately on a new PC too
+- [x] **Promote `rebuild` → `main`** (`44417f4`) — switched the bootstrap URL from `/rebuild/` to `/main/`, and `install.sh`'s `BRANCH` default to `main`
+- [x] **Add `CI=true` / `GITHUB_TOKEN` documentation to the README** (`f0097dc`)
+- [x] **Take chord/eventfx/facet/wand into chezmoi** (completed in the latter half of the rebuild phase; the chord configuration was fully migrated from the `/Volumes/.../canon` side)
+- [x] Delete the old `dot_Brewfile` / `run_onchange_install-packages` (commit 41ecb56, confirmed their role is gone; install.sh was also rewritten into a Nix-first flow)
+- [x] Introduce CI (`.github/workflows/ci.yml`, all 4 jobs green)
+  - `nix flake check --no-build` (types/eval) / `shellcheck` (install.sh) / convention detection (`executable_` prefix grep) / `chezmoi execute-template` rendering
+  - ⚠️ macOS cask/defaults cannot be fully verified on Linux CI. CI is a partial guarantee; the real one is testing on a real machine ← complemented by the Tart VM verification
+- [x] **Add chord-specific CI**: `verify-chord-validate.yml` (`chord --validate --strict` on macos-15) + `verify-chord-doc.yml` (verifies `docs/chord.md` is in sync)
+- [x] Consolidate the conventions into [CLAUDE.md](../CLAUDE.md) + CI, and remove the duplication from the README
 
-- [x] **just (タスクランナー) 導入可否** → **現状維持で確定クローズ** (2026-05-27)
-  - 判定: `scripts/` 配下は `gen-chord-doc.py` 1 本のみ。`justfile` を埋める材料が無い = YAGNI
-  - 再検討トリガ: 定型タスクが **3 個以上**育ったら再考 (例: `just rebuild` / `just diff` / `just doc-gen`)。
-    あるいは mise 採用後に `mise.toml` の `[tasks]` で吸収しきれない複雑タスクが出てきた場合
+**Verification gate (= final goal)**: ✅ **achieved** — an equivalent environment reproduced with the single command `install.sh` as the admin user of a Tart VM, completion confirmed by double verification from claude and the user (2026-05-27)
 
-- [x] **nix 側シークレット方式 (sops-nix / agenix)** → **現状維持で確定クローズ** (2026-05-27)
-  - 判定: 現行 secret は (a) `gh` 等の CLI token は **1Password CLI で runtime 取得**、(b) chord 等 user-space
-    設定は **chezmoi + `onepasswordRead`** で apply 時注入、で十分。nix store / `system.activationScripts` /
-    `home.file.*.text` に secret を埋めたい具体ユースケースは未発生
-  - 再検討トリガ: nix-darwin のサービス宣言 (例: `services.*.authKeyFile`) や home-manager 生成ファイルに
-    secret を埋めたくなった瞬間 → **agenix** を採用 (sops-nix より依存が薄いため第一候補)
+---
 
-> このファイルは「育てて移行」方針の **到達記録（アーカイブ）**。現行のタスク管理は furrow + `projects`（[CLAUDE.md](../CLAUDE.md) の Roadmap board 節）。
+## Open questions (pending decisions, updated as needed)
+
+- [x] Final GO on adopting `.chezmoiroot` → decided to adopt and done (commit f9b1800)
+- [x] **Branch operation** → consolidated `rebuild` into `main` by force-push, and `install.sh`'s URL formally promoted to `/main/` (2026-05-27, commit `44417f4`). **Deleted the rebuild branch and moved to running main alone** (2026-05-27, commit `08bee4d`, the CI workflow also reduced to `branches: [main]`). Reflected in CLAUDE.md as well
+
+### Items to consider in a separate session (split out 2026-05-27)
+
+The following 4 items are topics to consider independently after the roadmap is achieved (Phase 6 complete). They are independent of each other, so each can be decided in its own PR/session.
+
+- [ ] **LICENSE / repository visibility**
+  - Current state: no LICENSE, the repository is public (anyone can clone it, but the right to reuse is unclear)
+  - Options: (a) attach MIT/Apache-2.0 to permit reuse, (b) state UNLICENSED/All-Rights-Reserved explicitly, (c) make the repository private
+  - Discussion points: being personal dotfiles, the only user is basically myself. However, the more general parts such as install.sh / flake / chord configuration may be used as a reference. The publication decision and the LICENSE go together
+  - Information needed: "is it OK for others to use it", "how to treat forked derivatives", "the possibility that work-PC settings get mixed in"
+  - Reference: the convention in `webpro/awesome-dotfiles` is MIT
+
+- [x] **What to replace asdf with (nix / mise / devbox)** → **settled on adopting mise, closed** (2026-05-27)
+  - Decision: there is a need to switch Node / Python / Deno per directory (the same use as the old asdf).
+    mise (a) is `.tool-versions` compatible so the asdf assets can be reused, (b) has Deno as a core plugin,
+    (c) its declarativeness via home-manager's `programs.mise.enable` matches this repository's style (`programs.zsh.enable` and so on),
+    and (d) can absorb the equivalents of direnv / just via `[env]` / `[tasks]` (preventing tool bloat)
+  - Implementation: [home/modules/mise.nix](../home/modules/mise.nix) declares `programs.mise.enable` + globalConfig.tools.
+    Per-project versions are overridden by generating a `.mise.toml` with `mise use <tool>@<ver>`
+
+- [x] **Whether to introduce just (task runner)** → **settled on the status quo, closed** (2026-05-27)
+  - Decision: `scripts/` contains only `gen-chord-doc.py`. There is no material to fill a `justfile` with = YAGNI
+  - Trigger to reconsider: reconsider once **3 or more** routine tasks have grown (e.g. `just rebuild` / `just diff` / `just doc-gen`).
+    Or if, after adopting mise, complex tasks appear that `mise.toml`'s `[tasks]` cannot absorb
+
+- [x] **Secret mechanism on the nix side (sops-nix / agenix)** → **settled on the status quo, closed** (2026-05-27)
+  - Decision: the current secrets are enough with (a) CLI tokens such as `gh` **fetched at runtime via the 1Password CLI**, and (b) user-space
+    settings such as chord injected at apply time via **chezmoi + `onepasswordRead`**. No concrete use case has come up for embedding secrets in the nix store /
+    `system.activationScripts` / `home.file.*.text`
+  - Trigger to reconsider: the moment a secret needs to be embedded in a nix-darwin service declaration (e.g. `services.*.authKeyFile`) or in a
+    home-manager-generated file → adopt **agenix** (first choice because it has lighter dependencies than sops-nix)
+
+> This file is the **record of what was reached (archive)** for the "grow then migrate" policy. Current task management is furrow + `projects` (the Roadmap board section of [CLAUDE.md](../CLAUDE.md)).
