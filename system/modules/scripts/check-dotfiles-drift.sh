@@ -35,7 +35,6 @@
 #     dotfiles/ が壊れている間は毎日リマインドが欲しいという運用方針。timeout 無し =
 #     押すまで残る。md は毎回最新に更新。
 #   - drift が解消したら md を削除する。
-#   - flake パスは ghq → $HOME/dotfiles → $DOTFILES_FLAKE_DIR の順で解決
 #   - 実行ログ (append): /tmp/dotfiles-drift.log (launchd の Std{Out,Err}Path)
 # pipefail は add-homebrew.sh と揃える。この 2 本は launchd(/bin/bash 直起動)と
 # home.packages の writeShellApplication wrapper の 2 経路から走るので、`set` 行が

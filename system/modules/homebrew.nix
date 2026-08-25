@@ -5,7 +5,7 @@
   # 既存の /opt/homebrew は nix-homebrew の autoMigrate で吸収済み(commit 13f75ab)。
   #
   # ⚠️ cleanup は当面 "none" のまま据え置く。
-  #    "zap" にすると本ファイルに宣言してない既存 brew(90+ formula 等)を消すので、
+  #    "zap" にすると本ファイルに宣言してない既存 brew を消すので、
   #    フェーズ4 で残りを全部移行し終えてから初めて検討する。
   homebrew = {
     enable = true;
@@ -31,10 +31,9 @@
       "hashicorp/tap/packer"  # Packer
       "gitleaks"  # Audit git repos for secrets
       "sourcekitten"  # Framework and command-line tool for interacting with SourceKit
-      # typos-cli / shfmt / lychee / gitleaks は home/modules/packages.nix へ移した
-      # （#297 で「対話でも使えるように」brew 側に置いたが、4 本とも nixpkgs にある
-      # 汎用 CLI ＝ 判断フローの「nixpkgs にあり & 汎用 CLI → home.packages」に該当。
-      # devShells.lint と同じ flake.lock に載るので CI と版が揃う）。
+      # typos-cli / shfmt / lychee / gitleaks は home/modules/packages.nix と
+      # 二重宣言（#306 で nix 側へ移した後、#322 の live 取り込みで brew 側が復活。
+      # One file, one owner 違反 — 解消は projects t-nmdj）。
       # go は mise 管理へ移行（home/modules/mise.nix）。dev runtime は mise に一元化。
       "git-cliff"  # Highly customizable changelog generator
       "gifski"  # Highest-quality GIF encoder based on pngquant

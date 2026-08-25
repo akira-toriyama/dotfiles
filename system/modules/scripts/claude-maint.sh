@@ -1,5 +1,6 @@
 #!/bin/bash
-# ~/.claude の自作ドキュメント (CLAUDE.md 要所トリガー索引 / commands / skills / agents) を
+# ~/.claude の自作ドキュメント (global CLAUDE.md / skills / agents。commands は
+# ディレクトリ未作成で常に空集合 — 作るか撤去かは projects t-pd5r のユーザー判断待ち) を
 # 月 1 回まとめて保守し、判断レポート付きの PR を 1 本作る。launchd (claude-maint.nix)
 # から毎月 1 日に起動される。check-dotfiles-drift.sh の兄弟 (= 同じ流儀)。
 #
@@ -27,8 +28,8 @@
 #   claude-maint.sh            # 本番 (worktree → PR)
 #   claude-maint.sh --dry-run  # push/PR せず、レポートを /tmp に出して worktree を残す
 #
-# remote 非依存: dotfiles repo を ghq → $HOME/dotfiles → $DOTFILES_FLAKE_DIR の順で
-# 解決し、その origin に PR を出す (akira→emmett 移行後は自動で emmett へ向く)。
+# remote 非依存: dotfiles repo を解決し (下の FLAKE_DIR 解決部)、その origin に
+# PR を出す (akira→emmett 移行後は自動で emmett へ向く)。
 set -eu
 
 DRY_RUN=0
@@ -195,7 +196,7 @@ PROMPT=$(
 あなたは ~/.claude の自作ドキュメント保守担当。作業ツリーは現在の作業ディレクトリ。
 
 ## 対象 (自作分のみ。plugin / symlink は対象外)
-- 索引: ${CLAUDE_SRC}/CLAUDE.md
+- global CLAUDE.md (fleet 既定ルール本体): ${CLAUDE_SRC}/CLAUDE.md
 - commands: ${CLAUDE_SRC}/commands/*.md
 - skills:   ${CLAUDE_SRC}/skills/*/SKILL.md
 - agents:   ${CLAUDE_SRC}/agents/*.md
