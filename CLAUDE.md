@@ -67,7 +67,7 @@ Gray-zone examples:
 - `.chezmoiroot = chezmoi` — the repository root is the Nix flake; dotfile sources live under `chezmoi/`.
 - Repository-operations files (`README.md` `install.sh` `docs/` `.github/` `CLAUDE.md` etc.) are **outside** `chezmoi/` and therefore not applied to `$HOME`.
 - Scripts under `chezmoi/` reproduce +x with the `executable_` prefix (**enforced by CI**).
-- As the exception, `run_*` and anything under `.chezmoiscripts/` are executed by chezmoi itself, so they need no prefix.
+- As the exception, `run_*` / `modify_*` and anything under `.chezmoiscripts/` are executed by chezmoi itself, so they need no prefix.
 
 ## GitHub / CI
 
@@ -76,7 +76,7 @@ Gray-zone examples:
 - **Commit messages are gitmoji-driven** (`<:gitmoji:>[(<scope>)][!] <subject>`; the Conventional `<type>` words are retired). The canonical source of the convention is .github's [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md) ([docs/commit-convention.md](docs/commit-convention.md) is the fleet-distributed pointer; the machine check = `glyph lint`). **Before pushing: `glyph lint --range origin/main..HEAD`** (history still carries commits in the retired format, so do not take `git log` as a model).
 - **CI jobs ([.github/workflows/ci.yml](.github/workflows/ci.yml), triggered on push and PR)**:
   - `nix flake check --no-build` — Nix type/eval checks (Linux runner)
-  - `lint` — `scripts/lint` in one shot (ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` gets shellcheck and plist-syntax checks after rendering / existence of the paths inside code spans). **The same command runs locally**: `nix develop .#lint --command scripts/lint`
+  - `lint` — `scripts/lint` in one shot (ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` gets shellcheck after rendering / existence of the paths inside code spans). **The same command runs locally**: `nix develop .#lint --command scripts/lint`
   - `script test` — the Stop hook's fixture tests + the unittests of `scripts/` and `scripts/claude-md-eval/`
   - Convention check — enforces the `executable_` prefix on shebang scripts under `chezmoi/` (exceptions: `run_*` / `modify_*` / `.chezmoiscripts/`)
   - `chezmoi templates render` — `execute-template` verification of every `.tmpl`
@@ -156,7 +156,7 @@ chezmoi add <path>                                                              
 op read "op://Vault/Item/field"
 ```
 
-## Roadmap board / task tracker
+## Roadmap board
 
 For dotfiles work tasks (backlog, design notes, handovers), **the canonical source is furrow + the private repo
 [`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**.
