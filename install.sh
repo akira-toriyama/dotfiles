@@ -74,6 +74,10 @@ DF_RUN_ID="$(date +%Y%m%d-%H%M%S)-$MODE"
 DF_RUN_DIR="$DF_LOG_ROOT/$DF_RUN_ID"
 DF_LOG="$DF_RUN_DIR/install.log"
 DF_EVENTS="$DF_RUN_DIR/events.tsv"
+# activation が brew bundle の失敗を残す receipt。書き手は
+# system/modules/scripts/brew-bundle-nonfatal.sh（homebrew-nonfatal.nix 経由）。
+# 非致命化したので switch の exit code だけでは brew の失敗が見えない。
+DF_BREW_RECEIPT="/var/log/dotfiles/brew-bundle.failed"
 DF_SUMMARY="$DF_RUN_DIR/summary.txt"
 DF_DETAIL="$DF_RUN_DIR/detail"
 
@@ -384,6 +388,15 @@ run_verify_system() {
     done
   else
     df_check_fail V6-brew "/opt/homebrew/bin/brew が無い"
+  fi
+
+  # V6-brew-bundle: V6-brews は「formula が list に出るか」しか見ないので、install は
+  # 成功して post-install だけ落ちた形（2026-08-26 の openssl@3）を素通りさせる。
+  # activation が残す receipt はそれを拾える唯一の手がかり。
+  if [ -f "$DF_BREW_RECEIPT" ]; then
+    df_check_fail V6-brew-bundle "brew bundle 失敗の receipt が残っている（$(tr '\n' ' ' <"$DF_BREW_RECEIPT")）"
+  else
+    df_check_ok V6-brew-bundle "receipt 無し"
   fi
 }
 
@@ -699,7 +712,9 @@ switch_cmd() {
     nix run "$REPO_DIR#darwin-rebuild" -- switch --flake "$REPO_DIR#$FLAKE_HOST" --impure
 }
 # 初回は TRY（fallback+retry で回復し得る）。retry まで失敗したら STEP として数える
-if df_step_try darwin-switch plain switch_cmd; then
+# homebrew-nonfatal.nix により brew bundle は switch を落とさなくなった。exit code だけで
+# 分岐すると、下の per-item フォールバックが brew 破損時に二度と走らない。receipt も見る。
+if df_step_try darwin-switch plain switch_cmd && [ ! -f "$DF_BREW_RECEIPT" ]; then
   :
 else
   # フォールバック: nix-darwin の brew bundle は fetch all → install all 設計で、
