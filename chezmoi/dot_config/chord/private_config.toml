@@ -188,28 +188,28 @@ action-shell = "echo \"$(date '+%T') IST_BTN5\" >> /tmp/ist-vkey-test.log"
 # doc: Tab left (Chrome: Ctrl+Shift+Tab)
 [[bindings]]
 name = "tab-left (Chrome)"
-input = "TU_LL_C"
+input = "TU_RR_J"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl + shift - tab"
 
 # doc: Tab left (VS Code: Cmd+Shift+[)
 [[bindings]]
 name = "tab-left (VS Code)"
-input = "TU_LL_C"
+input = "TU_RR_J"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ["
 
 # doc: Tab right (Chrome: Ctrl+Tab)
 [[bindings]]
 name = "tab-right (Chrome)"
-input = "TU_LL_V"
+input = "TU_RR_K"
 apps = ["com.google.Chrome"]
 action-keys = "ctrl - tab"
 
 # doc: Tab right (VS Code: Cmd+Shift+])
 [[bindings]]
 name = "tab-right (VS Code)"
-input = "TU_LL_V"
+input = "TU_RR_K"
 apps = ["com.microsoft.VSCode"]
 action-keys = "cmd + shift - ]"
 
