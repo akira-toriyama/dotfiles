@@ -88,6 +88,16 @@
         homebrew.masApps = lib.mkForce { };
         homebrew.onActivation.autoUpdate = lib.mkForce true;
       };
+
+      # CI 専用。homebrew-nonfatal.nix の封じ込めが本当に効くかを実証するためだけの
+      # 存在しない formula。**.default にも .ci にも足さないこと** —— bootstrapBrewOverride
+      # に混ぜると実機構成に載る。
+      # 存在しない名前は brew bundle を fetch 段で落とすので、これを .#ci に入れると
+      # cask が 1 つも install されず ci.yml の cask 検証を巻き添えにする。別 attr に
+      # 隔離して smoke の最後に 1 回だけ流す。
+      brewCanaryOverride = { lib, ... }: {
+        homebrew.brews = lib.mkAfter [ "dotfiles-ci-canary-do-not-declare" ];
+      };
     in
     {
       # 日常 + 新 PC ブートストラップ共通: install.sh が `--flake .#default --impure` で呼ぶ。
@@ -107,6 +117,15 @@
         username = "runner";
         hostModule = ./system/hosts/generic.nix;
         extraModules = [ bootstrapBrewOverride ];
+      };
+
+      # brew 失敗の封じ込め証明用（ci.yml の「封じ込め証明」step からのみ参照）。
+      # 実機経路からは到達しない: install.sh の FLAKE_HOST 既定は default、
+      # check-dotfiles-drift.sh は darwinConfigurations.default 固定。
+      darwinConfigurations.ci-brew-canary = mkDarwin {
+        username = "runner";
+        hostModule = ./system/hosts/generic.nix;
+        extraModules = [ bootstrapBrewOverride brewCanaryOverride ];
       };
 
       # `nix develop .#lint --command scripts/lint` が食う shell。CI の lint job も同じ経路。
