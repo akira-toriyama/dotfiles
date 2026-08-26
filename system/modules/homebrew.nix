@@ -35,7 +35,6 @@
       # 二重宣言（#306 で nix 側へ移した後、#322 の live 取り込みで brew 側が復活。
       # One file, one owner 違反 — 解消は projects t-nmdj）。
       # go は mise 管理へ移行（home/modules/mise.nix）。dev runtime は mise に一元化。
-      "git-cliff"  # Highly customizable changelog generator
       "gifski"  # Highest-quality GIF encoder based on pngquant
       "cliclick"  # Tool for emulating mouse and keyboard events
       # peekaboo: macOS AX ツリー JSON dump + UI 操作 CLI（Claude Code の GUI 検証自走用、
