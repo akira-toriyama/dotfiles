@@ -9,11 +9,11 @@
 #   1. a SessionStart hook that runs git-stale-check (so an agent sees a
 #      behind-warning in its opening context — furrow t-5rgs ③)
 #   2. read-only git allowlist entries for the repo-state one-shot recipe
-#      documented in the global CLAUDE.md「Repo 現在地ワンショット」 so those
-#      commands never prompt (projects t-v1t1). Seeding them here — rather than
-#      only in the live file — is what makes them reproduce on a new Mac.
-#      Scope is deliberately read-only (status / log / worktree list); no
-#      mutating git verbs are granted.
+#      documented in the global CLAUDE.md「Tools」 (the Repo one-shot bullet)
+#      so those commands never prompt (projects t-v1t1). Seeding them here —
+#      rather than only in the live file — is what makes them reproduce on a
+#      new Mac. Scope is deliberately read-only (status / log / worktree
+#      list); no mutating git verbs are granted.
 #   3. rundiff's PreToolUse hook, merged from `rundiff hook print --json` —
 #      rundiff auto-wraps a recognized test command (`go test ./...` →
 #      `rundiff -- go test ./...`) so an agent gets only the delta from the
@@ -25,9 +25,9 @@
 #      (`command -v rundiff`), so an uninstalled rundiff is a no-op rather than
 #      an error on every Bash call.
 #   4. model-routing defaults: model "opus[1m]" + effortLevel "xhigh" — the
-#      「モデル運用」policy in the global CLAUDE.md (the LATEST Opus as the daily
-#      main loop; Fable 5 only via the fable-architect subagent or an explicit
-#      /model switch).
+#      「Model operations」policy in the global CLAUDE.md (the LATEST Opus as
+#      the daily main loop; Fable 5 only via the fable-architect subagent or
+#      an explicit /model switch).
 #      NOTE: "opus[1m]" is a version-free alias — it resolves to whatever the
 #      current latest Opus is (Opus 5 as of 2026-07), which is the point: a new
 #      Opus is adopted without touching this file. Never pin a concrete id such
@@ -57,7 +57,7 @@
 #      Mac starts on the intended model+effort instead of whatever the installer
 #      picks.
 #   5. a Stop hook that runs claude-work-report-check — validates the
-#      work-session closing contract (global CLAUDE.md「作業の締め」): a
+#      work-session closing contract (global CLAUDE.md「Work closing」): a
 #      やり残し declaration must carry furrow task ids or 「なし」 and the
 #      closed/created counts must be present, else the stop is blocked for one
 #      repair round (furrow t-m2bf, contract form since PR #294). The hook
@@ -65,7 +65,7 @@
 #   6. a SessionStart hook that runs claude-quota-note — puts the weekly
 #      quota percentages (Weekly vs Fable) into the opening context so the
 #      model-routing invariant Fable% ≥ Weekly% (global CLAUDE.md
-#      「モデル運用」) is judged from visible data instead of a remembered
+#      「Model operations」) is judged from visible data instead of a remembered
 #      file read. Fail-open like the others; see its header.
 #   7. a SessionStart hook that runs claude-projects-lint-note — puts the
 #      projects board's convention-lint report (reserved boxes, pinned quota,
