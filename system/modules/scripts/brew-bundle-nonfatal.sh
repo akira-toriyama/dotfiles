@@ -30,8 +30,16 @@ eval "$brew_bundle_cmd"
 rc=$?
 
 if [ "$rc" -ne 0 ]; then
-  printf 'rc=%s\nat=%s\n' "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$receipt"
-  printf >&2 'dotfiles: BREW-BUNDLE-FAILED rc=%s receipt=%s (activation continues)\n' "$rc" "$receipt"
+  if printf 'rc=%s\nat=%s\n' "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$receipt" 2>/dev/null; then
+    # activation は root で走るが読み手 (install.sh の V6-brew-bundle) は user。
+    chmod 644 "$receipt" 2>/dev/null || :
+    printf >&2 'dotfiles: BREW-BUNDLE-FAILED rc=%s receipt=%s (activation continues)\n' "$rc" "$receipt"
+  else
+    # receipt を書けないと非致命化の代償がそのまま「無音」になる。exit 0 は保つが、
+    # 書けなかったことは別の語で必ず出す (2026-08-26 の CI で receipt が後段から
+    # 見えない事象を観測したため、書けたかどうかを推測させない)。
+    printf >&2 'dotfiles: BREW-BUNDLE-FAILED rc=%s RECEIPT-WRITE-FAILED path=%s\n' "$rc" "$receipt"
+  fi
 fi
 
 exit 0

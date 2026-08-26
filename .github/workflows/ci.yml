@@ -366,8 +366,14 @@ jobs:
           else
             echo "✅ 全 declared formula が install 済み"
           fi
+          # receipt の有無は install.sh の V6-brew-bundle が依存する契約なので、
+          # 「出ていない」を沈黙で表さない。2026-08-26 に receipt が後段の step から
+          # 見えない事象を観測しており、無音だと成功と見分けが付かない。
           if [ -f /var/log/dotfiles/brew-bundle.failed ]; then
             echo "::warning::brew bundle receipt が残っている: $(tr '\n' ' ' < /var/log/dotfiles/brew-bundle.failed)"
+          else
+            echo "receipt 無し"
+            ls -ld /var/log/dotfiles 2>&1 || true
           fi
 
       - name: chezmoi apply (dot_claude / VSCode 拡張 / 他)

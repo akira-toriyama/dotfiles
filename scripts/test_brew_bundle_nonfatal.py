@@ -82,6 +82,27 @@ class TestNonFatalContract(unittest.TestCase):
         self.assertEqual(proc.returncode, 0)
         self.assertIsNone(receipt, "成功時に stale receipt が残ってはいけない")
 
+    def test_unwritable_receipt_still_exits_zero_but_says_so(self) -> None:
+        # 非致命化の代償が「無音」になる唯一の経路。exit 0 は保ちつつ別の語で騒ぐ。
+        with tempfile.TemporaryDirectory() as d:
+            bindir = Path(d) / "bin"
+            bindir.mkdir()
+            brew = bindir / "brew"
+            brew.write_text(FAILING_BREW, encoding="utf-8")
+            brew.chmod(0o755)
+            blocker = Path(d) / "blocked"
+            blocker.write_text("not a directory\n", encoding="utf-8")
+            receipt = blocker / "brew-bundle.failed"
+            cmd = f'PATH="{bindir}:$PATH" env brew bundle --file=/dev/null'
+            proc = subprocess.run(
+                ["bash", str(SCRIPT), str(receipt), cmd],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(proc.returncode, 0, "書けなくても activation は止めない")
+        self.assertIn("RECEIPT-WRITE-FAILED", proc.stderr)
+
     def test_failure_overwrites_a_stale_receipt(self) -> None:
         _, receipt = run_wrapper(FAILING_BREW, preexisting_receipt=True)
         assert receipt is not None
