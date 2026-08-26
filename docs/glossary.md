@@ -243,8 +243,8 @@ The `latest` symlink points at the newest run.
 ### `ghq-get-mine`
 **The command that bulk-clones one's own repositories**. It SSH-clones akira-toriyama's
 active (non-archived) repos on GitHub into `GHQ_ROOT` (`/Volumes/workspace`) in the ghq layout.
-Idempotent (already-cloned ones are a no-op). Used in install.sh §6.5 and for keeping up with new
-repos day to day.
+Idempotent (already-cloned ones are a no-op). Used in install.sh's `clone` phase
+(`df_step ghq-get-mine`) and for keeping up with new repos day to day.
 - Location: [`home/modules/packages.nix`](../home/modules/packages.nix)
   (`writeShellScriptBin`) / the operating procedure is
   [operations.md §5.12](operations.md)

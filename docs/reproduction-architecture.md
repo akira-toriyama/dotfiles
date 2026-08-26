@@ -117,7 +117,7 @@ chezmoi apply                                              # dotfiles
 Key points of the order:
 - **Create the workspace volume before Nix** — the path `ghq.root` points at (`GHQ_ROOT=/Volumes/workspace`, declared in home-manager) must exist before darwin-rebuild. Nix creates its own case-sensitive APFS volume for `/nix`, but the user work area is provided on this side.
 - **Do chezmoi last** (secret templates fail unless `op signin` has already happened).
-- For the implementation, see §1.5 of [install.sh](../install.sh) (idempotent: skips if a case-sensitive area already exists).
+- For the implementation, see the `workspace-volume` phase of [install.sh](../install.sh) (idempotent: skips if a case-sensitive area already exists).
 
 ### 3.1 Preconditions for unattended execution (always check here when changing things)
 

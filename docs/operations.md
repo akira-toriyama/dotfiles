@@ -396,7 +396,7 @@ Editing `~/.config` → `chezmoi re-add` → **pushing while forgetting `chezmoi
 
 git **does not automatically enable a hook/setting that ships inside a clone** (a security design that prevents code from running the moment you clone a malicious repo). So `core.hooksPath` is set automatically through these routes:
 
-- **A new PC**: `install.sh` sets it right after the clone (§3.5).
+- **A new PC**: `install.sh` sets it in its `repo` phase, right after the clone.
 - **Any other clone (ghq / a manual `git clone`, etc.)**: [`chezmoi/run_onchange_after_enable-git-hooks.sh`](../chezmoi/run_onchange_after_enable-git-hooks.sh) identifies the repo root of "the clone currently in use" from `CHEZMOI_SOURCE_DIR` **on every `chezmoi apply`** and sets it best-effort. What `chezmoi source-path` points at = the clone you actually push from, so it always hits.
 
 To do it by hand (e.g. when you want it in effect before the above runs):
@@ -419,8 +419,8 @@ in the ghq layout. Forks and private repos included.
 ghq-get-mine
 ```
 
-- **When**: following along after creating a new repo / on a new Mac, install.sh §6.5 runs it automatically
-  (interactive mode only, skipped on CI)
+- **When**: following along after creating a new repo / on a new Mac, install.sh's `clone` phase runs it automatically
+  (the only opt-out is `--skip-clone`)
 - **Idempotent**: an already-cloned repo is a no-op (`-u` is not passed = the working copy is inviolable)
 - **Prerequisites**: gh authentication (or `GITHUB_TOKEN`) + SSH reachability to GitHub. If they are not in place it
   fail-fasts with a one-line warning → re-running it once they are in place fills in only what is missing
