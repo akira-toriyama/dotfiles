@@ -144,6 +144,17 @@ not call it directly). Because of the PATH inheritance problem, invoke it by **f
 `sudo /run/current-system/sw/bin/darwin-rebuild switch ...`.
 - **Don't call it:** apply, deploy, system update, 切替
 
+### brew bundle receipt
+**The file activation leaves behind when `brew bundle` fails**:
+`/var/log/dotfiles/brew-bundle.failed`. Since `homebrew-nonfatal.nix` stops a failed formula
+from aborting activation, the switch exit code no longer reports brew trouble — the receipt is
+what carries it instead. Written by
+[`system/modules/scripts/brew-bundle-nonfatal.sh`](../system/modules/scripts/brew-bundle-nonfatal.sh),
+read by `install.sh` (check `V6-brew-bundle`, which turns it into `RESULT: FAILED`) and by the
+switch fallback, which would otherwise stop firing once the switch always returns 0. Cleared on
+every successful bundle, so a stale one cannot pin the result at FAILED.
+- **Don't call it:** brew ログ, エラーファイル, marker
+
 ### `chezmoi diff`
 **The source ⇔ live difference**. The verification gate that must always pass before `apply`.
 - **Don't call it:** preview, dry-run, プレビュー
