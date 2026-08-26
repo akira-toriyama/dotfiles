@@ -4,7 +4,8 @@
 #
 # WHY: the board's convention lint (projects scripts/projects-lint.sh —
 # reserved boxes, pinned quota, requests awaiting triage) fires on pre-push
-# and post-merge, i.e. only inside the projects checkout. Sessions that start
+# only, i.e. only inside the projects checkout, and only when publishing
+# (post-merge / post-rewrite call `furrow lint` alone). Sessions that start
 # in a code repo would never see "requests は triage 待ち" — this hook is the
 # one surface that reaches every session (same reasoning as claude-quota-note).
 #
