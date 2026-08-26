@@ -291,6 +291,22 @@ input = "ctrl - j"
 action-keys = "return"
 
 
+# ---- azooKey 変換 remap ----
+# azooKey の変換中ショートカットは hardcode（Ctrl+J ひらがな / Ctrl+K カタカナ /
+# Ctrl+L 全角英数 — Core の UserAction.swift、preference キー無し・変更不可）。
+# 上の ctrl-j → return が物理 Ctrl+J を潰し、ひらがな一括変換が使えないため、
+# Ctrl+K（カタカナ）の隣の Ctrl+L を入口にする。再送分は synthetic タグ付きで
+# matcher に再入しないので、ctrl-j → return には化けず azooKey に素の Ctrl+J が
+# 届く。未変換時は azooKey が Ctrl+J を素通しするため、アプリに届くのは Ctrl+L
+# でなく Ctrl+J になる（terminal では clear でなく LF）。
+
+# doc: Hiragana conversion while composing (azooKey Ctrl+J)
+[[bindings]]
+name = "ctrl-l → ctrl-j (hiragana)"
+input = "ctrl - l"
+action-keys = "ctrl - j"
+
+
 # ---- facet オーバーレイ ----
 # macOS は矢印キーに常に fn (NSEventModifierFlagFunction / maskSecondaryFn) を
 # 付与する。chord の matcher は未言及カテゴリの modifier 不在を要求し、fn は
