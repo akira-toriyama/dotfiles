@@ -285,26 +285,13 @@ input = "ctrl - d"
 action-keys = "forward_delete"
 
 # doc: Return
+# ctrl-j / ctrl-l は remap しない（azooKey hardcode の Ctrl+J ひらがな /
+# Ctrl+L 全角英数に譲る — 2026-08-26 指示、t-pzgs）。Return は CR と同義の
+# ctrl-m に置く。azooKey も変換中 Ctrl+M を enter に取るので競合しない。
 [[bindings]]
-name = "ctrl-j → return"
-input = "ctrl - j"
+name = "ctrl-m → return"
+input = "ctrl - m"
 action-keys = "return"
-
-
-# ---- azooKey 変換 remap ----
-# azooKey の変換中ショートカットは hardcode（Ctrl+J ひらがな / Ctrl+K カタカナ /
-# Ctrl+L 全角英数 — Core の UserAction.swift、preference キー無し・変更不可）。
-# 上の ctrl-j → return が物理 Ctrl+J を潰し、ひらがな一括変換が使えないため、
-# Ctrl+K（カタカナ）の隣の Ctrl+L を入口にする。再送分は synthetic タグ付きで
-# matcher に再入しないので、ctrl-j → return には化けず azooKey に素の Ctrl+J が
-# 届く。未変換時は azooKey が Ctrl+J を素通しするため、アプリに届くのは Ctrl+L
-# でなく Ctrl+J になる（terminal では clear でなく LF）。
-
-# doc: Hiragana conversion while composing (azooKey Ctrl+J)
-[[bindings]]
-name = "ctrl-l → ctrl-j (hiragana)"
-input = "ctrl - l"
-action-keys = "ctrl - j"
 
 
 # ---- facet オーバーレイ ----
