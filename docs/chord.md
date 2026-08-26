@@ -79,8 +79,7 @@ private_config.toml → regenerate with `python3 scripts/gen-chord-doc.py`.
 | `Ctrl + N` | ↓ Down | * |
 | `Ctrl + H` | Backspace | * |
 | `Ctrl + D` | Forward Delete | * |
-| `Ctrl + J` | Return | * |
-| `Ctrl + L` | Hiragana conversion while composing (azooKey Ctrl+J) | * |
+| `Ctrl + M` | Return | * |
 | `Ctrl + Fn + right` | Move a space right and show the facet tree (ctrl+→) | * |
 | `Ctrl + Fn + left` | Move a space left and show the facet tree (ctrl+←) | * |
 
