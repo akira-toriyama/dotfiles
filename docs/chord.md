@@ -65,10 +65,10 @@ private_config.toml → regenerate with `python3 scripts/gen-chord-doc.py`.
 
 | Chord | Action | Apps |
 |---|---|---|
-| `TU_LL_C` | Tab left (Chrome: Ctrl+Shift+Tab) | com.google.Chrome |
-| `TU_LL_C` | Tab left (VS Code: Cmd+Shift+[) | com.microsoft.VSCode |
-| `TU_LL_V` | Tab right (Chrome: Ctrl+Tab) | com.google.Chrome |
-| `TU_LL_V` | Tab right (VS Code: Cmd+Shift+]) | com.microsoft.VSCode |
+| `TU_RR_J` | Tab left (Chrome: Ctrl+Shift+Tab) | com.google.Chrome |
+| `TU_RR_J` | Tab left (VS Code: Cmd+Shift+[) | com.microsoft.VSCode |
+| `TU_RR_K` | Tab right (Chrome: Ctrl+Tab) | com.google.Chrome |
+| `TU_RR_K` | Tab right (VS Code: Cmd+Shift+]) | com.microsoft.VSCode |
 | `TU_LL_D` | Previous window (rift focus) | * |
 | `TU_LL_G` | Next window (rift focus) | * |
 | `TU_LL_F` | Drag scroll (while held, mouse movement becomes scrolling) | * |

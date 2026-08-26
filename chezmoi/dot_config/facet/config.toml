@@ -5,7 +5,7 @@
 # The `#:schema` line above gives editors (taplo / Even Better TOML) key
 # + value completion and inline validation. It points at the generated
 # `config.schema.json` sidecar, which is derived from facet's own config
-# parser (`facet --emit-schema`) — so it always matches the binary.
+# parser (`facet config --emit-schema`) — so it always matches the binary.
 #
 # This file is the **single source of truth** for facet's settings.
 # Drop it (or your edited copy) at ~/.config/facet/config.toml:
@@ -20,8 +20,63 @@
 # `facet --theme dracula`) apply for the current session only. To
 # make a change stick, edit the value here and restart facet.
 #
+# ONE exception — opt-in config auto-persistence (see [config] below):
+# set `export-path` and facet auto-EXPORTS a live snapshot of your
+# effective config (rename / isolate match / layout / tag edits) to that
+# SEPARATE file, leaving config.toml untouched. Add `auto-promote = true`
+# and the NEXT launch promotes a snapshot that is newer than config.toml
+# onto it — the single sanctioned write (a hand-edit between sessions
+# still wins).
+#
 # Out-of-range / unknown values are silently clamped to safe
 # defaults rather than rejected — a typo can't break the layout.
+#
+# facet always launches in agent-only mode (no panel on screen); a
+# view appears only when summoned — `facet --view tree|grid|rail`, a
+# chord hotkey, etc. A summoned tree always enters keyboard nav.
+
+
+# -----------------------------------------------------------------
+# Config auto-persistence (opt-in) — [config]
+# -----------------------------------------------------------------
+# Your session edits (renaming a section / workspace, live-tuning a
+# isolate `match`, changing a workspace layout, creating tags) are
+# normally session-only — they vanish on restart. Turn this on and
+# facet keeps them, WITHOUT ever touching config.toml behind your back.
+#
+# How it works (two independent steps):
+#   1. export-path — set it and facet AUTO-EXPORTS: on every session
+#      edit it writes a live snapshot of the full effective config to
+#      THIS file (surgical — comments + formatting preserved; config.toml
+#      itself is left untouched). The snapshot is the "growing" copy.
+#      MUST be a different file from config.toml. `~` and relative
+#      (to this file's dir) paths resolve.
+#   2. auto-promote — opt in and, at the NEXT launch, if the snapshot is
+#      strictly newer than config.toml, facet promotes it: overwrites
+#      config.toml with the snapshot, then loads. This is the ONE
+#      sanctioned write to config.toml. A hand-edit between sessions
+#      always wins (whichever file is newer), so you never lose a manual
+#      change. Off by default — with export-path alone you get the
+#      snapshot but config.toml is never overwritten.
+#
+# There is no UI — it's fully automatic. Watch `FACET_DEBUG` logs for
+# "auto-exported" / "auto-promoted". This template ships with it ON
+# (#381) — comment the block out to keep config.toml strictly read-only:
+[config]
+export-path = "~/.config/facet/config.snapshot.toml"
+auto-promote = true
+
+
+# -----------------------------------------------------------------
+# Tag vocabulary — [tags]
+# -----------------------------------------------------------------
+# Names offered as autocomplete in the tree's tag editor (`t`) BEFORE
+# any window carries them — a starter vocabulary. Names only (tag
+# COLORS are runtime). When [config] auto-export is on, this list grows
+# automatically as you create tags. `[]` / omitted = none.
+# [tags]
+# defined = ["web", "code", "chat"]
+
 
 # -----------------------------------------------------------------
 # Color / typography theme
@@ -51,7 +106,6 @@
 #
 # Light:
 #   "github-light"     — GitHub light; blue + violet on white. System font.
-#   "catppuccin-latte" — soft pastel light (Latte); purple + teal.
 #
 # Adaptive:
 #   "system"           — native vibrancy + dynamic colors, follows macOS
@@ -473,6 +527,33 @@ action = "ignore"
 
 
 # -----------------------------------------------------------------
+# Filter aliases  [alias]
+# -----------------------------------------------------------------
+# Name a facet-filter expression once, reference it as `@NAME` anywhere
+# a filter appears: `[desktop.N] match`, `[[rule]] match`,
+# `facet section --match`, `facet query --filter`.
+#
+#   - Names are kebab-case ([a-z][a-z0-9-]*); references are
+#     case-insensitive. Aliases may reference other aliases; a cycle is
+#     rejected loudly. An empty expression is rejected too (it would
+#     match EVERYTHING).
+#   - A `match` referencing an alias that doesn't exist DROPS that
+#     desktop / rule with an error (`facet config --validate` exits 1)
+#     rather than silently matching nothing.
+#   - Display-name inheritance: an isolate desktop whose `match` is a
+#     single alias reference and whose `label` is omitted shows the
+#     alias name as its section header.
+#   - Definitions live HERE only (hot-reload picks up edits); the CLI
+#     and GUI consume them but never define them.
+#
+# Example — uncomment / adapt:
+#
+# [alias]
+# web = 'app~=Chrome or app~=Safari or app~=Firefox'
+# work = '@web or app=Slack'         # nesting is fine
+
+
+# -----------------------------------------------------------------
 # Adopt-rules  [[rule]]   (the declarative successor to [[assign]])
 # -----------------------------------------------------------------
 # When a NEW window matches `match` (a facet filter WHERE-clause), the
@@ -488,7 +569,7 @@ action = "ignore"
 #              desktop, onscreen, focused. A malformed match is loud +
 #              non-fatal (that rule is skipped; the rest still run).
 #   workspace — move the matched window to this named workspace.
-#   tags      — tags to add (feeds lens filters; same as `facet window --tag`).
+#   tags      — tags to add (feeds an isolate desktop's `match`; same as `facet window --tag`).
 #   floating / sticky / master — set the matching facet (true / false).
 #
 # Examples — uncomment / adapt:
@@ -512,8 +593,8 @@ action = "ignore"
 #   facet window --tag NAME / --untag NAME / --toggle-tag NAME
 #   facet window --retag OLD NEW
 # Tags are session-only (never persisted) and per-mac-desktop. They
-# feed lens filters: a `type = "lens"` section whose `match` contains
-# `tag~=NAME` (see [[desktop.N.section]] below) shows every window
+# feed an isolate DESKTOP's filter: a `[desktop.N] type = "isolate"` whose
+# `match` contains `tag~=NAME` (see [desktop.N] below) tiles every window
 # carrying NAME. `facet query --tags` lists every tag currently in use.
 
 
@@ -562,157 +643,116 @@ action = "ignore"
 # Zero config: with NO [[desktop.N.section]] blocks anywhere, every mac
 # desktop is managed with the default 5 workspaces. It just works.
 #
-# To shape a mac desktop, describe an ORDERED list of sections with
-# `[[desktop.N.section]]` (N = Mission Control order, 1-based, user
-# desktops only — fullscreen desktops don't count). This is the ONLY
-# way to configure a desktop —
-# workspaces are auto-named (an emoji 🐶🍎🍕); you can't name them from
-# config (rename at runtime with `facet workspace --rename`). When a
-# desktop has at least one `type = "workspace"` section, the section model
-# becomes AUTHORITATIVE for that desktop: the tree, the grid (`--view grid`),
-# AND the rail (`--view rail`) all render the sections in declaration order —
-# lens sections appear as their own cells (a rail carousel cell), and clicking
-# one activates that lens (same as `facet lens NAME`); the active section is the
-# single lit highlight in every view (on the rail it is also the centre hero —
-# an active lens renders its cross-workspace union there). Activating a lens
-# section (`facet lens NAME`) anchor-parks
-# every non-matching window in EVERY workspace (cross-workspace exclusive — a
-# real hide) and union-tiles the matches with that lens's `layout`; switching
-# to any workspace clears the lens automatically; `--clear` lifts it and
-# restores all parked windows. Tree drag-and-drop applies / un-applies a lens's
-# `apply` ops. The section model is facet's canonical configuration.
+# To shape a mac desktop, describe an ORDERED list of workspace SPATIAL
+# cells with `[[desktop.N.section]]` (N = Mission Control order, 1-based,
+# user desktops only — fullscreen desktops don't count). The array ORDER
+# is the tree's display order; the COUNT of sections is that desktop's
+# live workspace count. Each section is a workspace cell:
 #
-# OPT-IN: as soon as ANY [[desktop.N.section]] exists, facet manages ONLY
-# the desktops that have a section block. A desktop without one is left
-# completely untouched — no facet workspaces, windows stay as-is, and the
-# facet panel is hidden there. On single-desktop / SkyLight-unavailable
-# setups (no resolvable Mission Control ordinal) facet falls back to the
-# default 5 unnamed workspaces.
+#   label   — (optional) the workspace's display name; omit → unnamed,
+#             shown by its 1-based index. A non-empty label must be unique
+#             on the desktop (dup → loud warn + first-wins). `facet
+#             workspace --rename` overrides at runtime.
+#   layout  — (optional) the workspace's startup tiling engine (bsp /
+#             stack / master-left / …); runtime-changeable.
+#
+# 🪦 `unassigned = true` (the "Lost & Found" receptacle) was RETIRED in t-6rbc.
+#    Nothing in facet could ever put a window in it — every managed window is
+#    in a workspace — so it rendered a section that could only ever be EMPTY.
+#    A leftover `unassigned` row is now a LOUD error and the row is DROPPED
+#    (not silently promoted to a workspace cell, which would add a workspace
+#    and change your layout). Delete it; you lose nothing.
+#
+# The tree, the grid (`--view grid`), and the rail (`--view rail`) all
+# render the sections in declaration order. A window's membership changes
+# by DRAG (between workspaces) or `facet window --move-to N`.
+#
+# OPT-IN: as soon as ANY [[desktop.N.section]] (or [desktop.N]) block
+# exists, facet manages ONLY the desktops that have one. A desktop without
+# one is left completely untouched — no facet workspaces, windows stay
+# as-is, the panel is hidden there. On single-desktop / SkyLight-
+# unavailable setups facet falls back to the default 5 unnamed workspaces.
 #
 # Caveat: the mapping is by Mission Control position. Reordering your
 # desktops re-points these sections (counts / layouts only — your windows
 # stay correctly scoped to their real desktop).
 #
-# Each `[[desktop.N.section]]` is one section on the Nth mac desktop
-# (Mission Control order). The array ORDER is the tree's display order.
-# Every section has a required `type` — one of three kinds:
+# -----------------------------------------------------------------
+# Typed desktops  [desktop.N]
+# -----------------------------------------------------------------
+# A mac desktop may be TYPED with a single [desktop.N] table (N = the same
+# Mission Control ordinal): type = "workspace" or "isolate". One ordinal = one
+# desktop = one type; use two mac desktops to have both kinds. Hierarchy:
+# mac desktop > section > window.
 #
-#   type = "workspace"  — a permanent spatial cell (the tiling unit, the
-#       grid/rail cell). AUTO-NAMED (an emoji 🐶🍎🍕), so you neither name
-#       nor filter it. Optional `layout` seeds its tiling engine. The COUNT
-#       of workspace sections is that desktop's live workspace count; each
-#       section's `layout` is that workspace's startup layout. Having at
-#       least one workspace section is what turns the section model ON for
-#       the desktop — a desktop with ONLY lens / unassigned sections falls
-#       back to the default 5 workspaces (and its lenses stay inert).
-#         [[desktop.1.section]]
-#         type = "workspace"
-#         layout = "bsp"
+#   type = "workspace" — the classic desktop: its [[desktop.N.section]]
+#       blocks above describe it (the [desktop.N] table just makes the type
+#       explicit). This is the implied type when only section blocks exist,
+#       so a sections-only config needs no [desktop.N] table at all.
+#   type = "isolate" — an ALWAYS-ON filtered desktop (no sections, no sub-
+#       workspaces). Whenever that mac desktop is active, facet tiles the
+#       windows matching `match` with `layout` and anchor-parks the rest to
+#       a screen corner (sticky windows are exempt). Entering the desktop IS
+#       the focus; leaving it un-parks nothing (the parked windows belong to
+#       that desktop). Change what it shows live with `facet section --match
+#       1 "expr"` (session-only) or the tree header's "Edit match".
+#       TREE-ONLY: `--view grid` / `--view rail` are rejected there (an isolate desktop
+#       desktop is dynamic — no fixed picture to thumbnail).
+#       Keys (written directly on the [desktop.N] table):
+#         match   — REQUIRED: a facet-filter WHERE-clause (same grammar as
+#                   `facet query --windows --filter`) selecting the tiled
+#                   windows, e.g. 'app~=Chrome or app~=Safari' or 'tag~=web'.
+#                   An empty match ('') matches nothing → every window parks,
+#                   so give it a CONCRETE predicate. Missing → the desktop is
+#                   dropped, loud.
+#         layout  — (optional) layout-engine name for the matched windows;
+#                   "float" keeps them floating. Non-matching still park.
+#         show-non-matching — (optional, default false) true → the tree adds
+#                   a second "holding" section listing the parked non-
+#                   matching windows; false → the matched section alone.
+#         label   — (optional) display name for the desktop. DISPLAY ONLY:
+#                   an isolate desktop's single workspace is UNNAMED, so `label`
+#                   is not a value your `match` can compare against (t-j7ps). It
+#                   used to name that workspace too — which meant renaming the
+#                   desktop could silently break its own `match`, at the NEXT
+#                   launch. A `match` that references `workspace` on an isolate
+#                   desktop is now a loud error: the field is always empty there,
+#                   so the predicate is a constant. Match on what the windows ARE
+#                   (app / title / tag / floating).
 #
-#   type = "lens"  — a saved visibility filter (an SQL VIEW), orthogonal
-#       to workspaces; a window shows in EVERY lens whose `match` it
-#       satisfies (multi-match). Activating one with `facet lens NAME`
-#       anchor-parks every non-matching window across ALL workspaces
-#       (cross-workspace exclusive hide) and union-tiles the matching set
-#       using this lens's `layout`; switching to any workspace clears the
-#       lens automatically; `facet lens --clear` lifts it and restores all
-#       parked windows. Keys:
-#         label  — the lens's header in the view (required).
-#         match  — a facet filter WHERE-clause (required; the same mini-
-#                  language as `facet query --windows --filter`), e.g.
-#                    'tag~=web or app=Safari'
-#                    '(tag~=work or tag~=urgent) and not floating'
-#         layout — (optional) the stateless tiling engine for the
-#                  cross-workspace union while this lens is active:
-#                  spiral (default) / master-left / master-right /
-#                  master-top / master-bottom / master-center / grid /
-#                  float. bsp and stack need per-workspace state a union
-#                  can't keep → silently clamped to the global [layout]
-#                  default. Omit → uses the [layout] default.
-#         apply  — (optional) facets SET on a window dropped into the lens,
-#                  so the drop "sticks". Inline table; all keys optional:
-#                    workspace = "Dev"   move to that workspace (auto-replace)
-#                    tags      = ["web"] add these tags (additive)
-#                    floating  = true    float / unfloat
-#                    sticky    = true    pin / unpin across desktops
-#                    master    = true    mark / unmark as layout master
-#                  Omit `apply` → the lens is drop-inert (a drop snaps back).
-#
-#   Orphans receptacle — a window can belong to NO workspace
-#       (`workspace = 0 or 1`, EX-3): dragging it onto a lens RELOCATES it out
-#       of its workspace (a full move), so when no matching lens is active it
-#       is an orphan — invisible-but-logged, never auto-homed. Surface them
-#       with a plain `type = "lens"` whose `match` catches "no workspace
-#       assignment":
-#         [[desktop.1.section]]
-#         type = "lens"
-#         label = "Orphans"
-#         match = 'not workspace'          # every window not filed in a workspace
-#       (`'not workspace and not tag'` for strictly tagless ones). RECOMMENDED:
-#       keep one per desktop so a stray window is never lost. There is no
-#       special "unassigned" type — the orphan receptacle is just a lens.
-#
-# `type` is REQUIRED: a section with an absent or unknown `type` is skipped
-# with a loud log (never a silent guess).
-#
-# ACTIVE SAMPLE — a 3-desktop dev workflow: 2 auto-named (emoji)
-# workspaces per desktop, plus 3 lenses on desktop 1 (Web / Code / Chat).
-# Because these section blocks exist, facet is OPT-IN: it manages desktops
-# 1–3 and leaves every OTHER mac desktop untouched (panel hidden there).
-# Edit to taste, add `[[desktop.4.section]]` blocks for more desktops, or
-# comment this whole sample out to fall back to the zero-config default
-# (every mac desktop gets 5 emoji workspaces). Activate a lens at runtime
-# with `facet lens "Web"` (it parks the non-Web windows); clear it with
-# `facet lens --clear`.
+# ACTIVE CONFIG — two mac desktops. Desktop 1 is a classic WORKSPACE desktop
+# ("Main": Float / Stack / Tile cells). Desktop 2 is an always-on ISOLATE
+# desktop ("Code") that tiles the editor windows and parks everything else.
+# Because these blocks exist, facet is OPT-IN: it manages desktops 1–2 and
+# leaves every OTHER mac desktop untouched. Comment them all out to fall back
+# to the zero-config default (every mac desktop gets 5 unnamed workspaces).
 
-# Recommended!! — the Orphans (orphan) receptacle. A window dragged onto a lens leaves
-# its workspace; with no matching lens active it would be invisible. This
-# catch-all lens surfaces every such window so nothing is ever lost. Keep one.
-[[desktop.1.section]]
-type = "lens"
-label = "Orphans"
-match = 'not workspace'
-
-[[desktop.1.section]]
+# Desktop 1 — a WORKSPACE desktop labelled "Main": one section per workspace
+# cell, each seeded with its namesake layout.
+[desktop.1]
 type = "workspace"
+label = "Main"
+
+[[desktop.1.section]]
+label = "Float"
 layout = "float"
 
 [[desktop.1.section]]
-type = "workspace"
+label = "Stack"
 layout = "stack"
 
 [[desktop.1.section]]
-type = "lens"
-label = "Web"
-match = 'app=Safari or app~=Chrome or app~=Firefox'
-apply = { tags = ["web", "foo"] }
+label = "Tile"
+layout = "bsp"
 
-[[desktop.1.section]]
-type = "lens"
+# Desktop 2 — an always-on ISOLATE desktop: tiles the editor windows (a
+# CONCRETE match, never '') with bsp, parks everything else, and shows the
+# parked ones as a second "holding" tree section. Retarget live with
+# `facet section --match 1 "app~=Slack"` or the tree header's "Edit match".
+# With an [alias] defined (above), `match = '@editors'` works here too.
+[desktop.2]
+type = "isolate"
 label = "Code"
 match = 'app=Xcode or app~=Code or app~=Cursor'
-apply = { tags = ["code"] }
-
-[[desktop.1.section]]
-type = "lens"
-label = "Chat"
-match = 'app~=Slack or app=Mail or app~=Discord'
-apply = { tags = ["chat"] }
-
-# desktop 2 / 3 はあなたの設定どおり無効（コメント）のまま。facet は
-# desktop.1 のみ管理し、他 mac desktop は一切触らない（OPT-IN ルール）。
-# 管理したくなったら下を uncomment。
-# [[desktop.2.section]]
-# type = "workspace"
-# layout = "bsp"
-
-# [[desktop.2.section]]
-# type = "workspace"
-
-# [[desktop.3.section]]
-# type = "workspace"
-# layout = "master-left"
-
-# [[desktop.3.section]]
-# type = "workspace"
-# layout = "stack"
+layout = "bsp"
+show-non-matching = true
