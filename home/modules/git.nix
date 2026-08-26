@@ -64,6 +64,10 @@
     ignores = [
       ".DS_Store"
       "**/.claude/settings.local.json"
+      # Claude Code の Agent worktree 置き場。untracked のまま残ると repo を歩く
+      # 道具（jscpd 等）に working copy が二重に見える（t-6211）。.claude/ 全体は
+      # 無視しない — settings.json 等を commit している repo があるため。
+      "**/.claude/worktrees/"
     ];
   };
 }
