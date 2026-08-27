@@ -158,7 +158,7 @@ activation を中断させなくなったため、switch の exit code は brew 
 代わりに receipt がそれを運ぶ。書き手は
 [`system/modules/scripts/brew-bundle-nonfatal.sh`](../system/modules/scripts/brew-bundle-nonfatal.sh)、
 読み手は `install.sh`（`V6-brew-bundle` の検査が `RESULT: FAILED` に変換する）と、
-switch が常に 0 を返すようになると発火しなくなる switch fallback。bundle が成功する
+receipt が無ければ switch が常に 0 を返すようになった時点で発火しなくなる switch fallback。bundle が成功する
 たびに消えるので、古い receipt が結果を FAILED に固定することはない。
 - **Don't call it:** brew ログ, エラーファイル, marker
 
