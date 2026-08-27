@@ -472,6 +472,18 @@ relying on prose"**. The rule text is not copied here (the canonical source is C
 A PR that adds or changes a rule updates it in the same PR.
 - **Don't call it:** ルール一覧, ポリシー表
 
+### Review copy (`*.ja.md`)
+**A declared, non-canonical Japanese rendering placed beside its English original**: the original
+stays canonical, the copy is advanced only on the user's instruction and never in the same change
+as the original, so it lags by design and the four-line header declares the lag by pinning the
+base commit. Stating a rule the original does not is a defect however fresh the copy is.
+The gates are the fleet `repo-policy` check (it greps the header for 和訳 / 正本 / 基準) and
+`scripts/lint`'s `review-copy-guard`
+([`scripts/review_copy_guard.py`](../scripts/review_copy_guard.py); escape = commit footer
+`Review-copy-co-update:`); the canonical source is .github's
+[`doc-consistency-policy.md`](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md).
+- **Don't call it:** translation, 翻訳版, README.ja, 和訳ファイル, ja doc
+
 ---
 
 ## Rules for adding an entry
