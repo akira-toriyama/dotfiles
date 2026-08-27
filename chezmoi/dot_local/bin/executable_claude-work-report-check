@@ -94,7 +94,20 @@ fi
 # arithmetic to be self-consistent, and leaves the counting honest-by-convention
 # — same call as the id check, which cannot verify that an id was really filed
 # today either. An overrun stays possible; it just has to be said out loud.
-counts=$(printf '%s' "$msg" | grep -oiE "$counts_re" | head -1)
+#
+# The closing counts is the LAST counts-shaped token, not the first. Taking the
+# first let any earlier counts-shaped text — a quote of the convention, a
+# per-repo breakdown — stand in for the declaration and hide the real numbers
+# from this gate AND from the board cross-check below. Not hypothetical: it
+# fired in production on 2026-08-19, in the very session that filed it, because
+# the message explained this check and quoted the shape. Anchor by LINE so the
+# reason zone (counts line + the line after) stays pinned to the same line —
+# `grep -A1 | head -2` used to hand back the first match's zone, so a reason
+# written correctly under the real counts line was never seen.
+counts_lineno=$(printf '%s\n' "$msg" | grep -niE "$counts_re" | tail -1 | cut -d: -f1)
+counts=""
+[ -n "$counts_lineno" ] &&
+  counts=$(printf '%s\n' "$msg" | sed -n "${counts_lineno}p" | grep -oiE "$counts_re" | tail -1)
 if [ -z "$counts" ]; then
   jq -n '{decision: "block", reason: "作業の締めに増減の実数がありません。「closed N / created M」の行を足してください（board は放っておくと単調増加する — 実測で完了は週 100 件超なのに未完は 95 → 295 に増えた。数字を出さない限り収束しているか誰にも分からない）。作業の締めでないなら、断り書きを足すのではなく判定語を本文から消してください（「締めではない」と書き添えても語が残る限り次のターンでまた止まります。arming は「やり残し」の語・「closed N / created M」形・旧冒頭文の 3 つで、引用や説明のための出現も区別しません）。直したらそのまま停止してよい。"}'
   exit 0
@@ -117,7 +130,7 @@ created_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | tail -1)
 # about to write closed 0 / created 0, first doubt that this is a close").
 # Arithmetically the exemption covers exactly that one cell.
 if [ "$created_n" -gt 0 ] && [ "$created_n" -ge "$closed_n" ]; then
-  reason_zone=$(printf '%s' "$msg" | grep -iE -A1 "$counts_re" | head -2)
+  reason_zone=$(printf '%s\n' "$msg" | sed -n "${counts_lineno},$((counts_lineno + 1))p")
   if ! printf '%s' "$reason_zone" | grep -qE '理由|例外|blocker|ブロッカー'; then
     jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md §5 Converge the board — 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。**起票したあとで数字は下げられません** — furrow に起票の取り消しコマンドは無く、created は lane と無関係に窓内の起票を数えるので、icebox へ落としても実数は変わらず、申告だけ減らすと下の board 実数照合が created 過少申告として弾きます。取れる手は 2 つだけです: (a) まだ起票していないものを起票せずにその場で直す（effort ≤ 2 かつ今触っているコード内）(b) 超過の理由を counts 行かその直後の行に 1 行添える。直したらそのまま停止してよい。")}'
     exit 0

@@ -33,7 +33,7 @@
 |---|---|---|---|---|
 | precedence と正典マップ（How to read this document 節） | 食い違いを ①ユーザー指示 ②repo CLAUDE.md ③正典 ④本書 の順で解決 | — | なし | 📖 |
 | 出力の形・全規則（Output shape 節） | 会話で適用 | — | claude-md-eval で**測定**は可能（強制ではない。測定義務は dotfiles/CLAUDE.md へ移設済み） | 📖 |
-| 作業の締めの 2 要素契約（Work closing 節） | やり残し ID（or なし）+ `closed N / created M` を書く | — | Stop hook [claude-work-report-check](../chezmoi/dot_local/bin/executable_claude-work-report-check)（PR #270→#294 で契約化）: arming = 旧冒頭文 / やり残し行 / counts トークン。ID・実数・超過理由（counts 行±1）を検査。**同数（created == closed かつ > 0）も超過として block・0/0 のみ免除**。CI に fixture 29 + 変異検証 | 🟡 締め自体の**発火**（完全な書き忘れ）は判定不能で 📖 のまま |
+| 作業の締めの 2 要素契約（Work closing 節） | やり残し ID（or なし）+ `closed N / created M` を書く | — | Stop hook [claude-work-report-check](../chezmoi/dot_local/bin/executable_claude-work-report-check)（PR #270→#294 で契約化）: arming = 旧冒頭文 / やり残し行 / counts トークン。ID・実数・超過理由（counts 行±1）を検査。**同数（created == closed かつ > 0）も超過として block・0/0 のみ免除**。counts は**最後**の counts 形トークンを採る（2026-08-27 まで先頭を採っており、締めより前の引用が実数を予算 gate と board 照合の両方から覆い隠していた）。CI に fixture 33 + 変異検証 | 🟡 締め自体の**発火**（完全な書き忘れ）は判定不能で 📖 のまま |
 | 生成予算 created ≤ closed − 1・icebox 既定（Work closing 節・Workflow 節） | 予算内に収める。起票既定は icebox（ユーザー明示依頼は対象外） | — | 同 Stop hook が実数と超過理由を強制。**2026-08-19 まで等号（`closed 3 / created 3`）を素通しさせており、規範を常に 1 件ぶん見逃していた**（PR で `created ≥ closed` かつ `created > 0` に修正。0/0 は board を増やさないので免除）。block メッセージが挙げていた救済策「icebox に落として数字を下げる」は**実行不能**だったので撤去 —— furrow に起票の取り消しは無く、created は lane 非依存に窓内の起票を数えるため。**lane 選択は今も見ていない** | 🟡 |
 | 質問・報告フロー（一問一答・推奨・委任）（Work closing 節） | 一問一答・推奨つき | 裁定・「残り全部推奨で」の委任 | なし | 📖 |
 | furrow 一本化（Workflow 節）・wrapper 使用と開発時 `go run` 例外（Tools 節） | PATH の `furrow` を叩く | — | `packages.nix` の source-build wrapper。brew 版未導入なので shadow は構造的に不発 | 🟡 |

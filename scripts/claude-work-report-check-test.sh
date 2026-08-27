@@ -105,6 +105,26 @@ run "closed 0 / created 0 は免除 → allow" \
   "$(mk 'やり残し: なし
 closed 0 / created 0')" allow
 
+# counts は「最後の counts 形」を採る。先頭を採っていた頃は、規約の引用や repo ごとの
+# 内訳が本物の宣言を覆い隠して予算 gate も board 照合も黙って通った（2026-08-19 実地）。
+run "前方に counts 形の引用があっても締めの数字で判定する → block" \
+  "$(mk '規約は closed 5 / created 1 の形です。
+やり残し: なし
+closed 1 / created 9')" block
+
+run "前方の引用が超過でも、締めが予算内なら → allow" \
+  "$(mk '規約は closed 1 / created 9 の形です。
+やり残し: なし
+closed 5 / created 1')" allow
+
+# 理由行の探索も最後の counts 行に固定する。前方一致に引きずられていた頃は、正しい
+# 位置に書いた理由が採用されず false BLOCK になった。
+run "前方に counts 形の引用があっても、締めの直後の理由行が効く → allow" \
+  "$(mk 'この検査は closed 3 / created 3 のような形を見ます。
+やり残し: t-ab3d
+closed 1 / created 2
+理由: 今日の作業が生んだ blocker')" allow
+
 run "全角混じり・語順どおりなら読める → allow" \
   "$(mk '品質担保できる範囲まで作業続けました。
 やり残しは task 化済: t-ab3d
@@ -188,6 +208,12 @@ PATH="$shimdir:$PATH" run "created 過大申告（宣言側が多い）→ allow
   "$(mkt 'やり残し: なし
 closed 2 / created 1
 理由: 今日の作業が生んだ blocker を起票')" allow
+
+mkshim '{"created":0,"closed":2,"created_ids":[],"closed_ids":["t-a1","t-b2"]}'
+PATH="$shimdir:$PATH" run "board 照合も締めの counts を見る（前方の引用は実数と突合しない）→ allow" \
+  "$(mkt '規約は closed 9 / created 0 の形です。
+やり残し: なし
+closed 2 / created 0')" allow
 
 mkshim ERR
 PATH="$shimdir:$PATH" run "furrow が exit 2（board 圏外）→ allow (fail-open)" "$(mkt "$close_msg")" allow
