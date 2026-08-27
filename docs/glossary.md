@@ -402,6 +402,12 @@ one output, this cuts between runs).
 commentable lines of the diff.
 - **Don't call it:** review bot, コメント投稿ツール
 
+### `projects`
+**The convention CLI for the board** (`lint` / `burndown` / `epic provision`). furrow owns the
+board's structure; this owns the conventions layered on top of it. Source-run from the
+`projects` checkout, so there is no release identity and no `--version`.
+- **Don't call it:** projects_cli.py, board lint, タスク CLI
+
 ### `peekaboo` / `wait4x`
 Not home-built — **external CLIs that have been adopted**. peekaboo = fetching and driving the
 macOS AX tree (GUI verification), wait4x = waiting on a condition (log line / port / HTTP /
