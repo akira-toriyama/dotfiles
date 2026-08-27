@@ -246,7 +246,7 @@ From [the "Secret handling" section of CLAUDE.md](../CLAUDE.md#secret-handling-y
 | Job | What it does | runner |
 |---|---|---|
 | `nix flake check (eval only)` | Nix eval/type checking | ubuntu-latest |
-| `lint` | `scripts/lint --ci` (the 13 PR/push gates: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks — the 14th, `lychee-external`, is the nightly job below) | ubuntu-latest |
+| `lint` | `scripts/lint --ci` (the 14 PR/push gates: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / actionlint / typos / lychee / doc-paths / claude-md-guard / review-copy-guard / gitleaks — the 15th, `lychee-external`, is the nightly job below) | ubuntu-latest |
 | `convention / executable_ prefix` | Enforces the `executable_` prefix on shebang scripts under `chezmoi/` (exceptions: `run_*` / `modify_*` / `.chezmoiscripts/`) | ubuntu-latest |
 | `script test` | The Stop hook fixtures + the unittests in `scripts/**` and `scripts/claude-md-eval/` | ubuntu-latest |
 | `chezmoi templates render` | execute-template verification of every `.tmpl` (with the latest version from get.chezmoi.io) | ubuntu-latest |
