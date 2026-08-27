@@ -3,7 +3,7 @@
 # numbers into the opening context.
 #
 # WHY: the model-routing invariant (Fable% ≥ Weekly%, global CLAUDE.md
-# 「モデル運用」) was the ledger's weakest 📖 — it only fired if the model
+# 「Model operations」) was the ledger's weakest 📖 — it only fired if the model
 # remembered to read ~/.claude.json mid-session. This hook turns "go read the
 # cache" into "the numbers are already in front of you" at session start.
 #

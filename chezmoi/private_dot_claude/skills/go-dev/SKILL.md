@@ -57,7 +57,7 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 - **golden test は `testdata/*.golden.json` に byte 一致**、`var update = flag.Bool("update",…)` で再生成（`go test ./pkg -update`）。golden と対で determinism test（marshal→parse→re-marshal が byte 一致）＋fixture を意図的に unsorted / CJK / nil-vs-populated で adversarial に。
 - **pure core は `FuzzXxx`** で invariant（never panic・budget 厳守・出力は入力の verbatim subset・count 非負）を検証、`f.Add` で代表 corpus を seed、fuzzed int は production reachable 範囲に clamp。CI で bounded `-fuzztime`（15–30s）を Ubuntu-only で。
 - 常に **`-race`**（coverage gate 時は `-covermode=atomic`＋`go tool cover -func | tail -1` を summary に。数値 threshold gate は張らず informational）。
-- **test 出力を読む時は `<runner> 2>&1 | pare --profile test`**（`go test`/`swift test` の失敗 assertion ブロックを予算内に丸ごと保持・成功は畳む＝再実行を減らす。正典は CLAUDE.md「自作 CLI」節の pare bullet — ここは point-of-use の pointer）。
+- **test 出力を読む時は `<runner> 2>&1 | pare --profile test`**（`go test`/`swift test` の失敗 assertion ブロックを予算内に丸ごと保持・成功は畳む＝再実行を減らす。正典は CLAUDE.md「Tools」節の pare bullet — ここは point-of-use の pointer）。
 - **mock より real dependency**: git は `os/exec` で本物＋`gitOrSkip`（不在は `t.Skip`）＋pinned committer identity。GitHub API は `httptest.Server` を client struct の base/http field に注入。bubbletea は teatest で headless に本物を driving し frame＋store 副作用の両方を assert。exit-code は string でなく typed sentinel＋`errors.As`（`assertExitCode`）で見る。
 
 ## build / release / distribution ※ 運用面は github-practices

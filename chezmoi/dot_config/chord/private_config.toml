@@ -285,9 +285,12 @@ input = "ctrl - d"
 action-keys = "forward_delete"
 
 # doc: Return
+# ctrl-j / ctrl-l は remap しない（azooKey hardcode の Ctrl+J ひらがな /
+# Ctrl+L 全角英数に譲る — 2026-08-26 指示、t-pzgs）。Return は CR と同義の
+# ctrl-m に置く。azooKey も変換中 Ctrl+M を enter に取るので競合しない。
 [[bindings]]
-name = "ctrl-j → return"
-input = "ctrl - j"
+name = "ctrl-m → return"
+input = "ctrl - m"
 action-keys = "return"
 
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # claude-work-report-check — Claude Code Stop hook: validate the work-session
-# closing contract (global CLAUDE.md「作業の締め」).
+# closing contract (global CLAUDE.md「Work closing」).
 #
 # WHAT IT ENFORCES: a work-session close must carry two VERIFIABLE elements,
 # wording otherwise free (the verbatim template was retired 2026-07-28):
 #   1. a やり残し line with at least one furrow task id (t-xxxx) or 「なし」
 #   2. a counts line `closed N / created M`; when M >= N and M > 0 (budget is
-#      created ≤ closed − 1, projects/CLAUDE.md「board を収束させる」, so EQUAL
+#      created ≤ closed − 1, projects/CLAUDE.md §5 Converge the board, so EQUAL
 #      counts already overrun it), a reason must sit on the counts line or the
 #      line right after it. 0/0 is exempt: it adds nothing to the board.
 #   3. (furrow t-64tw) the counts must not contradict the BOARD: actuals come
@@ -79,7 +79,7 @@ if [ -n "$decl" ]; then
 fi
 
 if [ "$ok_decl" -eq 0 ]; then
-  jq -n '{decision: "block", reason: "作業の締めに検証可能な「やり残し」宣言がありません（global CLAUDE.md「作業の締め」— ID は furrow show で検証できるが、文だけでは検証できない）。「やり残し: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「やり残し: なし」と書いてください。作業の締めでないなら、断り書きを足すのではなく判定語を本文から消してください（「締めではない」と書き添えても語が残る限り次のターンでまた止まります。arming は「やり残し」の語・「closed N / created M」形・旧冒頭文の 3 つで、引用や説明のための出現も区別しません）。直したらそのまま停止してよい。"}'
+  jq -n '{decision: "block", reason: "作業の締めに検証可能な「やり残し」宣言がありません（global CLAUDE.md「Work closing」— ID は furrow show で検証できるが、文だけでは検証できない）。「やり残し: t-xxxx, t-yyyy」と ID を列挙するか、本当に無ければ「やり残し: なし」と書いてください。作業の締めでないなら、断り書きを足すのではなく判定語を本文から消してください（「締めではない」と書き添えても語が残る限り次のターンでまた止まります。arming は「やり残し」の語・「closed N / created M」形・旧冒頭文の 3 つで、引用や説明のための出現も区別しません）。直したらそのまま停止してよい。"}'
   exit 0
 fi
 
@@ -119,7 +119,7 @@ created_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | tail -1)
 if [ "$created_n" -gt 0 ] && [ "$created_n" -ge "$closed_n" ]; then
   reason_zone=$(printf '%s' "$msg" | grep -iE -A1 "$counts_re" | head -2)
   if ! printf '%s' "$reason_zone" | grep -qE '理由|例外|blocker|ブロッカー'; then
-    jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md「board を収束させる」— 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。**起票したあとで数字は下げられません** — furrow に起票の取り消しコマンドは無く、created は lane と無関係に窓内の起票を数えるので、icebox へ落としても実数は変わらず、申告だけ減らすと下の board 実数照合が created 過少申告として弾きます。取れる手は 2 つだけです: (a) まだ起票していないものを起票せずにその場で直す（effort ≤ 2 かつ今触っているコード内）(b) 超過の理由を counts 行かその直後の行に 1 行添える。直したらそのまま停止してよい。")}'
+    jq -n --arg c "$closed_n" --arg m "$created_n" '{decision: "block", reason: ("生成予算を超えています（closed \($c) / created \($m)）。projects/CLAUDE.md §5 Converge the board — 予算は created ≤ closed − 1 で、超えてよいのは今日の作業が生んだ blocker だけです。**起票したあとで数字は下げられません** — furrow に起票の取り消しコマンドは無く、created は lane と無関係に窓内の起票を数えるので、icebox へ落としても実数は変わらず、申告だけ減らすと下の board 実数照合が created 過少申告として弾きます。取れる手は 2 つだけです: (a) まだ起票していないものを起票せずにその場で直す（effort ≤ 2 かつ今触っているコード内）(b) 超過の理由を counts 行かその直後の行に 1 行添える。直したらそのまま停止してよい。")}'
     exit 0
   fi
 fi

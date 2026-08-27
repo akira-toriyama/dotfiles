@@ -338,10 +338,73 @@ jobs:
           fi
           echo "✅ 全 declared cask が install 済み"
 
+      - name: Verify brews installed（非致命化の盲点・warning 止まり）
+        # homebrew-nonfatal.nix で brew bundle が switch を落とさなくなった結果、
+        # switch の exit code は formula の失敗をもう教えてくれない。cask 側にはこの
+        # 検証があったが brews 側には無かったので、放置すると「緑なのに formula が
+        # 3 本欠けている」状態を CI が見逃す。
+        # error ではなく warning なのは、runner の brew 破損（2026-08-26 の openssl@3）
+        # まで ci-gate を赤くすると main が環境要因で永久に止まるため。実機側の硬い
+        # ゲートは install.sh の V6-brews と daily の check-dotfiles-drift.sh が持つ。
+        # tap 修飾（hashicorp/tap/packer）は install.sh の V6 と同じく basename に落とす。
+        run: |
+          export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
+          nix eval --impure --json ".#darwinConfigurations.ci.config.homebrew.brews" \
+            | jq -r '.[] | if type=="string" then . else .name end' | sed 's|.*/||' | sort > /tmp/expected_brews.txt
+          echo "--- 期待 brews（flake 由来・単一ソース）---"; cat /tmp/expected_brews.txt
+          /opt/homebrew/bin/brew list --formula | sort > /tmp/installed_brews.txt
+          missing=$(comm -23 /tmp/expected_brews.txt /tmp/installed_brews.txt)
+          if [ -n "$missing" ]; then
+            echo "::warning::declared formula(e) not installed:"
+            # shellcheck disable=SC2001  # 複数行への prefix 付与。sed の方が読める。
+            echo "$missing" | sed 's/^/  - /'
+            {
+              echo "### brew formula 未 install（非致命）"
+              # shellcheck disable=SC2001
+              echo "$missing" | sed 's/^/- /'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ 全 declared formula が install 済み"
+          fi
+          # receipt の有無は install.sh の V6-brew-bundle が依存する契約なので、
+          # 「出ていない」を沈黙で表さない。2026-08-26 に receipt が後段の step から
+          # 見えない事象を観測しており、無音だと成功と見分けが付かない。
+          if [ -f /var/log/dotfiles/brew-bundle.failed ]; then
+            echo "::warning::brew bundle receipt が残っている: $(tr '\n' ' ' < /var/log/dotfiles/brew-bundle.failed)"
+          else
+            echo "receipt 無し"
+            ls -ld /var/log/dotfiles 2>&1 || true
+          fi
+
       - name: chezmoi apply (dot_claude / VSCode 拡張 / 他)
         run: |
           export PATH="/etc/profiles/per-user/runner/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$PATH"
           chezmoi --source ./chezmoi apply --verbose
+
+      - name: brew 失敗の封じ込め証明（canary variant・最後に流す）
+        # t-qehf の受け入れ条件「brew 1 formula 壊し → HM は生きる」の実証。
+        # 存在しない formula は brew bundle を fetch 段で落とす（実測: install 段まで
+        # 行かないので cask は 1 つも入らない）。だから canary を .#ci に混ぜると上の
+        # cask 検証を巻き添えにする。別 attr + 最後の 1 回に隔離するのはそのため。
+        # .#ci-brew-canary は ci.yml のこの行からしか参照されない（install.sh の
+        # FLAKE_HOST 既定は default、check-dotfiles-drift.sh は default 固定）。
+        run: |
+          set -o pipefail
+          sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#ci-brew-canary --show-trace 2>&1 | tee /tmp/canary.log
+          if ! grep -q 'BREW-BUNDLE-FAILED' /tmp/canary.log; then
+            echo "::error::brew の失敗が無音になっている（BREW-BUNDLE-FAILED が出ていない）"; exit 1
+          fi
+          if ! grep -q 'Activating home-manager configuration' /tmp/canary.log; then
+            echo "::error::brew 失敗で home-manager activation が止まっている（封じ込め失敗）"; exit 1
+          fi
+          if [ ! -f /var/log/dotfiles/brew-bundle.failed ]; then
+            echo "::error::receipt が書かれていない（install.sh の V6-brew-bundle が機能しない）"; exit 1
+          fi
+          want=$(nix eval --raw .#darwinConfigurations.ci-brew-canary.config.system.build.toplevel)
+          if [ "$(readlink -f /run/current-system)" != "$(readlink -f "$want")" ]; then
+            echo "::error::/run/current-system が世代更新されていない（brew 失敗が switch を無効化している）"; exit 1
+          fi
+          echo "✅ brew 失敗下でも HM activation と世代更新が到達した"
 
   # ── ゲート（branch protection の唯一の必須チェック）──────────────────────────
   # always() で常に走り全ジョブを needs。macOS が PR で skip されても skip は

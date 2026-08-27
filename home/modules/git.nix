@@ -19,7 +19,7 @@
   # 入れない。単一アカウントなら既定鍵で素の github.com 経由で通る。
   # なお ~/.ssh/config 本体の所有者は chezmoi（private_dot_ssh/private_config。
   # IdentityAgent 行を enforce・home-manager programs.ssh は使わない — read-only
-  # symlink だと 1Password の自動編集と衝突し得るため書ける実ファイル 600 を宣言。t-8qqz §5.1）。
+  # symlink だと 1Password の自動編集と衝突し得るため書ける実ファイル 600 を宣言）。
   programs.git = {
     enable = true;
 
