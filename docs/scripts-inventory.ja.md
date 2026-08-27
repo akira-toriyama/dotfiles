@@ -68,13 +68,12 @@
 全 shell 23 本は `scripts/lint` の `shellcheck` / `shfmt` ゲートを通っている
 （対象集合の正本は `scripts/lint` の `shell_files()`。ここに写しは置かない —— 写すと必ずずれる）。
 
-**テストがあるのは 8 本だけ**:
+**テストがあるのは 7 本だけ**:
 
 | script | テスト |
 |---|---|
 | `executable_git-stale-check` | `scripts/test_git_stale_check.py` |
 | `executable_claude-work-report-check` | `scripts/claude-work-report-check-test.sh` |
-| `executable_claude-furrow-board-note` | `scripts/test_claude_furrow_board_note.py` |
 | `executable_claude-fanout-cwd-guard` | `scripts/test_claude_fanout_cwd_guard.py` |
 | `executable_claude-board-shard-guard` | `scripts/test_claude_board_shard_guard.py` |
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
