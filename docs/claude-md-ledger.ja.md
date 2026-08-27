@@ -98,7 +98,7 @@
 | pare/cifail/rundiff の詳細解説（フラグ・profile の理由） | 縮約 | トリガー→コマンド 1 行ずつに | ツールの誤用が頻発したら |
 | 枠の読み方の jq 詳細（Model operations 節・2026-08-19） | 移設 | 実数は SessionStart hook が毎セッション出す — 読み方の正本は claude-quota-note script 自身 | hook が退役したら global へ戻す |
 | Mac アプリ節ごと（SwiftUI+Sill / AppKit は essential floor / 最新 macOS のみ）（2026-08-24） | skill 重複 | mac-app-dev skill に 3 事実とも既載（発火場面 = mac アプリ開発時 — ロード頻度と使用場面を一致させる。「分岐・workaround」の文言は同 PR で skill 側へ補完） | skill が発火せず旧 OS 分岐や AppKit 直行が混入したら global へ戻す |
-| board layout 直後の furrow source checkout `git pull`（schema-too-new）（2026-08-24） | 機構委譲 | SessionStart hook claude-furrow-board-note が writable:false を毎セッション表示・エラー名が自己記述的 | schema-too-new を board 障害と誤診する事故が再発したら |
+| board layout 直後の furrow source checkout `git pull`（schema-too-new）（2026-08-24） | 機構委譲 | furrow 自身が v5.0.0 以降 orient/listing read のたびに状態を開示: outdated board は両方の remedy を名指す READ-ONLY note・too-new board の read は大声で拒否（exit 3・"update furrow"）。dotfiles 側 SessionStart hook claude-furrow-board-note はその場しのぎで、リリース到達を受けて撤去（t-2kpc） | schema-too-new を board 障害と誤診する事故が再発したら |
 | Fable 枠の実数（枠 ≈ 全体 Weekly の 50%・重さ ≈ Opus の 2 倍）（2026-08-24） | 縮約 | 委譲判断は不変条件 `Fable% ≥ Weekly%` と 4 日目標で足りる。実数は claude-quota-note が毎セッション表示 | 枠の解釈違いによる委譲ミスが再発したら |
 | furrow の挙動解説（brief の出力内容・next の絞り込み。「active が無ければ意図的に空」だけ英訳版に残存）（2026-08-24） | 正典重複/縮約 | furrow の挙動は projects 正典と runtime 出力が自己記述 | brief 誤読による誤着手が再発したら |
 

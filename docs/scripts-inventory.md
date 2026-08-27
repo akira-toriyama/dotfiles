@@ -62,13 +62,12 @@ diverge in behavior, so **treat the `set` line in the `.sh` as canonical** and a
 All 23 shell scripts pass the `shellcheck` / `shfmt` gates in `scripts/lint`
 (the canonical target set is `shell_files()` in `scripts/lint`. No copy is kept here — a copy always drifts).
 
-**Only 8 have tests**:
+**Only 7 have tests**:
 
 | script | test |
 |---|---|
 | `executable_git-stale-check` | `scripts/test_git_stale_check.py` |
 | `executable_claude-work-report-check` | `scripts/claude-work-report-check-test.sh` |
-| `executable_claude-furrow-board-note` | `scripts/test_claude_furrow_board_note.py` |
 | `executable_claude-fanout-cwd-guard` | `scripts/test_claude_fanout_cwd_guard.py` |
 | `executable_claude-board-shard-guard` | `scripts/test_claude_board_shard_guard.py` |
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
