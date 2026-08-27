@@ -42,6 +42,7 @@ GATES: dict[str, str] = {
     "lychee": "docs",
     "doc-paths": "docs",
     "claude-md-guard": "docs",
+    "review-copy-guard": "docs",
     "lychee-external": "external",
     "gitleaks": "secret",
 }
@@ -327,6 +328,16 @@ def main(argv: list[str] | None = None) -> int:
         [
             sys.executable,
             str(ROOT / "scripts" / "claude_md_guard.py"),
+            *(["--ci"] if args.ci else []),
+        ],
+    )
+    # 宣言付き和訳レビュー写し（*.ja.md）を正本と同一変更で更新させない
+    # （#358 / #359 が 2 回踏み、基準 sha 宣言が嘘になった）。
+    r.run(
+        "review-copy-guard",
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "review_copy_guard.py"),
             *(["--ci"] if args.ci else []),
         ],
     )
