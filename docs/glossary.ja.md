@@ -1,6 +1,6 @@
 <!--
 この文書は glossary.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 1a2be8c。
+最新とは限りません — 基準: 英語版 @ 3c0b4e1。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -397,6 +397,12 @@ dotfiles が **config だけを持つ**自作 macOS アプリ 3 本（アプリ�
 **findings JSON を PR レビュー 1 本に束ねて投稿**する。アンカーを diff の commentable 行に照合する。
 - **Don't call it:** review bot, コメント投稿ツール
 
+### `projects`
+**board の規約 CLI**（`lint` / `burndown` / `epic provision`）。board の構造は furrow が持ち、
+その上に載る規約をこれが持つ。`projects` の checkout から source-run するので、
+リリース identity は無く `--version` も無い。
+- **Don't call it:** projects_cli.py, board lint, タスク CLI
+
 ### `peekaboo` / `wait4x`
 自作ではなく **adopt 済の外部 CLI**。peekaboo = macOS の AX ツリー取得と操作（GUI 検証）、
 wait4x = 条件待ち（ログ行 / port / HTTP / プロセス）。手書きの `until` + `sleep` は書かない。
@@ -453,6 +459,17 @@ guard 全体を無視させる）。配線は `modify_settings.json`。
 **global CLAUDE.md の各ルールが「機構で強制されているか / 散文頼みか」を 1 表にしたもの**。
 ルール本文は転記しない（正本は CLAUDE.md）。ルールを足す・変える PR では同一 PR で更新する。
 - **Don't call it:** ルール一覧, ポリシー表
+
+### レビュー写し（`*.ja.md`）
+**英語の正本の隣に置く、宣言付きの非正本な和訳**: 正本は正本であり続け、写しはユーザーの指示が
+あったときにだけ進め、正本と同一の変更では決して更新しない。だから設計上遅れており、冒頭 4 行の
+ヘッダが基準 commit を固定して遅れを宣言する。写しがどれだけ新しくても、正本が述べていない規則を
+述べていれば欠陥。ゲートは fleet の `repo-policy` チェック（ヘッダを 和訳 / 正本 / 基準 で grep
+する）と `scripts/lint` の `review-copy-guard`
+（[`scripts/review_copy_guard.py`](../scripts/review_copy_guard.py)、escape = commit footer
+`Review-copy-co-update:`）。正本は .github の
+[`doc-consistency-policy.md`](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md)。
+- **Don't call it:** translation, 翻訳版, README.ja, 和訳ファイル, ja doc
 
 ---
 
