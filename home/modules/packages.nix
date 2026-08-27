@@ -324,5 +324,31 @@ in
     # CLI（422 根絶）。target は明示引数 `owner/repo#N` で cwd 非依存・auth は gh を
     # 再利用 — (cd src) は build 用 subshell に閉じる（他 wrapper と同じ atomic mv）。
     (sourceBuiltCLI { name = "revpost"; })
+
+    # projects: board の規約 CLI（projects の scripts/projects_cli.py）を checkout の外から
+    # 叩くラッパ。sourceBuiltCLI と同じ「常に source を反映する」性質だけを持たせ、build 段階は
+    # 持たない —— 実体が Python stdlib のみで、cache も incremental build も要らないため
+    # （＝ Go 用の sourceBuiltCLI には乗せない）。
+    # ・cd しない: projects_cli.py は `Path(__file__).resolve().parent.parent` で root を解決し、
+    #   sub script を絶対パスで exec し、furrow 呼び出しには自分で cwd=root を渡す。呼び出し元の
+    #   cwd に依存する箇所が無いので cd は不要で、呼び出し元の cwd をそのまま保てる
+    #   （cwd を保つために subshell を要した furrow 側とは事情が違う）。
+    # ・python3 は PATH でなく nixpkgs 固定（go を PATH 優先にする sourceBuiltCLI とは逆）:
+    #   go は go.mod の floor に合わせる必要があるが、こちらは版の制約が無い。PATH 優先は
+    #   mise の python 未導入の窓（bootstrap 前・switch 直後）で落ちるだけで得が無い。
+    # ・clone 不在で素通ししない: `command -v projects` を可用性判定に使う呼び出し側を欺く
+    #   （コマンドは在るのに必ず失敗する）。sourceBuiltCLI と同じ理由・同じ exit 127 に揃える。
+    #   あちらの「前回ビルドで続行」fallback は build 成果物が無いので存在しない。
+    (writeShellApplication {
+      name = "projects";
+      text = ''
+        cli=/Volumes/workspace/github.com/akira-toriyama/projects/scripts/projects_cli.py
+        if [ ! -f "$cli" ]; then
+          echo "✘ projects の clone が無い ($cli)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+          exit 127
+        fi
+        exec ${pkgs.python3}/bin/python3 "$cli" "$@"
+      '';
+    })
   ];
 }
