@@ -1,6 +1,6 @@
 <!--
 この文書は operations.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 1a2be8c。
+最新とは限りません — 基準: 英語版 @ b8b29e5。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -252,7 +252,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 | ジョブ | 内容 | runner |
 |---|---|---|
 | `nix flake check (eval only)` | Nix の eval/型検査 | ubuntu-latest |
-| `lint` | `scripts/lint --ci`（PR/push ゲート 13 本: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks — 14 本目の `lychee-external` は下の nightly ジョブ） | ubuntu-latest |
+| `lint` | `scripts/lint --ci`（PR/push ゲート 14 本: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / actionlint / typos / lychee / doc-paths / claude-md-guard / review-copy-guard / gitleaks — 15 本目の `lychee-external` は下の nightly ジョブ） | ubuntu-latest |
 | `convention / executable_ prefix` | `chezmoi/` の shebang スクリプトに `executable_` 接頭辞を強制（例外: `run_*` / `modify_*` / `.chezmoiscripts/`） | ubuntu-latest |
 | `script test` | Stop hook の fixture + `scripts/**` と `scripts/claude-md-eval/` の unittest | ubuntu-latest |
 | `chezmoi templates render` | 全 `.tmpl` の execute-template 検証（get.chezmoi.io の最新版で） | ubuntu-latest |
