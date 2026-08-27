@@ -1,6 +1,6 @@
 <!--
 この文書は operations.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 13d20e6。
+最新とは限りません — 基準: 英語版 @ 1a2be8c。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -112,7 +112,7 @@ sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure
 
 ### カスタム tap の cask の場合
 
-`homebrew.taps = [ "owner/repo" ]` も追加。既存例: `barutsrb/tap` for `omniwm`。
+`homebrew.taps = [ "owner/repo" ]` も追加。既存例: `steipete/tap` for `peekaboo`（brew — 現状カスタム tap 由来の cask は無い）。
 
 </details>
 
@@ -149,7 +149,7 @@ switch を落とさないため。PR #108 で常用 + bootstrap 共通方針に�
 |---|---|---|
 | nixpkgs にある汎用 CLI | `home/modules/packages.nix` | `jq`, `gh`, `chezmoi`, `docker`, `_1password-cli` |
 | nixpkgs に無い / macOS 専用 CLI | `system/modules/homebrew.nix` の `brews = [ ... ]` | `blueutil`, `duti` 等（現状空） |
-| カスタム tap | `system/modules/homebrew.nix` の `taps = [ ... ]` + 対応 `casks/brews` | `barutsrb/tap` → `omniwm` |
+| カスタム tap | `system/modules/homebrew.nix` の `taps = [ ... ]` + 対応 `casks/brews` | `steipete/tap` → `peekaboo` |
 | ランタイム（node / python / deno / ruby） | `home/modules/mise.nix` の `globalConfig.tools` | `node = "lts"`, `python = "3.13"` |
 | DSL のあるプログラム設定（zsh / git / mise 等） | `home/modules/*.nix` の `programs.*` | `programs.zsh.*`, `programs.mise.*` |
 | macOS defaults（dock / finder / -g 等） | `system/modules/defaults.nix` | `system.defaults.dock.autohide` 等 |
@@ -252,7 +252,7 @@ sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/i
 | ジョブ | 内容 | runner |
 |---|---|---|
 | `nix flake check (eval only)` | Nix の eval/型検査 | ubuntu-latest |
-| `lint` | `scripts/lint --ci`（ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / tmpl-plist / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks の 14 ゲート） | ubuntu-latest |
+| `lint` | `scripts/lint --ci`（PR/push ゲート 13 本: ruff / ruff-format / mypy / shellcheck / shfmt / exec-bit / tmpl-shellcheck / actionlint / typos / lychee / doc-paths / claude-md-guard / gitleaks — 14 本目の `lychee-external` は下の nightly ジョブ） | ubuntu-latest |
 | `convention / executable_ prefix` | `chezmoi/` の shebang スクリプトに `executable_` 接頭辞を強制（例外: `run_*` / `modify_*` / `.chezmoiscripts/`） | ubuntu-latest |
 | `script test` | Stop hook の fixture + `scripts/**` と `scripts/claude-md-eval/` の unittest | ubuntu-latest |
 | `chezmoi templates render` | 全 `.tmpl` の execute-template 検証（get.chezmoi.io の最新版で） | ubuntu-latest |
@@ -402,7 +402,7 @@ chord --doctor
 
 git は **clone 同梱の hook/設定を自動では有効化しない**（悪意あるリポを clone した瞬間にコードが走るのを防ぐセキュリティ仕様）。そのため `core.hooksPath` は次の経路で自動設定する:
 
-- **新 PC**: `install.sh` が clone 直後に設定（§3.5）。
+- **新 PC**: `install.sh` が `repo` フェーズで、clone 直後に設定。
 - **それ以外の clone（ghq / 手動 `git clone` 等）**: [`chezmoi/run_onchange_after_enable-git-hooks.sh`](../chezmoi/run_onchange_after_enable-git-hooks.sh) が **`chezmoi apply` のたび**に `CHEZMOI_SOURCE_DIR` から「いま使っている clone」の repo root を特定し、best-effort で設定する。`chezmoi source-path` が指す = 実際に push する clone なので確実に当たる。
 
 手動でやるなら（上記が走る前に効かせたい等）:
@@ -425,8 +425,8 @@ ghq レイアウトで一括 SSH clone するコマンド。fork・private を�
 ghq-get-mine
 ```
 
-- **いつ**: 新 repo を作った後の追従 / 新 Mac では install.sh §6.5 が自動実行
-  （対話モードのみ、CI は skip）
+- **いつ**: 新 repo を作った後の追従 / 新 Mac では install.sh の `clone` フェーズが自動実行
+  （opt-out は `--skip-clone` のみ）
 - **冪等**: clone 済み repo は no-op（`-u` は付けない = working copy 不可侵）
 - **前提**: gh 認証（or `GITHUB_TOKEN`）+ GitHub への SSH 疎通。未整備なら
   1 行 warn で fail-fast → 整備後に再実行すれば欠けた分だけ補完される

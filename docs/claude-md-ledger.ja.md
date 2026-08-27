@@ -1,6 +1,6 @@
 <!--
 この文書は claude-md-ledger.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 13d20e6。
+最新とは限りません — 基準: 英語版 @ 5112e84。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -130,6 +130,6 @@
 
 ## 運用
 
-- global CLAUDE.md にルールを足す・変える・削る PR では、**同一 PR でこの台帳の行（削除なら削除記録）を更新する**。この義務の正本は [dotfiles/CLAUDE.md](../CLAUDE.md) の「global CLAUDE.md / skill の散文を変えるとき」節。強制は `scripts/lint` の `claude-md-guard` ゲート（escape は commit footer `Ledger-unchanged: <理由>`）。
+- global CLAUDE.md にルールを足す・変える・削る PR では、**同一 PR でこの台帳の行（削除なら削除記録）を更新する**。この義務の正本は [dotfiles/CLAUDE.md](../CLAUDE.md) の「When changing the prose of the global CLAUDE.md or a skill」節。強制は `scripts/lint` の `claude-md-guard` ゲート（escape は commit footer `Ledger-unchanged: <理由>`）。
 - global CLAUDE.md が **dotfiles の実ファイル名を裸で参照する箇所**は、リネーム時に同一 PR で追従する。強制は `scripts/lint` の `doc-paths` ゲートの `FLEET_CLAIMS`（`scripts/doc_paths.py`）で、双方向に見る —— 値のパスが実在すること、かつキーが今も文書から言及されていること。**どの名前が対象かはこの台帳に写さない**（`FLEET_CLAIMS` が機械正本）。以前ここに「6 箇所」と件数を書いていたが、0 ベース再構成で参照が減っても数だけ残って嘘になった。
 - 📖 の行の機構化は rule of two を満たすものだけ task 化する。

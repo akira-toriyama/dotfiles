@@ -1,6 +1,6 @@
 <!--
 この文書は glossary.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 13d20e6。
+最新とは限りません — 基準: 英語版 @ 1a2be8c。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -151,6 +151,17 @@ PATH 継承の問題で **フルパス** `sudo /run/current-system/sw/bin/darwin
 switch ...` で呼ぶ。
 - **Don't call it:** apply, deploy, system update, 切替
 
+### brew bundle receipt
+**`brew bundle` が失敗したときに activation が残すファイル**:
+`/var/log/dotfiles/brew-bundle.failed`。`homebrew-nonfatal.nix` が失敗した formula で
+activation を中断させなくなったため、switch の exit code は brew の異常を報告しない ——
+代わりに receipt がそれを運ぶ。書き手は
+[`system/modules/scripts/brew-bundle-nonfatal.sh`](../system/modules/scripts/brew-bundle-nonfatal.sh)、
+読み手は `install.sh`（`V6-brew-bundle` の検査が `RESULT: FAILED` に変換する）と、
+switch が常に 0 を返すようになると発火しなくなる switch fallback。bundle が成功する
+たびに消えるので、古い receipt が結果を FAILED に固定することはない。
+- **Don't call it:** brew ログ, エラーファイル, marker
+
 ### `chezmoi diff`
 **ソース ⇔ 実体の差分**。`apply` 前に必ず通す検証ゲート。
 - **Don't call it:** preview, dry-run, プレビュー
@@ -247,8 +258,8 @@ install.sh の各 run が `~/.dotfiles-install/<run-id>/` に残す機械可読�
 ### `ghq-get-mine`
 **自リポジトリ一括 clone コマンド**。GitHub 上の akira-toriyama の active
 （非 archived）repo を `GHQ_ROOT`（`/Volumes/workspace`）へ ghq レイアウトで
-SSH clone する。冪等（clone 済みは no-op）。install.sh §6.5 と日常の新 repo
-追従で使う。
+SSH clone する。冪等（clone 済みは no-op）。install.sh の `clone` phase
+（`df_step ghq-get-mine`）と日常の新 repo 追従で使う。
 - 所在: [`home/modules/packages.nix`](../home/modules/packages.nix)
   （`writeShellScriptBin`）/ 運用手順は
   [operations.md §5.12](operations.md)

@@ -1,6 +1,6 @@
 <!--
 この文書は reproduction-architecture.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ d72c104。
+最新とは限りません — 基準: 英語版 @ 1a2be8c。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -123,7 +123,7 @@ chezmoi apply                                              # dotfile
 順序の要点:
 - **workspace volume を Nix より前**で作る — `ghq.root`（home-manager で `GHQ_ROOT=/Volumes/workspace` 宣言）が指す path を darwin-rebuild より先に実在させる。Nix 自体は `/nix` 用に case-sensitive APFS Volume を自前で作るが、ユーザー作業領域はこちら側で用意する。
 - **chezmoi を最後**にする（`op signin` 済みでないと秘密テンプレートが失敗するため）。
-- 実装は [install.sh](../install.sh) の §1.5 を参照（冪等: 既に case-sensitive 領域があれば skip）。
+- 実装は [install.sh](../install.sh) の `workspace-volume` フェーズを参照（冪等: 既に case-sensitive 領域があれば skip）。
 
 ### 3.1 無人実行の前提条件（変更時は必ずここを見る）
 

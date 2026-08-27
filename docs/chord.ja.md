@@ -1,6 +1,6 @@
 <!--
 この文書は chord.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ d72c104。
+最新とは限りません — 基準: 英語版 @ 7b7e9d2。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -70,10 +70,10 @@ private_config.toml の `# doc:` 行＋`[[bindings]]` を編集 →
 
 | Chord | Action | Apps |
 |---|---|---|
-| `TU_LL_C` | タブを左へ（Chrome: Ctrl+Shift+Tab） | com.google.Chrome |
-| `TU_LL_C` | タブを左へ（VS Code: Cmd+Shift+[） | com.microsoft.VSCode |
-| `TU_LL_V` | タブを右へ（Chrome: Ctrl+Tab） | com.google.Chrome |
-| `TU_LL_V` | タブを右へ（VS Code: Cmd+Shift+]） | com.microsoft.VSCode |
+| `TU_RR_J` | タブを左へ（Chrome: Ctrl+Shift+Tab） | com.google.Chrome |
+| `TU_RR_J` | タブを左へ（VS Code: Cmd+Shift+[） | com.microsoft.VSCode |
+| `TU_RR_K` | タブを右へ（Chrome: Ctrl+Tab） | com.google.Chrome |
+| `TU_RR_K` | タブを右へ（VS Code: Cmd+Shift+]） | com.microsoft.VSCode |
 | `TU_LL_D` | 前のウィンドウへ（rift フォーカス） | * |
 | `TU_LL_G` | 次のウィンドウへ（rift フォーカス） | * |
 | `TU_LL_F` | ドラッグスクロール（押している間、マウス移動がスクロールになる） | * |
@@ -84,7 +84,7 @@ private_config.toml の `# doc:` 行＋`[[bindings]]` を編集 →
 | `Ctrl + N` | ↓ Down | * |
 | `Ctrl + H` | Backspace | * |
 | `Ctrl + D` | 前方削除（Forward Delete） | * |
-| `Ctrl + J` | Return | * |
+| `Ctrl + M` | Return | * |
 | `Ctrl + Fn + right` | スペース右へ移動しつつ facet tree 表示（ctrl+→） | * |
 | `Ctrl + Fn + left` | スペース左へ移動しつつ facet tree 表示（ctrl+←） | * |
 
