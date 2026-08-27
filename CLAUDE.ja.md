@@ -1,6 +1,6 @@
 <!--
 この文書は CLAUDE.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 4eedb58。
+最新とは限りません — 基準: 英語版 @ 3da4d30。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -73,7 +73,7 @@ flowchart TD
 - `.chezmoiroot = chezmoi` — リポジトリ直下は Nix flake、dotfile ソースは `chezmoi/` 配下。
 - リポジトリ運用ファイル（`README.md` `install.sh` `docs/` `.github/` `CLAUDE.md` 等）は `chezmoi/` の**外**にあるため `$HOME` に適用されない。
 - `chezmoi/` 配下のスクリプトは `executable_` 接頭辞で +x を再現（**CI で強制**）。
-- 例外的に `run_*` と `.chezmoiscripts/` 配下は chezmoi 自身が実行するので接頭辞不要。
+- 例外的に `run_*` / `modify_*` と `.chezmoiscripts/` 配下は chezmoi 自身が実行するので接頭辞不要。
 
 ## GitHub / CI
 
@@ -82,7 +82,7 @@ flowchart TD
 - **コミットメッセージは gitmoji-driven**（`<:gitmoji:>[(<scope>)][!] <subject>`。Conventional の `<type>` 語は退役済み）。規約の正本は .github の [CONTRIBUTING.md](https://github.com/akira-toriyama/.github/blob/main/CONTRIBUTING.md)（[docs/commit-convention.md](docs/commit-convention.md) は fleet 配布のポインタ・機械検査 = `glyph lint`）。**push 前に `glyph lint --range origin/main..HEAD`**（履歴には退役形式の commit が残っているので `git log` を手本にしない）。
 - **CI ジョブ（[.github/workflows/ci.yml](.github/workflows/ci.yml)、push と PR でトリガー）**:
   - `nix flake check --no-build` — Nix の型/eval 検査（Linux runner）
-  - `lint` — `scripts/lint` 一本（ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` は render 後に shellcheck・plist 構文 / コードスパン内のパス実在）。**ローカルでも同じコマンドが走る**: `nix develop .#lint --command scripts/lint`
+  - `lint` — `scripts/lint` 一本（ruff / mypy --strict / shfmt / shellcheck / actionlint / typos / lychee --offline / gitleaks / `.tmpl` は render 後に shellcheck / コードスパン内のパス実在）。**ローカルでも同じコマンドが走る**: `nix develop .#lint --command scripts/lint`
   - `script test` — Stop hook の fixture テスト + `scripts/` と `scripts/claude-md-eval/` の unittest
   - 規約検知 — `chezmoi/` 配下 shebang スクリプトの `executable_` 接頭辞を強制（例外: `run_*` / `modify_*` / `.chezmoiscripts/`）
   - `chezmoi templates render` — 全 `.tmpl` の `execute-template` 検証
@@ -156,7 +156,7 @@ chezmoi add <path>                                                              
 op read "op://Vault/Item/field"
 ```
 
-## Roadmap board / task tracker
+## Roadmap board
 
 dotfiles の作業タスク（バックログ・設計メモ・引き継ぎ）の**正本は furrow + private repo
 [`akira-toriyama/projects`](https://github.com/akira-toriyama/projects)**。
