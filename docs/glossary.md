@@ -378,8 +378,8 @@ tracker repo `projects`.
 - **Don't call it:** todo CLI, task tracker, タスクツール／install 版・brew 版
 
 ### `glyph`
-**The engine of the commit convention** (gitmoji → semver → release notes). lint, semver and
-notes are all glyph.
+**The engine of the commit convention** (subject sigil → semver → release notes). lint, semver
+and notes are all glyph.
 - **Don't call it:** commitlint, conventional-commits ツール, git-cliff
 
 ### `pare`

@@ -155,8 +155,9 @@ Canon for operating rules = projects/CLAUDE.md (canon map).
 
 ## Commits
 
-- gitmoji-driven: `<:gitmoji:>[(<scope>)][!] <subject>`. Don't recite the
-  convention from memory — open CONTRIBUTING.md (canon map).
+- gitmoji-driven: `<:gitmoji:>[(<scope>)]<sigil> <subject>` — the sigil carries
+  the version signal, the gitmoji decides nothing. Don't recite the convention
+  from memory — open CONTRIBUTING.md (canon map).
 - **Before pushing: `glyph lint --range origin/main..HEAD`** (failing in CI
   after the push wastes a round trip — it has happened).
 - Subject and body in English; no Japanese translation attached.
