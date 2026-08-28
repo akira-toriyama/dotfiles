@@ -1,6 +1,6 @@
 <!--
 この文書は glossary.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 3c0b4e1。
+最新とは限りません — 基準: 英語版 @ fd98806。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -378,7 +378,7 @@ dotfiles が **config だけを持つ**自作 macOS アプリ 3 本（アプリ�
 - **Don't call it:** todo CLI, task tracker, タスクツール／install 版・brew 版
 
 ### `glyph`
-**commit 規約のエンジン**（gitmoji → semver → release notes）。lint も semver も notes も glyph。
+**commit 規約のエンジン**（subject の sigil → semver → release notes）。lint も semver も notes も glyph。
 - **Don't call it:** commitlint, conventional-commits ツール, git-cliff
 
 ### `pare`
