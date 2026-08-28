@@ -63,7 +63,7 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 ## build / release / distribution ※ 運用面は github-practices
 - **3層 distribution**: (1) self-contained `flake.nix`（`nix run github:owner/repo`）、(2) **GoReleaser** cross-compile＋Homebrew **cask**（binary formula は GoReleaser v2 で deprecated）を tap に auto-push、(3) source `install.sh` → `~/.local/bin`。
 - release build は必ず **`-trimpath` ＋ `-ldflags "-s -w"` ＋ `CGO_ENABLED=0`**（reproducible・小・static cross-compile）。matrix linux/darwin × amd64/arm64、`tar.gz`＋`checksums.txt`。unsigned cask は `post.install` の `xattr -dr com.apple.quarantine` で Gatekeeper 突破。
-- **release は tag driven のみ**（`on: push: tags: ['v*']`）、notes は **`glyph notes --since-tag=<base>`** で on-the-fly（CHANGELOG.md を commit しない・`runner.temp` に書いて `--release-notes`）。**semver も notes も gitmoji 駆動**（`:sparkles:`→minor / `:bug:` `:zap:` 等→patch / `:boom:`・`!`・`BREAKING CHANGE:`→major。正本は .github の CONTRIBUTING.md・機械検査は `glyph lint`）。git-cliff は置き換え済み。
+- **release は tag driven のみ**（`on: push: tags: ['v*']`）、notes は **`glyph notes --since-tag=<base>`** で on-the-fly（CHANGELOG.md を commit しない・`runner.temp` に書いて `--release-notes`）。**semver も notes も subject の sigil 駆動**（gitmoji は読み手向けで版を決めない。文法の正本は repo 自身の `glyph.toml`、その上に立つ規約は .github の CONTRIBUTING.md・機械検査は `glyph lint`。対応表をここに写さない）。git-cliff は置き換え済み。
 - **`scripts/check.sh` を CI と byte 一致の mirror に**（build / vet / race test / lint / vulncheck / smoke）＝「green here == green CI」を Claude が headless に確認。⚠️ `set -e` 下の drift check は bare `diff`（`diff && echo` は `&&` 左辺が errexit 免除で drift を握り潰す）。GoReleaser は `~> 2` に pin（latest 禁止）。
 
 ## style & lint 設定
