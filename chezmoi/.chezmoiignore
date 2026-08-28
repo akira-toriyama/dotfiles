@@ -10,5 +10,6 @@
 **/__pycache__
 
 # 人間向けの和訳レビュー写し（t-0btf 方式・英語正本の隣に置く）。
-# repo 内でだけ読むもので、$HOME へ配る意味が無い。
-.claude/CLAUDE.ja.md
+# repo 内でだけ読むもので、$HOME へ配る意味が無い。skills/ 配下の写しも同じ
+# （dotfiles#366 が SKILL.ja.md を配ってしまい、glob へ広げた）。
+.claude/**/*.ja.md
