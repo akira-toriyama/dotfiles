@@ -1,6 +1,6 @@
 <!--
 この文書は CLAUDE.md（英語・正本 — ~/.claude/CLAUDE.md の source）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 9566026。
+最新とは限りません — 基準: 英語版 @ fd98806。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -145,7 +145,8 @@
 
 ## Commits
 
-- gitmoji-driven: `<:gitmoji:>[(<scope>)][!] <subject>`。規約を記憶で唱えない —
+- gitmoji-driven: `<:gitmoji:>[(<scope>)]<sigil> <subject>` — sigil が version
+  signal を担い、gitmoji は何も決めない。規約を記憶で唱えない —
   CONTRIBUTING.md を開く（正典マップ）。
 - **push 前に `glyph lint --range origin/main..HEAD`**（push 後に CI で落ちると
   往復が 1 回無駄になる — 実際にあった）。
