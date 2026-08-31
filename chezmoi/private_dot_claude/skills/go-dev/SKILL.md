@@ -9,7 +9,7 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 
 ## modern idiom / 新 stdlib API — 採り方と、外部索引に権威を渡さないこと
 
-知識境界（2026-01）より新しい stdlib API を採る時の規律。**外部の索引を書き換えの権威にしない**のが要点で、JetBrains の `modern-go-guidelines` plugin は 2026-08-31 に入れて同日に外した（実セッションで発火 0/3・house では 1 件の silent 破壊を起こして防いだ失敗は 0 件。経緯と復活条件は dotfiles [claude-md-ledger.md](https://github.com/akira-toriyama/dotfiles/blob/main/docs/claude-md-ledger.md) の削除記録）。同じ形の索引を再び入れる時も、下の 3 条は先に効く。
+知識境界（2026-01）より新しい stdlib API を採る時の規律。**外部の索引を書き換えの権威にしない**のが要点で、JetBrains の `modern-go-guidelines` plugin は 2026-08-31 に入れて同日に外した（実セッションで発火 0/3・house では 1 件の silent 破壊を起こして防いだ失敗は 0 件。経緯と復活条件は dotfiles [claude-md-ledger.md](https://github.com/akira-toriyama/dotfiles/blob/main/docs/claude-md-ledger.md) の削除記録）。同じ形の索引を再び入れる時も、最初の 3 条（設計・挙動・名指し）が索引より先に効く。
 
 - **設計は既存が勝つ / 表現だけ modern が勝つ**: consistency が掛かるのは層構成・命名・error 分類であって stdlib API の綴りではない。modern idiom を採るのは**いま書く・いま編集する行**だけで、触っていない行の **drive-by modernize は禁止**。
 - **挙動にはバイトが含まれる**: JSON 出力・並び順・exit code が 1 バイトでも動けば挙動変更。置換したら golden を走らせて確かめる。「挙動が変わるならスキップ」を自己申告で済ませない — 壊れた 2 件はどちらも全テスト緑のまま壊れていた。

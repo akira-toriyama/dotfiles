@@ -1,6 +1,6 @@
 <!--
 この文書は glossary.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 4b26bea。
+最新とは限りません — 基準: 英語版 @ d388a3b。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -430,19 +430,17 @@ frontmatter の `description` が「いつ発火するか」を決める。サ�
 [[plugin]] で、両者は入れ替え可能ではない — だから「プラグイン」は Don't call it に残る。
 - **Don't call it:** プラグイン, ナレッジベース, プロンプトテンプレ
 
-### plugin（`modern-go-guidelines`）
-**marketplace から入れるサードパーティの機能パックで、中身をこの repo が書かないもの**。
-宣言は `~/.claude/settings.json` の 2 キー — `extraKnownMarketplaces`（marketplace の取得元）と
-`enabledPlugins`（どれを有効にするか） — で、
-[`modify_settings.json`](../chezmoi/private_dot_claude/modify_settings.json) #11 が
-**キーが無い時だけ** seed し、
-`run_onchange_after_install-claude-plugins.sh`
-が実体を入れる。使っているのは JetBrains の `modern-go-guidelines` で、知識境界より新しい
-stdlib API の索引。**そのルールは索引であって権威ではない**: house の慣習より下に置く
-ガードレールは plugin ではなく [[skill]] `go-dev` にある。ルールを運ぶ番号は上流の
-`plugin/skills/use-modern-go/scripts/VERSION` で、`plugin.json` でも marketplace の commit でもない。
-- state ディレクトリ `~/.claude/plugins/`（バイナリキャッシュ + `.in_use` の PID）は
-  意図的に chezmoi の管理下に**置かない**。
+### plugin
+**marketplace から入れるサードパーティの機能パックで、中身をこの repo が書かないもの** — ここで書き・
+ここが持つ [[skill]] の対応物。宣言は `~/.claude/settings.json` の 2 キー:
+`extraKnownMarketplaces`（marketplace の取得元）と `enabledPlugins`（どれを有効にするか）。
+- **plugin は 1 つも入れていない**（2026-08-31）。JetBrains の `modern-go-guidelines` を採用した当日に
+  撤去した — 実セッションで 0/3 しか発火せず、一方で全 repo の毎セッションに費用が掛かっていた。
+  理由と復活条件は[台帳](claude-md-ledger.md)の削除記録。語を残すのは、`skill` との境界が効いているのと、
+  次の候補も同じ測り方で判断するため。
+- 再び採用する場合: state ディレクトリ `~/.claude/plugins/`（バイナリキャッシュ + `.in_use` の PID）は
+  chezmoi の管理下に**置かない**。また `modify_settings.json` は自分が書いていないキーを消さないので、
+  宣言を外すだけでは既に入っているマシンから消えない。
 - **Don't call it:** skill, スキル, 拡張, アドオン
 
 ### agent（`fable-architect`）
