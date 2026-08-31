@@ -95,9 +95,9 @@ ALLOW: dict[str, str] = {
     ),
     "~/.claude/plugins": (
         "`claude plugin install` が実行時に作る state ディレクトリ"
-        "（CLI バイナリのキャッシュと .in_use の PID）。宣言側は settings.json の"
-        "2 キーだけで、実体は run_onchange_after_install-claude-plugins.sh が入れる"
-        "＝管理下に無いのが正しい状態"
+        "（CLI バイナリのキャッシュと .in_use の PID）。2026-08-31 現在 plugin は"
+        "1 つも入れていないが、glossary が「入れるとしても管理下に置かない」ことを"
+        "書いているので参照が残る＝管理下に無いのが正しい状態"
     ),
 }
 
