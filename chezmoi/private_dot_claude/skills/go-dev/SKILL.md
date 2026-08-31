@@ -1,37 +1,30 @@
 ---
 name: go-dev
-description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare 系) — internal/ layout, thin main + cobra Execute()int, typed exit-code contract, classify-at-source errors, modern idiom / 新 stdlib API の採否（use-modern-go plugin と gopls modernize の使い方と限界）, go.mod floor/toolchain + govulncheck supply-chain, table/golden/fuzz testing (stdlib only, no testify), GoReleaser cask release. 言語非依存の CLI-UX 一般則 → cli-app-dev / GitHub・CI 運用 → github-practices. Distilled house patterns.
+description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare 系) — internal/ layout, thin main + cobra Execute()int, typed exit-code contract, classify-at-source errors, modern idiom / 新 stdlib API の採否（drive-by modernize 禁止・gopls modernize の使い方と限界）, go.mod floor/toolchain + govulncheck supply-chain, table/golden/fuzz testing (stdlib only, no testify), GoReleaser cask release. 言語非依存の CLI-UX 一般則 → cli-app-dev / GitHub・CI 運用 → github-practices. Distilled house patterns.
 ---
 
 # Go CLI development — house patterns
 
 > furrow・cifail・pare を中心に（modern idiom 節は ridge・rundiff も監査対象）akira-toriyama の Go 製 CLI の実コードから抽出し、canonical Go（Effective Go / Go Code Review Comments / go.dev / staticcheck）と突き合わせた **Go 実装メカニクス**。CLI-UX 一般則（arg grammar・exit code の意味・stdout/stderr 分離・config read-only・配布方針）は `cli-app-dev` skill が正典＝ここでは重複せず「Go コードとして何を書くか」に専念。GitHub/CI/release の**運用**面は `github-practices`。
 
-## modern idiom / 新 stdlib API — `use-modern-go` plugin の使い方と限界
+## modern idiom / 新 stdlib API — 採り方と、外部索引に権威を渡さないこと
 
-知識境界（2026-01）より新しい stdlib API を拾う**索引**として JetBrains の `modern-go-guidelines` plugin を使う。**索引であって、書き換えの権威ではない。**
+知識境界（2026-01）より新しい stdlib API を採る時の規律。**外部の索引を書き換えの権威にしない**のが要点で、JetBrains の `modern-go-guidelines` plugin は 2026-08-31 に入れて同日に外した（実セッションで発火 0/3・house では 1 件の silent 破壊を起こして防いだ失敗は 0 件。経緯と復活条件は dotfiles [claude-md-ledger.md](https://github.com/akira-toriyama/dotfiles/blob/main/docs/claude-md-ledger.md) の削除記録）。同じ形の索引を再び入れる時も、下の 3 条は先に効く。
 
-- **呼び出し**: plugin skill `modern-go-guidelines:use-modern-go` を起動して `list --file-path <file>` を投げる（`<skill-dir>` は plugin 側でしか解決しないので、ここから写した相対パスは動かない）。直叩きするなら `sh ~/.claude/plugins/marketplaces/goland-claude-marketplace/plugin/skills/use-modern-go/scripts/run-tool.sh list --file-path <file>`。版は go.mod から解決。**出力は `pare` にも grep にも通さず全部読む** — global「Tools」の long output → pare に対する明示例外（出力は新しい順で、現行 floor で効く古いルールが末尾に残るため）。個別の詳細は `explain <id>`。
-- **plugin は規範の梯子のどの段でもない**（梯子そのものは global CLAUDE.md「How to read this document」が正本＝ここに写さない）。plugin SKILL.md の「returned guideline は repo の慣習より優先」条項は house では**取り消す**。modern idiom と既存の綴りが競合したときの決着を持つのは global CLAUDE.md「Tools」の該当 bullet（「When torn, pick consistency」への明示例外をそちら側に置いてある。この skill が global に勝つ話ではない）。
 - **設計は既存が勝つ / 表現だけ modern が勝つ**: consistency が掛かるのは層構成・命名・error 分類であって stdlib API の綴りではない。modern idiom を採るのは**いま書く・いま編集する行**だけで、触っていない行の **drive-by modernize は禁止**。
-- **挙動にはバイトが含まれる**: JSON 出力・並び順・exit code が 1 バイトでも動けば挙動変更。plugin SKILL.md の逃げ道「挙動が変わるならスキップ」は当てにしない — corpus に `stable` の語は 0 件（2026-08-28 実測）＝並び順の安定性のような差は guideline 本文から読み取れず、スキップ判断の材料にならない。置換したら golden を走らせて確かめる。
+- **挙動にはバイトが含まれる**: JSON 出力・並び順・exit code が 1 バイトでも動けば挙動変更。置換したら golden を走らせて確かめる。「挙動が変わるならスキップ」を自己申告で済ませない — 壊れた 2 件はどちらも全テスト緑のまま壊れていた。
 - **名指しで禁止**（① は furrow で実測（2026-08-28）／②③ は stdlib doc から導出し go1.26.5 で挙動確認）:
-  - `sort.SliceStable` → `slices.SortFunc` にしない（**`slices.SortStableFunc` のみ**）。furrow `due.go` でこれをやると build・vet・gofmt・全 11 package のテスト・golden 3 系統が緑のまま `brief --json` の overdue 順が壊れた＝「壊れても誰も気づかない」のが本当のリスク。
+  - `sort.SliceStable` → `slices.SortFunc` にしない（**`slices.SortStableFunc` のみ**）。furrow `due.go` でこれをやると build・vet・gofmt・全 11 package のテスト・golden 3 系統が緑のまま `brief --json` の overdue 順が壊れた＝「壊れても誰も気づかない」のが本当のリスク。踏んだ 2 箇所は furrow t-kvzj / ridge t-5tsh で各リポにテストを足して塞いである。
   - `strings.Cut`/`bytes.Cut` に置換したら **`!found` の分岐を残す**（`Index` の -1 判定を落とすと、区切りが無い時に空文字を正常値として扱う）。
-  - **`t.Context()` の提案を `t.Cleanup` の中に適用しない**（理由と回避策は「testing」節が正本）。
-- **floor が上がるまで新ルールは出ない**: ルール集合は go.mod の **`go` 行**だけで決まり（`toolchain` 行は見ない＝実測）、1.24=45 / 1.25=46 / 1.26=48 ルール（2026-08-31 実測）。`errors_as_type` は 1.26 以上にだけ出る。**どのリポがどちらかは写さず `grep -h '^go ' */go.mod` で見る**（この file は列挙を写して腐らせた実績を後段に持っている）。2026-08-31 時点で 1.24 に留まっているのは fixture の ridge-test だけで、これは「go directive は生きている supported minor」に反するので floor bump 対象。
-- **機械側は `gopls modernize`**（公式 x/tools。型解析で動くので plugin より安全側だが、既存コードしか直せない。modernize v0.23.0 の analyzer は 23 本、plugin の corpus は全 54 ルール — 54 が全部効くのは 1.27+ で、house の floor から見えるのは 46〜48。両者の重なりは未測定）:
+  - **`t.Context()` を `t.Cleanup` の中で使わない**（理由と回避策は「testing」節が正本）。
+- **floor が上がるまで新しい API は使えない**: 判定は go.mod の **`go` 行**だけ（`toolchain` 行は無関係＝実測）。どのリポがどちらかは写さず `grep -h '^go ' */go.mod` で見る（この file は列挙を写して腐らせた実績を後段に持っている）。2026-08-31 時点で 1.24 に留まっているのは fixture の ridge-test だけで、これは「go directive は生きている supported minor」に反するので floor bump 対象。
+- **機械側は `gopls modernize`**（公式 x/tools。型解析で動くので索引より安全側だが、既存コードしか直せない。v0.23.0 の analyzer は 23 本）:
 
   ```sh
   GOTOOLCHAIN=local go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@v0.23.0 ./...
   ```
 
-  所見は repo 全体に出るが、**適用するのはいま編集している行に当たる所見だけ**（残りは読むだけ＝drive-by modernize 禁止は機械側にも同じく掛かる）。**`check.sh` には入れない**（未発生の失敗を防ぐ機構は global の機械化条件を満たさない）＝必要な時に手で走らせる。畳みたくなった時のための実測 2 点: **所見は stdout でなく stderr に出る**／**この `go run` 形は exit 1**（`go run` は子の非 0 を一律 1 に潰し、本当の値は stderr 末尾に `exit status 3` と文字列で出るだけ＝`-eq 3` で判定すると永久に発火しない。exit 3 が要るなら `go install` して binary を直に叩く）。nixpkgs の gopls (v0.23.0) に modernize サブコマンドは無く（`Unknown command modernize`／`gopls check` は動くが modernize 診断を出さない）、この `go run` が入口。2026-08-28 に furrow・ridge・rundiff 計 178 件を監査し、上の「名指しで禁止」に当たる危険サイトの指摘は 0 件だった。
-- **追随**: ルールを運ぶ番号は plugin.json でも marketplace の commit でもなく `plugin/skills/use-modern-go/scripts/VERSION`（run-tool.sh が `go install <module>@<VERSION>` する＝ルールは tag 済み CLI に `//go:embed`）。`autoUpdate` は入れない — 2026-08-31 時点で upstream main は手元の pin より 9 commit 先だが VERSION は v0.1.1 のまま（最新 tag も v0.1.1）で、**merge 済みの修正すら未リリース**。issue #14 は open のままで、挙動を変える 6 例の修正 PR #20 も未 merge。**この節の記述を疑った時にだけ**次の 1 行で VERSION を読み、v0.1.1 から動いていたら plugin を入れ直して上の「名指しで禁止」を測り直す（動いていなければ何もしない）:
-
-  ```sh
-  gh api repos/JetBrains/go-modern-guidelines/contents/plugin/skills/use-modern-go/scripts/VERSION -H "Accept: application/vnd.github.raw"
-  ```
+  所見は repo 全体に出るが、**適用するのはいま編集している行に当たる所見だけ**（残りは読むだけ＝drive-by modernize 禁止は機械側にも同じく掛かる）。**`check.sh` には入れない**: 2026-08-28 に furrow・ridge・rundiff 計 178 件を監査して、上の「名指しで禁止」に当たる危険サイトの指摘は 0 件だった＝まだ 1 件も失敗を防いでいないので機械化条件を満たさない。必要な時に手で走らせる。畳みたくなった時のための実測 2 点: **所見は stdout でなく stderr に出る**／**この `go run` 形は exit 1**（`go run` は子の非 0 を一律 1 に潰し、本当の値は stderr 末尾に `exit status 3` と文字列で出るだけ＝`-eq 3` で判定すると永久に発火しない。exit 3 が要るなら `go install` して binary を直に叩く）。nixpkgs の gopls (v0.23.0) に modernize サブコマンドは無いので、この `go run` が入口。
 
 ## レイアウト & パッケージ（3本共通の背骨）
 - **`cmd/<bin>/main.go` は3行の殻**: package doc ＋ `func main(){ os.Exit(cli.Execute()) }` のみ。flag も logic も置かない＝唯一 untestable な process 境界（`os.Exit`）を隔離し、下は全部 return で unit-test 可。`<bin>` = module パス末尾要素。

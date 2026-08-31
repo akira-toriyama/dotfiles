@@ -47,7 +47,6 @@ Purpose (furrow t-gqd5, agreed in the 2026-07-26 sparring session):
 | External waits require a deadline, vncdo needs timeout + lowercase keysyms (Tools section, added 2026-08-11) | Attach a timeout, kill on a stall → report immediately, answer state questions only after measuring | — | PreToolUse hook [claude-vncdo-guard](../chezmoi/dot_local/bin/executable_claude-vncdo-guard) ([modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json) #9 wiring) denies a vncdo call that lacks a timeout or uses an uppercase keysym (unit 12 cases = [scripts/test_claude_vncdo_guard.py](../scripts/test_claude_vncdo_guard.py). **2026-08-19 correction**: this used to say "9 cases measured", but the test did not exist — it was made real the same day, and the false positive that denied `--help`/`--version` probes was fixed too). The general rule (deadlines on other commands, honesty in state reports) is prose | 🟡 vncdo is 🔒, the general rule is 📖 |
 | Use the tools by default (Tools section) | Reach for pare/cifail/rundiff/revpost/wait4x/peekaboo first | — | rundiff's automatic test wrapping and the read-only git allowlist are 🔒 via modify_settings.json. **Deciding to use them** is prose | 🟡 |
 | Self-built CLIs/apps run from source, brew forbidden (Tools section) | Do not `brew install` | Do not `brew install` | With no brew-installed build present, shadowing structurally cannot happen (measured: wrapper only) | 🟡 |
-| The modern-Go plugin's `list` is an index, not an authority (Tools section, added 2026-08-31) | Rank it: house convention wins on design, modern idiom only on the lines already being edited (no drive-by modernize), and treat a changed output byte as a changed behavior — overriding the plugin's own "prefer the returned guideline over repo convention" clause. Named traps and the floors are in [skills/go-dev/SKILL.md](../chezmoi/private_dot_claude/skills/go-dev/SKILL.md) | Deciding whether the plugin stays adopted at all (see the note under this table) | **None — and the guardrail sits in the always-loaded document precisely because a skill could not carry it.** Measured 2026-08-31 against a real furrow checkout (Opus 5, n=3 realistic Go edit tasks, 10–57 tool calls each): `go-dev` fired **0/3** and the plugin fired **0/3** on their frontmatter descriptions alone; adding a Tools bullet that named the skill and putting 「modern idiom」 into its description moved neither (**0/2**, 14 and 58 tool calls). So any rule parked in a skill is absent exactly when the plugin misfires. claude-md-eval cannot measure this line — `run.py` passes `--tools ""`, so no Skill tool exists in either arm, and all 22 cases are conversational; the A/B above is the measurement that replaces it | 📖 |
 | The gitmoji convention, `glyph lint` before pushing (Commits section) | Open CONTRIBUTING.md, lint before pushing | — | commit-lint.yml on the PR (fleet-synced). Branch protection requires only `ci-gate`, so a red commit-lint does not stop a merge (measured) | 🟡 the pre-push lint is 📖 |
 | Commits in English only (Commits section, the Japanese translation was retired 2026-08-02) | Write in English only | — | none (measured: glyph exits 0 on a Japanese subject too) | 📖 |
 | Deliverables are English only, conversation/tasks are Japanese (Development policy section, added 2026-08-02, canonical source = the fleet [doc-consistency-policy](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md)) | Write committed docs in English, keep no translation files | — | none (pare/rundiff's check-docs only inspects versions — it does not detect README.ja reappearing; measured) | 📖 |
@@ -60,29 +59,6 @@ Purpose (furrow t-gqd5, agreed in the 2026-07-26 sparring session):
 | Division of labor, no default inheritance in Fable sessions, verification on the Opus side (Model operations section) | State subagents' model/effort explicitly | Switching to `/model fable` | none. Inheritance when unstated depends on subagent_type (Plan and general-purpose only — measured across 4081 transcripts on 2026-08-19. The old wording "all of them get Fable" was an exaggeration) | 📖 |
 | Other repos follow their own conventions, do not bring your own in (For repositories outside akira-toriyama section) | Read that repo's CLAUDE.md/CONTRIBUTING/history first | — | none | 📖 |
 
-### Open decision — does the modern-Go plugin stay adopted? (2026-08-31, furrow t-55tc)
-
-The row above records the guardrail, not a settled adoption. Adoption was decided on
-2026-08-28; implementing it on 2026-08-31 produced measurements that weaken the case, and
-the call is the user's:
-
-- **It does not fire.** 0/3 in real furrow sessions, and 0/2 even with a Tools bullet
-  naming the skill (the row above).
-- **It is paid for on every session in every repo and every language**: +78.5 tok for the
-  plugin (2026-08-28) plus ~370 B for the guardrail bullet.
-- **Its house record is 1 silent corruption caused and 0 failures prevented** — following
-  it rewrote furrow `due.go` so that `brief --json` ordering broke while every test,
-  golden and lint stayed green.
-- **Upstream fixes do not reach us.** main is 9 commits ahead and merged one issue #14 fix
-  (PR #23, 2026-08-29), but `VERSION` is still v0.1.1 and so is the newest tag, so even
-  the merged fix is unreleased. PR #20 (the six behaviour-changing examples) is open.
-
-Options: **(a)** keep it and re-measure when `VERSION` moves; **(b)** drop the plugin, the
-install script and the settings keys, keeping `gopls modernize` on demand and the durable
-floor facts in the `go-dev` skill. **(b) is the recommendation** — a 0/3 firing rate does
-not earn a standing cost. (a) is defensible on the user's standing wish to keep chasing
-the newest Go.
-
 ### Mechanisms for this ledger itself (2026-07-28 onward)
 
 - **The CLAUDE.md size ceiling (11,500 bytes), the ban on pinning a concrete model ID, ledger sync (a PR that touches CLAUDE.md touches the ledger too. escape = commit footer `Ledger-unchanged: <理由>`), and glossary sync (a PR that touches CLAUDE.md or skills/ touches docs/glossary.md too. escape = commit footer `Glossary-unchanged: <理由>`)** are enforced 🔒 by the lint gate claude-md-guard ([scripts/claude_md_guard.py](../scripts/claude_md_guard.py), run on every PR in CI's `lint` job). Every one of them prevents recurrence of an already-hit failure (21× bloat, a drifted pin, PR #274's missed ledger update, PR #273's missed glossary follow-up on the same day), so all of them fit rule of two.
@@ -94,6 +70,7 @@ Background: bloat from 1.6KB→33.8KB in 5 weeks, 64% of open tasks were meta-to
 
 | Deleted rule/description | Kind | Why deleted | Original incident / revival condition |
 |---|---|---|---|
+| The modern-Go plugin guardrail — "`list` is an index, not an authority" (Tools section, lived 2026-08-31 only, furrow t-55tc → t-v7v1) | the thing it guarded was removed | The rule existed to keep JetBrains' `modern-go-guidelines` plugin from being obeyed as an authority. Measured the day it shipped: the plugin fired **0/3** in real furrow sessions and **0/2** even with a Tools bullet naming the `go-dev` skill, while costing +78.5 tok per session in every repo and every language, plus ~370 B of the 11,500 B ceiling. Its house record was **1 silent corruption caused** (furrow `due.go`) and **0 failures prevented**. The user adjudicated (b) — drop it — so the guardrail lost the thing it guarded. What survives moved to the `go-dev` skill: no drive-by modernize, a changed output byte is a changed behavior, the three named traps, and `gopls modernize` on demand | Incident: applying a plugin guideline literally reordered furrow's `brief --json` overdue output while build, vet, gofmt, 11 packages of tests and three golden suites all stayed green (2026-08-28). Both sites are now covered by tests (furrow t-kvzj, ridge t-5tsh). Revival: only if an index of this kind is adopted again — and then the guardrail comes back **before** it, not after. Upstream's own state is the gate: `VERSION` still reads v0.1.1 with the six behaviour-changing examples (PR #20) unmerged |
 | The obligatory `---（和訳）` footer in the commit body (2026-08-02) | replacement | User mandate: deliverables are English only (README.ja was pulled from every repo too, t-xs91) | none (a change of policy) / if the user asks for Japanese translations again |
 | Sections are ordered by firing frequency | editing-time meta rule | Practicing it is enough; no declaration needed | none (it was a preventive rule) / if a comprehension accident caused by section order occurs |
 | The verbatim boilerplate for a normal finish (opening sentence, closing sentence) | replacement | Moved to the two-element contract (PR #294. It produced closings that contradicted reality — t-xx7g) | if the closing's verifiability drops (the hook guards it) |

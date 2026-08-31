@@ -436,7 +436,7 @@ frontmatter の `description` が「いつ発火するか」を決める。サ�
 `enabledPlugins`（どれを有効にするか） — で、
 [`modify_settings.json`](../chezmoi/private_dot_claude/modify_settings.json) #11 が
 **キーが無い時だけ** seed し、
-[`run_onchange_after_install-claude-plugins.sh`](../chezmoi/run_onchange_after_install-claude-plugins.sh)
+`run_onchange_after_install-claude-plugins.sh`
 が実体を入れる。使っているのは JetBrains の `modern-go-guidelines` で、知識境界より新しい
 stdlib API の索引。**そのルールは索引であって権威ではない**: house の慣習より下に置く
 ガードレールは plugin ではなく [[skill]] `go-dev` にある。ルールを運ぶ番号は上流の

@@ -436,19 +436,19 @@ decides "when it fires". A [[plugin]] is the third-party counterpart — the two
 interchangeable, which is why プラグイン stays on the don't-call-it list.
 - **Don't call it:** プラグイン, ナレッジベース, プロンプトテンプレ
 
-### plugin (`modern-go-guidelines`)
+### plugin
 **A third-party capability pack installed from a marketplace, whose content this repo does not
-write**. Declared by two keys in `~/.claude/settings.json` — `extraKnownMarketplaces` (where the
-marketplace is fetched from) and `enabledPlugins` (which of them are on) — seeded if-absent by
-[`modify_settings.json`](../chezmoi/private_dot_claude/modify_settings.json) #11 and installed by
-[`run_onchange_after_install-claude-plugins.sh`](../chezmoi/run_onchange_after_install-claude-plugins.sh).
-The one in use is JetBrains' `modern-go-guidelines`, an index of stdlib APIs newer than the
-knowledge cutoff. **Its rules are an index, not an authority**: the guardrails that rank it below
-house convention live in the [[skill]] `go-dev`, not in the plugin. The number that carries the
-rules is `plugin/skills/use-modern-go/scripts/VERSION` upstream — neither `plugin.json` nor the
-marketplace commit.
-- The state directory `~/.claude/plugins/` (binary cache + `.in_use` PIDs) is deliberately
-  **not** managed by chezmoi.
+write** — the counterpart to a [[skill]], which is written and owned here. Declared by two keys in
+`~/.claude/settings.json`: `extraKnownMarketplaces` (where the marketplace is fetched from) and
+`enabledPlugins` (which of them are on).
+- **No plugin is installed** (2026-08-31). JetBrains' `modern-go-guidelines` was adopted and
+  retired the same day — it fired 0/3 in real sessions while costing every session in every
+  repo. The reasoning and the revival condition are in the
+  [ledger](claude-md-ledger.md)'s deletion log. The term stays because the boundary against
+  `skill` is load-bearing, and because the next candidate will be judged by the same measurement.
+- If one is ever adopted again: the state directory `~/.claude/plugins/` (binary cache +
+  `.in_use` PIDs) is **not** managed by chezmoi, and `modify_settings.json` never deletes keys it
+  did not write — so un-declaring a plugin does not uninstall it from a machine that already has it.
 - **Don't call it:** skill, スキル, 拡張, アドオン
 
 ### agent (`fable-architect`)
