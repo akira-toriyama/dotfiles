@@ -60,6 +60,29 @@ Purpose (furrow t-gqd5, agreed in the 2026-07-26 sparring session):
 | Division of labor, no default inheritance in Fable sessions, verification on the Opus side (Model operations section) | State subagents' model/effort explicitly | Switching to `/model fable` | none. Inheritance when unstated depends on subagent_type (Plan and general-purpose only — measured across 4081 transcripts on 2026-08-19. The old wording "all of them get Fable" was an exaggeration) | 📖 |
 | Other repos follow their own conventions, do not bring your own in (For repositories outside akira-toriyama section) | Read that repo's CLAUDE.md/CONTRIBUTING/history first | — | none | 📖 |
 
+### Open decision — does the modern-Go plugin stay adopted? (2026-08-31, furrow t-55tc)
+
+The row above records the guardrail, not a settled adoption. Adoption was decided on
+2026-08-28; implementing it on 2026-08-31 produced measurements that weaken the case, and
+the call is the user's:
+
+- **It does not fire.** 0/3 in real furrow sessions, and 0/2 even with a Tools bullet
+  naming the skill (the row above).
+- **It is paid for on every session in every repo and every language**: +78.5 tok for the
+  plugin (2026-08-28) plus ~370 B for the guardrail bullet.
+- **Its house record is 1 silent corruption caused and 0 failures prevented** — following
+  it rewrote furrow `due.go` so that `brief --json` ordering broke while every test,
+  golden and lint stayed green.
+- **Upstream fixes do not reach us.** main is 9 commits ahead and merged one issue #14 fix
+  (PR #23, 2026-08-29), but `VERSION` is still v0.1.1 and so is the newest tag, so even
+  the merged fix is unreleased. PR #20 (the six behaviour-changing examples) is open.
+
+Options: **(a)** keep it and re-measure when `VERSION` moves; **(b)** drop the plugin, the
+install script and the settings keys, keeping `gopls modernize` on demand and the durable
+floor facts in the `go-dev` skill. **(b) is the recommendation** — a 0/3 firing rate does
+not earn a standing cost. (a) is defensible on the user's standing wish to keep chasing
+the newest Go.
+
 ### Mechanisms for this ledger itself (2026-07-28 onward)
 
 - **The CLAUDE.md size ceiling (11,500 bytes), the ban on pinning a concrete model ID, ledger sync (a PR that touches CLAUDE.md touches the ledger too. escape = commit footer `Ledger-unchanged: <理由>`), and glossary sync (a PR that touches CLAUDE.md or skills/ touches docs/glossary.md too. escape = commit footer `Glossary-unchanged: <理由>`)** are enforced 🔒 by the lint gate claude-md-guard ([scripts/claude_md_guard.py](../scripts/claude_md_guard.py), run on every PR in CI's `lint` job). Every one of them prevents recurrence of an already-hit failure (21× bloat, a drifted pin, PR #274's missed ledger update, PR #273's missed glossary follow-up on the same day), so all of them fit rule of two.
