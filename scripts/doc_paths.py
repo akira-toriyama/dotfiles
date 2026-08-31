@@ -93,6 +93,12 @@ ALLOW: dict[str, str] = {
         "Claude Code が実行時に作る。宣言管理**しない**ことが不変条件で、"
         "operations.md §5.14 はまさにそれを書いている（管理下に無いのが正しい状態）"
     ),
+    "~/.claude/plugins": (
+        "`claude plugin install` が実行時に作る state ディレクトリ"
+        "（CLI バイナリのキャッシュと .in_use の PID）。宣言側は settings.json の"
+        "2 キーだけで、実体は run_onchange_after_install-claude-plugins.sh が入れる"
+        "＝管理下に無いのが正しい状態"
+    ),
 }
 
 

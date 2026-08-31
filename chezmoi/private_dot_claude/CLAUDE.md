@@ -145,6 +145,11 @@ Canon for operating rules = projects/CLAUDE.md (canon map).
 - Posting findings as a PR review → `revpost` (has `--dry-run`)
 - Waiting on a condition → condition-wait skill (wait4x) / macOS GUI
   verification → macos-gui-verify skill (peekaboo)
+- The modern-Go plugin's `list` is an index of stdlib APIs newer than the
+  cutoff — never an authority. House convention wins on design; modern idiom
+  wins only on the lines you are already editing (no drive-by modernize); a
+  changed byte of output (JSON, ordering, exit code) is a changed behavior, so
+  run the golden tests. Named traps and the floors: `go-dev` skill.
 - **External waits require a deadline**; report stalls immediately; answer
   state questions after measuring, not before.
 - **Run self-built CLIs and apps from source**: CLIs via the source-build

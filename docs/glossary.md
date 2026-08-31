@@ -430,10 +430,26 @@ distributed to `~/.claude/CLAUDE.md`. **Do not edit live directly** (the next ap
 - **Don't call it:** システムプロンプト, グローバル設定, AI ルール
 
 ### skill (`SKILL.md`)
-**A knowledge pack loaded for a particular kind of work**.
+**A knowledge pack loaded for a particular kind of work**, written and owned here.
 `chezmoi/private_dot_claude/skills/<name>/SKILL.md`. The `description` in the frontmatter
-decides "when it fires".
+decides "when it fires". A [[plugin]] is the third-party counterpart — the two are not
+interchangeable, which is why プラグイン stays on the don't-call-it list.
 - **Don't call it:** プラグイン, ナレッジベース, プロンプトテンプレ
+
+### plugin (`modern-go-guidelines`)
+**A third-party capability pack installed from a marketplace, whose content this repo does not
+write**. Declared by two keys in `~/.claude/settings.json` — `extraKnownMarketplaces` (where the
+marketplace is fetched from) and `enabledPlugins` (which of them are on) — seeded if-absent by
+[`modify_settings.json`](../chezmoi/private_dot_claude/modify_settings.json) #11 and installed by
+[`run_onchange_after_install-claude-plugins.sh`](../chezmoi/run_onchange_after_install-claude-plugins.sh).
+The one in use is JetBrains' `modern-go-guidelines`, an index of stdlib APIs newer than the
+knowledge cutoff. **Its rules are an index, not an authority**: the guardrails that rank it below
+house convention live in the [[skill]] `go-dev`, not in the plugin. The number that carries the
+rules is `plugin/skills/use-modern-go/scripts/VERSION` upstream — neither `plugin.json` nor the
+marketplace commit.
+- The state directory `~/.claude/plugins/` (binary cache + `.in_use` PIDs) is deliberately
+  **not** managed by chezmoi.
+- **Don't call it:** skill, スキル, 拡張, アドオン
 
 ### agent (`fable-architect`)
 **The definition of a subagent**. `chezmoi/private_dot_claude/agents/<name>.md`.
