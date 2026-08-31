@@ -102,6 +102,21 @@
 #      and has happened four times, and a deny would only move it to the Bash
 #      path where nothing records it. Temp roots are exempt (verification
 #      sessions copy whole boards into scratchpads). Fail-open; see its header.
+#  11. the two keys that declare the modern-go-guidelines plugin —
+#      extraKnownMarketplaces (where the marketplace is fetched from) and
+#      enabledPlugins (that this one is on). The plugin is the index of stdlib
+#      APIs newer than the knowledge cutoff that skills/go-dev/SKILL.md leans
+#      on; every guardrail for using it lives in that skill, not here, because
+#      it fires only on Go work while this file is read on every machine.
+#      Seeded ONLY IF THE KEY IS ABSENT — never forced back to true — so a
+#      deliberate `claude plugin disable` survives re-apply (same reasoning as
+#      #4's model/effort seeds).
+#      Seeding the keys downloads NOTHING: the CLI and its embedded rules land
+#      in ~/.claude/plugins/, a state dir left deliberately unmanaged (binary
+#      cache + .in_use PIDs), which
+#      run_onchange_after_install-claude-plugins.sh populates. Whether a new
+#      Mac auto-provisions from the keys alone is unmeasured, so both paths
+#      exist and each is a no-op when the other already ran.
 #
 # Idempotent: each hook and each allow entry is added only if absent (the allow
 # merge is a set-union), so re-apply never duplicates and the user's own edits
@@ -128,6 +143,13 @@ cmd_vnc='$HOME/.local/bin/claude-vncdo-guard'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_shard='$HOME/.local/bin/claude-board-shard-guard'
 
+# #11 — plugin declaration. The marketplace NAME is not the repo name: it comes
+# from the repo's own .claude-plugin/marketplace.json, so it cannot be derived
+# and is spelled out here.
+mkt='goland-claude-marketplace'
+mkt_repo='JetBrains/go-modern-guidelines'
+plug="modern-go-guidelines@${mkt}"
+
 input=$(cat)
 [ -n "$input" ] || input='{}'
 
@@ -136,7 +158,7 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" --arg shard "$cmd_shard" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" --arg shard "$cmd_shard" --arg mkt "$mkt" --arg mktrepo "$mkt_repo" --arg plug "$plug" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
   def stop_hook_present: [ (.hooks.Stop // [])[]?.hooks[]?.command ] | any(. == $stop);
   def quota_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $quota);
@@ -193,6 +215,14 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
                             , "Bash(git log:*)"
                             , "Bash(git worktree list:*)"
                             ] - .permissions.allow )
+  | (.extraKnownMarketplaces //= {})
+  | ( if (.extraKnownMarketplaces | has($mkt)) then .
+      else .extraKnownMarketplaces[$mkt] = { source: { source: "github", repo: $mktrepo } }
+      end )
+  | (.enabledPlugins //= {})
+  | ( if (.enabledPlugins | has($plug)) then .
+      else .enabledPlugins[$plug] = true
+      end )
   | (.model //= "opus[1m]")
   | (.effortLevel //= "xhigh")
 ')
