@@ -1,11 +1,37 @@
 ---
 name: go-dev
-description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare 系) — internal/ layout, thin main + cobra Execute()int, typed exit-code contract, classify-at-source errors, go.mod floor/toolchain + govulncheck supply-chain, table/golden/fuzz testing (stdlib only, no testify), GoReleaser cask release. 言語非依存の CLI-UX 一般則 → cli-app-dev / GitHub・CI 運用 → github-practices. Distilled house patterns.
+description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare 系) — internal/ layout, thin main + cobra Execute()int, typed exit-code contract, classify-at-source errors, modern idiom / 新 stdlib API の採否（use-modern-go plugin と gopls modernize の使い方と限界）, go.mod floor/toolchain + govulncheck supply-chain, table/golden/fuzz testing (stdlib only, no testify), GoReleaser cask release. 言語非依存の CLI-UX 一般則 → cli-app-dev / GitHub・CI 運用 → github-practices. Distilled house patterns.
 ---
 
 # Go CLI development — house patterns
 
-> furrow・cifail・pare（akira-toriyama の Go 製 CLI）の実コードから抽出し、canonical Go（Effective Go / Go Code Review Comments / go.dev / staticcheck）と突き合わせた **Go 実装メカニクス**。CLI-UX 一般則（arg grammar・exit code の意味・stdout/stderr 分離・config read-only・配布方針）は `cli-app-dev` skill が正典＝ここでは重複せず「Go コードとして何を書くか」に専念。GitHub/CI/release の**運用**面は `github-practices`。
+> furrow・cifail・pare を中心に（modern idiom 節は ridge・rundiff も監査対象）akira-toriyama の Go 製 CLI の実コードから抽出し、canonical Go（Effective Go / Go Code Review Comments / go.dev / staticcheck）と突き合わせた **Go 実装メカニクス**。CLI-UX 一般則（arg grammar・exit code の意味・stdout/stderr 分離・config read-only・配布方針）は `cli-app-dev` skill が正典＝ここでは重複せず「Go コードとして何を書くか」に専念。GitHub/CI/release の**運用**面は `github-practices`。
+
+## modern idiom / 新 stdlib API — `use-modern-go` plugin の使い方と限界
+
+知識境界（2026-01）より新しい stdlib API を拾う**索引**として JetBrains の `modern-go-guidelines` plugin を使う。**索引であって、書き換えの権威ではない。**
+
+- **呼び出し**: plugin skill `modern-go-guidelines:use-modern-go` を起動して `list --file-path <file>` を投げる（`<skill-dir>` は plugin 側でしか解決しないので、ここから写した相対パスは動かない）。直叩きするなら `sh ~/.claude/plugins/marketplaces/goland-claude-marketplace/plugin/skills/use-modern-go/scripts/run-tool.sh list --file-path <file>`。版は go.mod から解決。**出力は `pare` にも grep にも通さず全部読む** — global「Tools」の long output → pare に対する明示例外（出力は新しい順で、現行 floor で効く古いルールが末尾に残るため）。個別の詳細は `explain <id>`。
+- **plugin は規範の梯子のどの段でもない**（梯子そのものは global CLAUDE.md「How to read this document」が正本＝ここに写さない）。plugin SKILL.md の「returned guideline は repo の慣習より優先」条項は house では**取り消す**。modern idiom と既存の綴りが競合したときの決着を持つのは global CLAUDE.md「Tools」の該当 bullet（「When torn, pick consistency」への明示例外をそちら側に置いてある。この skill が global に勝つ話ではない）。
+- **設計は既存が勝つ / 表現だけ modern が勝つ**: consistency が掛かるのは層構成・命名・error 分類であって stdlib API の綴りではない。modern idiom を採るのは**いま書く・いま編集する行**だけで、触っていない行の **drive-by modernize は禁止**。
+- **挙動にはバイトが含まれる**: JSON 出力・並び順・exit code が 1 バイトでも動けば挙動変更。plugin SKILL.md の逃げ道「挙動が変わるならスキップ」は当てにしない — corpus に `stable` の語は 0 件（2026-08-28 実測）＝並び順の安定性のような差は guideline 本文から読み取れず、スキップ判断の材料にならない。置換したら golden を走らせて確かめる。
+- **名指しで禁止**（① は furrow で実測（2026-08-28）／②③ は stdlib doc から導出し go1.26.5 で挙動確認）:
+  - `sort.SliceStable` → `slices.SortFunc` にしない（**`slices.SortStableFunc` のみ**）。furrow `due.go` でこれをやると build・vet・gofmt・全 11 package のテスト・golden 3 系統が緑のまま `brief --json` の overdue 順が壊れた＝「壊れても誰も気づかない」のが本当のリスク。
+  - `strings.Cut`/`bytes.Cut` に置換したら **`!found` の分岐を残す**（`Index` の -1 判定を落とすと、区切りが無い時に空文字を正常値として扱う）。
+  - **`t.Context()` の提案を `t.Cleanup` の中に適用しない**（理由と回避策は「testing」節が正本）。
+- **floor が上がるまで新ルールは出ない**: ルール集合は go.mod の **`go` 行**だけで決まり（`toolchain` 行は見ない＝実測）、1.24=45 / 1.25=46 / 1.26=48 ルール（2026-08-31 実測）。`errors_as_type` は 1.26 以上にだけ出る。**どのリポがどちらかは写さず `grep -h '^go ' */go.mod` で見る**（この file は列挙を写して腐らせた実績を後段に持っている）。2026-08-31 時点で 1.24 に留まっているのは fixture の ridge-test だけで、これは「go directive は生きている supported minor」に反するので floor bump 対象。
+- **機械側は `gopls modernize`**（公式 x/tools。型解析で動くので plugin より安全側だが、既存コードしか直せない。modernize v0.23.0 の analyzer は 23 本、plugin の corpus は全 54 ルール — 54 が全部効くのは 1.27+ で、house の floor から見えるのは 46〜48。両者の重なりは未測定）:
+
+  ```sh
+  GOTOOLCHAIN=local go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@v0.23.0 ./...
+  ```
+
+  所見は repo 全体に出るが、**適用するのはいま編集している行に当たる所見だけ**（残りは読むだけ＝drive-by modernize 禁止は機械側にも同じく掛かる）。**`check.sh` には入れない**（未発生の失敗を防ぐ機構は global の機械化条件を満たさない）＝必要な時に手で走らせる。畳みたくなった時のための実測 2 点: **所見は stdout でなく stderr に出る**／**この `go run` 形は exit 1**（`go run` は子の非 0 を一律 1 に潰し、本当の値は stderr 末尾に `exit status 3` と文字列で出るだけ＝`-eq 3` で判定すると永久に発火しない。exit 3 が要るなら `go install` して binary を直に叩く）。nixpkgs の gopls (v0.23.0) に modernize サブコマンドは無く（`Unknown command modernize`／`gopls check` は動くが modernize 診断を出さない）、この `go run` が入口。2026-08-28 に furrow・ridge・rundiff 計 178 件を監査し、上の「名指しで禁止」に当たる危険サイトの指摘は 0 件だった。
+- **追随**: ルールを運ぶ番号は plugin.json でも marketplace の commit でもなく `plugin/skills/use-modern-go/scripts/VERSION`（run-tool.sh が `go install <module>@<VERSION>` する＝ルールは tag 済み CLI に `//go:embed`）。`autoUpdate` は入れない — 2026-08-31 時点で upstream main は手元の pin より 9 commit 先だが VERSION は v0.1.1 のまま（最新 tag も v0.1.1）で、**merge 済みの修正すら未リリース**。issue #14 は open のままで、挙動を変える 6 例の修正 PR #20 も未 merge。**この節の記述を疑った時にだけ**次の 1 行で VERSION を読み、v0.1.1 から動いていたら plugin を入れ直して上の「名指しで禁止」を測り直す（動いていなければ何もしない）:
+
+  ```sh
+  gh api repos/JetBrains/go-modern-guidelines/contents/plugin/skills/use-modern-go/scripts/VERSION -H "Accept: application/vnd.github.raw"
+  ```
 
 ## レイアウト & パッケージ（3本共通の背骨）
 - **`cmd/<bin>/main.go` は3行の殻**: package doc ＋ `func main(){ os.Exit(cli.Execute()) }` のみ。flag も logic も置かない＝唯一 untestable な process 境界（`os.Exit`）を隔離し、下は全部 return で unit-test 可。`<bin>` = module パス末尾要素。
@@ -20,7 +46,7 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 ## エラー & exit-code mapping
 - **exit-code 契約は core の named `Code` int 型＋定数で1箇所**に定義。各コードに「呼び手が何をすべきか」を comment（2=fix args・retry するな / 1=soft-miss（empty は crash でない）/ 3=internal-IO）。scripts と agent が branch する **public API＝意味を安定に保つ**（一般則は cli-app-dev）。
 - **失敗を理解した地点で `*core.Error{Code,Msg,…}` に eager 分類**（`Usagef`/`APIf`/`Validationf` の1行 constructor）。上位で string-match して再導出しない。※canonical の「`%w` で wrap して caller に defer」から意図的に外す（exit code が製品契約だから）。
-- **全 error を `ExitCode(err) int` の1 funnel で解決**: `errors.As` で typed を拾い、nil→0、未分類（non-`*core.Error`）→internal(3)。**usage(2) には絶対 fallback しない**（未分類は定義上 internal）。
+- **全 error を `ExitCode(err) int` の1 funnel で解決**: typed を拾い、nil→0、未分類（non-`*core.Error`）→internal(3)。**usage(2) には絶対 fallback しない**（未分類は定義上 internal）。拾い方は go.mod の floor 次第 — **1.26+ で新しく書く／その行を編集する時は `errors.AsType[*core.Error](err)`**（out 変数が要らず `(E, bool)` を返す）、1.25 系は `errors.As`（1.25 に `AsType` は無く、書くと **`go vet` が落ちる** — `errors.AsType requires go1.26 or later (file is go1.25)`。⚠️ `go build` と実行は通ってしまうので build では気づけない）。どちらかはリポ一覧を覚えず go.mod を見る。⚠️ 既存の呼び出しは 2026-08-31 時点で全リポ `errors.As` のまま（`AsType` は 0 箇所）＝**一括置換はしない**（上の drive-by modernize 禁止がそのまま効く）。
 - **cobra から素の error が top に来たら usage(2)**（default が反転する唯一の場所＝Execute wrapper 内、`ExitCode` の中ではない）。app/core は必ず `*core.Error` を返す契約なので、素の error = flag/parse 問題。
 - **`%w` wrap は `errors.Is` で branch する sentinel を保つ時だけ**（furrow `ErrNonFastForward`＝sync が pull+push retry すべきかの判定）。それ以外は re-classify して deterministic な code map を保つ。sentinel は `var Err…`、typed struct は `Error` suffix（staticcheck ST1005: error string は lowercase 無句点）。
 - 追加コードは本物の第3の結末がある時だけ convention に倣う番号を（124=timeout, GNU timeout 準拠）＋意味を comment。verdict を stdout 済みなら error struct の `Silent` flag で二重 report を抑止。
@@ -54,11 +80,13 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 - `t.Fatalf`=続行不能（nil result / setup 失敗）、`t.Errorf`=同 test で invariant を続けて見たい時。message は必ず `%q`/`%+v` で offending 値を引用。
 - **table は genuinely parametric な時だけ** `t.Run(c.name,…)`。case ごとに bespoke setup が要るなら plain sequential Test（table を強制しない）。
 - 反復 setup は `t.Helper()` 付き小 helper（`newStore`/`gitOrSkip`/`run`、1行目で `t.Helper()`＝失敗行が caller を指す）。fs は `t.TempDir()`、env は `t.Setenv`。**real user config を読む pkg は `TestMain` で `XDG_CONFIG_HOME` を空 temp に向けてから `m.Run()`**（live machine config で非決定にしない）。
+- **ctx が要る test は `t.Context()`**（自前の `context.WithCancel`＋`defer cancel()` を書かない）。⚠️ **`t.Cleanup` に登録した関数の中では使わない** — Cleanup 実行の直前に cancel されるので、そこで得た ctx は必ず死んでいる。teardown 側で ctx が要るなら `context.WithTimeout(context.Background(), …)` を別に作る。
 - **golden test は `testdata/*.golden.json` に byte 一致**、`var update = flag.Bool("update",…)` で再生成（`go test ./pkg -update`）。golden と対で determinism test（marshal→parse→re-marshal が byte 一致）＋fixture を意図的に unsorted / CJK / nil-vs-populated で adversarial に。
 - **pure core は `FuzzXxx`** で invariant（never panic・budget 厳守・出力は入力の verbatim subset・count 非負）を検証、`f.Add` で代表 corpus を seed、fuzzed int は production reachable 範囲に clamp。CI で bounded `-fuzztime`（15–30s）を Ubuntu-only で。
+- **benchmark の主ループは `for b.Loop()`**（`for range b.N` でなく。1.24+ ＝全リポの floor で使える）＝setup/teardown が計測区間の外に落ち（初回呼び出しで timer reset・false で stop）、`b.ResetTimer()` が要らなくなる。⚠️ **最適化除けとしては過信しない**: 効くのは「引数・戻り値・ループ内で代入した変数を `runtime.KeepAlive` で生かす」ところまでで、定数畳み込みや loop-invariant hoisting は防がない（実測: `for b.Loop(){ poly(1.0001) }` は FP 命令 0 本まで畳まれ空ループと同値になった）。入力を反復ごとに変えるのは従来どおり benchmark 側の責任。keep-alive は波括弧内の文にだけ効き、条件式は厳密に `b.Loop()` と書く（別名に受けると失われる）。
 - 常に **`-race`**（coverage gate 時は `-covermode=atomic`＋`go tool cover -func | tail -1` を summary に。数値 threshold gate は張らず informational）。
 - **test 出力を読む時は `<runner> 2>&1 | pare --profile test`**（`go test`/`swift test` の失敗 assertion ブロックを予算内に丸ごと保持・成功は畳む＝再実行を減らす。正典は CLAUDE.md「Tools」節の pare bullet — ここは point-of-use の pointer）。
-- **mock より real dependency**: git は `os/exec` で本物＋`gitOrSkip`（不在は `t.Skip`）＋pinned committer identity。GitHub API は `httptest.Server` を client struct の base/http field に注入。bubbletea は teatest で headless に本物を driving し frame＋store 副作用の両方を assert。exit-code は string でなく typed sentinel＋`errors.As`（`assertExitCode`）で見る。
+- **mock より real dependency**: git は `os/exec` で本物＋`gitOrSkip`（不在は `t.Skip`）＋pinned committer identity。GitHub API は `httptest.Server` を client struct の base/http field に注入。bubbletea は teatest で headless に本物を driving し frame＋store 副作用の両方を assert。exit-code は string でなく `*core.Error`（typed struct）で見る（`assertExitCode`＝`errors.As`／1.26+ は `errors.AsType`。`errors.Is` で見る sentinel とは別物）。
 
 ## build / release / distribution ※ 運用面は github-practices
 - **3層 distribution**: (1) self-contained `flake.nix`（`nix run github:owner/repo`）、(2) **GoReleaser** cross-compile＋Homebrew **cask**（binary formula は GoReleaser v2 で deprecated）を tap に auto-push、(3) source `install.sh` → `~/.local/bin`。
@@ -86,4 +114,4 @@ description: Use when writing or modifying a Go CLI/tool (furrow・cifail・pare
 - **`context.Context` 伝播＋`signal.NotifyContext`**: 長時間 block（cifail `wait` は分単位）や git/gh の `os/exec` は ctx を第一引数で通し、main で `signal.NotifyContext(ctx, SIGINT, SIGTERM)` から root ctx を derive＋`exec.CommandContext`＝1度目 Ctrl-C で graceful cancel・2度目で hard kill。**新規 blocking / subprocess path では先回り採用**（純 filter=pare は不要）。
 - **CI に `go mod tidy` diff gate ＋ `go mod verify`**: un-tidy な go.mod/go.sum の drift を安く捕捉、`check.sh` に畳んで「green here == green CI」を保つ。
 - consider: gosec の G204（exec injection）/ G304（tainted path）を golangci-lint 経由で（exec/file 面のみ、sparse な `#nosec` justification で triage）／ Go 1.24 `tool` directive で lint・vulncheck 版を再現可能に（dep-minimalism と weigh）／ `t.Cleanup` で teardown を helper 越しに合成。
-- skip（今は）: `errgroup` 並行化＝Rule of Silence・deterministic 出力と整合。latency-bound で measured な時だけ `errgroup.WithContext`＋resource 由来 `SetLimit`（unbounded goroutine 禁止）で入れる。
+- skip（今は）: 並行化＝Rule of Silence・deterministic 出力と整合。latency-bound で measured な時だけ入れる。**入れる時は stdlib の `wg.Go(func(){…})` が先**（`sync.WaitGroup.Go`。1.25 で追加＝出荷 10 リポは全部 floor 1.25 以上なので使える。`Add(1)`/`defer Done()` の書き忘れが消え、dep も増えない）。`errgroup` は **ctx 連動の early-cancel か `SetLimit` による同時数制限が実際に要る時だけ**（unbounded goroutine 禁止）。
