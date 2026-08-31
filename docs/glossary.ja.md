@@ -1,6 +1,6 @@
 <!--
 この文書は glossary.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ fd98806。
+最新とは限りません — 基準: 英語版 @ 4b26bea。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -424,9 +424,26 @@ Claude Code 自身の設定・知識を [[chezmoi]] で再現するレイヤー�
 - **Don't call it:** システムプロンプト, グローバル設定, AI ルール
 
 ### skill（`SKILL.md`）
-**特定の作業で読み込ませる知識パック**。`chezmoi/private_dot_claude/skills/<name>/SKILL.md`。
-frontmatter の `description` が「いつ発火するか」を決める。
+**特定の作業で読み込ませる知識パック**で、ここで書き・ここが持つもの。
+`chezmoi/private_dot_claude/skills/<name>/SKILL.md`。
+frontmatter の `description` が「いつ発火するか」を決める。サードパーティ側の対応物が
+[[plugin]] で、両者は入れ替え可能ではない — だから「プラグイン」は Don't call it に残る。
 - **Don't call it:** プラグイン, ナレッジベース, プロンプトテンプレ
+
+### plugin（`modern-go-guidelines`）
+**marketplace から入れるサードパーティの機能パックで、中身をこの repo が書かないもの**。
+宣言は `~/.claude/settings.json` の 2 キー — `extraKnownMarketplaces`（marketplace の取得元）と
+`enabledPlugins`（どれを有効にするか） — で、
+[`modify_settings.json`](../chezmoi/private_dot_claude/modify_settings.json) #11 が
+**キーが無い時だけ** seed し、
+[`run_onchange_after_install-claude-plugins.sh`](../chezmoi/run_onchange_after_install-claude-plugins.sh)
+が実体を入れる。使っているのは JetBrains の `modern-go-guidelines` で、知識境界より新しい
+stdlib API の索引。**そのルールは索引であって権威ではない**: house の慣習より下に置く
+ガードレールは plugin ではなく [[skill]] `go-dev` にある。ルールを運ぶ番号は上流の
+`plugin/skills/use-modern-go/scripts/VERSION` で、`plugin.json` でも marketplace の commit でもない。
+- state ディレクトリ `~/.claude/plugins/`（バイナリキャッシュ + `.in_use` の PID）は
+  意図的に chezmoi の管理下に**置かない**。
+- **Don't call it:** skill, スキル, 拡張, アドオン
 
 ### agent（`fable-architect`）
 **サブエージェントの定義**。`chezmoi/private_dot_claude/agents/<name>.md`。

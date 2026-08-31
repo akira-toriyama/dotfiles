@@ -1,6 +1,6 @@
 <!--
 この文書は CLAUDE.md（英語・正本 — ~/.claude/CLAUDE.md の source）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ fd98806。
+最新とは限りません — 基準: 英語版 @ 4b26bea。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -136,6 +136,11 @@
 - 指摘を PR review として投稿 → `revpost`（`--dry-run` あり）
 - 条件待ち → condition-wait skill（wait4x）/ macOS GUI 検証 →
   macos-gui-verify skill（peekaboo）
+- modern-Go plugin の `list` は知識境界より新しい stdlib API の**索引**であって、
+  決して権威ではない。設計では house の慣習が勝つ; modern idiom が勝つのは
+  いま編集している行だけ（drive-by modernize はしない）; 出力（JSON・並び順・
+  exit code）が 1 バイトでも変われば挙動変更なので golden を走らせる。
+  名指しの罠と floor は `go-dev` skill に。
 - **外部待ちには deadline 必須**; 停滞は即報告; 状態の質問には測ってから
   答え、先には答えない。
 - **自作の CLI とアプリは source から動かす**: CLI は dotfiles `packages.nix`
