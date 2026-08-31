@@ -1,6 +1,6 @@
 <!--
 この文書は claude-md-ledger.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 5112e84。
+最新とは限りません — 基準: 英語版 @ 4b26bea。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -53,6 +53,7 @@
 | 外部待ちの deadline 必須・vncdo は timeout+小文字 keysym（Tools 節・2026-08-11 新設） | timeout を付ける・停滞は kill → 即報告・状態質問には実測後に回答 | — | PreToolUse hook [claude-vncdo-guard](../chezmoi/dot_local/bin/executable_claude-vncdo-guard)（[modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json) #9 配線）が vncdo の timeout 欠落と大文字 keysym を deny（unit 12 ケース = [scripts/test_claude_vncdo_guard.py](../scripts/test_claude_vncdo_guard.py)。**2026-08-19 訂正**: それまでここに「9 ケース実測」とあったがテストは実在しなかった — 同日に実体化し、`--help`/`--version` probe を deny していた誤爆も修正）。一般則（他コマンドの deadline・状態報告の正直さ）は散文 | 🟡 vncdo は 🔒・一般則は 📖 |
 | 道具を既定で使う（Tools 節） | pare/cifail/rundiff/revpost/wait4x/peekaboo に先に手を伸ばす | — | rundiff の test 自動 wrap・読み取り git allowlist は modify_settings.json が 🔒。**使う判断**は散文 | 🟡 |
 | 自作 CLI/アプリは source・brew 禁止（Tools 節） | `brew install` しない | `brew install` しない | brew 版が無ければ shadow は構造的に起きない（実測: wrapper のみ） | 🟡 |
+| modern-Go plugin の `list` は索引であって権威ではない（Tools 節・2026-08-31 追加） | 順位付けする: 設計では house の慣習が勝ち、modern idiom はいま編集している行にだけ効き（drive-by modernize はしない）、出力の 1 バイトの差を挙動変更として扱う — plugin 自身の「returned guideline を repo の慣習より優先」条項を上書きする。名指しの罠と floor は [skills/go-dev/SKILL.md](../chezmoi/private_dot_claude/skills/go-dev/SKILL.md) | plugin を採用したままにするかどうかの裁定（この表の下の注記を参照） | **無し — そしてガードレールが常時ロードされる文書に載っているのは、まさに skill では運べなかったから。** 2026-08-31 に実 furrow checkout で測定（Opus 5・現実的な Go 編集タスク n=3・各 10〜57 tool call）: frontmatter の description だけでは `go-dev` は **0/3**、plugin も **0/3** しか発火しない。skill を名指す Tools bullet を足し description に「modern idiom」を入れても、どちらも動かなかった（**0/2**、14 と 58 tool call）。つまり skill に置いた規則は、plugin が暴発する時にちょうど不在になる。claude-md-eval はこの行を測れない — `run.py` が `--tools ""` を渡すのでどちらの腕にも Skill ツールが存在せず、22 ケースも全て会話形。上の A/B がその代替の測定 | 📖 |
 | gitmoji 規約・push 前 `glyph lint`（Commits 節） | CONTRIBUTING.md を引く・push 前に lint | — | PR の commit-lint.yml（fleet 同期）。branch protection 必須は `ci-gate` のみで commit-lint 赤は merge を止めない（実測） | 🟡 push 前 lint は 📖 |
 | commit 英語のみ（Commits 節・2026-08-02 和訳廃止） | 英語のみで書く | — | なし（実測: glyph は日本語 subject も exit 0） | 📖 |
 | 成果物は英語のみ・会話/task は日本語（Development policy 節・2026-08-02 新設・正本 = fleet [doc-consistency-policy](https://github.com/akira-toriyama/.github/blob/main/docs/doc-consistency-policy.md)） | committed 文書を英語で書く・翻訳ファイルを持たない | — | なし（pare/rundiff の check-docs は version 検査のみ — README.ja 再出現は検知しない・実測） | 📖 |
@@ -64,6 +65,27 @@
 | Opus 失敗の body 記録（Model operations 節） | 都度 task body に書く | — | なし | 📖 |
 | 分担・Fable セッションで既定継承させない・検証は Opus 側（Model operations 節） | サブエージェントの model/effort を明示 | `/model fable` への切替 | なし。指定漏れの継承は subagent_type 依存（Plan・general-purpose のみ — 2026-08-19 の 4081 transcript 実測。旧文言「全員 Fable」は誇張だった） | 📖 |
 | 他 repo は慣習に従う・自分の規約を持ち込まない（For repositories outside akira-toriyama 節） | repo の CLAUDE.md/CONTRIBUTING/履歴を先に読む | — | なし | 📖 |
+
+### 未決 — modern-Go plugin は採用したままにするか？（2026-08-31・furrow t-55tc）
+
+上の行が記録しているのはガードレールであって、採用が確定したという話ではない。採用は
+2026-08-28 に決めたが、2026-08-31 に実装して出た実測がその根拠を弱めており、判断は
+ユーザーのもの:
+
+- **発火しない。** 実 furrow セッションで 0/3、skill を名指す Tools bullet を足しても 0/2（上の行）。
+- **全 repo・全言語の毎セッションで払い続ける**: plugin 本体 +78.5 tok（2026-08-28）+
+  ガードレール bullet 約 370 B。
+- **house での収支は「1 件の silent 破壊を引き起こし、防いだ失敗は 0 件」** — これに従って
+  furrow `due.go` を書き換えた結果、全テスト・golden・lint が緑のまま `brief --json` の
+  並び順が壊れた。
+- **上流の修正が届かない。** main は 9 commit 先行し issue #14 の 1 件（PR #23・2026-08-29）は
+  merge 済みだが、`VERSION` も最新 tag も v0.1.1 のままで、merge 済みの修正すら未リリース。
+  挙動を変える 6 例の PR #20 は open。
+
+選択肢: **(a)** 維持して `VERSION` が動いた時に測り直す。**(b)** plugin・install script・
+settings のキーを外し、`gopls modernize` は on-demand で、恒久的な floor の事実は `go-dev` skill に
+残す。**推奨は (b)** — 発火率 0/3 のものが常時コストに見合わない。(a) も「最新の Go を
+追い続けたい」というユーザーの継続的な希望の上では筋が通る。
 
 ### この台帳自身の機構（2026-07-28〜）
 
