@@ -74,7 +74,9 @@ in
     jq      # JSON CLI
 
     # === 開発 util（t-e77z B-4: 未宣言 brew の仕分け宣言）===
-    # xcodes: Xcode の版管理・install CLI（Swift 開発の複数 Xcode 運用）
+    # xcodes: Xcode の版管理・install CLI（Swift 開発の複数 Xcode 運用）。
+    # 新機ブートストラップの Xcode 導入も chezmoi/run_onchange_after_install-xcode.sh
+    # がこれを叩く（mas/masApps ルートは不採用 — script 冒頭コメント参照）
     xcodes
     # aria2: 分割/再開ダウンローダ。xcodes が aria2c を見つけると
     # Xcode DL をこれ経由で高速化するため、xcodes とセットで宣言
