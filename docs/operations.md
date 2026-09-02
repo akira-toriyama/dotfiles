@@ -122,11 +122,18 @@ with `lib.mkForce { }` (so that switch does not fail on a bootstrap/CI/VM that i
 the App Store. PR #108 unified this into one policy shared by everyday use and bootstrap).
 **Whatever you declare in masApps, live is `{}`** — "declared but not installed" is not a defect.
 
-If a MAS app becomes necessary in the future:
+**Xcode is not a MAS concern here**: it is installed by
+[`chezmoi/run_onchange_after_install-xcode.sh`](../chezmoi/run_onchange_after_install-xcode.sh)
+via `xcodes` (declared in `home/modules/packages.nix`), not via the App Store. The mas route was
+rejected — mas 7 shells out to sudo internally (measured 2026-09-02) and adds an App Store
+sign-in prerequisite for nothing.
+
+If any other MAS app becomes necessary in the future:
 
 - (a) install it manually from the App Store (the most reliable), or
 - (b) bring in the `mas` CLI temporarily (it is in nixpkgs; not kept around because usage is zero)
-  and run `mas install <id>` by hand
+  and run `mas install <id>` by hand — note mas 7 renamed first-time acquisition to `mas get`
+  (`mas install` only covers previously gotten apps) and requires sudo
 - If you want to go back to declarative, start from designing how to relax `bootstrapBrewOverride`
   (splitting the configuration on a signed-in assumption, etc.)
 
