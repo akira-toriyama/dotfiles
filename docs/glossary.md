@@ -251,6 +251,17 @@ The machine-readable summary each install.sh run leaves in `~/.dotfiles-install/
 The `latest` symlink points at the newest run.
 - **Don't call it:** report, result.txt, ログ本体
 
+### VM-PASS
+The named ceiling of an **unattended full install.sh run in a Tart VM**: `RESULT: FAILED`
+with `P-onepassword` as the only FAIL and every other check green (the 1Password sign-in
+is GUI-only, so no unattended run can go further). Write it as
+"VM-PASS (RESULT: FAILED, P-onepassword only)" — the `RESULT:` line is still copied
+verbatim; VM-PASS names the state and never replaces the verdict. The unattended
+`--skip-clone` ceiling is `RESULT: PARTIAL (exit 0)` and needs no extra name.
+Born from furrow t-6srg (a FAILED run was once rounded up to "PASS").
+Procedure: [operations.md §5.15](operations.md).
+- **Don't call it:** PASS, 実質 PASS, ほぼ完走
+
 ### `ghq-get-mine`
 **The command that bulk-clones one's own repositories**. It SSH-clones akira-toriyama's
 active (non-archived) repos on GitHub into `GHQ_ROOT` (`/Volumes/workspace`) in the ghq layout.

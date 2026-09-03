@@ -220,10 +220,15 @@ diff <(brew list --cask | sort) \
 
 ### 5.4 Bootstrapping another PC
 
-On a new Mac (after the Apple Silicon chip transfer, one shot in the terminal):
+On a new Mac (after the Apple Silicon chip transfer, one shot in the terminal — the
+canonical pre-reqs and the one-liner live in README "環境再現コマンド"; this copy must match it):
 ```sh
-sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)
+sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 ```
+
+The leading `sudo -v` is not decoration: install.sh runs every sudo with `-n` (macOS
+`PASSWORD_TIMEOUT 0` would otherwise hang forever on a prompt), so without a live
+ticket it fails immediately at `P1-sudo`. Rehearse changes in a Tart VM first (§5.15).
 
 That alone does:
 1. Xcode CLT install
@@ -472,6 +477,56 @@ those under `chezmoi/private_dot_claude/` (`CLAUDE.md` / `agents/` / `skills/` /
   is not read in the next session, and the fact you wrote quietly disappears. `claude-maint`'s
   monthly lane does not look at memory (skills / commands / agents only), so for now this
   rests **on prose alone**.
+
+### 5.15 Tart VM verification (the rehearsal loop, and what counts as a pass)
+
+Verify `install.sh` changes in a disposable clone of the kept base image
+(this is the section `install.sh`'s header points at):
+
+```sh
+tart clone dotfiles-base rehearsal-1
+tart run rehearsal-1 --no-graphics &        # macOS guests: max 2 concurrently
+ssh admin@"$(tart ip rehearsal-1)"          # password: admin
+# Inside the VM, all in ONE session. The sudo ticket dies with the session that
+# created it — launching install.sh with nohup and closing the session ends in an
+# immediate P1-sudo FAILED (measured 2026-09-03).
+printf 'admin\n' | sudo -S -v
+export GH_TOKEN=<fine-grained PAT>          # from 1Password DOTFILES_BOOTSTRAP; never echo it
+export DOTFILES_SKIP_FDA_GATE=1
+curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh -o install.sh
+sh install.sh --skip-clone
+# From the host, when done:
+tart delete rehearsal-1
+```
+
+VM inventory (`tart list`):
+
+| VM | Handling |
+|---|---|
+| `dotfiles-base` | **Keep.** Faithful vanilla macOS 26 (NOPASSWD removed, no CLT, no nix). Every verification clones from here; never boot or mutate it. |
+| `dotfiles-ready` | **Keep.** The 2026-07-21 attended full run that reached `✓ 完了`. |
+| `rehearsal-*` / other clones | Disposable — `tart delete` when done. |
+
+**Reporting the outcome.** This rule exists because a FAILED run was once reported as
+"PASS" and the user shipped on it (furrow t-6srg):
+
+- **Copy the `RESULT:` line verbatim** (`✓ 完了` / `PARTIAL` / `FAILED` + exit code +
+  FAIL list). No paraphrase, no summary verdicts, no "effectively passed".
+- An unattended VM run has a ceiling, and reaching it is the expected good outcome —
+  it is still not `✓ 完了`:
+  - `--skip-clone` run: best possible is `RESULT: PARTIAL (exit 0)` with zero FAILs.
+  - full run: always ends `RESULT: FAILED` with `P-onepassword` as the only FAIL
+    (the 1Password sign-in is GUI-only). This state is called **VM-PASS** — write
+    "VM-PASS (RESULT: FAILED, P-onepassword only)", never "PASS".
+- `✓ 完了` is only provable in an attended run: a human performs the 1Password QR
+  sign-in and SSH key approval (done once in a VM on 2026-07-21; real-hardware
+  rehearsal is still pending — furrow t-e77z).
+- Layers no VM can verify (App Store / mas, TCC prompts, FileVault/Secure Enclave
+  fidelity) belong to the attended real-hardware EACS rehearsal.
+
+Side effect to clean up: signing into 1Password inside a VM registers that VM as a
+device on the account. After deleting the VM, remove the device from 1Password's
+settings by hand.
 
 ## Completed large migrations
 
