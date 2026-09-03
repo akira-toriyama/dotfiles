@@ -221,7 +221,9 @@ diff <(brew list --cask | sort) \
 ### 5.4 Bootstrapping another PC
 
 On a new Mac (after the Apple Silicon chip transfer, one shot in the terminal — the
-canonical pre-reqs and the one-liner live in README "環境再現コマンド"; this copy must match it):
+canonical pre-reqs and the one-liner live in the private repo
+[dotfiles-private docs/bootstrap.md](https://github.com/akira-toriyama/dotfiles-private/blob/main/docs/bootstrap.md);
+this copy must match it):
 ```sh
 sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 ```

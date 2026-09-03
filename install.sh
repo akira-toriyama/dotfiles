@@ -1,18 +1,20 @@
 #!/bin/sh
 # 新 Mac の環境再現ブートストラップ（単一ステージ・無人一気通貫）。
+# 手順の正本（以下 bootstrap doc）= private repo dotfiles-private の docs/bootstrap.md
+# （環境構築 = private / それ以外 = public の機械的分離。t-wttk）。
 #
 # 事前準備（初期化直後・在席。GUI 操作はここに全部front-load する）:
 #   1. システム設定 → プライバシーとセキュリティ → フルディスクアクセス → Terminal ON
 #      （付与後 Terminal を Cmd-Q で再起動）
 #   2. 1Password.app を手動インストール → iPhone の QR でサインイン → 設定 → 開発者 →
 #      SSH agent ON → セキュリティ → 自動ロックのタイマーを OFF（スリープ時ロックは残す）
-#      → ~/.ssh/config を chezmoi 正本そのままで置く（README の curl ワンライナー =
+#      → ~/.ssh/config を chezmoi 正本そのままで置く（bootstrap doc の curl ワンライナー =
 #        raw の chezmoi/private_dot_ssh/private_config を取得して 600 で保存。
 #        これが無いと ssh は素の macOS agent(鍵ゼロ)を向く）
 #      → `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` を 1 回実行し、
 #      1Password の承認ダイアログで「すべてのアプリで承認する」+ 認証
 #   3. GitHub fine-grained PAT（All repositories / Metadata: Read-only で足りる。t-8f19）を
-#      1Password の item `DOTFILES_BOOTSTRAP`（Personal vault）からコピーし、
+#      1Password からコピーし（item 名・vault は bootstrap doc 事前準備 3）、
 #      ワンライナーと同じターミナルで `export GH_TOKEN=<PAT>`
 #      （ghq-get-mine の repo 一覧取得と clone 完全性検証が gh API を使うため。無いと
 #      ✓ 完了 に到達できないので P1-ghtoken で即 fail する）
@@ -256,7 +258,7 @@ trap 'exit 143' TERM
 #      （実測 08:01:16 powerd "Sleep timer 0 display timer 5"）
 #   2. 端末への出力は HID 入力ではないので display sleep タイマーを戻さない。
 #      20 分無操作の switch/chezmoi を挟むので 5 分後に画面が消える（実測 08:06:27）
-#   3. 1Password は画面オフを DeviceWentToSleep と解釈して施錠する。README が OFF に
+#   3. 1Password は画面オフを DeviceWentToSleep と解釈して施錠する。bootstrap doc が OFF に
 #      させる `security.autolock.minutes` とは別系統の `security.autolock.onDeviceLock`
 #      （既定 有効）が効くため、事前準備どおり手順を踏んでいても防げない
 #      （実測 08:06:27 "Locked. Reason: Automatic(DeviceWentToSleep)"）
@@ -299,8 +301,8 @@ df_gate_ghtoken() {
     df_check_ok P1-ghtoken "gh auth 済み"
   else
     df_check_fail P1-ghtoken "gh の認証が無い"
-    df_say "  fine-grained PAT を 1Password の item \`DOTFILES_BOOTSTRAP\`（Personal vault）からコピーし、"
-    df_say "  \`export GH_TOKEN=<PAT>\` してから再実行すること（事前準備 3）"
+    df_say "  fine-grained PAT を 1Password からコピーし \`export GH_TOKEN=<PAT>\` してから再実行すること"
+    df_say "  （item 名・vault・PAT の作り方 = private repo dotfiles-private の docs/bootstrap.md 事前準備 3）"
     exit 1
   fi
 }

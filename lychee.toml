@@ -35,4 +35,7 @@ exclude = [
   # 【重要】末尾の (/|$) は必須。これが無いと将来 projects-public-thing のような
   # public repo へのリンクまで無言で Excluded になる。
   '^https://github\.com/akira-toriyama/projects(/|$)',
+  # dotfiles-private も同じ理由（private repo・未認証 404・check_github は実在検査に
+  # ならない）で除外する。
+  '^https://github\.com/akira-toriyama/dotfiles-private(/|$)',
 ]
