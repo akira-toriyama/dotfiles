@@ -237,6 +237,16 @@ key approval, turning the auto-lock timer OFF) are **front-loaded into the prepa
 `✓ 完了` is printed only when every phase plus the verification has passed.
 - **Don't call it:** setup, bootstrap script, セットアップ
 
+### `dotfiles-private` / bootstrap doc
+The **private companion repo** [akira-toriyama/dotfiles-private](https://github.com/akira-toriyama/dotfiles-private).
+Split rule (mechanical, so the boundary never drifts): **environment construction =
+private / everything else = public**. Its [docs/bootstrap.md](https://github.com/akira-toriyama/dotfiles-private/blob/main/docs/bootstrap.md) is the canonical new-Mac
+reproduction procedure — install.sh's header shorthand for it is "**bootstrap doc**" —
+and its root README stays a one-pointer page so a phone browser reaches the procedure
+with zero clicks on day zero. It also fills the middle sensitivity tier (secret →
+1Password / middling → dotfiles-private / public → dotfiles).
+- **Don't call it:** private notes, machine-docs, セットアップ手順書
+
 ### `--phase2`
 install.sh's **recovery entry point**. After a failure caused by the SSH gate (1Password) has
 been fixed, it does not re-evaluate the installing phases (CLT/Nix/switch); it runs the sudoers
