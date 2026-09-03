@@ -1,0 +1,29 @@
+#!/bin/sh
+# mise 宣言ツールの実体インストール。config（home/modules/mise.nix が
+# ~/.config/mise/config.toml へ展開）は switch で再現されるが、実体の DL は
+# `mise install` を叩くまで走らない — 新 Mac で「config だけあってランタイムが全部
+# missing」になるギャップを埋める（furrow t-dxrp。2026-07-19 実測: node 以外全部
+# missing だった）。
+#
+# 実行契機: run_onchange は本文 hash で再実行を決めるので、下に live config の hash を
+# 埋め込み「mise.nix でツールを増減 → switch → 次の chezmoi apply で自動 install」に
+# 追随させる。bootstrap は switch → chezmoi apply の順（install.sh）なので、apply
+# 時点で mise 本体と config は必ず居る。CI の execute-template は Linux runner で
+# config が無いため stat ガードで空振りさせる。
+# 失敗は warn 継続（xcodes / masApps と同じ非致命方針 — ネットワーク起因で apply
+# 全体を殺さない。その回の hash は記録されるので、失敗時は手動で `mise install --yes`）。
+#
+# mise config hash: {{ $p := joinPath .chezmoi.homeDir ".config/mise/config.toml" }}{{ if stat $p }}{{ include $p | sha256sum }}{{ else }}(config absent){{ end }}
+set -e
+
+if ! command -v mise >/dev/null 2>&1; then
+  echo "⚠ mise が PATH に無い（darwin-rebuild switch 前？）→ skip。switch 後に手動で: mise install --yes" >&2
+  exit 0
+fi
+
+echo "==> mise install（宣言済みランタイムの実体を導入。導入済みなら no-op）"
+if mise install --yes; then
+  echo "==> mise install 完了"
+else
+  echo "⚠ mise install 失敗（ネットワーク？）。手動で: mise install --yes" >&2
+fi
