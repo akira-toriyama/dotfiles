@@ -327,6 +327,45 @@ in
     # 再利用 — (cd src) は build 用 subshell に閉じる（他 wrapper と同じ atomic mv）。
     (sourceBuiltCLI { name = "revpost"; })
 
+    # facet: source-build wrapper for the facet CLI client (the same binary the
+    # Facet.app server ships; `facet --view tree` etc. talk DNC to the running
+    # app). Swift, not Go, so it does not ride sourceBuiltCLI:
+    # ・execs IN-PLACE from $src/.build/release — never copies the bare binary
+    #   to a cache: SwiftPM resource bundles (sill_ThemeKit.bundle …) must sit
+    #   next to the executable or the first badge glyph fatalErrors (the t-d4hp
+    #   failure class). run.sh builds the same config, so the two stay in step.
+    # ・find -newer keeps the no-change path at ~ms — chord fires `facet --view
+    #   tree --loading` on a hotkey BEFORE a Space switch, so wrapper latency
+    #   is user-visible; swift only runs when Sources/Package.* changed. The
+    #   -newer reference is a wrapper-owned stamp, NOT the binary: SwiftPM
+    #   leaves the product's mtime untouched on a no-op build (unlike
+    #   `go build`), so comparing against the binary re-fires forever
+    #   (measured: every call paid a ~0.5s `swift build` no-op). The stamp is
+    #   touched only after a successful build — a failed build retries.
+    # ・swift comes from PATH (CommandLineTools suffices for `swift build`;
+    #   no Xcode needed, and macOS Swift toolchains are not nix-packaged).
+    # ・stdout stays the CLI's own (build noise → stderr): `facet query` emits
+    #   JSON that callers pipe to jq.
+    # ・clone missing → exit 127, same contract as sourceBuiltCLI; there is no
+    #   previous-build fallback because nothing is cached outside the clone.
+    (writeShellApplication {
+      name = "facet";
+      text = ''
+        src=/Volumes/workspace/github.com/akira-toriyama/facet
+        bin="$src/.build/release/facet"
+        stamp="$src/.build/facet-wrapper-stamp"
+        if [ ! -d "$src" ]; then
+          echo "✘ facet の clone が無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+          exit 127
+        fi
+        if [ ! -x "$bin" ] || [ ! -f "$stamp" ] || [ -n "$(find "$src/Sources" "$src/Package.swift" "$src/Package.resolved" -newer "$stamp" 2>/dev/null | head -1)" ]; then
+          ( cd "$src" && swift build -c release ) >&2
+          touch "$stamp"
+        fi
+        exec "$bin" "$@"
+      '';
+    })
+
     # projects: board の規約 CLI（projects の scripts/projects_cli.py）を checkout の外から
     # 叩くラッパ。sourceBuiltCLI と同じ「常に source を反映する」性質だけを持たせ、build 段階は
     # 持たない —— 実体が Python stdlib のみで、cache も incremental build も要らないため
