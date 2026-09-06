@@ -33,7 +33,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+        uses: DeterminateSystems/nix-installer-action@b67ad2f0e8376a0bc947db191e4484285b6f5b56 # main
 
       - name: nix flake check --no-build
         run: nix flake check --no-build --show-trace
@@ -65,7 +65,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+        uses: DeterminateSystems/nix-installer-action@b67ad2f0e8376a0bc947db191e4484285b6f5b56 # main
 
       # --ci は検査内容を変えない（出力を GitHub annotation にするだけ）。
       # ローカル `nix develop .#lint --command scripts/lint` と対象集合が同一。
@@ -90,7 +90,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+        uses: DeterminateSystems/nix-installer-action@b67ad2f0e8376a0bc947db191e4484285b6f5b56 # main
 
       # `external` を名指ししないと走らない（scripts/lint の OPT_IN_GROUPS）。
       # 素の `scripts/lint` がネットワークを叩かないことは test_lint.py が固定する。
@@ -156,7 +156,7 @@ jobs:
       #   ② Python の版が flake.lock 固定の 3.13 に揃い、setup-python の別系統の
       #      版指定と drift しない。
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+        uses: DeterminateSystems/nix-installer-action@b67ad2f0e8376a0bc947db191e4484285b6f5b56 # main
 
       - name: Run python unit tests
         run: |
@@ -249,7 +249,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+        uses: DeterminateSystems/nix-installer-action@b67ad2f0e8376a0bc947db191e4484285b6f5b56 # main
 
       - name: nix-darwin build (default host alias)
         run: nix run nix-darwin/master#darwin-rebuild -- build --flake .#default --show-trace
@@ -269,7 +269,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix (Determinate)
-        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41 # main
+        uses: DeterminateSystems/nix-installer-action@b67ad2f0e8376a0bc947db191e4484285b6f5b56 # main
 
       - name: Make way for nix-homebrew (remove preinstalled Homebrew)
         # GitHub の macos ランナーは /opt/homebrew を preinstall するが、
