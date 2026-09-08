@@ -493,6 +493,8 @@ ssh admin@"$(tart ip rehearsal-1)"          # password: admin
 # created it — launching install.sh with nohup and closing the session ends in an
 # immediate P1-sudo FAILED (measured 2026-09-03).
 printf 'admin\n' | sudo -S -v
+# GH_TOKEN is for full runs only — --skip-clone skips the P1-ghtoken gate and never
+# reads it (measured 2026-09-07: token-less --skip-clone run → PARTIAL exit 0, zero FAILs)
 export GH_TOKEN=<fine-grained PAT>          # from 1Password DOTFILES_BOOTSTRAP; never echo it
 export DOTFILES_SKIP_FDA_GATE=1
 curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh -o install.sh
