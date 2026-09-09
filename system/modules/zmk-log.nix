@@ -3,7 +3,7 @@
 {
   # 自作キーボード dongle (ZMK BLE HID Host) のシリアルログを 24/7 常駐キャプチャする
   # LaunchAgent（launchd-drift / claude-maint と同じ流儀）。dongle 安定化までの調査用で、
-  # 撤去は zmk-ble-hid-host t-x0ak (icebox) が管理する。
+  # 撤去は zmk-hid-host t-x0ak (icebox) が管理する。
   #
   # スクリプト本体は chezmoi 所有の ~/.local/bin/zmk-log-capture.sh（照会 CLI は同
   # ~/.local/bin/zmk-log）。手編集で育てる生スクリプトなので claude-maint のような
