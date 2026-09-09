@@ -9,10 +9,16 @@
 # in a code repo would never see "requests は triage 待ち" — this hook is the
 # one surface that reaches every session (same reasoning as claude-quota-note).
 #
-# Output: the lint report verbatim (errors + warnings + summary), or nothing
-# when the board is clean. Fail-open: no furrow config / no checkout / lint
-# unavailable → print nothing, exit 0 (breaking session start is never worth
-# a triage reminder — same asymmetry as modify_settings.json).
+# Output: the lint report for `--actor agent` (findings whose fix Claude may
+# run unprompted, in full; the human-actor rest — triage, pinning, epic
+# activate/deactivate, human review — folded into a count on the summary
+# line), or nothing when the board is clean. Measured 2026-09-10 before the
+# filter: 18 warns per session, 0 actionable by the agent, and two fix texts
+# were operations the agent is forbidden to run (projects t-s97b). Fail-open:
+# no furrow config / no checkout / lint unavailable → print nothing, exit 0
+# (breaking session start is never worth a triage reminder — same asymmetry
+# as modify_settings.json). A projects checkout too old to know --actor
+# exits 2 with usage on stderr and prints nothing — the same silence.
 #
 # The projects checkout is derived from furrow's board config (path = ".../
 # .furrow"), overridable for tests via FURROW_CONFIG.
@@ -32,6 +38,6 @@ repo=${board%/.furrow}
 
 # projects-lint exits 2 on errors — that is a report to surface, not a hook
 # failure. Anything it printed goes to the opening context; we always exit 0.
-out=$(cd "$repo" && sh scripts/projects-lint.sh 2>/dev/null) || true
+out=$(cd "$repo" && sh scripts/projects-lint.sh --actor agent 2>/dev/null) || true
 [ -n "$out" ] && printf '%s\n' "$out"
 exit 0

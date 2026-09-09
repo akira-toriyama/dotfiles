@@ -6,6 +6,7 @@ SessionStart hook は fail-open が契約（壊れた hook はセッション開
   1. fail-open: config 無し / path 行無し / lint script 無し → 無出力・exit 0
   2. happy path: config → checkout 解決 → lint 出力がそのまま stdout に出る
   3. lint が exit 2（error あり）でも hook は exit 0 で出力を通す
+  4. lint には `--actor agent` だけを渡す（human 向けの畳み込みは projects lint 側）
 
 lint 本体は projects repo 側でテスト済み（scripts/projects_lint_test.py）なので、
 ここでは stub の projects-lint.sh を置いて配管だけを見る。
@@ -73,6 +74,14 @@ class HappyPath(unittest.TestCase):
             p = run(cfg)
             self.assertEqual(p.returncode, 0, "the hook must never fail the session")
             self.assertIn("reserved-box-missing", p.stdout)
+
+    def test_lint_is_asked_for_the_agent_actor_only(self) -> None:
+        # The human-actor findings are folded by projects lint itself; the hook's
+        # only job is to ask for the agent's slice.
+        with tempfile.TemporaryDirectory() as d:
+            cfg = self.fake_checkout(d, 'echo "args: $*"\nexit 0\n')
+            p = run(cfg)
+            self.assertEqual(p.stdout, "args: --actor agent\n")
 
     def test_clean_board_is_silent(self) -> None:
         with tempfile.TemporaryDirectory() as d:
