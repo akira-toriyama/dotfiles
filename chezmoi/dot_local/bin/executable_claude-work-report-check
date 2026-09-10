@@ -9,6 +9,16 @@
 #      created ≤ closed − 1, projects/CLAUDE.md §5 Converge the board, so EQUAL
 #      counts already overrun it), a reason must sit on the counts line or the
 #      line right after it. 0/0 is exempt: it adds nothing to the board.
+#   4. (furrow t-pj06) a やり残し of 「なし」 must not sit beside a DEFERRAL in
+#      the prose — 「1 か月後に grep して判定」, "revisit later", 「来月」 —
+#      unless that line names a furrow id or a due. Measured 2026-09-10: a
+#      one-month follow-up was written into the body of a task the very PR
+#      closed, and into the close itself, under 「やり残し: なし」; a done body
+#      is never re-read, so the plan was gone the moment the turn ended. The
+#      board has the primitive (a waiting task with --due surfaces in brief's
+#      due band); the hook makes the agent reach for it. Regex, so it catches
+#      wording, not intent — the bounded repair round is what forces the
+#      filing or the confession.
 #   3. (furrow t-64tw) the counts must not contradict the BOARD: actuals come
 #      from `furrow stats -r '' --since <session-start> --json`'s window
 #      (session start = the transcript's first timestamp), and only the lying
@@ -111,6 +121,46 @@ counts=""
 if [ -z "$counts" ]; then
   jq -n '{decision: "block", reason: "作業の締めに増減の実数がありません。「closed N / created M」の行を足してください（board は放っておくと単調増加する — 実測で完了は週 100 件超なのに未完は 95 → 295 に増えた。数字を出さない限り収束しているか誰にも分からない）。作業の締めでないなら、断り書きを足すのではなく判定語を本文から消してください（「締めではない」と書き添えても語が残る限り次のターンでまた止まります。arming は「やり残し」の語・「closed N / created M」形・旧冒頭文の 3 つで、引用や説明のための出現も区別しません）。直したらそのまま停止してよい。"}'
   exit 0
+fi
+
+# ---- deferral beside 「なし」 (furrow t-pj06) ----------------------------------
+# Only when the declaration is a bare 「なし」: a やり残し that lists ids may
+# well be the tracking of whatever the prose defers, and the hook cannot pair
+# them. A deferral line is TRACKED only if it names a furrow id that is still
+# OPEN — the board is asked (`furrow show <ids> --no-body --json`, `closed`
+# null), because the measured failure named an id: the very task the PR was
+# closing, whose done body nobody re-reads. Fail-open when the board cannot
+# be asked (no furrow, unparsable output), like the cross-check below.
+# The phrase list is deliberately narrow — a plain 「後で」 is everyday prose
+# (「その後で確認した」) and would arm every other close — so it names the
+# shapes a deferred DATE takes: a relative span (N 日/週間/か月 後, in N
+# days/weeks/months), a next-period word (後日/次回/来週/来月, next week/month),
+# and the bare English "later" / "follow-up".
+# Spelled as alternations, never as a bracket expression over non-ASCII: CI's
+# grep runs in the C locale, where 「[０-９]」 is "Invalid collation character".
+defer_re='([0-9]|０|１|２|３|４|５|６|７|８|９|一|二|三|四|五|六|七|八|九|十|数)+ ?(日|週間|か月|ヶ月|ヵ月|カ月|月)後|後日|次回|来週|来月|(^|[^a-z])later([^a-z]|$)|follow[- ]?ups?|next (week|month)|in [0-9]+ (days?|weeks?|months?)'
+if ! printf '%s' "$decl" | grep -qE 't-[a-z0-9]{3,}'; then
+  deferred=$(printf '%s\n' "$msg" | grep -iE "$defer_re" || true)
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    ids=$(printf '%s' "$line" | grep -oE 't-[a-z0-9]{3,}' | sort -u | tr '\n' ' ')
+    tracked=0
+    if [ -n "$ids" ]; then
+      tracked=1 # fail-open unless the board answers that every named id is closed
+      if command -v furrow >/dev/null 2>&1; then
+        # ids is a space-separated list by construction; it must word-split.
+        # shellcheck disable=SC2086
+        open=$(furrow show $ids --no-body --json 2>/dev/null | jq -r '[.[] | select(.closed == null)] | length' 2>/dev/null) || open=""
+        [ "$open" = 0 ] && tracked=0
+      fi
+    fi
+    if [ "$tracked" -eq 0 ]; then
+      jq -n --arg line "$line" '{decision: "block", reason: ("「やり残し: なし」なのに、本文に先送りの予定があります: 「\($line)」。予定を prose に書いても誰も再読しません（done になった task の body も、締めの文章も、次のセッションには届かない — 閉じた task の ID を添えても同じ）。期日のある予定は due 付きの waiting task にしてください — `furrow add \"<title>\" -s waiting --due <YYYY-MM-DD>`（brief の due 帯と lint の due-today に出る）— そしてその open な ID をこの行に書くか、やり残し に列挙してください。先送りでないなら、その行から先送り表現を消してください。直したらそのまま停止してよい。")}'
+      exit 0
+    fi
+  done <<EOF_DEFER
+$deferred
+EOF_DEFER
 fi
 
 closed_n=$(printf '%s' "$counts" | grep -oE '[0-9]+' | head -1)
