@@ -215,6 +215,8 @@ mkshim() { # $1=window JSON (or "ERR" to exit 2)  $2=`furrow show` JSON array (d
   if [ "$1" = ERR ]; then
     printf '#!/bin/sh\nexit 2\n' >"$shimdir/furrow"
   else
+    # the $1 below is the shim's own, expanded when the shim runs
+    # shellcheck disable=SC2016
     printf '#!/bin/sh\ncase "$1" in show) printf %%s '"'"'%s'"'"' ;; *) printf %%s '"'"'{"total":9,"drafts":0,"window":%s}'"'"' ;; esac\n' "${2:-[]}" "$1" >"$shimdir/furrow"
   fi
   chmod +x "$shimdir/furrow"
