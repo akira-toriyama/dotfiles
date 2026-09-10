@@ -10,8 +10,10 @@
 # opener, a やり残し line, or a closed/created counts token) without the two
 # verifiable elements — ①a やり残し line carrying a t-xxxx furrow id or the
 # literal 「なし」 ②a `closed N / created M` line, with any budget-overrun
-# reason on the counts line or the line right after it. Everything else —
-# including malformed input — must allow.
+# reason on the counts line or the line right after it — or when a bare 「なし」
+# sits beside a deferral in the prose (「1 か月後に」, "later", 「来月」) that
+# names no furrow id or due. Everything else — including malformed input —
+# must allow.
 set -u
 
 script="$(cd "$(dirname "$0")/.." && pwd)/chezmoi/dot_local/bin/executable_claude-work-report-check"
@@ -155,6 +157,41 @@ run "超過理由が counts 行から離れた行にしか無い → block" \
 やり残し: t-ab3d
 closed 1 / created 2')" block
 
+run "なし + due を書いても ID が無ければ → block" \
+  "$(mk '判定は 1 か月後。waiting task に due 2026-10-10 を付けた。
+やり残し: なし
+closed 2 / created 0')" block
+
+run "なし + 「1 か月後に」の先送り → block（furrow t-pj06）" \
+  "$(mk '有用性の追跡: 1 か月後に grep で refuse 件数を見て、0 件なら guard 削除。
+やり残し: なし
+closed 2 / created 0')" block
+
+run "やり残しに ID があれば先送り表現は見ない（対応付け不能）→ allow" \
+  "$(mk '残りは来月まとめて見る。
+やり残し: t-ab3d
+closed 2 / created 1')" allow
+
+run "なし + 英語の later → block" \
+  "$(mk 'The threshold can be tuned later once numbers exist.
+やり残し: なし
+closed 1 / created 0')" block
+
+run "なし + 来月 → block" \
+  "$(mk '来月の release で様子を見る。
+やり残し: なし
+closed 1 / created 0')" block
+
+run "なし + 「その後で確認した」（過去の 後で は先送りではない）→ allow" \
+  "$(mk 'merge した。その後で main を再読して反映を確認した。
+やり残し: なし
+closed 1 / created 0')" allow
+
+run "なし + 「2 日後」の全角数字 → block" \
+  "$(mk '２日後に CI の結果を見る。
+やり残し: なし
+closed 1 / created 0')" block
+
 run "stop_hook_active=true は違反があっても素通し → allow" \
   "$(jq -n '{stop_hook_active: true, last_assistant_message: "やり残しは task 化済:（あとで）"}')" allow
 
@@ -174,11 +211,11 @@ shimdir=$(mktemp -d)
 transcript=$(mktemp)
 printf '{"timestamp":"2026-08-02T00:00:00Z","type":"summary"}\n' >"$transcript"
 
-mkshim() { # $1=window JSON (or "ERR" to exit 2)
+mkshim() { # $1=window JSON (or "ERR" to exit 2)  $2=`furrow show` JSON array (default [])
   if [ "$1" = ERR ]; then
     printf '#!/bin/sh\nexit 2\n' >"$shimdir/furrow"
   else
-    printf '#!/bin/sh\nprintf %%s '"'"'{"total":9,"drafts":0,"window":%s}'"'"'\n' "$1" >"$shimdir/furrow"
+    printf '#!/bin/sh\ncase "$1" in show) printf %%s '"'"'%s'"'"' ;; *) printf %%s '"'"'{"total":9,"drafts":0,"window":%s}'"'"' ;; esac\n' "${2:-[]}" "$1" >"$shimdir/furrow"
   fi
   chmod +x "$shimdir/furrow"
 }
@@ -214,6 +251,32 @@ PATH="$shimdir:$PATH" run "board 照合も締めの counts を見る（前方の
   "$(mkt '規約は closed 9 / created 0 の形です。
 やり残し: なし
 closed 2 / created 0')" allow
+
+# ---- 先送り行の ID は open でなければ追跡ではない (furrow t-pj06) -------------
+# 実測の失敗は「閉じる task 自身の ID」を添えた先送りだった。board に聞いて
+# closed なら block、open なら allow、聞けなければ fail-open。
+win='{"created":0,"closed":2,"created_ids":[],"closed_ids":["t-a1","t-b2"]}'
+defer_msg='有用性の追跡: 1 か月後に grep で判定する（t-vwsj に記載）。
+やり残し: なし
+closed 2 / created 0'
+
+mkshim "$win" '[{"id":"t-vwsj","status":"waiting","closed":null}]'
+PATH="$shimdir:$PATH" run "先送り行の ID が open → allow" "$(mkt "$defer_msg")" allow
+
+mkshim "$win" '[{"id":"t-vwsj","status":"done","closed":"2026-09-10T12:39:15Z"}]'
+PATH="$shimdir:$PATH" run "先送り行の ID が closed（閉じた task の body に書いた）→ block" "$(mkt "$defer_msg")" block
+
+mkshim "$win" '[]'
+PATH="$shimdir:$PATH" run "先送り行の ID が board に無い → block" "$(mkt "$defer_msg")" block
+
+mkshim "$win" '[{"id":"t-vwsj","closed":"2026-09-10T12:39:15Z"},{"id":"t-k2","closed":null}]'
+PATH="$shimdir:$PATH" run "複数 ID のうち 1 つでも open → allow" \
+  "$(mkt '1 か月後に判定する（t-vwsj と t-k2）。
+やり残し: なし
+closed 2 / created 0')" allow
+
+mkshim ERR
+PATH="$shimdir:$PATH" run "board に聞けない（furrow exit 2）→ allow (fail-open)" "$(mkt "$defer_msg")" allow
 
 mkshim ERR
 PATH="$shimdir:$PATH" run "furrow が exit 2（board 圏外）→ allow (fail-open)" "$(mkt "$close_msg")" allow
