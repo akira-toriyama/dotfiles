@@ -2,8 +2,9 @@
 
 let
   # sourceBuiltCLI: 自作 Go CLI を「呼ぶたびに source から最新ビルド」する wrapper。
-  # brew/go install のスナップショットは stale 化するので、cmd/internal/go.* が binary
-  # より新しければ incremental build（~/.cache へ）して exec する。
+  # brew/go install のスナップショットは stale 化するので、clone の `main` が動いたら
+  # そのコミットを `git archive` で取り出して build（~/.cache へ）し、exec する。
+  # 作業ツリー（HEAD）は見ない — 理由は本文のコメント。
   #
   # 6 本が名前以外バイト単位で同一だったので 1 箇所に畳んだ。コピーだったころ、
   # clone 不在ガード（下記）を glyph だけに足して残り 5 本が取り残される事故が起きている
@@ -46,10 +47,29 @@ let
         echo "✘ ${name} の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
         exit 127
       fi
-      if [ ! -x "$bin" ] || [ -n "$(find "$src/cmd" "$src/internal" "$src/go.mod" "$src/go.sum" -newer "$bin" 2>/dev/null)" ]; then
+      # Build the local `main` ref, never the checkout's working tree: another
+      # session's feature branch (a schema bump, say) must not become the binary
+      # every other session runs (projects t-kqn7, 2026-09-13: repeat-v1 turned
+      # every board read-only for an afternoon). `git archive` reads the ref
+      # without touching that checkout's HEAD or index. Rebuild when the ref's
+      # commit changes, recorded in "$bin.rev". `origin/main` first (every fetch
+      # or pull in that checkout advances it; a local `main` only moves when
+      # someone checks it out), then `main`, then HEAD (a clone with no remote).
+      # Developing the tool itself runs it from its source dir (`go run ./cmd/…`).
+      ref=origin/main
+      git -C "$src" rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=main
+      git -C "$src" rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=HEAD
+      rev="$(git -C "$src" rev-parse "$ref^{commit}")"
+      if [ ! -x "$bin" ] || [ "$(cat "$bin.rev" 2>/dev/null || true)" != "$rev" ]; then
         mkdir -p "$cache"
         if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
-        ( cd "$src" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/${name} && mv -f "$bin.tmp.$$" "$bin" ) >&2
+        tree="$(mktemp -d "$cache/src.XXXXXX")"
+        # The trap covers a failed build (errexit exits through it); the
+        # explicit rm covers success, because `exec` below never fires EXIT.
+        trap 'rm -rf "$tree"' EXIT
+        git -C "$src" archive --format=tar "$rev" | tar -x -C "$tree"
+        ( cd "$tree" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/${name} && mv -f "$bin.tmp.$$" "$bin" && printf '%s\n' "$rev" > "$bin.rev" ) >&2
+        rm -rf "$tree"
       fi
       exec "$bin" "$@"
     '';
