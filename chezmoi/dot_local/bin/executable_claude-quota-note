@@ -8,7 +8,20 @@
 # cache" into "the numbers are already in front of you" at session start.
 #
 # Output: one line, e.g.
-#   quota: Weekly 62% / Fable 48% — Fable 遅行（不変条件 Fable% ≥ Weekly% 割れ・委譲の敷居を下げる）
+#   quota: Weekly 62% / Fable 48% (fetched 3h ago) — Fable 遅行（不変条件 Fable% ≥ Weekly% 割れ・委譲の敷居を下げる）
+#   quota: stale — the cached numbers describe a window that reset 2026-09-19T21:59:59Z (fetched 2026-09-17T00:15:12Z); run /usage before deciding delegation
+#
+# The numbers are a CACHE: ~/.claude.json holds what Claude Code saw the last
+# time it fetched usage, not a live read. Past the window's resets_at they are
+# the previous week's final values by definition — on 2026-09-24 a 7-day-old
+# "Fable 100%" was read as current and misrouted a delegation decision
+# (t-kk92) — so the window gate comes first, and inside the window the fetch
+# age rides along as a lower-bound reminder. A missing or unparseable
+# resets_at prints the numbers as before: a freshness check that could itself
+# fail must fail OPEN like the rest of the hook, never cry "stale" on a shape
+# it does not understand. CLAUDE_QUOTA_NOW (epoch seconds) overrides the clock
+# so the fixture tests are deterministic.
+#
 # Fail-open: no jq / no file / unexpected schema → print nothing, exit 0
 # (an empty SessionStart contribution is a no-op; breaking session start is
 # never worth a quota reminder — same asymmetry as modify_settings.json).
@@ -21,20 +34,44 @@ set -u
 command -v jq >/dev/null 2>&1 || exit 0
 f="${CLAUDE_QUOTA_FILE:-$HOME/.claude.json}"
 [ -r "$f" ] || exit 0
+now="${CLAUDE_QUOTA_NOW:-$(date +%s)}"
 
-line=$(jq -r '
-  (.cachedUsageUtilization.utilization.limits // []) as $l
-  | ($l | map(select(.kind == "weekly_all")) | first | .percent) as $w
+line=$(jq -r --argjson now "$now" '
+  .cachedUsageUtilization as $c
+  | ($c.utilization.limits // []) as $l
+  | ($l | map(select(.kind == "weekly_all")) | first) as $wl
   | ($l
      | map(select(.kind == "weekly_scoped" and (.scope.model.display_name == "Fable")))
-     | first | .percent) as $f
+     | first) as $fl
+  | $wl.percent as $w
+  | $fl.percent as $f
   | if ($w == null or $f == null) then empty
     else
-      "quota: Weekly \($w)% / Fable \($f)%"
-      + (if $f < $w
-         then " — Fable 遅行（不変条件 Fable% ≥ Weekly% 割れ・委譲の敷居を下げる）"
-         else " — 不変条件充足（目標: 約 4 日で Fable 週枠 100%）"
-         end)
+      # resets_at arrives as 2026-09-19T21:59:59.669466+00:00; fromdateiso8601
+      # takes neither the fraction nor the offset, so normalise — any other
+      # shape parses to null, which is "unknown", never "stale".
+      (($wl.resets_at // $fl.resets_at)
+       | if type == "string"
+         then (sub("\\.[0-9]+"; "") | sub("\\+00:00$"; "Z") | try fromdateiso8601 catch null)
+         else null
+         end) as $reset
+      | ($c.fetchedAtMs | if type == "number" then (. / 1000 | floor) else null end) as $fetched
+      | if ($reset != null and $now >= $reset) then
+          "quota: stale — the cached numbers describe a window that reset \($reset | todate)"
+          + (if $fetched != null then " (fetched \($fetched | todate))" else "" end)
+          + "; run /usage before deciding delegation"
+        else
+          (if $fetched != null
+           then (((($now - $fetched) / 3600) | floor) | if . < 0 then 0 else . end) as $h
+                | " (fetched " + (if $h >= 48 then "\($h / 24 | floor)d" else "\($h)h" end) + " ago)"
+           else ""
+           end) as $age
+          | "quota: Weekly \($w)% / Fable \($f)%" + $age
+            + (if $f < $w
+               then " — Fable 遅行（不変条件 Fable% ≥ Weekly% 割れ・委譲の敷居を下げる）"
+               else " — 不変条件充足（目標: 約 4 日で Fable 週枠 100%）"
+               end)
+        end
     end
 ' "$f" 2>/dev/null) || exit 0
 
