@@ -24,7 +24,8 @@ resident. `nounset` only catches typos in variable names, so keep it.
 Applies to: `executable_git-stale-check` / `executable_claude-quota-note` /
 `executable_claude-projects-lint-note` / `executable_claude-work-report-check` /
 `executable_zmk-log-capture.sh` / `executable_claude-fanout-cwd-guard` /
-`executable_claude-board-shard-guard` / `modify_settings.json`.
+`executable_claude-board-shard-guard` / `executable_imprint-battery-notify` /
+`modify_settings.json`.
 
 `modify_settings.json` is the extreme case of this category: on failure it **passes stdin through and exits 0**
 (doing nothing is cheaper than writing a broken settings.json).
@@ -81,7 +82,8 @@ failure". The 6 above were all added because they met that criterion (a hook dyi
 the permission allowlist gets lost, etc.).
 
 No tests: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /
-`executable_zmk-log-capture.sh` / `run_onchange_after_configure-azookey.sh` /
+`executable_zmk-log-capture.sh` / `executable_imprint-battery-notify` /
+`run_onchange_after_configure-azookey.sh` /
 `run_onchange_after_enable-git-hooks.sh` / `run_onchange_after_install-claude-code.sh` /
 `run_onchange_after_provision-op-sa-token.sh` / `run_onchange_install-vscode-extensions.sh` /
 `install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh` / `claude-maint.sh`.

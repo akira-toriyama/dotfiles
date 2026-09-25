@@ -37,6 +37,11 @@
       # go は mise 管理へ移行（home/modules/mise.nix）。dev runtime は mise に一元化。
       "gifski"  # Highest-quality GIF encoder based on pngquant
       "cliclick"  # Tool for emulating mouse and keyboard events
+      # terminal-notifier: macOS notification from a script. chord's `[battery]`
+      # action-shell (~/.local/bin/imprint-battery-notify, chezmoi) posts the
+      # Imprint low-battery alert with it. macOS-only → brew per the decision
+      # tree; a new Mac allows it once under System Settings → Notifications.
+      "terminal-notifier"
       # peekaboo: macOS AX ツリー JSON dump + UI 操作 CLI（Claude Code の GUI 検証自走用、
       # projects t-c0s2）。nixpkgs に無く公式配布が tap のため brew 側で宣言。
       # 使い方の正典は ~/.claude/skills/macos-gui-verify/SKILL.md（TCC 前提もそこに記載）。

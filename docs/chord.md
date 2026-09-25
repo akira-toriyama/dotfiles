@@ -9,9 +9,20 @@ side and fires actions. The daemon is [akira-toriyama/chord](https://github.com/
 - [chezmoi/dot_config/chord/private_config.toml](../chezmoi/dot_config/chord/private_config.toml):
   plain TOML (**the single source**, no template evaluation). Contains `[options]`,
   `[action-aliases]` (DRY-ing up shell actions, `@name`), `[input-aliases]` (logical
-  names for modifier sets), `[[bindings]]`, and `[[fallbacks]]`. The 4 ZMK right-side
-  modifier sets (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) are **defined as logical names**
-  in `[input-aliases]` → referenced with `$prefix`, as in `input = "$ULTRA_LL - c"`.
+  names for modifier sets), `[[bindings]]`, `[[fallbacks]]`, and `[battery]` (chord
+  3.1.0+: the Imprint split-keyboard battery watch — `threshold` + the notify script
+  below; an older chord ignores the table with an `unknown-key` warning). The 4 ZMK
+  right-side modifier sets (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) are **defined as
+  logical names** in `[input-aliases]` → referenced with `$prefix`, as in
+  `input = "$ULTRA_LL - c"`.
+- [chezmoi/dot_local/bin/executable_imprint-battery-notify](../chezmoi/dot_local/bin/executable_imprint-battery-notify):
+  the `[battery]` action-shell. chord runs it once per keyboard half when the half's
+  level first reaches the threshold (`CHORD_BATTERY_SOURCE` = the dongle's peripheral
+  slot, `CHORD_BATTERY_PERCENT`); it posts with `terminal-notifier`
+  (`system/modules/homebrew.nix`). On a new Mac, allow terminal-notifier once under
+  System Settings → Notifications, and grant chord Input Monitoring (the watch reads the
+  same vendor-HID report as v-keys). Which slot is the left / right half is recorded in
+  projects t-tmdp once measured; until then the alert names the slot.
 - [chezmoi/run_onchange_after_chord-validate.sh.tmpl](../chezmoi/run_onchange_after_chord-validate.sh.tmpl):
   a validation gate that runs `chord --validate` after `chezmoi apply`. It runs only
   when chord is present, and returns exit 1 on failure (a no-op on fresh bootstrap or
