@@ -32,6 +32,22 @@ play-undef = 'afplay "$HOME/.local/share/sounds/undefined_key.wav"'
 
 
 # =====================================================================
+# Battery watch (chord >= 3.1.0). The Imprint dongle reports each half's
+# level over vendor HID; chord runs the script once per half when the
+# level first reaches `threshold`, then stays quiet for that half until
+# it charges back above threshold + 5. An older chord ignores the table
+# with an `unknown-key` warning. The script (chezmoi, ~/.local/bin) posts
+# with terminal-notifier (system/modules/homebrew.nix).
+# threshold = 60 is the first-run acceptance value: projects t-tmdp
+# confirms one alert actually arrives, then this becomes 10.
+# =====================================================================
+
+[battery]
+threshold = 60
+action-shell = "$HOME/.local/bin/imprint-battery-notify"
+
+
+# =====================================================================
 # v-key aliases — canon `&vkey <id>` の id を論理名化（[input-aliases] の v-key 版）。
 # `input = "TU_LL_C"` のように bare 参照（$ 不要 = 完結トリガー）。id は keymap の
 # `&vkey <id>` と一致（採番 LL=0x10+n / LM=0x30+n / RM=0x50+n / RR=0x70+n /

@@ -1,0 +1,39 @@
+#!/bin/bash
+# Low-battery notification for the Imprint split keyboard. chord's `[battery]`
+# watch (chezmoi/dot_config/chord/private_config.toml) runs this as its
+# action-shell once per keyboard half when the half's level first reaches the
+# threshold, with CHORD_BATTERY_SOURCE (the dongle's peripheral slot index) and
+# CHORD_BATTERY_PERCENT set; this script only renders them. The notification is
+# terminal-notifier (system/modules/homebrew.nix); a new Mac allows it once under
+# System Settings → Notifications. Spec: projects t-n1nf; first-run acceptance
+# t-tmdp.
+#
+# set -u only, no errexit (docs/scripts-inventory.md category ①): a failure must
+# reach stderr rather than vanish, and chord does not read the exit code.
+set -u
+
+src="${CHORD_BATTERY_SOURCE:-?}"
+pct="${CHORD_BATTERY_PERCENT:-?}"
+
+# Which physical half each peripheral slot is has not been measured yet
+# (t-tmdp records it); until then the alert names the slot.
+side_of() {
+  case "$1" in
+  0) echo "slot 0" ;;
+  1) echo "slot 1" ;;
+  *) echo "slot $1" ;;
+  esac
+}
+
+if ! command -v terminal-notifier >/dev/null 2>&1; then
+  echo "imprint-battery-notify: terminal-notifier not found (brew: system/modules/homebrew.nix) — half $src at ${pct}%" >&2
+  exit 1
+fi
+
+# -group replaces the previous alert for the same half instead of stacking.
+exec terminal-notifier \
+  -title "Imprint" \
+  -subtitle "$(side_of "$src")" \
+  -message "Battery ${pct}% — charge this half" \
+  -sound default \
+  -group "imprint-battery-$src"
