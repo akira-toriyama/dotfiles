@@ -43,7 +43,7 @@ play-undef = 'afplay "$HOME/.local/share/sounds/undefined_key.wav"'
 # =====================================================================
 
 [battery]
-threshold = 60
+threshold = 70
 action-shell = "$HOME/.local/bin/imprint-battery-notify"
 
 
