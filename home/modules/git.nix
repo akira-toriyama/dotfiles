@@ -68,6 +68,11 @@
       # 道具（jscpd 等）に working copy が二重に見える（t-6211）。.claude/ 全体は
       # 無視しない — settings.json 等を commit している repo があるため。
       "**/.claude/worktrees/"
+      # Playwright MCP は browser を動かした session の CWD に console log と
+      # page snapshot を書くので、そのとき開いていた repo に落ちる。repo 側で
+      # 気づくまで commit された実績がある（furrow #169 で 6 件、zmk-hid-host
+      # #62 で 33 件）。build にも test にも入力されない per-run の生成物。
+      ".playwright-mcp/"
     ];
   };
 }
