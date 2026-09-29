@@ -15,8 +15,8 @@ set -u
 src="${CHORD_BATTERY_SOURCE:-?}"
 pct="${CHORD_BATTERY_PERCENT:-?}"
 
-# Which physical half each peripheral slot is has not been measured yet
-# (t-tmdp records it); until then the alert names the slot.
+# Which physical half each peripheral slot is has not been measured, so the
+# alert names the slot.
 side_of() {
   case "$1" in
   0) echo "slot 0" ;;
