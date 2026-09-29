@@ -15,12 +15,15 @@ set -u
 src="${CHORD_BATTERY_SOURCE:-?}"
 pct="${CHORD_BATTERY_PERCENT:-?}"
 
-# Which physical half each peripheral slot is has not been measured yet
-# (t-tmdp records it); until then the alert names the slot.
+# Which physical half each peripheral slot is was measured on 2026-09-27
+# (projects t-eray): in the current bonds slot 0 is the left half and slot 1
+# the right half. The slot is the half's first-pairing order and changes only
+# after an NVS reset (canon CLAUDE.md, "slot index"), so the alert keeps the
+# slot number next to the side.
 side_of() {
   case "$1" in
-  0) echo "slot 0" ;;
-  1) echo "slot 1" ;;
+  0) echo "left half (slot 0)" ;;
+  1) echo "right half (slot 1)" ;;
   *) echo "slot $1" ;;
   esac
 }
