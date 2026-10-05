@@ -21,8 +21,8 @@ side and fires actions. The daemon is [akira-toriyama/chord](https://github.com/
   slot, `CHORD_BATTERY_PERCENT`); it posts with `terminal-notifier`
   (`system/modules/homebrew.nix`). On a new Mac, allow terminal-notifier once under
   System Settings → Notifications, and grant chord Input Monitoring (the watch reads the
-  same vendor-HID report as v-keys). Which slot is the left / right half is recorded in
-  projects t-tmdp once measured; until then the alert names the slot.
+  same vendor-HID report as v-keys). Which slot is the left / right half has not been
+  measured, so the alert names the slot.
 - [chezmoi/run_onchange_after_chord-validate.sh.tmpl](../chezmoi/run_onchange_after_chord-validate.sh.tmpl):
   a validation gate that runs `chord --validate` after `chezmoi apply`. It runs only
   when chord is present, and returns exit 1 on failure (a no-op on fresh bootstrap or
