@@ -38,12 +38,10 @@ play-undef = 'afplay "$HOME/.local/share/sounds/undefined_key.wav"'
 # it charges back above threshold + 5. An older chord ignores the table
 # with an `unknown-key` warning. The script (chezmoi, ~/.local/bin) posts
 # with terminal-notifier (system/modules/homebrew.nix).
-# threshold = 60 is the first-run acceptance value: projects t-tmdp
-# confirms one alert actually arrives, then this becomes 10.
 # =====================================================================
 
 [battery]
-threshold = 60
+threshold = 10
 action-shell = "$HOME/.local/bin/imprint-battery-notify"
 
 
