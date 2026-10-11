@@ -26,7 +26,8 @@ let
   #
   # writeShellApplication は build 時に shellcheck を通し、errexit / nounset /
   # pipefail を先頭に注入する（旧 writeShellScriptBin + 手書き `set -eu` の置換）。
-  # この本文にパイプは 1 本も無いので pipefail の追加は挙動を変えない。
+  # The body's one pipe is `git archive | tar`; under pipefail a failed archive
+  # stops the build instead of handing tar an empty stream.
   sourceBuiltCLI = { name, cacheDir ? name }: pkgs.writeShellApplication {
     inherit name;
     text = ''
@@ -56,10 +57,24 @@ let
       # or pull in that checkout advances it; a local `main` only moves when
       # someone checks it out), then `main`, then HEAD (a clone with no remote).
       # Developing the tool itself runs it from its source dir (`go run ./cmd/…`).
+      #
+      # srcgit: git against $src with the CALLER's repository binding removed.
+      # A git hook exports that binding — in a linked worktree GIT_DIR and
+      # GIT_INDEX_FILE arrive as absolute paths — and GIT_DIR outranks `-C`:
+      # unguarded, `rev-parse origin/main` answered for the caller's repo, never
+      # matched "$bin.rev", and the rebuild archived the caller's tree and died
+      # on a missing ./cmd/${name}, so every commit-msg / pre-push hook run from
+      # a linked worktree failed (projects t-231v; measured again 2026-10-04 in
+      # furrow and chord). The names come from git's own list, not a hand-kept
+      # one. Scoped to a subshell on purpose: the tool exec'd at the bottom must
+      # keep the environment its caller gave it — the caller's repository is
+      # the one `glyph lint --stdin` or `furrow` is there to read.
+      mapfile -t repo_env < <(git rev-parse --local-env-vars)
+      srcgit() ( unset "''${repo_env[@]}"; exec git -C "$src" "$@" )
       ref=origin/main
-      git -C "$src" rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=main
-      git -C "$src" rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=HEAD
-      rev="$(git -C "$src" rev-parse "$ref^{commit}")"
+      srcgit rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=main
+      srcgit rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=HEAD
+      rev="$(srcgit rev-parse "$ref^{commit}")"
       if [ ! -x "$bin" ] || [ "$(cat "$bin.rev" 2>/dev/null || true)" != "$rev" ]; then
         mkdir -p "$cache"
         if command -v go >/dev/null 2>&1; then gobuild=go; gotc=local; else gobuild=${pkgs.go}/bin/go; gotc=auto; fi
@@ -67,7 +82,7 @@ let
         # The trap covers a failed build (errexit exits through it); the
         # explicit rm covers success, because `exec` below never fires EXIT.
         trap 'rm -rf "$tree"' EXIT
-        git -C "$src" archive --format=tar "$rev" | tar -x -C "$tree"
+        srcgit archive --format=tar "$rev" | tar -x -C "$tree"
         ( cd "$tree" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/${name} && mv -f "$bin.tmp.$$" "$bin" && printf '%s\n' "$rev" > "$bin.rev" ) >&2
         rm -rf "$tree"
       fi
