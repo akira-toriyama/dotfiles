@@ -83,7 +83,22 @@ let
         # explicit rm covers success, because `exec` below never fires EXIT.
         trap 'rm -rf "$tree"' EXIT
         srcgit archive --format=tar "$rev" | tar -x -C "$tree"
-        ( cd "$tree" && env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" build -o "$bin.tmp.$$" ./cmd/${name} && mv -f "$bin.tmp.$$" "$bin" && printf '%s\n' "$rev" > "$bin.rev" ) >&2
+        # The archive carries no .git, so runtime/debug's VCS stamp is empty and
+        # `<tool> version` said only "<tool> dev" — the one identity a drill log
+        # or bug report needs is exactly what this wrapper already holds (furrow
+        # t-2nwt). Stamp it the way each repo's build.sh does, by -X on
+        # <module>/internal/version: Version = `git describe` of the built ref (a
+        # release tag, or tag-distance-sha past it; never --dirty, an archived
+        # commit cannot be), Commit = the ref's sha, Date = its commit time. All
+        # six tools share that package; a -X naming a symbol the tool lacks is
+        # dropped by the linker without error (measured 2026-10-13).
+        gob() { env -u GOROOT GOTOOLCHAIN="$gotc" "$gobuild" "$@"; }
+        version="$(srcgit describe --tags --match 'v[0-9]*' --always "$rev")"
+        committed="$(srcgit show -s --format=%cI "$rev")"
+        ( cd "$tree" \
+          && pkg="$(gob list -m)/internal/version" \
+          && gob build -ldflags "-X $pkg.Version=$version -X $pkg.Commit=$rev -X $pkg.Date=$committed" -o "$bin.tmp.$$" ./cmd/${name} \
+          && mv -f "$bin.tmp.$$" "$bin" && printf '%s\n' "$rev" > "$bin.rev" ) >&2
         rm -rf "$tree"
       fi
       exec "$bin" "$@"
