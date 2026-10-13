@@ -401,6 +401,53 @@ in
       '';
     })
 
+    # sprite-sender: the Mac side of the Prospector Dongle's daily sprite swap
+    # (zmk-beacon tools/sprite-sender; canon t-mxb7). Swift, so not
+    # sourceBuiltCLI, and unlike facet it never runs the checkout's working
+    # tree: the LaunchAgent (system/modules/sprite-sender.nix) calls this
+    # wrapper every morning, and a session's feature branch must not become
+    # that run (the sourceBuiltCLI rule). It archives origin/main's tools/ into
+    # ~/.cache/sprite-sender, where package.sh builds and signs
+    # SpriteSender.app, and execs the bundle's executable from there: macOS
+    # keys the Bluetooth permission to the signature and the bundle id, not to
+    # the path. swift, git, codesign and security come from /usr/bin, which a
+    # LaunchAgent's PATH has (CommandLineTools suffices; no Xcode).
+    (writeShellApplication {
+      name = "sprite-sender";
+      text = ''
+        src=/Volumes/workspace/github.com/akira-toriyama/zmk-beacon
+        cache="''${XDG_CACHE_HOME:-$HOME/.cache}/sprite-sender"
+        app="$cache/SpriteSender.app"
+        bin="$app/Contents/MacOS/sprite-sender"
+        if [ ! -d "$src" ]; then
+          if [ -x "$bin" ]; then
+            echo "⚠ zmk-beacon の clone が無い ($src)。前回ビルドの $app で続行 — source 追従が止まっており stale の可能性あり" >&2
+            exec "$bin" "$@"
+          fi
+          echo "✘ zmk-beacon の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+          exit 127
+        fi
+        mapfile -t repo_env < <(git rev-parse --local-env-vars)
+        srcgit() ( unset "''${repo_env[@]}"; exec git -C "$src" "$@" )
+        ref=origin/main
+        srcgit rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=main
+        srcgit rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=HEAD
+        rev="$(srcgit rev-parse "$ref^{commit}")"
+        if [ ! -x "$bin" ] || [ "$(cat "$cache/rev" 2>/dev/null || true)" != "$rev" ]; then
+          mkdir -p "$cache"
+          tree="$(mktemp -d "$cache/src.XXXXXX")"
+          trap 'rm -rf "$tree"' EXIT
+          srcgit archive --format=tar "$rev" tools | tar -x -C "$tree"
+          ( cd "$tree/tools/sprite-sender" && ./package.sh >/dev/null ) >&2
+          rm -rf "$app"
+          mv "$tree/tools/sprite-sender/SpriteSender.app" "$app"
+          printf '%s\n' "$rev" > "$cache/rev"
+          rm -rf "$tree"
+        fi
+        exec "$bin" "$@"
+      '';
+    })
+
     # projects: board の規約 CLI（projects の scripts/projects_cli.py）を checkout の外から
     # 叩くラッパ。sourceBuiltCLI と同じ「常に source を反映する」性質だけを持たせ、build 段階は
     # 持たない —— 実体が Python stdlib のみで、cache も incremental build も要らないため

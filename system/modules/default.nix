@@ -11,5 +11,6 @@
     ./launchd-drift.nix
     ./claude-maint.nix
     ./zmk-log.nix
+    ./sprite-sender.nix
   ];
 }
