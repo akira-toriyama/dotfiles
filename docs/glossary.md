@@ -488,9 +488,10 @@ with regression tests in CI's `hook scripts test`.
 
 ### PreToolUse guard (`claude-*-guard`)
 **The script that runs immediately before a tool call and decides allow / ask / deny**.
-Currently three — [`claude-fanout-cwd-guard`](../chezmoi/dot_local/bin/executable_claude-fanout-cwd-guard) (denies fan-out into another worktree) /
+Currently four — [`claude-fanout-cwd-guard`](../chezmoi/dot_local/bin/executable_claude-fanout-cwd-guard) (denies fan-out into another worktree) /
 [`claude-vncdo-guard`](../chezmoi/dot_local/bin/executable_claude-vncdo-guard) (denies vncdo without a deadline) /
-[`claude-board-shard-guard`](../chezmoi/dot_local/bin/executable_claude-board-shard-guard) (asks about direct edits to furrow's board shards).
+[`claude-board-shard-guard`](../chezmoi/dot_local/bin/executable_claude-board-shard-guard) (asks about direct edits to furrow's board shards) /
+[`claude-bash-cwd-guard`](../chezmoi/dot_local/bin/executable_claude-bash-cwd-guard) (denies a Bash call whose leading `cd` the harness stripped once a sibling call has moved the shell elsewhere).
 All are **fail-open** (if the guard itself breaks, the call goes through) and **narrow scope**
 (a guard that misfires makes the whole set of guards get ignored). The wiring is
 `modify_settings.json`.

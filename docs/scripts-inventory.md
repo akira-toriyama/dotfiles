@@ -24,8 +24,8 @@ resident. `nounset` only catches typos in variable names, so keep it.
 Applies to: `executable_git-stale-check` / `executable_claude-quota-note` /
 `executable_claude-projects-lint-note` / `executable_claude-work-report-check` /
 `executable_zmk-log-capture.sh` / `executable_claude-fanout-cwd-guard` /
-`executable_claude-board-shard-guard` / `executable_imprint-battery-notify` /
-`modify_settings.json`.
+`executable_claude-board-shard-guard` / `executable_claude-bash-cwd-guard` /
+`executable_imprint-battery-notify` / `modify_settings.json`.
 
 `modify_settings.json` is the extreme case of this category: on failure it **passes stdin through and exits 0**
 (doing nothing is cheaper than writing a broken settings.json).
@@ -58,12 +58,12 @@ Do not write a hand-written `set` line. If you need to drop one, state it explic
 and the `home.packages` wrapper. Injection that only takes effect on the wrapper side makes the two paths
 diverge in behavior, so **treat the `set` line in the `.sh` as canonical** and align to it.
 
-## Places not guarded by machinery (as of 2026-08-03)
+## Places not guarded by machinery (as of 2026-10-14)
 
-All 23 shell scripts pass the `shellcheck` / `shfmt` gates in `scripts/lint`
+All 27 shell scripts pass the `shellcheck` / `shfmt` gates in `scripts/lint`
 (the canonical target set is `shell_files()` in `scripts/lint`. No copy is kept here — a copy always drifts).
 
-**Only 7 have tests**:
+**Only 10 have tests** (the 27th shell script is `scripts/claude-work-report-check-test.sh`, a test itself):
 
 | script | test |
 |---|---|
@@ -71,21 +71,27 @@ All 23 shell scripts pass the `shellcheck` / `shfmt` gates in `scripts/lint`
 | `executable_claude-work-report-check` | `scripts/claude-work-report-check-test.sh` |
 | `executable_claude-fanout-cwd-guard` | `scripts/test_claude_fanout_cwd_guard.py` |
 | `executable_claude-board-shard-guard` | `scripts/test_claude_board_shard_guard.py` |
+| `executable_claude-vncdo-guard` | `scripts/test_claude_vncdo_guard.py` |
+| `executable_claude-bash-cwd-guard` | `scripts/test_claude_bash_cwd_guard.py` |
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
 | `executable_claude-projects-lint-note` | `scripts/test_claude_projects_lint_note.py` |
 | `modify_settings.json` | `scripts/test_modify_settings.py` |
+| `brew-bundle-nonfatal.sh` | `scripts/test_brew_bundle_nonfatal.py` |
 | `scripts/lint` itself | `scripts/test_lint.py` |
 
-The remaining 15 have no tests. This is not a defect list but **a list for setting priorities**; the actual
+`scripts/lint`, the last row, is Python and is listed for completeness; it is not one of the 27.
+
+The remaining 16 have no tests. This is not a defect list but **a list for setting priorities**; the actual
 criterion for adding one follows CLAUDE.md's "mechanization only to prevent recurrence of an already-hit
-failure". The 6 above were all added because they met that criterion (a hook dying silently goes unnoticed,
+failure". The ones above were all added because they met that criterion (a hook dying silently goes unnoticed,
 the permission allowlist gets lost, etc.).
 
 No tests: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /
 `executable_zmk-log-capture.sh` / `executable_imprint-battery-notify` /
 `run_onchange_after_configure-azookey.sh` /
 `run_onchange_after_enable-git-hooks.sh` / `run_onchange_after_install-claude-code.sh` /
-`run_onchange_after_provision-op-sa-token.sh` / `run_onchange_install-vscode-extensions.sh` /
+`run_onchange_after_install-xcode.sh` / `run_onchange_after_provision-op-sa-token.sh` /
+`run_onchange_after_register-claude-mcp.sh` / `run_onchange_install-vscode-extensions.sh` /
 `install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh` / `claude-maint.sh`.
 
 Only `install.sh` is indirectly guarded — CI's `darwin-rebuild switch smoke` effectively serves as its
