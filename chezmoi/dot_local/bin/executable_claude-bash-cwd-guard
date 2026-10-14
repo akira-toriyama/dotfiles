@@ -1,0 +1,265 @@
+#!/usr/bin/env bash
+# claude-bash-cwd-guard — PreToolUse guard for a Bash call whose leading
+# `cd <dir> &&` the harness dropped, once a sibling call has moved the shell.
+#
+# Denies a main-thread Bash call when the transcript records that the harness
+# stripped its leading `cd X && ` at stream time AND the shell is no longer in X.
+#
+# Why this exists. Claude Code drops a leading `cd <tracked cwd> && ` from a
+# Bash command when its tool_use block closes, because the shell is already
+# there; the command spawns later, in the tracked cwd as it is at RUN time. A
+# sibling call of the same message that runs first can move that cwd — by
+# ending in another directory, or by ending outside the project, which resets
+# the shell to the launch directory — and the stripped call then runs where its
+# text never pointed. The incident (glyph session aee481ef, 2026-10-13, Claude
+# Code 2.1.289): the third call of a batch was `cd <worktree> && cat > msg
+# <<EOF … git commit -F msg …`; an earlier sibling had sent the shell back to
+# the launch directory, and the commit ran in the shared checkout on main
+# ("nothing to commit, working tree clean": harmless only because main was
+# clean). The same session reproduced the drift on 2026-10-14 with a
+# three-call probe, whose stripped call is the tests' GLYPH_C, and found that
+# the heredoc played no part: a solo call with two heredocs kept its cwd.
+#
+# Scope is deliberately narrow: only a strip the harness itself recorded, and
+# only when the live cwd differs from it. Replaying every local transcript
+# (2026-10-14) with the live cwd taken from the results recorded before each
+# call, the rule fires on exactly 5 calls — that session's 4 misdirected
+# calls and the probe — and on nothing else. That replay models serially
+# executed calls only: it cannot see a concurrency-safe call whose hook fires
+# while its own message is still streaming (blind spot (a)).
+#
+# It denies rather than restoring the cd through updatedInput: rundiff's hook
+# rewrites test-runner commands on the same calls, so a second rewrite would
+# have to compose with it, and a deny needs no composition. Measured once, in
+# the one completion order where the guard finished after rundiff (n=1;
+# nested 2.1.289 session 44fed511, 2026-10-14): the guard denied a `go test`
+# call that rundiff's hook had already wrapped, and nothing ran.
+#
+# The oracle is wireIngestContext[<tool_use_id>].cwd on the call's assistant
+# line: the directory the strip removed, as it was when the block closed. The
+# line's top-level `cwd` is NOT usable: it is stamped when the message is
+# recorded, so a sibling that moves the shell mid-stream makes it lie (nested
+# 2.1.289 session a6d34e08, 2026-10-14; the tests' CRITIC_MIDSTREAM).
+# wireToolInputs is written on every call and wireIngestContext on every
+# stripped call, both only while a gate is on: on 0 of the calls of 2.1.251,
+# 2.1.263 and 2.1.270, on 83-89% of those of 2.1.266-2.1.268, and on every
+# call from 2.1.272 on (corpus scan, 2026-10-14). If the gate flips off, no
+# line carries the record and this guard allows everything, with no signal.
+#
+# Allowed without reading the transcript:
+#   - a subagent call (agent_id present). A subagent's cwd does not persist
+#     between its calls, so a strip cannot drift there, and its hook receives
+#     the PARENT's transcript_path, where its ids never appear, so the lookup
+#     could never find its line (nested 2.1.289 session bbf73afa, 2026-10-14).
+#   - a command that still begins with its own absolute cd: `cd /…`,
+#     `cd "/…"`, `cd '/…'`, `cd -- /…` or `builtin cd /…`. The harness strips
+#     only one leading bare `cd X && ` and none of the other forms (nested
+#     2.1.289 session 84472134, 2026-10-14), so such a call sets its cwd
+#     in-process. 26.7% of main-loop calls (6,257 of 23,397; corpus scan,
+#     2026-10-14).
+#
+# Otherwise the guard looks for the call's assistant line in the last 2 MiB of
+# the transcript. Found: it allows when the line records no strip or the shell
+# is still in X, and denies otherwise. Not found: the fast path below, else a
+# re-look every 50 ms until 3 s of wall-clock time have passed, then allow.
+# Mid-stream drifts were caught after waits of 1,077 to 1,517 ms (six nested
+# 2.1.289 runs, 2026-10-14: sessions 3eba88a1, a2149d21, f4adfd57, 6adaf0ce,
+# c0f94fcf and 11ce64b6). 3 s is about twice the longest and far below the
+# 10 s hook timeout. Wall-clock, not a count of re-looks: 21 counted re-looks
+# of 50 ms ended after 1.27-1.33 s (hyperfine, 2026-10-14), short of two of
+# those catches.
+#
+# The fast path. A streaming message's lines reach the transcript together,
+# about 100 ms after its LAST block closes (nested 2.1.289 sessions 4d15bccc,
+# 8def84d6 and a6d34e08, 2026-10-14), so a hook that fires before then cannot
+# find its own line. Waiting for it cost every single-call message that is not
+# fast-skipped about 100 ms (hook fire to spawn, medians of 20 per arm: 158 ms
+# with the guard, 58 ms without; sessions dc1ea923 and 0dbc07b8 against
+# 5003b544 and 355f1fb8, 2026-10-14), and held a mid-stream call until its
+# message ended. So each look first takes the newest of the transcript's last
+# 32 lines that parses and has a string `cwd`; when the call's line is then
+# absent from the window, and that newest line is not an assistant line and
+# its cwd equals the live one, the call is allowed at once. With it the
+# medians are 55 ms and 53 ms (20 calls per arm, the guard run directly;
+# sessions d9f09d4f and ba6b75df against fb60f80c and 3387c6f6, 2026-10-14).
+# Why this is sound. Every entry recorded with a streaming message — its
+# assistant lines and the results of tools that finished mid-stream alike —
+# is stamped when the message is recorded, and lands in the same write: 26 of
+# 26 batches arrived in one size jump, 12 of them interleaving their own
+# results (nested 2.1.289 sessions 101b6ec4 and c1bfe06b, 2026-10-14). Later
+# results follow in event order (block close, tool completion): within a
+# message that held for 6,713 of the 6,714 main-loop messages that carry a
+# strip record, the exception being an auto-mode classifier denial (corpus
+# scan, 2026-10-14; the tests' A6_* lines pin one real order). So while this
+# call's line is absent nothing recorded with its message is on disk, and the
+# newest entry was stamped before any sibling of this call ran: its cwd equal
+# to the live one means the shell is where the strip found it, unless it left
+# and came back in between. A newest entry that is an assistant line may
+# belong to a batch still landing, so the guard waits instead. The tail is
+# read before the window, so a line that lands in between is still found. The
+# 32 lines reach the newest cwd-bearing line, which sat at most 17th from the
+# end when any Bash-carrying main-loop message began (corpus scan,
+# 2026-10-14). Only the newest counts: an older line in the live cwd behind a
+# newer one in X is the drift itself (the tests' newest-line case).
+#
+# The timings above were taken with Bash pre-allowed (`--allowedTools`). Under
+# `--permission-mode auto`, where a classifier runs before each call, the
+# guard still denied the serial and the mid-stream drifts and fast-allowed the
+# read-only probe (nested 2.1.289 sessions a7caafde, 5f7bc337 and 0c66e36b;
+# 2.1.296 sessions 1d086e0b, 503c0756 and 3675f5df; 2026-10-14), and
+# single-call hook-fire-to-spawn medians were 311 ms with the guard and 340 ms
+# without (20 calls per arm; 2.1.289 sessions 7ddfb9d7 and 46ca4a19 against
+# 377bdacd and 1b8d4c93, 2026-10-14).
+#
+# Blind spots — each makes the guard MISS a drift; the guard never denies a
+# call whose shell is still where the strip found it:
+#   (a) a concurrency-safe (read-only) sibling that moves the cwd finishes
+#       between this hook and the spawn. Reproduced with a hook delayed 0.6 s
+#       (nested 2.1.289 session 8def84d6, 2026-10-14). Any wait in a
+#       PreToolUse hook on the call widens that window, this guard's own
+#       included: holding a read-only stripped call until its line landed
+#       made it run in the launch directory, where it ran correctly with no
+#       guard (2 of 2; sessions 0d58adc5 and a71f6bfc, 2026-10-14). The fast
+#       path is what keeps ordinary calls off that wait: with it, the same
+#       probe ran where its text pointed (2 of 2; sessions febce1da and
+#       4159bf24, 2026-10-14). What is left is the guard's own run time,
+#       which overlaps the other hooks': it lengthened the hook phase of
+#       read-only stripped calls by 2.6 ms at the median (56.4 ms against
+#       53.8 ms, 24 calls each; sessions 2a1c2159, fc032078 and 7bd8bc03
+#       against b8a9fe63, 8f357584 and 318bab37, 2026-10-14). Under
+#       `--permission-mode auto` the classifier step sits in the same window.
+#   (b) a drifted call whose hook fires while its own message is still
+#       streaming, and whose line lands after the 3 s deadline.
+#   (c) the gate above is off.
+#   (d) the fast path's residue: the shell left the newest flushed entry's
+#       directory before this call's block closed and came back before the
+#       hook fired, none of it flushed yet (no stripped main-loop call had its
+#       directory moved inside its own message before its block closed: 0 of
+#       8,016, corpus scan, 2026-10-14), an entry written out of event order
+#       after a move, like the classifier denial above, or a message's
+#       entries landing in two writes instead of one.
+#
+# Re-issuing with a quoted cd (`cd 'X' && …`, which the harness never strips)
+# is the remedy the deny teaches; nothing else in the fleet prevents the
+# drift. Fail-open by construction: no jq, unparseable stdin, another tool, an
+# empty tool_use_id / cwd / transcript_path, a transcript that is not a
+# readable regular file, or any error → allow. There is no escape marker: a
+# call re-issued with a quoted cd is fast-skipped.
+#
+# Every run cited above is on Claude Code 2.1.289 unless marked 2.1.296.
+# Minified names differ between versions, so nothing here depends on them —
+# only on hook-input fields and transcript JSON fields.
+# CLAUDE_BASH_CWD_GUARD_DEADLINE_MS overrides the deadline (milliseconds) so
+# the fixture tests stay fast, as CLAUDE_QUOTA_NOW does for claude-quota-note;
+# the live wiring never sets it.
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-bash-cwd-guard); wired from
+# the Claude PreToolUse hook in modify_settings.json (step 11).
+# Tests: scripts/test_claude_bash_cwd_guard.py (unittest, CI).
+set -u
+
+# Microseconds since the epoch; empty under /bin/bash 3.2, which has no
+# EPOCHREALTIME and falls back to counting re-looks. Its separator is the
+# locale's radix character (a comma under de_DE.UTF-8), hence digits only.
+t0=${EPOCHREALTIME:-}
+t0=${t0//[!0-9]/}
+
+command -v jq >/dev/null 2>&1 || exit 0
+
+input=$(cat 2>/dev/null) || exit 0
+[ -n "$input" ] || exit 0
+
+# Every early allow in one jq pass. Fields are joined on \x1f, not a tab: tab
+# is IFS whitespace, so `read` would collapse an empty field and shift the rest.
+fields=$(printf '%s' "$input" | jq -r '
+  if (.tool_name // "") != "Bash" or (.agent_id // "") != "" then empty
+  elif (.tool_input.command // "" | type == "string"
+        and test("^(cd (/|\"/|\\x27/|-- /)|builtin cd /)")) then empty
+  else [.tool_use_id, .cwd, .transcript_path]
+    | map(if type == "string" then . else "" end)
+    | if any(.[]; . == "" or test("[\n\u001f]")) then empty
+      else join("\u001f") end
+  end' 2>/dev/null) || exit 0
+[ -n "$fields" ] || exit 0
+IFS=$'\x1f' read -r id cwd tp <<EOF
+$fields
+EOF
+[ -n "$id" ] && [ -n "$cwd" ] && [ -n "$tp" ] || exit 0
+[ -f "$tp" ] && [ -r "$tp" ] || exit 0
+
+WINDOW=2097152
+deadline_ms=${CLAUDE_BASH_CWD_GUARD_DEADLINE_MS:-3000}
+case $deadline_ms in '' | *[!0-9]*) deadline_ms=3000 ;; esac
+deadline_ms=$((10#$deadline_ms))
+# Each re-look sleeps at least 50 ms, so this many re-looks outlast the
+# deadline: a backstop with EPOCHREALTIME, the deadline itself without it.
+cap=$((deadline_ms / 50))
+
+# Sets hit to "=X" once the call's assistant line is in the window (X empty
+# when nothing was stripped), and fast to "y" when the fast path may allow.
+# The writer appends, so an unchanged size is taken to mean nothing was
+# flushed since the last look and both reads are skipped. grep's no-match
+# status means "not flushed yet", not an error, hence no errexit or pipefail;
+# LC_ALL=C and -a keep a NUL or an invalid UTF-8 byte from switching grep to
+# "binary file matches". The line is chosen by structure, never as "a line
+# containing the id": queue-operation, attachment and tool_result lines carry
+# the id too, and `fromjson?` drops the window's partial first line and a torn
+# last line.
+last=''
+look() {
+  local size skip lines
+  hit='' fast=''
+  size=$(wc -c <"$tp" 2>/dev/null) || return 0
+  size=${size//[!0-9]/}
+  [ -n "$size" ] && [ "$size" != "$last" ] || return 0
+  last=$size
+  # Read before the window: a window that then lacks the line proves this
+  # earlier tail lacked it too, which the fast path needs.
+  fast=$(tail -n 32 "$tp" 2>/dev/null | jq -n -R -r --arg c "$cwd" '
+    [inputs | fromjson? | objects | select(.cwd | type == "string")]
+    | last // empty | select(.type != "assistant" and .cwd == $c) | "y"' 2>/dev/null)
+  skip=0
+  [ "$size" -gt "$WINDOW" ] && skip=$(((size - WINDOW) / 65536))
+  lines=$(dd if="$tp" bs=65536 skip="$skip" 2>/dev/null | LC_ALL=C grep -a -F -- "$id" 2>/dev/null)
+  [ -n "$lines" ] || return 0
+  hit=$(printf '%s\n' "$lines" | jq -n -R -r --arg id "$id" '
+    first(inputs | fromjson? | objects | select(.type == "assistant")
+      | select(any(.message | objects | .content | arrays | .[];
+          type == "object" and .type == "tool_use" and .id == $id))
+      | "=" + ([.wireIngestContext | objects | .[$id] | objects | .cwd | strings]
+        | first // ""))' 2>/dev/null)
+}
+
+i=0
+while :; do
+  look
+  [ -n "$hit" ] && break
+  [ -n "$fast" ] && exit 0
+  [ "$i" -lt "$cap" ] || exit 0
+  if [ -n "$t0" ]; then
+    now=${EPOCHREALTIME:-}
+    now=${now//[!0-9]/}
+    [ -n "$now" ] && [ $((now - t0)) -lt $((deadline_ms * 1000)) ] || exit 0
+  fi
+  i=$((i + 1))
+  sleep 0.05
+done
+
+x=${hit#=}
+# Nothing stripped, or stripped and the shell is still there. Compared byte
+# for byte, without normalising: X equalled the replayed live cwd exactly on
+# all 8,010 undrifted stripped calls of the corpus (2026-10-14).
+[ -n "$x" ] || exit 0
+[ "$x" != "$cwd" ] || exit 0
+
+# Single quotes keep every byte of X literal, where double quotes would
+# rewrite a backslash. A stripped X holds no quote: a bare `cd X &&` with one
+# would not parse.
+jq -n --arg x "$x" --arg c "$cwd" --arg fix "cd '$x' && …" '{
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    permissionDecision: "deny",
+    permissionDecisionReason: ("Nothing ran. When this message was written, the harness dropped the leading `cd \($x) &&` from this call, because the shell was in \($x) at that moment. A sibling call has since moved the shell to \($c), so the command would have run there instead. Re-issue it as `\($fix)` — the harness never drops a quoted cd.")
+  }
+}'
+exit 0

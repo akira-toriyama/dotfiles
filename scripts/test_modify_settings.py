@@ -34,6 +34,7 @@ WORK_REPORT = "$HOME/.local/bin/claude-work-report-check"
 QUOTA_NOTE = "$HOME/.local/bin/claude-quota-note"
 PJLINT_NOTE = "$HOME/.local/bin/claude-projects-lint-note"
 FANOUT_GUARD = "$HOME/.local/bin/claude-fanout-cwd-guard"
+BASH_CWD_GUARD = "$HOME/.local/bin/claude-bash-cwd-guard"
 
 
 def jq_only_path() -> str:
@@ -120,8 +121,8 @@ class Seeds(unittest.TestCase):
         self.assertIn(WORK_REPORT, commands(got, "Stop"))
 
     def test_it_adds_the_fanout_guard_as_a_pretooluse_hook(self) -> None:
-        """8 つのうち唯一 deny できる hook。登録が落ちても既存 7 本は動くので、
-        黙って外れたことに気づけない —— ここで固定する。"""
+        """A hook that can deny. If its registration drops, every other hook
+        keeps working, so nothing would show that it went missing."""
         got = json.loads(run("{}").stdout)
         self.assertIn(FANOUT_GUARD, commands(got, "PreToolUse"))
 
@@ -134,6 +135,27 @@ class Seeds(unittest.TestCase):
             if any(h.get("command") == FANOUT_GUARD for h in entry.get("hooks", []))
         ]
         self.assertEqual(matchers, ["Task|Agent|Workflow"])
+
+    def test_it_adds_the_bash_cwd_guard_on_bash_with_a_short_timeout(self) -> None:
+        """Another deny hook whose silent removal nothing else would reveal.
+        Its wait ends by 3 s, so 10 s is headroom, as for the other guards."""
+        got = json.loads(run("{}").stdout)
+        entries = [
+            entry
+            for entry in got["hooks"]["PreToolUse"]
+            if any(h.get("command") == BASH_CWD_GUARD for h in entry.get("hooks", []))
+        ]
+        self.assertEqual(
+            entries,
+            [
+                {
+                    "matcher": "Bash",
+                    "hooks": [
+                        {"type": "command", "command": BASH_CWD_GUARD, "timeout": 10}
+                    ],
+                }
+            ],
+        )
 
     def test_home_stays_literal(self) -> None:
         """hook の command は Claude が実行時に展開する。生成時に展開すると
@@ -174,6 +196,7 @@ class Idempotent(unittest.TestCase):
         self.assertEqual(commands(got, "SessionStart").count(PJLINT_NOTE), 1)
         self.assertEqual(commands(got, "Stop").count(WORK_REPORT), 1)
         self.assertEqual(commands(got, "PreToolUse").count(FANOUT_GUARD), 1)
+        self.assertEqual(commands(got, "PreToolUse").count(BASH_CWD_GUARD), 1)
 
     def test_allow_entries_are_not_duplicated(self) -> None:
         allow = json.loads(run(run("{}").stdout).stdout)["permissions"]["allow"]

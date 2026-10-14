@@ -1,17 +1,21 @@
-"""claude-fanout-cwd-guard の判定テスト。
+"""Tests for claude-fanout-cwd-guard.
 
-この guard は 8 つの Claude hook のうち唯一 **作業を止められる**ので、壊れ方が
-非対称になる。誤って止める（うるさい）と外されて終わり、止め損なう（黙る）と
-2026-08-10 の事故がそのまま再発する —— 17 体中 0 体しか指定した木を読まず、
-約 200 万 token と board への 21 件が全部無駄になった件。
+This guard is one of the PreToolUse guards that can stop work, so its
+failures are asymmetric: stopping a good fan-out (noise) gets it removed, and
+missing a bad one (silence) repeats the 2026-08-10 incident, where 0 of 17
+agents read the tree their prompt named and ~2M tokens and 21 board tasks
+were wasted.
 
-なのでここで固定するのは境界そのもの:
+So what is pinned here is the boundary itself:
 
-  止める  : 同一 repo の別 worktree を指した Agent / Workflow の fan-out
-  止めない: 別 repo のパス / 自分の木のパス / 対象外の tool / git 管理外 /
-            jq や stdin が壊れている / 明示の環境変数による解除
+  stop     : an Agent / Workflow fan-out naming another worktree of the same
+             repository
+  let pass : a path in another repository / a path in the session's own
+             tree / a tool outside the scope / a directory outside git /
+             broken jq or stdin / the explicit environment-variable escape
 
-git は fetch 不要なローカル repo だけで組み、ネットワークに依存させない。
+The git fixtures are local repositories that need no fetch, so nothing here
+depends on the network.
 """
 
 from __future__ import annotations

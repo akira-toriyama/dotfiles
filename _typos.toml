@@ -40,6 +40,10 @@ extend-ignore-re = [
   # ある 5 行で直る typo」を題材にする以上、綴り間違いそのものがテストデータで、
   # 直すと測りたい状況が消える。バッククォート付きの 1 トークンだけに限定する。
   "`recieved`",
+  # Claude Code tool_use ids (random base62) in the real transcript entries that
+  # test_claude_bash_cwd_guard.py keeps as its oracle. typos splits them at case
+  # changes and flags the fragments (toolu_01TEGGerUeGL… → `Ue`).
+  "\\btoolu_[0-9A-Za-z]+\\b",
 ]
 
 [default.extend-words]
