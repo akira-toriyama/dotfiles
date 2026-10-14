@@ -46,7 +46,7 @@
 # so the prefix match is sound.
 #
 # Owned by dotfiles (chezmoi → ~/.local/bin/claude-board-shard-guard); wired from
-# the Claude PreToolUse hook in modify_settings.json (step 11).
+# the Claude PreToolUse hook in modify_settings.json (step 10).
 # Tests: scripts/test_claude_board_shard_guard.py (unittest, CI).
 set -u
 
