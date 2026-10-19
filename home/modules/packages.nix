@@ -463,6 +463,53 @@ in
       '';
     })
 
+    # canon-dongle: canon's scripts/dongle.py from outside its checkout — the
+    # key LEDs' palette set or asked through the Imprint Dongle, the device
+    # list, the firmware check. Python standard library only, on the Command
+    # Line Tools' /usr/bin/python3, the interpreter dongle.py's header names as
+    # its floor (3.9) and the one a LaunchAgent's PATH resolves: no build, no
+    # nix python. Like sprite-sender it never runs the checkout's working tree
+    # — the LaunchAgent (system/modules/sprite-sender.nix) calls it every
+    # morning after the sprite swap — and archives origin/main's scripts/ into
+    # ~/.cache/canon-dongle, the directory rather than the one file because
+    # dongle.py imports stamp.py from beside itself (so no `python3 -I`, which
+    # drops that directory from the import path). `check` reads the build's
+    # digest through git and so needs a clone, not this archive: give it
+    # `--repo <clone>`; its `--ref origin/main` reads the ref, never the tree.
+    (writeShellApplication {
+      name = "canon-dongle";
+      text = ''
+        src=/Volumes/workspace/github.com/akira-toriyama/canon
+        cache="''${XDG_CACHE_HOME:-$HOME/.cache}/canon-dongle"
+        script="$cache/scripts/dongle.py"
+        if [ ! -d "$src" ]; then
+          if [ -f "$script" ]; then
+            echo "⚠ canon の clone が無い ($src)。前回取り出した $script で続行 — source 追従が止まっており stale の可能性あり" >&2
+            exec /usr/bin/python3 "$script" "$@"
+          fi
+          echo "✘ canon の clone も前回の取り出しも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+          exit 127
+        fi
+        mapfile -t repo_env < <(git rev-parse --local-env-vars)
+        srcgit() ( unset "''${repo_env[@]}"; exec git -C "$src" "$@" )
+        ref=origin/main
+        srcgit rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=main
+        srcgit rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || ref=HEAD
+        rev="$(srcgit rev-parse "$ref^{commit}")"
+        if [ ! -f "$script" ] || [ "$(cat "$cache/rev" 2>/dev/null || true)" != "$rev" ]; then
+          mkdir -p "$cache"
+          tree="$(mktemp -d "$cache/src.XXXXXX")"
+          trap 'rm -rf "$tree"' EXIT
+          srcgit archive --format=tar "$rev" scripts | tar -x -C "$tree"
+          rm -rf "$cache/scripts"
+          mv "$tree/scripts" "$cache/scripts"
+          printf '%s\n' "$rev" > "$cache/rev"
+          rm -rf "$tree"
+        fi
+        exec /usr/bin/python3 "$script" "$@"
+      '';
+    })
+
     # projects: board の規約 CLI（projects の scripts/projects_cli.py）を checkout の外から
     # 叩くラッパ。sourceBuiltCLI と同じ「常に source を反映する」性質だけを持たせ、build 段階は
     # 持たない —— 実体が Python stdlib のみで、cache も incremental build も要らないため
