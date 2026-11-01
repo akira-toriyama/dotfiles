@@ -9,8 +9,14 @@ SessionStart）ので、壊れ方は「誤警告でうるさい」か「黙る�
   出さない: git 管理外 / upstream 無し / detached HEAD / 最新 / ahead のみ
 
 fetch は throttle + 背景実行なのでテストでは触らない。XDG_CACHE_HOME を tmpdir へ
-逃がして throttle stamp が $HOME を汚さないようにし、remote は fetch 不要な
-ローカル bare repo で作る（ネットワーク非依存）。
+逃がして throttle stamp が $HOME を汚さないようにし、setUp が stamp を「今」に
+seed して fetch 分岐を閉じる。remote は fetch 不要なローカル bare repo で作る
+（ネットワーク非依存）。
+
+seed は必須: detached な fetch は tempdir より長生きし、cleanup が
+"Directory not empty: …/work/.git" で落ちる（CI は git 2.55.0 まで緑、
+2.56.0 の runner image で 2026-10-28 から 3〜4 test が ERROR。ローカル 2.54.0 では
+再現しない = 競合のタイミング依存）。
 """
 
 from __future__ import annotations
@@ -18,6 +24,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -61,7 +68,19 @@ class GitStaleCheck(unittest.TestCase):
         git(self.seed, "push", "-q", "origin", "main")
         self.repo = self.root / "work"
         git(self.root, "clone", "-q", str(self.remote), str(self.repo))
+        self.stamp = self.seed_throttle_stamp()
         self.addCleanup(self.tmp.cleanup)
+
+    def seed_throttle_stamp(self) -> Path:
+        """script の throttle stamp を「今」にする。path は
+        <cache>/git-stale-check/<repo_root の / を _ に置換>。600s 以内なら script は
+        fetch 分岐に入らない。"""
+        root = git(self.repo, "rev-parse", "--show-toplevel").strip()
+        stamp_dir = self.cache / "git-stale-check"
+        stamp_dir.mkdir(parents=True)
+        stamp = stamp_dir / root.replace("/", "_")
+        stamp.write_text(str(int(time.time())), encoding="utf-8")
+        return stamp
 
     def run_check(self, cwd: Path) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
@@ -107,6 +126,16 @@ class GitStaleCheck(unittest.TestCase):
         p = self.run_check(self.repo)
         self.assertEqual(p.returncode, 0)
         self.assertEqual(p.stdout, "", "ahead is not stale — pulling would be wrong")
+
+    def test_fresh_stamp_skips_the_fetch(self) -> None:
+        """stamp が新しければ fetch 分岐に入らない（stamp は書き換えられない）。
+        setUp の seed はこの挙動に乗っている — ここが崩れると detached な fetch が
+        tempdir を生き延びて cleanup が落ちる。"""
+        before = self.stamp.read_text(encoding="utf-8")
+        self.make_behind(1)
+        p = self.run_check(self.repo)
+        self.assertIn("behind", p.stdout, "the local check still runs")
+        self.assertEqual(self.stamp.read_text(encoding="utf-8"), before)
 
     def test_silent_without_an_upstream(self) -> None:
         git(self.repo, "checkout", "-q", "-b", "no-upstream")
