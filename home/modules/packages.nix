@@ -422,7 +422,9 @@ in
     # tree: the LaunchAgent (system/modules/sprite-sender.nix) calls this
     # wrapper every morning, and a session's feature branch must not become
     # that run (the sourceBuiltCLI rule). It archives origin/main's tools/ into
-    # ~/.cache/sprite-sender, where package.sh builds and signs
+    # ~/.cache/sprite-sender as the clone last fetched it (the wrapper never
+    # fetches: a merge reaches the morning run once the clone has fetched
+    # it), where package.sh builds and signs
     # SpriteSender.app, and execs the bundle's executable from there: macOS
     # keys the Bluetooth permission to the signature and the bundle id, not to
     # the path. swift, git, codesign and security come from /usr/bin, which a
@@ -470,7 +472,8 @@ in
     # its floor (3.9) and the one a LaunchAgent's PATH resolves: no build, no
     # nix python. Like sprite-sender it never runs the checkout's working tree
     # — the LaunchAgent (system/modules/sprite-sender.nix) calls it every
-    # morning after the sprite swap — and archives origin/main's scripts/ into
+    # morning after the sprite swap — and archives origin/main's scripts/, as
+    # the clone last fetched it (never fetched here, as sprite-sender's), into
     # ~/.cache/canon-dongle, the directory rather than the one file because
     # dongle.py imports stamp.py from beside itself (so no `python3 -I`, which
     # drops that directory from the import path). `check` reads the build's
