@@ -10,16 +10,20 @@
   # external drive to the dongle over Bluetooth, asks it for the five colours
   # that GIF shows most, and hands them through the canon-dongle wrapper
   # (packages.nix too) to the Imprint Dongle on USB, which keeps them and
-  # sends them to both halves. Every failure (the drive not mounted, the
-  # dongle out of range, a GIF the dongle refuses, no Imprint Dongle on USB
-  # within ten minutes) is exit 1 and that day is skipped: no retry, no
+  # sends them to both halves. A failure of the day (the drive not mounted,
+  # the dongle out of range, a GIF the dongle refuses, no Imprint Dongle on
+  # USB within ten minutes) is exit 1, bad usage or a bad config 2 (the
+  # sender's and dongle.py's), and a wrapper with neither its clone nor an
+  # earlier build 127; any of them skips that day: no retry, no
   # notification, the next GIF tomorrow (the user's call: a toy); a failed
   # swap sends no colours, so the keys keep matching the screen. A run that
   # falls into sleep happens at the next wake (StartCalendarInterval, unlike
   # StartInterval). The config and the collection stay off every repository;
   # this path is the one public fact about them (canon assets/README.md), and
-  # the colours go no further than /tmp/sprite-sender.log. macOS asks once
-  # for Bluetooth, for the app's persistent signature.
+  # the colours go no further than the log in ~/Library/Logs, which only the
+  # user reads (it was /tmp/sprite-sender.log, readable by every account,
+  # until canon t-a0c6). macOS asks once for Bluetooth, for the app's
+  # persistent signature.
   #
   # By hand: bash <repo>/system/modules/scripts/sprite-daily.sh /etc/profiles/per-user/<user>/bin <sender.json>
   launchd.user.agents.sprite-sender = {
@@ -36,8 +40,8 @@
         Minute = 0;
       }];
       RunAtLoad = false;
-      StandardOutPath = "/tmp/sprite-sender.log";
-      StandardErrorPath = "/tmp/sprite-sender.log";
+      StandardOutPath = "/Users/${username}/Library/Logs/sprite-sender.log";
+      StandardErrorPath = "/Users/${username}/Library/Logs/sprite-sender.log";
     };
   };
 }
