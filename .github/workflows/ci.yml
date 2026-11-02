@@ -442,9 +442,13 @@ jobs:
   # schedule/push の failure は PR の視界に入らず、2026-07-06〜18 の 13 夜連続
   # failure を見逃した。main が赤くなったら固定タイトルの issue に集約して
   # 通知を発生させる（issue の新規作成/コメントはデフォルトで通知が飛ぶ）。
+  # 緑に戻った run が同じ issue を close する — 07-19 起票の #223 は main が緑でも
+  # 89 comment を抱えて open のままだった（t-9d6c）。cancelled は赤でも緑でもない:
+  # main の cancelled は concurrency の追い越しで、真偽は後続 run が決める
+  # （11-02 run 41370044017 は cancelled で誤報、4 分後の run が success）。
   notify-red-main:
     name: notify red main
-    if: always() && github.event_name != 'pull_request' && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    if: always() && github.event_name != 'pull_request'
     needs:
       - nix-flake-check
       - lint
@@ -460,20 +464,31 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: Create or comment on the red-main issue
+      - name: Create or comment on the red-main issue, or close it on green
         # zizmor template-injection 対策: 参照はすべて env 経由 (#193 と同方針)
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EVENT: ${{ github.event_name }}
+          # skipped は failure ではない（push では docs-link-check-external が skipped）。
+          RED: ${{ contains(needs.*.result, 'failure') }}
+          CANCELLED: ${{ contains(needs.*.result, 'cancelled') }}
         run: |
           title="CI red on main"
           num=$(gh issue list --repo "$REPO" --state open \
             --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
-          body="\`$EVENT\` run failed: $RUN_URL"
-          if [ -n "$num" ]; then
-            gh issue comment "$num" --repo "$REPO" --body "$body"
+          if [ "$RED" = "true" ]; then
+            body="\`$EVENT\` run failed: $RUN_URL"
+            if [ -n "$num" ]; then
+              gh issue comment "$num" --repo "$REPO" --body "$body"
+            else
+              gh issue create --repo "$REPO" --title "$title" --body "$body"
+            fi
+          elif [ "$CANCELLED" = "true" ]; then
+            echo "cancelled run — neither red nor green; the next run decides"
+          elif [ -n "$num" ]; then
+            gh issue close "$num" --repo "$REPO" --comment "main is green again: \`$EVENT\` run $RUN_URL"
           else
-            gh issue create --repo "$REPO" --title "$title" --body "$body"
+            echo "main is green and no red-main issue is open"
           fi
