@@ -466,8 +466,9 @@ in
     })
 
     # canon-dongle: canon's scripts/dongle.py from outside its checkout — the
-    # key LEDs' palette set or asked through the Imprint Dongle, the device
-    # list, the firmware check. Python standard library only, on the Command
+    # key LEDs' palette set or asked and their effect picked (the day's with
+    # --daily) through the Imprint Dongle, the device list, the firmware
+    # check. Python standard library only, on the Command
     # Line Tools' /usr/bin/python3, the interpreter dongle.py's header names as
     # its floor (3.9) and the one a LaunchAgent's PATH resolves: no build, no
     # nix python. Like sprite-sender it never runs the checkout's working tree
