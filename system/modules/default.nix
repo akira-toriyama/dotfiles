@@ -12,5 +12,6 @@
     ./claude-maint.nix
     ./zmk-log.nix
     ./sprite-sender.nix
+    ./canon-firmware-check.nix
   ];
 }
