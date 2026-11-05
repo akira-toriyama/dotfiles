@@ -27,6 +27,9 @@
   # より優先して読むので、~/.gitconfig 未整備の新規 PC でも即座に効く。
   home.sessionVariables = {
     GHQ_ROOT = "/Volumes/workspace";
+    # The sprite sender's config, which canon's build-zmk.sh --sprite reads for
+    # the sprite's name: the file system/modules/sprite-sender.nix also passes.
+    SPRITE_SENDER_CONFIG = "/Volumes/workspace/github.com/akira-toriyama/dotfiles-private/sprite-sender/sender.json";
   };
 
   # home-manager の状態バージョン（安易に上げない）

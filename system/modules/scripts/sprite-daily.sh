@@ -6,13 +6,13 @@
 #   sprite-daily.sh <profile bin> <sender.json>
 # where <profile bin> holds the sprite-sender and canon-dongle wrappers of
 # home/modules/packages.nix (launchd's PATH lacks the home-manager profile)
-# and <sender.json> is the sprite sender's config, off every repository.
+# and <sender.json> is the sprite sender's config, in dotfiles-private.
 #
 # Four stages, each the gate of the next, so that a day whose swap failed
 # changes nothing and the keys keep matching the dongle's screen:
 #   1 `sprite-sender daily`    swaps the sprite (exit 1: no device in range,
-#                              the drive not mounted, a refused GIF; the day
-#                              is skipped, no retry)
+#                              no clone of the collection, a refused GIF; the
+#                              day is skipped, no retry)
 #   2 `sprite-sender colours`  the five colours the GIF now on the screen
 #                              shows most: the heaviest lively one first,
 #                              the rest heaviest first
