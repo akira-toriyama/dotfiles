@@ -3,12 +3,13 @@ target-version = "py313"
 
 exclude = [".git", "result", "result-*"]
 
-# `[per-file-target-version]` は今は空でよい。唯一の住人だった azookey-bridge
-# （launchd が `/usr/bin/python3` = system 3.9 で起動していた）を退役させたので、
-# repo の Python は全部 mise の 3.13 で走る。system python で動かすスクリプトを
-# また置くときは、そのファイルを py39 に落とす行をここへ戻すこと —— mypy は
-# `--python-version 3.9` を拒否する（実測 2026-07-27, mypy 2.1.0）ため、
-# 3.9 互換を見張れるのは ruff のこの設定だけになる。
+# `[per-file-target-version]` holds the scripts launchd runs on the Command
+# Line Tools' `/usr/bin/python3` (system 3.9): mypy refuses
+# `--python-version 3.9` (measured 2026-07-27, mypy 2.1.0), so this line is the
+# only guard of their 3.9 compatibility (no match, no X | Y, no 3.10+ stdlib).
+# Everything else runs on mise's 3.13.
+[per-file-target-version]
+"system/modules/scripts/canon-firmware-check.py" = "py39"
 
 [lint]
 # 既定（E4/E7/E9 + F）から、1 グループずつ赤の増分を測って広げた結果がこれ。
