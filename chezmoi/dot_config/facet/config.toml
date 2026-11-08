@@ -60,11 +60,12 @@
 #      snapshot but config.toml is never overwritten.
 #
 # There is no UI — it's fully automatic. Watch `FACET_DEBUG` logs for
-# "auto-exported" / "auto-promoted". This template ships with it ON
-# (#381) — comment the block out to keep config.toml strictly read-only:
+# "auto-exported" / "auto-promoted". This template ships with it OFF: the
+# snapshot is still exported, config.toml stays hand-edited (#381 shipped it
+# ON; re-added from the live config 2026-11-08):
 [config]
 export-path = "~/.config/facet/config.snapshot.toml"
-auto-promote = true
+auto-promote = false
 
 
 # -----------------------------------------------------------------
@@ -118,7 +119,7 @@ auto-promote = true
 # Unknown names clamp to "terminal". CLI override (session only):
 # `facet --theme dracula`.
 [theme]
-name = "terminal"
+name = "dusk"
 
 # ANIMATE the theme: an animatable theme (rainbow / chomp) cycles its
 # accents over this period (integer milliseconds) — rainbow rotates the
@@ -148,7 +149,7 @@ name = "terminal"
 # The border flashes a quick neon burst on a workspace switch, then
 # settles back to the steady color.
 [border]
-effect = "off"
+effect = "neon"
 # Neon bloom around the border. true = glow, false = flat stroke.
 glow = true
 # Border line width in points. 0.5–30 clamp, default 1.5.
@@ -182,9 +183,9 @@ theme = ""
 # Number of columns in the overview grid. The row count is derived
 # from the number of workspaces (e.g. 15 workspaces with cols = 5
 # → 5/5/5 rows). Clamped 1..12. Built-in fallback (when this file
-# is absent entirely) is 4; the install template ships with 5
-# because it's the sweet spot for typical workspace counts.
-cols = 5
+# is absent entirely) is 4; this template ships with 2 (re-added from the
+# live config 2026-11-08; 5 was the earlier sweet-spot guess).
+cols = 2
 
 # Where the workspace header sits relative to its cell.
 #
