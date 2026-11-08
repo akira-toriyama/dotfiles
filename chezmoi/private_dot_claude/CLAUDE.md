@@ -80,8 +80,9 @@ Canon for operating rules = projects/CLAUDE.md (canon map).
   status share, or consultation as a GO signal.
 - Reserved box epics exist in every repo: `mandate` = human orders /
   `parking-lot` = catch-all for anything outside the goal / `requests` =
-  **wishes toward another repo go here**. Canon = projects
-  docs/reserved-epics.md.
+  **wishes toward another repo go here** / `upstream` = **a wait on a
+  fleet-external PR / issue goes here** (lane waiting, the URL in refs, no
+  due). Canon = projects docs/reserved-epics.md.
 - One footer line in code-repo PR bodies:
   `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`
 
