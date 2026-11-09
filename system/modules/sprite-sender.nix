@@ -5,7 +5,7 @@
   # the Cyboard Imprint's key LEDs painted in that sprite's colours (canon
   # t-0967) and drawing the effect of the day (canon t-2d9r). Once a day
   # ./scripts/sprite-daily.sh (copied into the Nix store,
-  # the claude-maint.nix way) has the sprite sender (zmk-beacon
+  # the claude-maint.nix way) has the sprite sender (zmk-vfx-beacon
   # tools/sprite-sender, built and run through the wrapper of the same name
   # in home/modules/packages.nix) send the next GIF of the collection's clone
   # to the dongle over Bluetooth, asks it for the five colours
