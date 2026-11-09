@@ -417,7 +417,7 @@ in
     })
 
     # sprite-sender: the Mac side of the Prospector Dongle's daily sprite swap
-    # (zmk-beacon tools/sprite-sender; canon t-mxb7). Swift, so not
+    # (zmk-vfx-beacon tools/sprite-sender; canon t-mxb7). Swift, so not
     # sourceBuiltCLI, and unlike facet it never runs the checkout's working
     # tree: the LaunchAgent (system/modules/sprite-sender.nix) calls this
     # wrapper every morning, and a session's feature branch must not become
@@ -432,16 +432,16 @@ in
     (writeShellApplication {
       name = "sprite-sender";
       text = ''
-        src=/Volumes/workspace/github.com/akira-toriyama/zmk-beacon
+        src=/Volumes/workspace/github.com/akira-toriyama/zmk-vfx-beacon
         cache="''${XDG_CACHE_HOME:-$HOME/.cache}/sprite-sender"
         app="$cache/SpriteSender.app"
         bin="$app/Contents/MacOS/sprite-sender"
         if [ ! -d "$src" ]; then
           if [ -x "$bin" ]; then
-            echo "⚠ zmk-beacon の clone が無い ($src)。前回ビルドの $app で続行 — source 追従が止まっており stale の可能性あり" >&2
+            echo "⚠ zmk-vfx-beacon の clone が無い ($src)。前回ビルドの $app で続行 — source 追従が止まっており stale の可能性あり" >&2
             exec "$bin" "$@"
           fi
-          echo "✘ zmk-beacon の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
+          echo "✘ zmk-vfx-beacon の clone も前回ビルドも無い ($src)。ghq-get-mine を先に実行（/Volumes/workspace 未マウントなら先にマウント）" >&2
           exit 127
         fi
         mapfile -t repo_env < <(git rev-parse --local-env-vars)
