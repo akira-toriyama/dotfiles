@@ -33,8 +33,12 @@ if [ ! -x "$CLAUDE_BIN" ]; then
 fi
 
 echo "==> MCP servers を user scope へ登録（remove→add で宣言値に収束）"
+# macOS の TMPDIR は末尾 / 付き（/var/folders/…/T/）なので、そのまま連結すると
+# 登録値が `T//playwright-mcp` になる。既定を当ててから末尾 / を剥がす。
+pw_out="${TMPDIR:-/tmp}"
+pw_out="${pw_out%/}/playwright-mcp"
 "$CLAUDE_BIN" mcp remove -s user playwright >/dev/null 2>&1 || true
-"$CLAUDE_BIN" mcp add -s user playwright -- "$HOME/.local/share/mise/shims/npx" -y "@playwright/mcp@latest" --output-dir "${TMPDIR:-/tmp}/playwright-mcp"
+"$CLAUDE_BIN" mcp add -s user playwright -- "$HOME/.local/share/mise/shims/npx" -y "@playwright/mcp@latest" --output-dir "$pw_out"
 "$CLAUDE_BIN" mcp remove -s user github >/dev/null 2>&1 || true
 "$CLAUDE_BIN" mcp add -s user --transport http github "https://api.githubcopilot.com/mcp/"
 echo "==> 登録完了（github の OAuth 同意だけは対話セッションの /mcp で端末ごとに 1 回）"
