@@ -22,8 +22,12 @@
 # 自動再実行されない — その場合は下の手動コマンドを直接叩く。
 set -e
 
-if [ -d /Applications/Xcode.app ]; then
-  echo "Xcode 既にインストール済み (/Applications/Xcode.app) → skip"
+# xcodes は /Applications/Xcode-<版>.app の名前で入れる（2026-11-09 実測:
+# Xcode-27.2.0.app）。素の Xcode.app だけ見ると既存を見逃し、再実行のたびに
+# Apple ID を聞く install が走るので、glob で両方の名前を拾う。
+set -- /Applications/Xcode*.app
+if [ -d "$1" ]; then
+  echo "Xcode 既にインストール済み ($1) → skip"
   exit 0
 fi
 
