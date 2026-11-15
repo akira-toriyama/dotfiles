@@ -497,6 +497,13 @@ All are **fail-open** (if the guard itself breaks, the call goes through) and **
 `modify_settings.json`.
 - **Don't call it:** 事前フック, パーミッションフィルタ, ツールガード
 
+### `claude-agent-usage`
+**The CLI that prints what each agent of one Claude Code session read**: turns, tokens read,
+largest context and minutes per agent, the main loop included, from the session's transcripts.
+The agent-fanout [[skill]] makes it the check after a fan-out's first unit. The real thing =
+[`chezmoi/dot_local/bin/executable_claude-agent-usage`](../chezmoi/dot_local/bin/executable_claude-agent-usage).
+- **Don't call it:** token counter, usage report, `/usage` (that is the account's quota, not a session's agents)
+
 ### `claude-md-eval`
 **The harness that measures a prose change to CLAUDE.md before it is distributed**. It produces
 responses for a baseline (without the section) and a candidate (with the section), judges them

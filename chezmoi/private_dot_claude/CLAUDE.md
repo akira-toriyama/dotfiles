@@ -146,6 +146,9 @@ Canon for operating rules = projects/CLAUDE.md (canon map).
 - Posting findings as a PR review → `revpost` (has `--dry-run`)
 - Waiting on a condition → condition-wait skill (wait4x) / macOS GUI
   verification → macos-gui-verify skill (peekaboo)
+- Fanning out agents or a Workflow → agent-fanout skill first: an agent costs
+  context × turns. Estimate before; after the first unit run
+  `claude-agent-usage` and stop if the change does not explain the spend.
 - **External waits require a deadline**; report stalls immediately; answer
   state questions after measuring, not before.
 - **Run self-built CLIs and apps from source**: CLIs via the source-build
