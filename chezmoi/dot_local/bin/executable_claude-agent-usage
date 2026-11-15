@@ -51,7 +51,9 @@ else
   newest=0
   for d in "$project"/*/subagents; do
     [ -d "$d" ] || continue
-    m=$(stat -f %m "$d" 2>/dev/null || stat -c %Y "$d" 2>/dev/null) || continue
+    # GNU form first: GNU stat reads `-f` as "file system status" and succeeds
+    # with other output, so the BSD form cannot be the probe (CI caught it).
+    m=$(stat -c %Y "$d" 2>/dev/null || stat -f %m "$d" 2>/dev/null) || continue
     if [ "$m" -gt "$newest" ]; then
       newest="$m"
       session="${d%/subagents}"
