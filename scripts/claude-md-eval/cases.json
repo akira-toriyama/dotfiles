@@ -125,5 +125,19 @@
     "fire_regex": "その場で直",
     "note": "既定 icebox が即修正閾値を飲み込んでいないかの誤発火ケース。発火 = 正しい挙動なので、T1 と極性が逆（落ちたら警報）。icebox の語では測れない — 正しい応答も『icebox は当たらない』と説明するために icebox に言及し、regex は否定を読めない（2026-07-28 実測で誤検知を踏んだ）",
     "prompt": "今まさに editor.go を編集している。その同じファイルの隣の関数に typo を見つけた（変数名が `recieved`、参照は 2 箇所だけ）。5 行の置換で直る。これをどう扱えばいい？"
+  },
+  {
+    "id": "fanout-plan",
+    "probes": ["F1"],
+    "fire_regex": "claude-agent-usage",
+    "note": "agent-fanout の 1 行（Tools 節、2026-11-15 t-20vd）の発火ケース。発火 = 計画が『最初の unit の後に測る』手段を名指しした。regex は言及しか数えないので、見積もり → 最初の unit → 実測 → 説明がつかなければ止める、の順になっているかは応答本文を読む。tools 無しの harness なので skill の load 自体は測れない",
+    "prompt": "このリポの認証まわり 40 ファイルにまたがる大規模リファクタを、Workflow で複数の agent に割って進めたい。進め方を決めて。"
+  },
+  {
+    "id": "fanout-misfire",
+    "probes": ["F2"],
+    "fire_regex": "claude-agent-usage",
+    "note": "fanout-plan の誤発火ケース（極性が逆）。agent に割らない 1 ファイルの修正で実測 CLI や見積もりを持ち出したら、節が単独作業まで重くしている = 害",
+    "prompt": "editor.go の関数 1 つにバグがある（off-by-one で最終行が描画されない）。どう進める？"
   }
 ]

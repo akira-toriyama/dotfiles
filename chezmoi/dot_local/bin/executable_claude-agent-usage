@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# claude-agent-usage — per-agent token usage of one Claude Code session.
+#
+# WHY: an agent re-reads its whole context on every turn, so what it costs is
+# context × turns, and nothing showed that number. On 2026-11-15 glyph's
+# e-b76m read about 360M tokens in a day across 18 agents (158k × 101 turns
+# on average, one at 432k × 199), and the first to notice was the user
+# (「異常すぎる消費」, t-20vd). The agent-fanout skill makes this table the
+# check after a fan-out's first unit.
+#
+# Usage: claude-agent-usage [<session-dir>]
+#   <session-dir> = <projects>/<project>/<session-id>. Default: the session of
+#   $PWD's project whose subagents directory was written last.
+#
+# Output: TSV with a header, one row per agent, most tokens first, the main
+# loop as `main`, then a TOTAL row. Columns: label, model, turns, read, output,
+# max_ctx, minutes.
+#   turns   = API responses (a response is logged once per content block, so
+#             rows are deduplicated by message id)
+#   read    = input + cache read + cache creation tokens, summed over turns
+#   max_ctx = the largest single turn's read
+#   minutes = first to last timestamp in the transcript
+#
+# Exit: 0 with the table; 2 on usage, a missing jq, or no session to read.
+#
+# CLAUDE_PROJECTS_DIR overrides ~/.claude/projects (the tests inject a
+# fixture tree there).
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-agent-usage).
+# Tests: scripts/test_claude_agent_usage.py (unittest, run in CI).
+set -u
+
+die() {
+  printf 'claude-agent-usage: %s\n' "$1" >&2
+  exit 2
+}
+
+[ "$#" -le 1 ] || die 'usage: claude-agent-usage [<session-dir>]'
+command -v jq >/dev/null 2>&1 || die 'jq is not on PATH'
+
+projects="${CLAUDE_PROJECTS_DIR:-$HOME/.claude/projects}"
+
+if [ "$#" -eq 1 ]; then
+  session="${1%/}"
+  [ -d "$session" ] || die "no such session directory: $session"
+else
+  # Claude Code names a project directory after the cwd, every character
+  # outside [A-Za-z0-9] replaced by "-".
+  project="$projects/$(pwd -P | sed 's/[^A-Za-z0-9]/-/g')"
+  session=''
+  newest=0
+  for d in "$project"/*/subagents; do
+    [ -d "$d" ] || continue
+    # GNU form first: GNU stat reads `-f` as "file system status" and succeeds
+    # with other output, so the BSD form cannot be the probe (CI caught it).
+    m=$(stat -c %Y "$d" 2>/dev/null || stat -f %m "$d" 2>/dev/null) || continue
+    if [ "$m" -gt "$newest" ]; then
+      newest="$m"
+      session="${d%/subagents}"
+    fi
+  done
+  [ -n "$session" ] || die "no session with subagents under $project — pass a session directory"
+fi
+
+# One transcript → one TSV row, or nothing when it holds no API response.
+row() {
+  jq -rRn --arg label "$1" '
+    def ts: sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;
+    reduce (inputs | fromjson? | select(type == "object")) as $d
+      ({seen: {}, turns: 0, read: 0, out: 0, max: 0, model: "-", t0: null, t1: null};
+       (($d.timestamp | strings | try ts catch null) // null) as $t
+       | (if $t == null then . else
+            .t0 = (if .t0 == null or $t < .t0 then $t else .t0 end)
+            | .t1 = (if .t1 == null or $t > .t1 then $t else .t1 end)
+          end)
+       | $d.message as $m
+       | if $d.type == "assistant" and ($m | type) == "object"
+            and ($m.id | type) == "string" and (.seen[$m.id] | not)
+         then
+           ($m.usage // {}) as $u
+           | (($u.input_tokens // 0) + ($u.cache_read_input_tokens // 0)
+              + ($u.cache_creation_input_tokens // 0)) as $ctx
+           | .seen[$m.id] = true
+           | .turns += 1
+           | .read += $ctx
+           | .out += ($u.output_tokens // 0)
+           | .max = ([.max, $ctx] | max)
+           | .model = (($m.model | strings) // .model)
+         else . end)
+    | select(.turns > 0)
+    | [$label, .model, .turns, .read, .out, .max,
+       (if .t0 == null then 0 else ((.t1 - .t0) / 60 | round) end)]
+    | @tsv' "$2"
+}
+
+rows=$(
+  [ -f "$session.jsonl" ] && row main "$session.jsonl"
+  find "$session/subagents" -name 'agent-*.jsonl' 2>/dev/null | sort | while IFS= read -r f; do
+    label=$(jq -r '.description // empty' "${f%.jsonl}.meta.json" 2>/dev/null)
+    [ -n "$label" ] || label=$(basename "$f" .jsonl)
+    row "$label" "$f"
+  done
+)
+[ -n "$rows" ] || die "no API response recorded under $session"
+
+printf 'label\tmodel\tturns\tread\toutput\tmax_ctx\tminutes\n'
+printf '%s\n' "$rows" | sort -t "$(printf '\t')" -k4,4nr
+printf '%s\n' "$rows" | awk -F '\t' '
+  { turns += $3; read += $4; out += $5; if ($6 > max) max = $6; minutes += $7 }
+  END { printf "TOTAL\t-\t%d\t%d\t%d\t%d\t%d\n", turns, read, out, max, minutes }'
