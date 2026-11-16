@@ -23,53 +23,66 @@
 # headless `claude -p` refused a command that --allowedTools had pre-allowed,
 # where the same run without the guard executed it.
 #
-# What counts as running one of the three commands. The command text is first
-# reduced to its command positions: the bodies of heredocs, the contents of
-# quotes and `#` comments are masked, because a commit message, a `furrow note`
-# body or a grep pattern that mentions a command does not run it — the first
-# version matched on the raw text, and a review found it asking about `git
-# commit -m '… furrow epic done …'` and about 12 of the 2211 bodies on the
-# board. A `$( … )` or a backtick span inside double quotes is a command
-# position and stays readable. On what is left, a command is `furrow epic
-# <verb>` at the start of a line or after one of | ; & ` ( {, behind optional
-# VAR=value assignments, `!`, any run of bare words, and an optional path. The
-# bare words are what a session really puts there: a shell keyword (then, do,
-# if), command / exec / time / xargs, `go run` — `go run ./cmd/furrow epic done`
-# from furrow's own checkout writes the same board — and a wrapper function of
-# its own (`step furrow epic done e-1` closed a box on 2026-11-05). echo and
-# printf are not wrappers, and neither is furrow itself (`furrow note <id>
-# furrow epic …`). An occurrence carrying --help / -h is a read and passes.
+# This is a tripwire against a misread instruction, not a security boundary:
+# it favours never asking about text over catching every spelling.
 #
-# Replayed over the 1786 distinct Bash commands that name furrow and epic in
-# this machine's transcripts (2026-11-16, a stub furrow reporting the
-# configured board for every call): 65 flagged, every one a real call of the
-# three commands.
+# What counts as running one of the three commands. A lexer first reduces the
+# command to its command positions, one codepoint for one, so a span found in
+# the reduced text is cut from the raw text for the dialog. Masked as data:
+# quoted text ('…', "…", $'…'), ${…} expansions, `#` comments and heredoc
+# bodies. Kept as command text: `$( … )` and backtick spans, also inside double
+# quotes, and the body of a heredoc fed to a shell (`bash <<EOF`). Two earlier
+# versions show why it is one pass: matching the raw text asked about `git
+# commit -m '… furrow epic done …'` and about 15 commands of this machine's
+# transcripts that only mention one; masking heredocs and quotes in two
+# separate passes then MISSED real calls, because a `<<EOF` inside a quote or a
+# comment hid the code after it.
+# On the reduced text, a command is `furrow epic <verb>` at the start of a line
+# or after one of | ; & ` ( ) {, behind any run of words. Those words are what
+# a session really puts there: VAR=value assignments, a shell keyword (then,
+# do, if), command / exec / time / xargs / timeout 30, `go run` — `go run
+# ./cmd/furrow epic done` from furrow's own checkout writes the same board —
+# and a wrapper function of its own (`step furrow epic done e-1` closed a box
+# on 2026-11-05). echo and printf are not wrappers, and neither is furrow
+# itself (`furrow note <id> furrow epic …`). An occurrence carrying --help /
+# -h is a read and passes.
+#
+# Replayed over the distinct Bash commands that name furrow and epic in this
+# machine's transcripts (2026-11-16, a stub furrow reporting the configured
+# board for every call): 70 of 1794 flagged, each a real call of the three
+# commands. The first version, matching the raw text, flagged 80 of 1790.
 #
 # ONLY the configured boards are in scope, and the board is not guessed from the
 # path: the guard asks furrow itself (`furrow board --json`, a read) from the
 # directory the command will run in — the hook's cwd, or the command's own
-# leading `cd /abs` — handing over a FURROW_DIR or FURROW_BOARD the command
-# sets for itself, and compares the store it reports with the [[board]] paths
-# of furrow's user config. Scratch boards, fixtures and other people's
-# checkouts report another store, or none, and pass. That is what keeps furrow's
-# own development and the drills on throwaway boards out of the dialog.
+# leading `cd /abs` — and compares the store it reports with the [[board]]
+# paths of furrow's user config. A FURROW_DIR or FURROW_BOARD the command
+# assigns in front of that very furrow call is handed to the read; one that
+# sits on another command of the line, or inside a quote, is not this call's.
+# Scratch boards, fixtures and other people's checkouts report another store,
+# or none, and pass. That is what keeps furrow's own development and the drills
+# on throwaway boards out of the dialog.
 #
 # Blind spots — each makes the guard MISS a real call:
-#   - a command reaching furrow through a script, an alias, a variable, a
-#     wrapper given flags of its own (`xargs -n1 furrow …`), or a spelling
-#     that quotes or escapes the word furrow itself.
-#     `projects repo retire` closes boxes through a script, by design of that
-#     command.
+#   - a command reaching furrow through a script file, an alias, a variable,
+#     `eval` or `bash -c '…'`, or a spelling that quotes or escapes one of the
+#     words furrow / epic / the verb. `projects repo retire` closes boxes
+#     through a script, by design of that command.
 #   - a `cd` later than the leading one, or a leading one whose path needs
 #     quoting for spaces, is not followed: the board is resolved from the
-#     hook's cwd. A FURROW_DIR / FURROW_BOARD given as a shell variable is
-#     handed over unexpanded, so furrow resolves nothing and the call passes.
-#   - a command that sets XDG_CONFIG_HOME for itself is a rig with its own
-#     furrow config, which this process cannot reproduce: it passes.
-#   - `$'…'` quoting with an escaped quote inside, and a heredoc whose
-#     delimiter line never comes, are read as far as a line-based scan can.
-# When the scan ends inside an open quote it has lost track, and the guard
-# falls back to the raw text: that errs toward asking, never toward a miss.
+#     hook's cwd. `export FURROW_DIR=…` on an earlier line is not followed
+#     either, and a FURROW_DIR given as a shell variable is handed over
+#     unexpanded, so furrow resolves nothing and the call passes.
+#   - a call that assigns XDG_CONFIG_HOME in front of itself is a rig with its
+#     own furrow config, which this process cannot reproduce: it passes.
+#   - shell the lexer does not model: `case` patterns inside `$( )`, a heredoc
+#     inside `(( ))`, process substitution feeding a shell.
+# And one that makes it ask about a harmless call: a command whose own
+# arguments spell one (`grep furrow epic done file`).
+# When the lexer ends inside an open quote, substitution or heredoc it has lost
+# track, and so has a command longer than 200000 codepoints, which is not
+# lexed: both fall back to matching the raw text at a strict command position,
+# which errs toward asking.
 #
 # Fail-open by construction: no jq, unparseable stdin, another tool, no furrow
 # on PATH, a furrow that errors or reports no store, or no readable furrow
@@ -92,158 +105,277 @@ tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
 
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty | strings' 2>/dev/null)
 
-# Two substrings first (cheap), so an ordinary Bash call never pays for the scan.
+# Two substrings first (cheap), so an ordinary Bash call never pays for the lexer.
 case $cmd in
 *furrow*epic*) ;;
 *) exit 0 ;;
 esac
 
-# Codepoints, since the program sits in single quotes: 39 is the single quote,
-# 34 the double quote, 92 the backslash, 96 the backtick, 95 the mask (_).
-# Both masks replace one codepoint with one, so an offset found in the masked
-# text names the same span in the raw text.
+# The lexer. Codepoints, since the program sits in single quotes: 9 tab, 10
+# newline, 32 space, 34 ", 35 #, 36 $, 38 &, 39 the single quote, 40 ( 41 ),
+# 45 -, 47 /, 59 ;, 60 < 62 >, 92 backslash, 95 the mask (_), 96 backtick,
+# 123 { 125 }, 124 |.
+# Frames on .st — command text: N top level, P a $( ) opened inside data,
+# B backticks. Data: S '…', A $'…', D "…", V ${…} (q: opened inside double
+# quotes, where a single quote is literal), C a comment, H a heredoc body.
+# It is a foreach, not a reduce: the state stays small and every step emits
+# one codepoint, so the run is linear (a reduce that grew the output inside
+# its state took 21 s for 100000 characters).
 # shellcheck disable=SC2016  # a jq program: its $names are jq's, not the shell's
-scan='
-def last_index: length - 1;
+lexer='
+def frame: .st[(.st | length) - 1];
+def pop: .st |= .[:-1];
+def push($f): .st += [$f];
+def emit($o): .o = $o;
 
-def mask_heredocs:
-  split("\n") as $lines
-  | reduce range(0; $lines | length) as $i (
-      {out: [], delim: null, strip: false, from: 0};
-      $lines[$i] as $line
-      | if .delim != null then
-          if (if .strip then ($line | sub("^\\t+"; "")) else $line end) == .delim
-          then .out += [$line] | .delim = null
-          else .out += [$line | gsub("."; "_")]
-          end
-        else
-          .out += [$line]
-          | ([$line | match("(?<!<)<<(-?)[ \\t]*(?:\\x27([^\\x27]+)\\x27|\"([^\"]+)\"|\\\\?([A-Za-z_][A-Za-z0-9_]*))")] | first) as $m
-          | if $m == null then .
-            else .delim = ([$m.captures[1, 2, 3].string] | map(select(. != null)) | first)
-              | .strip = ($m.captures[0].string == "-")
-              | .from = $i + 1
-            end
-        end)
-  | if .delim != null then .out[: .from] + $lines[.from :] else .out end
-  | join("\n");
+def end_word:
+  (.word | implode) as $w
+  | (if $w == "bash" or $w == "sh" or $w == "zsh" or $w == "dash" or $w == "ksh"
+     then .shell = true else . end)
+  | .word = [];
 
-# States: N top level, P inside $( ) opened in double quotes, B inside
-# backticks (all three are command text); S single quotes, D double quotes,
-# C a comment (all three are data). depth counts open parentheses per frame
-# of command text, so the ) that closes a $( is told from an inner one.
-def mask_quotes:
-  reduce explode[] as $c (
-      {out: [], st: ["N"], depth: [0], esc: false, prev: 10};
-      .st[.st | last_index] as $top
-      | (.depth | last_index) as $d
-      | if $top == "S" then
-          (if $c == 39 then .st |= .[:-1] else . end) | .out += [95]
-        elif $top == "C" then
-          if $c == 10 then (.st |= .[:-1]) | .out += [10] else .out += [95] end
-        elif $top == "D" then
-          if .esc then .esc = false | .out += [95]
-          elif $c == 92 then .esc = true | .out += [95]
-          elif $c == 34 then (.st |= .[:-1]) | .out += [95]
-          elif $c == 40 and .prev == 36 then .st += ["P"] | .depth += [0] | .out += [40]
-          elif $c == 96 then .st += ["B"] | .depth += [0] | .out += [96]
-          else .out += [95]
-          end
-        elif .esc then .esc = false | .out += [if $c == 10 then 32 else 95 end]
-        elif $c == 92 then .esc = true | .out += [32]
-        elif $c == 39 then .st += ["S"] | .out += [95]
-        elif $c == 34 then .st += ["D"] | .out += [95]
-        elif $c == 96 then
-          if $top == "B" then (.st |= .[:-1]) | (.depth |= .[:-1]) | .out += [96]
-          else .st += ["B"] | .depth += [0] | .out += [96]
-          end
-        elif $c == 40 then .depth[$d] += 1 | .out += [40]
-        elif $c == 41 then
-          if $top == "P" and .depth[$d] == 0
-          then (.st |= .[:-1]) | (.depth |= .[:-1]) | .out += [95]
-          else .depth[$d] = ([.depth[$d] - 1, 0] | max) | .out += [41]
-          end
-        elif $c == 35 and ([.prev] | inside([9, 10, 32, 38, 40, 59, 124])) then
-          .st += ["C"] | .out += [95]
-        else .out += [$c]
-        end
-      | .prev = $c)
-  | .st[.st | last_index] as $end
-  | if $end == "S" or $end == "D" then null else .out | implode end;
+def open_heredoc: push({t: "H", pos: 0, ok: true, lead: true} + .pend[0]) | .pend |= .[1:];
+
+# A newline in command text starts the bodies announced on that line. Bodies
+# fed to a shell are code: they are left to be read as command text.
+def newline:
+  (if (.pend | length) == 0 then .
+   elif any(.pend[]; .code) then .pend = []
+   else open_heredoc end)
+  | emit(10);
+
+def h_step($c):
+  frame as $f
+  | ((.st | length) - 1) as $i
+  | if $c == 10 then
+      (if $f.ok and $f.pos == ($f.delim | length)
+       then pop | (if (.pend | length) > 0 then open_heredoc else . end)
+       else .st[$i].pos = 0 | .st[$i].ok = true | .st[$i].lead = true end)
+      | emit(10)
+    elif $f.lead and $f.strip and $c == 9 then emit(95)
+    elif $f.ok and $f.pos < ($f.delim | length) and $f.delim[$f.pos] == $c
+    then .st[$i].pos += 1 | .st[$i].lead = false | emit(95)
+    else .st[$i].ok = false | .st[$i].lead = false | emit(95)
+    end;
+
+def d_step($c):
+  if .esc then .esc = false | emit(95)
+  elif $c == 92 then .esc = true | emit(95)
+  elif $c == 34 then pop | emit(95)
+  elif $c == 40 and .dol then push({t: "P", d: 0}) | emit(40)
+  elif $c == 123 and .dol then push({t: "V", q: true}) | emit(95)
+  elif $c == 96 then push({t: "B", d: 0}) | emit(96)
+  else emit(95)
+  end;
+
+def v_step($c):
+  frame.q as $q
+  | if .esc then .esc = false | emit(95)
+    elif $c == 92 then .esc = true | emit(95)
+    elif $c == 125 then pop | emit(95)
+    elif $c == 34 then push({t: "D"}) | emit(95)
+    elif $c == 39 and ($q | not) then push({t: "S"}) | emit(95)
+    elif $c == 40 and .dol then push({t: "P", d: 0}) | emit(40)
+    elif $c == 123 and .dol then push({t: "V", q: $q}) | emit(95)
+    elif $c == 96 then push({t: "B", d: 0}) | emit(96)
+    else emit(95)
+    end;
+
+# The word after << : .hd collects the delimiter. .redo hands the character
+# that ended it on to cmd_step. A delimiter that starts with a digit is a
+# shift (1<<2), and <<< is a here-string.
+def hd_step($c):
+  .hd as $h
+  | if $h.q != 0 then
+      (if $c == $h.q then .hd.q = 0
+       elif ($h.delim | length) > 80 then .hd = null
+       else .hd.delim += [$c] end)
+      | emit(95)
+    elif $h.ph == 1 and $c == 60 then .hd = null | emit(60)
+    elif $h.ph == 1 and $c == 45 then .hd.strip = true | .hd.ph = 2 | emit(45)
+    elif $h.ph <= 2 and ($c == 32 or $c == 9) then .hd.ph = 2 | emit($c)
+    elif $c == 39 or $c == 34 then .hd.q = $c | .hd.ph = 3 | emit(95)
+    elif $c == 92 then .hd.ph = 3 | emit(95)
+    elif $c == 32 or $c == 9 or $c == 10 or $c == 59 or $c == 38 or $c == 124
+         or $c == 60 or $c == 62 or $c == 40 or $c == 41
+    then
+      (if ($h.delim | length) > 0 and (($h.delim[0] >= 48 and $h.delim[0] <= 57) | not)
+       then .pend += [{delim: $h.delim, strip: $h.strip, code: .shell}]
+       else . end)
+      | .hd = null | .redo = true
+    elif ($h.delim | length) > 80 then .hd = null | emit(95)
+    else .hd.delim += [$c] | .hd.ph = 3 | emit(95)
+    end;
+
+def cmd_step($c):
+  frame as $f
+  | ((.st | length) - 1) as $i
+  | if .esc then .esc = false | .word = [0] | emit(if $c == 10 then 32 else 95 end)
+    elif $c == 92 then .esc = true | emit(32)
+    elif $c == 39 then end_word | push({t: (if .dol then "A" else "S" end)}) | emit(95)
+    elif $c == 34 then end_word | push({t: "D"}) | emit(95)
+    elif $c == 96 then end_word | (if $f.t == "B" then pop else push({t: "B", d: 0}) end) | emit(96)
+    elif $c == 123 and .dol then push({t: "V", q: false}) | emit(95)
+    elif $c == 40 then end_word | .shell = false | .st[$i].d += 1 | emit(40)
+    elif $c == 41 then
+      end_word | .shell = false
+      | (if $f.t == "P" and $f.d == 0 then pop else .st[$i].d = ([$f.d - 1, 0] | max) end)
+      | emit(41)
+    elif $c == 35 and .tok_start then push({t: "C"}) | emit(95)
+    elif $c == 60 then
+      end_word | .lt += 1
+      | (if .lt == 2 then .hd = {ph: 1, strip: false, delim: [], q: 0} else . end)
+      | emit(60)
+    elif $c == 10 then end_word | .shell = false | newline
+    elif $c == 59 or $c == 38 or $c == 124 then end_word | .shell = false | emit($c)
+    elif $c == 32 or $c == 9 then end_word | emit($c)
+    elif $c == 47 then .word = [] | emit($c)
+    else (if (.word | length) < 8 then .word += [$c] else .word = [0] end) | emit($c)
+    end;
+
+def step($c):
+  .redo = false
+  | .esc as $escaped
+  | frame.t as $t
+  | (if $t == "H" then h_step($c)
+     elif $t == "S" then (if $c == 39 then pop else . end) | emit(95)
+     elif $t == "A" then
+       (if .esc then .esc = false
+        elif $c == 92 then .esc = true
+        elif $c == 39 then pop
+        else . end)
+       | emit(95)
+     elif $t == "C" then (if $c == 10 then pop | .shell = false | newline else emit(95) end)
+     elif $t == "D" then d_step($c)
+     elif $t == "V" then v_step($c)
+     else
+       (if .hd != null then hd_step($c) else .redo = true end)
+       | (if .redo then cmd_step($c) else . end)
+     end)
+  | ($t == "N" or $t == "P" or $t == "B") as $code
+  | .dol = ($c == 36 and ($escaped | not) and ($code or $t == "D" or $t == "V"))
+  | .tok_start = ((($code and ($escaped | not))
+                   and ($c == 32 or $c == 9 or $c == 10 or $c == 59 or $c == 38
+                        or $c == 124 or $c == 40 or $c == 41 or $c == 96))
+                  or (($t == "C" or $t == "H") and $c == 10))
+  | (if $c != 60 or ($code | not) or $escaped then .lt = 0 else . end);
+
+# Lost track = still inside a quote, an expansion, a substitution, or a
+# heredoc whose delimiter never came. A comment may run to the end, and so
+# may a heredoc whose last line is its delimiter.
+def clean:
+  (.st | length) as $n
+  | frame as $f
+  | $n == 1
+    or ($n == 2 and $f.t == "C")
+    or ($n == 2 and $f.t == "H" and $f.ok and $f.pos == ($f.delim | length));
+
+def lex:
+  [foreach (explode[], -1) as $c (
+      {st: [{t: "N", d: 0}], esc: false, dol: false, tok_start: true, lt: 0,
+       hd: null, pend: [], shell: false, word: [], redo: false, o: 0};
+      if $c == -1 then .o = (if clean then -1 else -2 end) else step($c) end;
+      .o)]
+  | if .[length - 1] == -1 then .[:-1] | implode else null end;
 
 def env_value($name):
-  ([match("(?:^|[\\s;&|(])" + $name + "=(?:\"([^\"]*)\"|\\x27([^\\x27]*)\\x27|([^\\s;&|)]*))")
+  ([match("(?:^|[ \\t])" + $name + "=(?:\"([^\"]*)\"|\\x27([^\\x27]*)\\x27|(\\S*))")
     | [.captures[].string] | map(select(. != null)) | first] | first) // "";
 
+# Group 1 is the run of words in front of furrow, group 2 the verb.
+def calls($text; $raw; $words):
+  [ $text
+    | match("(?:^|[|;&`(){\\n])[ \\t]*(" + $words + ")(?:[^\\s|;&`(){}<>]*/)?furrow(?:[ \\t]+--?[A-Za-z][A-Za-z0-9-]*(?:=\\S*)?)*[ \\t]+epic[ \\t]+(activate|deactivate|done)(?=[\\s|;&)`}<>]|$)[^|;&)`\\n]*"; "g")
+    | . as $m
+    | $m.captures[0] as $w
+    | $raw[$w.offset : $w.offset + $w.length] as $front
+    | select($m.string | test("[ \\t](?:--help|-h)(?:[ \\t]|$)") | not)
+    | { kind: (if $m.captures[1].string == "done" then "close" else "switch" end),
+        op: ($raw[$m.offset : $m.offset + $m.length]
+             | sub("^[|;&`(){\\n]?[ \\t]*"; "") | gsub("[ \\t\\n]+"; " ")
+             | sub("(?: [0-9]*[<>])? ?$"; "")),
+        own_config: ($front | test("(?:^|[ \\t])XDG_CONFIG_HOME=")),
+        furrow_dir: ($front | env_value("FURROW_DIR")),
+        furrow_board: ($front | env_value("FURROW_BOARD")) }
+  ];
+
 (.tool_input.command // "" | if type == "string" then . else "" end) as $raw
-| (($raw | mask_heredocs | mask_quotes) // $raw) as $text
-| [ $text
-    | match("(?:^|[|;&`({\\n])[ \\t]*(?:(?:[A-Za-z_][A-Za-z0-9_]*=\\S*|!|(?!(?:echo|printf|furrow)[ \\t])[A-Za-z_][A-Za-z0-9_.-]*)[ \\t]+)*(?:[^\\s|;&`(){}]*/)?furrow(?:[ \\t]+--?[A-Za-z][A-Za-z0-9-]*(?:=\\S*)?)*[ \\t]+epic[ \\t]+(activate|deactivate|done)(?=[\\s|;&)`}]|$)[^|;&)`\\n]*"; "g")
-    | { seen: $text[.offset : .offset + .length],
-        op: $raw[.offset : .offset + .length],
-        verb: .captures[0].string }
-    | select(.seen | test("[ \\t](?:--help|-h)(?:[ \\t]|$)") | not)
-    | { kind: (if .verb == "done" then "close" else "switch" end),
-        op: (.op | sub("^[|;&`({\\n]?[ \\t]*"; "") | gsub("\\s+"; " ") | sub("(?: [0-9]*[<>])? ?$"; "")) }
-  ] as $ops
+| (if ($raw | length) > 200000 then null else ($raw | lex) end) as $text
+| (if $text != null
+   then calls($text; $raw; "(?:(?!(?:echo|printf|furrow)[ \\t])[^\\s|;&`(){}<>]+[ \\t]+)*")
+   else calls($raw; $raw; "(?:[A-Za-z_][A-Za-z0-9_]*=\\S*[ \\t]+)*")
+   end) as $ops
 | if ($ops | length) == 0 then empty
   else {
     ops: $ops,
-    own_config: ($raw | test("XDG_CONFIG_HOME=")),
     lead: (([$raw | match("^\\s*cd[ \\t]+(?:--[ \\t]+)?[\"\\x27]?(/[^\"\\x27\\s;&|]*)[\"\\x27]?[ \\t]*(?:&&|;|\\n)")
-             | .captures[0].string] | first) // ""),
-    furrow_dir: ($raw | env_value("FURROW_DIR")),
-    furrow_board: ($raw | env_value("FURROW_BOARD"))
+             | .captures[0].string] | first) // "")
   }
   end
 '
 
-plan=$(printf '%s' "$input" | jq -c "$scan" 2>/dev/null) || exit 0
+plan=$(printf '%s' "$input" | jq -c "$lexer" 2>/dev/null) || exit 0
 [ -n "$plan" ] || exit 0
-
-field() { printf '%s' "$plan" | jq -r "$1 // empty | strings" 2>/dev/null; }
-
-[ "$(printf '%s' "$plan" | jq -r '.own_config' 2>/dev/null)" = "false" ] || exit 0
 
 command -v furrow >/dev/null 2>&1 || exit 0
 
 cfg="${FURROW_CONFIG:-$HOME/.config/furrow/config.toml}"
 [ -r "$cfg" ] || exit 0
+boards=$(sed -n 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg")
+[ -n "$boards" ] || exit 0
 
 dir=$(printf '%s' "$input" | jq -r '.cwd // empty | strings' 2>/dev/null)
-lead=$(field .lead)
+lead=$(printf '%s' "$plan" | jq -r '.lead // empty | strings' 2>/dev/null)
 [ -n "$lead" ] && [ -d "$lead" ] && dir=$lead
 [ -n "$dir" ] && [ -d "$dir" ] || dir=.
 
-fd=$(field .furrow_dir)
-fb=$(field .furrow_board)
-
-store=$(
-  cd "$dir" 2>/dev/null || exit 0
-  [ -z "$fd" ] || export FURROW_DIR="$fd"
-  [ -z "$fb" ] || export FURROW_BOARD="$fb"
-  furrow board --json 2>/dev/null | jq -r '.store // empty | strings' 2>/dev/null
-)
-[ -n "$store" ] || exit 0
-
-in_scope=0
-while IFS= read -r board; do
-  [ -n "$board" ] || continue
-  [ "$store" = "$board" ] && in_scope=1
-done <<EOF
-$(sed -n 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg")
+# Each call is judged against the board IT would write: its own FURROW_DIR /
+# FURROW_BOARD, if it assigns one. Fields are joined on \x1f, not a tab: tab is
+# IFS whitespace, so `read` would collapse an empty field and shift the rest.
+keep=
+last_key=
+last_store=
+while IFS=$'\x1f' read -r i own fd fb; do
+  [ -n "$i" ] || continue
+  [ "$own" = "false" ] || continue
+  key="$fd"$'\x1f'"$fb"
+  if [ "$key" != "$last_key" ] || [ -z "$last_store" ]; then
+    last_key=$key
+    last_store=$(
+      cd "$dir" 2>/dev/null || exit 0
+      [ -z "$fd" ] || export FURROW_DIR="$fd"
+      [ -z "$fb" ] || export FURROW_BOARD="$fb"
+      furrow board --json 2>/dev/null | jq -r '.store // empty | strings' 2>/dev/null
+    )
+  fi
+  [ -n "$last_store" ] || continue
+  while IFS= read -r board; do
+    if [ -n "$board" ] && [ "$last_store" = "$board" ]; then
+      keep="$keep${keep:+,}$i"
+      break
+    fi
+  done <<EOF
+$boards
 EOF
-[ "$in_scope" -eq 1 ] || exit 0
+done <<EOF
+$(printf '%s' "$plan" | jq -r '
+  .ops | to_entries[]
+  | [.key, .value.own_config, .value.furrow_dir, .value.furrow_board]
+  | map(tostring)
+  | if any(.[]; test("[\n\u001f]")) then empty else join("\u001f") end' 2>/dev/null)
+EOF
+[ -n "$keep" ] || exit 0
 
 agent=$(printf '%s' "$input" | jq -r '.agent_id // empty | strings' 2>/dev/null)
 
 # One line per command, each named as the one decision it is.
-printf '%s' "$plan" | jq --arg agent "$agent" '
-  if $agent != "" then {
+printf '%s' "$plan" | jq --arg agent "$agent" --argjson keep "[$keep]" '
+  [.ops[$keep[]]] as $ops
+  | if $agent != "" then {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "deny",
-      permissionDecisionReason: ("Refused in a subagent: " + (.ops | map(.op) | join(" / ")) + "\n"
+      permissionDecisionReason: ("Refused in a subagent: " + ($ops | map(.op) | join(" / ")) + "\n"
         + "Switching the active epic and closing an epic are the human\u0027s decisions. "
         + "They run only after the human approves the exact command in a dialog, and a "
         + "subagent cannot receive that dialog. Do not reach the same write another way "
@@ -256,7 +388,7 @@ printf '%s' "$plan" | jq --arg agent "$agent" '
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "ask",
-      permissionDecisionReason: ((.ops
+      permissionDecisionReason: (($ops
           | map((if .kind == "close" then "epic の close です" else "active epic の切り替えです" end) + ": " + .op)
           | join("\n")) + "\n"
         + "これは人が決める操作で、Claude は申請までです。"

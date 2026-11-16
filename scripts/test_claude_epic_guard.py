@@ -15,7 +15,8 @@ claude-board-shard-guard の初版が 2026-08-19 に踏んだ）。
   2. subagent（agent_id あり）→ deny
   3. 3 コマンド以外の furrow、コマンドに触れているだけの文字列、--help → allow
   4. 設定外の board（scratch・fixture）や board が引けない場所 → allow
-  5. board は furrow 自身に聞く: 聞く場所は hook の cwd か、先頭の `cd /abs &&`
+  5. board は furrow 自身に聞く: 聞く場所は hook の cwd か、先頭の `cd /abs`。
+     その furrow 呼び出しの前に置かれた FURROW_DIR / FURROW_BOARD は一緒に渡す
   6. fail-open: 壊れた JSON / 空 stdin / furrow 不在 / config 不読 → 無出力・exit 0
 
 furrow は stub に差し替える（PATH の先頭に置く）。本物を呼ぶと、テストの結果が
@@ -29,6 +30,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -57,6 +59,10 @@ fi
 if [ "${STUB_EXIT:-0}" != 0 ]; then
   echo '{"error":{"kind":"validation"}}' >&2
   exit "$STUB_EXIT"
+fi
+if [ -n "${FURROW_DIR:-}" ]; then
+  printf '{"store":"%s","source":"env"}\\n' "${STUB_DIR_STORE:-$STUB_STORE}"
+  exit 0
 fi
 printf '{"store":"%s","source":"user-config"}\\n' "$STUB_STORE"
 """
@@ -91,6 +97,7 @@ def run(
     config: str | None = CONFIG,
     furrow: bool = True,
     furrow_exit: int = 0,
+    dir_store: str | None = None,
 ) -> Result:
     jq = shutil.which("jq")
     if jq is None:  # pragma: no cover - devShell が供給する
@@ -113,6 +120,8 @@ def run(
             "STUB_EXIT": str(furrow_exit),
             "STUB_LOG": str(log),
         }
+        if dir_store is not None:
+            env["STUB_DIR_STORE"] = dir_store
         if config is None:
             env["FURROW_CONFIG"] = str(Path(tmp) / "nonexistent.toml")
         else:
@@ -499,6 +508,137 @@ class TheReasonNamesWhatRuns(unittest.TestCase):
         got = bash("furrow epic done e-1; furrow epic done e-2", agent="a1")
         self.assertEqual(got.decision, "deny")
         self.assertIn("furrow epic done e-1 / furrow epic done e-2", got.reason)
+
+
+class TheLexerDoesNotHideRealCalls(unittest.TestCase):
+    """2 回目のレビューが見つけた見逃し。引用符と heredoc を別々の走査で隠した版は、
+    引用符やコメントの中の `<<EOF` を heredoc の始まりと読み、後ろの本物のコマンドを
+    隠した。どれも初版（生の文字列で照合）は ask を返していた。"""
+
+    def assert_asks(self, command: str) -> None:
+        self.assertEqual(bash(command).decision, "ask", command)
+
+    def test_a_heredoc_marker_inside_a_quote_or_a_comment_starts_nothing(self) -> None:
+        self.assert_asks(
+            'git commit -m "a <<EOF body"\nfurrow epic done e-1\ncat <<EOF\nx\nEOF'
+        )
+        self.assert_asks(
+            "# body goes in <<EOF below\nfurrow epic done e-1\ncat <<EOF\nnote\nEOF"
+        )
+
+    def test_a_heredoc_fed_to_a_shell_is_code(self) -> None:
+        for command in (
+            "bash <<'EOF'\nfurrow epic done e-1\nEOF",
+            "sh -s <<EOF\nset -e\nfurrow epic done e-1\nEOF",
+            "sudo /bin/bash <<EOF\nfurrow epic done e-1\nEOF",
+        ):
+            with self.subTest(command=command):
+                self.assert_asks(command)
+
+    def test_quoting_the_first_lexer_lost_track_of(self) -> None:
+        for command in (
+            "echo $'can\\'t'\nfurrow epic done e-1 # don't",
+            'echo "${a:-"it\'s"}"; furrow epic done e-1; echo "${b:-"that\'s"}"',
+            "echo ${x:-a #b}; furrow epic done e-1",
+            "echo \\ #; furrow epic done e-1",
+        ):
+            with self.subTest(command=command):
+                self.assert_asks(command)
+
+    def test_a_substitution_closes_at_its_own_parenthesis(self) -> None:
+        got = bash('echo "$(furrow epic done e-1)" -h')
+        self.assertEqual(got.decision, "ask")
+        self.assertEqual(
+            got.reason.split("\n")[0], "epic の close です: furrow epic done e-1"
+        )
+
+    def test_a_case_arm_and_wrappers_with_arguments(self) -> None:
+        for command in (
+            "case $v in done) furrow epic done e-1;; esac",
+            "timeout 30 furrow epic done e-1",
+            "nice -n 5 furrow epic done e-1",
+        ):
+            with self.subTest(command=command):
+                self.assert_asks(command)
+
+    def test_a_mention_does_not_silence_a_real_call(self) -> None:
+        """FURROW_DIR / XDG_CONFIG_HOME は、その呼び出しの前の代入だけを見る。"""
+        for command in (
+            'furrow note t-1 "try FURROW_DIR=/tmp/x next" && furrow epic done e-1',
+            "FURROW_DIR=/tmp/fixture/.furrow furrow ls; furrow epic done e-1",
+            'furrow note t-1 "a rig: XDG_CONFIG_HOME=/tmp/r" && furrow epic done e-1',
+            "XDG_CONFIG_HOME=/tmp/rig furrow ls; furrow epic done e-1",
+        ):
+            with self.subTest(command=command):
+                got = bash(command)
+                self.assertEqual(got.decision, "ask")
+                self.assertEqual([line.split("|")[3] for line in got.log], [""])
+
+    def test_each_call_is_judged_against_its_own_board(self) -> None:
+        got = bash(
+            "FURROW_DIR=/scratch/.furrow furrow epic done e-1; furrow epic done e-2",
+            dir_store=SCRATCH,
+        )
+        self.assertEqual(got.decision, "ask")
+        self.assertIn(": furrow epic done e-2\n", got.reason)
+        self.assertNotIn("e-1", got.reason)
+
+    def test_a_long_command_stays_inside_the_hook_timeout(self) -> None:
+        """reduce で出力を状態に溜めた版は 100000 字に 21 秒、130000 字で 30 秒の
+        timeout を超えた。1 字ずつ出す foreach は長さに比例する。"""
+        body = "\n".join(
+            f"line {i}: it's text, not furrow epic done" for i in range(4500)
+        )
+        command = f"cat > notes.md <<'EOF'\n{body}\nEOF\nfurrow epic done e-1"
+        self.assertGreater(len(command), 190_000)
+        started = time.monotonic()
+        got = bash(command)
+        self.assertEqual(got.decision, "ask")
+        self.assertLess(time.monotonic() - started, 20)
+
+    def test_a_command_too_long_to_lex_is_matched_raw(self) -> None:
+        pad = "x" * 200_001
+        self.assertEqual(bash(f"echo {pad}\nfurrow epic done e-1").decision, "ask")
+
+
+class TheLexerDoesNotInventCalls(unittest.TestCase):
+    def assert_allowed_without_asking_furrow(self, command: str) -> None:
+        got = bash(command)
+        self.assertIsNone(got.decision, command)
+        self.assertEqual(got.log, [], f"furrow was consulted for: {command}")
+
+    def test_heredoc_delimiters_of_any_shape(self) -> None:
+        for command in (
+            "cat <<END-MSG\nfurrow epic done e-1\nEND-MSG",
+            "cat <<EOF.txt\nfurrow epic done e-1\nEOF.txt",
+            "cat <<A <<B\nx\nA\nfurrow epic done e-1\nB",
+            'cat <<"E O F"\nfurrow epic done e-1\nE O F\nfurrow sync',
+            "cat <<\\EOF\nfurrow epic done e-1\nEOF",
+        ):
+            with self.subTest(command=command):
+                self.assert_allowed_without_asking_furrow(command)
+
+    def test_an_escaped_dollar_and_a_quoted_default(self) -> None:
+        self.assert_allowed_without_asking_furrow('echo "\\$(furrow epic done e-1)"')
+        self.assert_allowed_without_asking_furrow(
+            'echo "${x:-"a; furrow epic done e-1"}"'
+        )
+
+    def test_a_shift_is_not_a_heredoc(self) -> None:
+        got = bash("echo $((1<<2))\nfurrow epic done e-1")
+        self.assertEqual(got.decision, "ask")
+
+
+class TheDialogShowsTheCommandAsWritten(unittest.TestCase):
+    def test_wide_spaces_inside_an_argument_survive(self) -> None:
+        got = bash('furrow epic activate e-1 --reason "a　b"')
+        self.assertIn('--reason "a　b"', got.reason)
+
+    def test_text_before_the_command_does_not_shift_the_span(self) -> None:
+        got = bash('furrow note t-1 "日本語の本文 🙂" && furrow epic done e-1')
+        self.assertEqual(
+            got.reason.split("\n")[0], "epic の close です: furrow epic done e-1"
+        )
 
 
 class FailsOpen(unittest.TestCase):
