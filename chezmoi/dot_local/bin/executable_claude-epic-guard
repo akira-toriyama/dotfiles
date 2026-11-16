@@ -73,8 +73,8 @@
 #     is handed to the read; one that sits on another command of the line, or
 #     inside a quote, is not this call's.
 #
-# Replayed over the 1846 distinct Bash commands that name furrow and epic in
-# this machine's transcripts (2026-11-16), with the real furrow and each
+# Replayed over the 1859 distinct Bash commands that name furrow and epic in
+# this machine's transcripts (2026-11-17), with the real furrow and each
 # command's own recorded cwd: 61 are flagged, every one a call on the
 # configured board with a literal epic id, and no drill among them. The first
 # version, matching the raw text, flagged 80 of 1790 under a stub furrow.
@@ -97,28 +97,36 @@
 #     own furrow config, which this process cannot reproduce: it passes.
 #   - shell the lexer does not model: `case` patterns inside `$( )`, process
 #     substitution feeding a shell, a heredoc body ended inside a substitution
-#     it contains, and a heredoc for a shell that stands behind `&>` or behind
-#     a wrapper with arguments of its own (`bash &>log <<EOF`, `timeout 60
-#     bash <<EOF`): its body stays data.
-# And two that make it ask about a harmless call: a command whose own
-# arguments spell one (`grep furrow epic done file`), and a heredoc of data
-# announced on the same line after one fed to a shell (`bash <<A; cat >f
-# <<B`), whose body is read as code with the first.
+#     it contains. A heredoc for a shell whose body stays data: behind `&>`
+#     (`bash &>log <<EOF`), behind a wrapper with arguments of its own
+#     (`timeout 60 bash <<EOF`), behind an assignment that goes on after a
+#     substitution or a quote (`X=$(mktemp -d)/x bash <<EOF`), and piped out
+#     of a group (`(cat <<EOF) | bash`). And the order of two heredocs on one
+#     line when the later one is announced inside a substitution: the shell
+#     reads that one first, the lexer the earlier one.
+# And these make it ask about a harmless call: a command whose own arguments
+# spell one (`grep furrow epic done file`), and a heredoc of data announced
+# on the same line as one fed to a shell, after it (`bash <<A; cat >f <<B`)
+# or on the same command (`bash <<A <<B`), whose body is read as code.
 # When the lexer ends inside an open quote, substitution or heredoc, nests
 # deeper than 200 frames, or meets more than 16 heredocs announced on one
 # line, it has lost track; a command longer than 200000 codepoints is not
 # lexed at all. Both fall back to the raw text, where a call is accepted only
 # at a command position behind assignments, shell keywords and the common
 # wrappers: a narrower match that does not see through text but still asks
-# about the plain spellings.
+# about the plain spellings. The groups that end a cd are read from the raw
+# text there too, so a quoted or escaped parenthesis or backtick counts as
+# one. Of the 1859 commands of the replay above, 2 take this path.
 #
-# Cost (measured 2026-11-16, jq 1.8.2): the lexer is linear in the length,
-# 190000 characters in under 4 s. Finding the calls and the moves is jq's
-# global match, which walks the text from its start for every hit, so a
-# command with thousands of cd's is slower than its length says — 1900 of
-# them in 177000 characters take about 5 s, 20000 in 220000 about 25 s. The
-# hook's timeout is 30 s; the commands of this machine's transcripts that
-# reach the lexer hold at most 27 cd's and 22563 characters.
+# Cost (measured 2026-11-17, jq 1.8.2): the lexer is linear in the length,
+# about 4 s for 190000 characters. What follows it is not: finding the calls,
+# the moves and the assignments is jq's global match, which walks the text
+# from its start for every hit. The commands of this machine's transcripts
+# that reach the lexer hold at most 27 cd's and 22563 characters, where that
+# does not show. A command built to show it runs past the hook's 30 s
+# timeout while still short enough to be lexed: 1900 cd's in 177000
+# characters take about 5 s, 39000 in 195000 take 47 s, and 40000
+# assignments in 160000 take 38 s.
 #
 # Fail-open by construction: no jq, unparseable stdin, another tool, no furrow
 # on PATH, a furrow that errors or reports no store, or no readable furrow
@@ -214,9 +222,12 @@ def end_pipeline:
 
 def open_heredoc: push({t: "H", pos: 0, ok: true, lead: true} + .pend[0]) | .pend |= .[1:];
 
-# The bodies announced on a line start at its newline, one after the other. A
-# body for a shell is command text, and the lexer does not look for its end:
-# the bodies announced after it on the same line are read as command text too.
+# The bodies announced on a line start at its newline, in the order they were
+# announced. A body for a shell is command text, and the lexer does not look
+# for its end: the bodies announced after it on the same line are read as
+# command text too. Not modelled: the shell reads a heredoc announced inside a
+# substitution at the newline inside that substitution, before an outer one
+# announced earlier on the line.
 def start_bodies:
   if (.pend | length) == 0 then .
   elif .pend[0].code then .pend = []
@@ -467,13 +478,16 @@ def expand($vars; $at):
   once | once | once;
 
 # cd / pushd / popd at a command position, with the target as written. Only
-# cd takes options in front of its target (`pushd -n` moves nowhere). A target
-# runs on through a substitution the view shows (`cd "$(dirname "$0")"` inside
-# a `$( )`), so that it is read as one that needs the shell and not as a bare
-# cd.
+# cd takes options in front of its target: an option of pushd or popd is read
+# as its target, so `pushd -n S` is not followed to S. A target runs on
+# through a `$(` the view shows (`cd "$(dirname "$0")"` inside a `$( )`), so
+# that it is read as one that needs the shell and not as a bare cd. It stops
+# at a backtick: in the inner view the text behind a closing backtick is
+# masked, not a delimiter, and a target running through it swallowed the cd
+# of the next substitution.
 def moves($text; $cp):
   [ $text
-    | match("(?:^|[|;&`(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:(?<=cd)(?:[ \\t]+-[A-Za-z@]+)+)?(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&)\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
+    | match("(?:^|[|;&`(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:(?<=cd)(?:[ \\t]+-[A-Za-z@]+)+)?(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&`)\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
     | .captures[1] as $p
     | { at: .captures[0].offset, how: .captures[0].string,
         to: (if $p.string == null then ""

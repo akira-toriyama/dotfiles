@@ -1189,13 +1189,29 @@ class RoundSix(unittest.TestCase):
         self.assertEqual(data_first.log, [])
         self.assertEqual(bash(f"{intro}\ntext\nB\n{self.BODY}\nA").decision, "ask")
 
-    def test_an_option_of_pushd_is_not_a_place(self) -> None:
+    def test_pushd_n_is_not_followed_to_its_argument(self) -> None:
+        """`pushd -n S` は移動しない。hook は `-n` を target と読むので S へは行かず、
+        その名前の directory が無ければ hook の cwd で判定する（option として
+        読んでいるわけではない）。"""
         with (
             tempfile.TemporaryDirectory() as hook,
             tempfile.TemporaryDirectory() as away,
         ):
             got = bash(f"pushd -n {away} >/dev/null; {self.BODY}", cwd=hook)
             self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
+
+    def test_a_cd_closed_by_a_backtick_leaves_the_next_substitution_alone(
+        self,
+    ) -> None:
+        """7 回目のレビュー。cd の target にバッククォートを含めると、閉じの
+        バッククォートの後ろ（inner view では隠した文字で、区切りではない）まで
+        target が伸び、次の置換の cd を飲み込んだ。"""
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as where,
+        ):
+            got = bash(f"a=`cd /tmp`; b=$(cd {where} && {self.BODY})", cwd=hook)
+            self.assertEqual(self.where_asked(got), [os.path.realpath(where)])
 
     def test_marker_characters_and_heredoc_runs_stay_inside_the_timeout(self) -> None:
         """U+0001 を gsub で置き換えた版は 56000 字に 14 秒。1 行に並んだ heredoc を
