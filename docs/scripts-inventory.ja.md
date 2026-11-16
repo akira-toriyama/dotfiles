@@ -1,6 +1,6 @@
 <!--
 この文書は scripts-inventory.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 5112e84。
+最新とは限りません — 基準: 英語版 @ 9eb189e。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -30,7 +30,8 @@
 該当: `executable_git-stale-check` / `executable_claude-quota-note` /
 `executable_claude-projects-lint-note` / `executable_claude-work-report-check` /
 `executable_zmk-log-capture.sh` / `executable_claude-fanout-cwd-guard` /
-`executable_claude-board-shard-guard` / `modify_settings.json`。
+`executable_claude-board-shard-guard` / `executable_claude-bash-cwd-guard` /
+`executable_imprint-battery-notify` / `modify_settings.json`。
 
 `modify_settings.json` はこの分類の極端な例で、失敗時は **stdin を素通しして exit 0**
 する（壊れた settings.json を書くより、何もしない方が安い）。
@@ -63,12 +64,12 @@
 `home.packages` の wrapper の**両方**から走る。wrapper 側にだけ効く注入では 2 経路の
 挙動がずれるので、**`.sh` 側の `set` 行を正本**にして揃える。
 
-## 機構に守られていない場所（2026-08-03 時点）
+## 機構に守られていない場所（2026-10-14 時点）
 
-全 shell 23 本は `scripts/lint` の `shellcheck` / `shfmt` ゲートを通っている
+全 shell 27 本は `scripts/lint` の `shellcheck` / `shfmt` ゲートを通っている
 （対象集合の正本は `scripts/lint` の `shell_files()`。ここに写しは置かない —— 写すと必ずずれる）。
 
-**テストがあるのは 7 本だけ**:
+**テストがあるのは 10 本だけ**（27 本目の shell スクリプトは `scripts/claude-work-report-check-test.sh` で、それ自体がテスト）:
 
 | script | テスト |
 |---|---|
@@ -76,20 +77,27 @@
 | `executable_claude-work-report-check` | `scripts/claude-work-report-check-test.sh` |
 | `executable_claude-fanout-cwd-guard` | `scripts/test_claude_fanout_cwd_guard.py` |
 | `executable_claude-board-shard-guard` | `scripts/test_claude_board_shard_guard.py` |
+| `executable_claude-vncdo-guard` | `scripts/test_claude_vncdo_guard.py` |
+| `executable_claude-bash-cwd-guard` | `scripts/test_claude_bash_cwd_guard.py` |
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
 | `executable_claude-projects-lint-note` | `scripts/test_claude_projects_lint_note.py` |
 | `modify_settings.json` | `scripts/test_modify_settings.py` |
+| `brew-bundle-nonfatal.sh` | `scripts/test_brew_bundle_nonfatal.py` |
 | `scripts/lint` 自身 | `scripts/test_lint.py` |
 
-残る 15 本にテストは無い。これは欠陥リストではなく**優先順位を付けるための一覧**で、
+最後の行の `scripts/lint` は Python で、網羅のために載せている。27 本には含まない。
+
+残る 16 本にテストは無い。これは欠陥リストではなく**優先順位を付けるための一覧**で、
 実際に足す基準は CLAUDE.md の「機構化は既に踏んだ失敗の再発防止だけ」に従う。
-上の 6 本はいずれもその基準を満たして足したもの（hook が無言で死ぬと気づけない、
+上のものはいずれもその基準を満たして足したもの（hook が無言で死ぬと気づけない、
 permission allowlist を失う、等）。
 
 テスト無し: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /
-`executable_zmk-log-capture.sh` / `run_onchange_after_configure-azookey.sh` /
+`executable_zmk-log-capture.sh` / `executable_imprint-battery-notify` /
+`run_onchange_after_configure-azookey.sh` /
 `run_onchange_after_enable-git-hooks.sh` / `run_onchange_after_install-claude-code.sh` /
-`run_onchange_after_provision-op-sa-token.sh` / `run_onchange_install-vscode-extensions.sh` /
+`run_onchange_after_install-xcode.sh` / `run_onchange_after_provision-op-sa-token.sh` /
+`run_onchange_after_register-claude-mcp.sh` / `run_onchange_install-vscode-extensions.sh` /
 `install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh` / `claude-maint.sh`。
 
 `install.sh` だけは間接的に守られている —— CI の `darwin-rebuild switch smoke` が

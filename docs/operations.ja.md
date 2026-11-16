@@ -1,6 +1,6 @@
 <!--
 この文書は operations.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ b8b29e5。
+最新とは限りません — 基準: 英語版 @ 3f150e6。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -128,11 +128,18 @@ sudo /run/current-system/sw/bin/darwin-rebuild switch --flake .#default --impure
 switch を落とさないため。PR #108 で常用 + bootstrap 共通方針に統一）。
 **masApps に何を宣言しても live では `{}`** — 「宣言したのに入らない」は不具合ではない。
 
-将来 MAS アプリが必要になったら:
+**Xcode はここでいう MAS の話ではない**: App Store 経由ではなく、
+[`chezmoi/run_onchange_after_install-xcode.sh`](../chezmoi/run_onchange_after_install-xcode.sh)
+が `xcodes`（`home/modules/packages.nix` で宣言）経由で入れる。mas ルートは不採用 —
+mas 7 は内部で sudo を呼び（2026-09-02 実測）、得るもの無しに App Store サインインという
+前提を足すため。
+
+将来ほかの MAS アプリが必要になったら:
 
 - (a) 手動で App Store からインストール（最も確実）、または
 - (b) `mas` CLI を一時導入して（nixpkgs にあり。利用ゼロのため常設はしていない）
-  `mas install <id>` を手で叩く
+  `mas install <id>` を手で叩く — ただし mas 7 は初回取得を `mas get` に改名しており
+  （`mas install` は取得済みのアプリだけが対象）、sudo を要する
 - 宣言的に戻したい場合は `bootstrapBrewOverride` の緩め方（サインイン済み前提の
   構成分離等）の設計から始める
 
@@ -219,10 +226,17 @@ diff <(brew list --cask | sort) \
 
 ### 5.4 別 PC ブートストラップ
 
-新 Mac で（Apple Silicon の chip transfer 後、ターミナル一発）:
+新 Mac で（Apple Silicon の chip transfer 後、ターミナル一発 — 前提条件とワンライナーの
+正本は private repo の
+[dotfiles-private docs/bootstrap.md](https://github.com/akira-toriyama/dotfiles-private/blob/main/docs/bootstrap.md)
+にあり、ここの写しはそれと一致していなければならない）:
 ```sh
-sh <(curl -fsSL https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)
+sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh)"
 ```
+
+先頭の `sudo -v` は飾りではない: install.sh はすべての sudo を `-n` 付きで走らせる
+（`-n` が無いと、macOS の `PASSWORD_TIMEOUT 0` のもとではプロンプトで永久に待ち続ける）ので、
+有効な ticket が無いと `P1-sudo` で即座に失敗する。変更はまず Tart VM でリハーサルする（§5.15）。
 
 これだけで:
 1. Xcode CLT install
@@ -471,6 +485,56 @@ azooKey の「いい感じ変換」（変換中 Ctrl+S）をローカルブリ�
   memory は次のセッションで読まれず、書いた事実が静かに消える。`claude-maint` の
   月次レーンは memory を見ていない（skills / commands / agents のみ）ので、
   ここは今のところ**散文頼み**。
+
+### 5.15 Tart VM 検証（リハーサルのループと、何をもって合格とするか）
+
+`install.sh` の変更は、保管しているベースイメージの使い捨て clone で検証する
+（`install.sh` のヘッダが指しているのはこの節）:
+
+```sh
+tart clone dotfiles-base rehearsal-1
+tart run rehearsal-1 --no-graphics &        # macOS guest は同時に最大 2 台
+ssh admin@"$(tart ip rehearsal-1)"          # password: admin
+# VM 内では全部を 1 つのセッションで行う。sudo の ticket はそれを作ったセッションと
+# 一緒に消える — install.sh を nohup で起動してセッションを閉じると、即座に
+# P1-sudo FAILED で終わる（2026-09-03 実測）。
+printf 'admin\n' | sudo -S -v
+# GH_TOKEN はフル実行でだけ要る — --skip-clone は P1-ghtoken gate を飛ばし、token を
+# 一切読まない（2026-09-07 実測: token 無しの --skip-clone 実行 → PARTIAL exit 0、FAIL 0 件）
+export GH_TOKEN=<fine-grained PAT>          # 1Password の DOTFILES_BOOTSTRAP から。決して echo しない
+export DOTFILES_SKIP_FDA_GATE=1
+curl -fsLS https://raw.githubusercontent.com/akira-toriyama/dotfiles/main/install.sh -o install.sh
+sh install.sh --skip-clone
+# 終わったら host から:
+tart delete rehearsal-1
+```
+
+VM 一覧（`tart list`）:
+
+| VM | 扱い |
+|---|---|
+| `dotfiles-base` | **保持。** 忠実な素の macOS 26（NOPASSWD 除去済み・CLT 無し・nix 無し）。すべての検証はここから clone する。決して起動も変更もしない。 |
+| `dotfiles-ready` | **保持。** `✓ 完了` に到達した 2026-07-21 の在席フル実行。 |
+| `rehearsal-*` / その他の clone | 使い捨て — 終わったら `tart delete`。 |
+
+**結果の報告。** このルールは、FAILED の run が一度「PASS」と報告され、ユーザーがそれを
+信じて出荷したことから生まれた（furrow t-6srg）:
+
+- **`RESULT:` 行を原文どおり写す**（`✓ 完了` / `PARTIAL` / `FAILED` + exit code +
+  FAIL 一覧）。言い換えない・要約した判定を書かない・「実質 PASS」と書かない。
+- 無人の VM 実行には上限があり、そこに達するのが期待どおりの良い結果 —
+  それでも `✓ 完了` ではない:
+  - `--skip-clone` 実行: 最善は FAIL 0 件の `RESULT: PARTIAL (exit 0)`。
+  - フル実行: 必ず `P-onepassword` だけが FAIL の `RESULT: FAILED` で終わる
+    （1Password のサインインは GUI でしかできない）。この状態を **VM-PASS** と呼ぶ —
+    「VM-PASS (RESULT: FAILED, P-onepassword only)」と書き、決して「PASS」とは書かない。
+- `✓ 完了` を証明できるのは在席実行だけ: 人が 1Password の QR サインインと SSH 鍵の
+  承認を行う（2026-07-21 に VM で 1 回実施。実機でのリハーサルは未実施のまま — furrow t-e77z）。
+- どの VM でも検証できない層（App Store / mas、TCC プロンプト、FileVault/Secure Enclave の
+  忠実性）は、在席の実機 EACS リハーサルの担当。
+
+後片付けが要る副作用: VM 内で 1Password にサインインすると、その VM がアカウントの
+デバイスとして登録される。VM を削除したら、1Password の設定からそのデバイスを手で外す。
 
 ## 完了済の大きな migration
 

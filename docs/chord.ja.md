@@ -1,6 +1,6 @@
 <!--
 この文書は chord.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ 7b7e9d2。
+最新とは限りません — 基準: 英語版 @ 890636d。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -15,9 +15,18 @@ ZMK ファームから届くチョードを macOS 側で捕まえてアクショ
 - [chezmoi/dot_config/chord/private_config.toml](../chezmoi/dot_config/chord/private_config.toml):
   plain TOML（**唯一のソース**、template 評価なし）。`[options]`、
   `[action-aliases]`（shell-action の DRY 化、`@name`）、`[input-aliases]`（modifier セットの
-  論理名）、`[[bindings]]`、`[[fallbacks]]` を含む。ZMK 右側修飾子セット 4 個
+  論理名）、`[[bindings]]`、`[[fallbacks]]`、`[battery]`（chord 3.1.0+: Imprint 分割
+  キーボードの電池監視 — `threshold` と下記の通知スクリプト。古い chord はこの table を
+  `unknown-key` 警告付きで無視する）を含む。ZMK 右側修飾子セット 4 個
   (ULTRA_LL/MIRACLE_LM/MEGA_RM/WONDER_RR) は `[input-aliases]` で **論理名定義**
   → `input = "$ULTRA_LL - c"` のように `$prefix` で参照する。
+- [chezmoi/dot_local/bin/executable_imprint-battery-notify](../chezmoi/dot_local/bin/executable_imprint-battery-notify):
+  `[battery]` の action-shell。chord は各半分の残量が初めて閾値に達した時に、半分ごとに
+  1 回これを走らせる（`CHORD_BATTERY_SOURCE` = ドングルの peripheral slot、
+  `CHORD_BATTERY_PERCENT`）。通知は `terminal-notifier`（`system/modules/homebrew.nix`）で
+  出す。新しい Mac では、システム設定 → 通知 で terminal-notifier を 1 回許可し、chord に
+  入力監視（Input Monitoring）を付与する（電池監視は v-keys と同じ vendor-HID レポートを
+  読む）。どの slot が左右どちらの半分かは測っていないので、通知には slot 名が出る。
 - [chezmoi/run_onchange_after_chord-validate.sh.tmpl](../chezmoi/run_onchange_after_chord-validate.sh.tmpl):
   `chezmoi apply` 後に `chord --validate` を走らせる検証ゲート。chord 在中時のみ
   実行され、失敗時は exit 1 を返す（fresh bootstrap や CI Linux では no-op）。

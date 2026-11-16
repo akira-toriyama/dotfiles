@@ -1,6 +1,6 @@
 <!--
 この文書は CLAUDE.md（英語・正本 — ~/.claude/CLAUDE.md の source）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ d388a3b。
+最新とは限りません — 基準: 英語版 @ d9dd028。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -77,8 +77,9 @@
   リクエストによる — `furrow epic activate` を決して自分から実行しない。**
   質問・状況共有・相談への返答を GO の合図と読まない。
 - 予約箱 epic が全 repo に常設: `mandate` = 人間の命令 / `parking-lot` =
-  ゴール外の受け皿 / `requests` = **別 repo への要望はここへ**。正典 = projects
-  docs/reserved-epics.md。
+  ゴール外の受け皿 / `requests` = **別 repo への要望はここへ** / `upstream` =
+  **fleet 外の PR / issue 待ちはここへ**（lane は waiting、URL は refs、due なし）。
+  正典 = projects docs/reserved-epics.md。
 - code repo の PR 本文に footer を 1 行:
   `SetStatus-task: https://github.com/akira-toriyama/projects/blob/main/.furrow/bodies/<id>.md <lane>`
 
@@ -136,6 +137,9 @@
 - 指摘を PR review として投稿 → `revpost`（`--dry-run` あり）
 - 条件待ち → condition-wait skill（wait4x）/ macOS GUI 検証 →
   macos-gui-verify skill（peekaboo）
+- agent や Workflow の fan-out → まず agent-fanout skill: agent のコストは
+  context × turns。事前に見積もり、最初のユニットの後に `claude-agent-usage` を
+  走らせ、変更が支出を説明しないなら止める。
 - **外部待ちには deadline 必須**; 停滞は即報告; 状態の質問には測ってから
   答え、先には答えない。
 - **自作の CLI とアプリは source から動かす**: CLI は dotfiles `packages.nix`

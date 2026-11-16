@@ -1,6 +1,6 @@
 <!--
 この文書は glossary.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ d388a3b。
+最新とは限りません — 基準: 英語版 @ d9dd028。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -242,6 +242,16 @@ nix store 外のファイルへ symlink を張る [[home-manager]] イディオ�
 検証を通過した時だけ出る。
 - **Don't call it:** setup, bootstrap script, セットアップ
 
+### `dotfiles-private` / bootstrap doc
+**対になる private repo** [akira-toriyama/dotfiles-private](https://github.com/akira-toriyama/dotfiles-private)。
+分け方（機械的なので境界がずれない）: **環境構築 = private / それ以外 = public**。
+その [docs/bootstrap.md](https://github.com/akira-toriyama/dotfiles-private/blob/main/docs/bootstrap.md) が新 Mac
+再現手順の正本で — install.sh のヘッダでの略称は「**bootstrap doc**」—、dotfiles-private の
+root README はポインタ 1 本だけのページに保つ。初日にスマホのブラウザからゼロクリックで手順に
+届くようにするため。dotfiles-private は中間の機密度の層も担う（secret → 1Password / 中間 →
+dotfiles-private / 公開 → dotfiles）。
+- **Don't call it:** private notes, machine-docs, セットアップ手順書
+
 ### `--phase2`
 install.sh の**リカバリ入口**。SSH gate（1Password）起因の失敗を直した後、
 導入系 phase（CLT/Nix/switch）を再評価せず、sudoers drop-in の self-heal →
@@ -254,6 +264,16 @@ install.sh の各 run が `~/.dotfiles-install/<run-id>/` に残す機械可読�
 （result / failed / last_phase / log 位置）。LLM・人間はまずこれを読む。
 `latest` symlink が最新 run を指す。
 - **Don't call it:** report, result.txt, ログ本体
+
+### VM-PASS
+**Tart VM での install.sh の無人フル実行**の到達上限につけた名前: `P-onepassword` だけが FAIL で
+他の検査はすべて green の `RESULT: FAILED`（1Password のサインインは GUI でしかできないので、
+無人実行はそれより先へ進めない）。「VM-PASS (RESULT: FAILED, P-onepassword only)」と書く —
+それでも `RESULT:` 行は原文どおり写す。VM-PASS は状態の名前であって、判定を置き換えはしない。
+無人 `--skip-clone` の上限は `RESULT: PARTIAL (exit 0)` で、別名は要らない。
+furrow t-6srg から生まれた（FAILED の run が一度「PASS」に丸められた）。
+手順: [operations.md §5.15](operations.md)。
+- **Don't call it:** PASS, 実質 PASS, ほぼ完走
 
 ### `ghq-get-mine`
 **自リポジトリ一括 clone コマンド**。GitHub 上の akira-toriyama の active
@@ -457,12 +477,20 @@ frontmatter の `description` が「いつ発火するか」を決める。サ�
 
 ### PreToolUse guard（`claude-*-guard`）
 **ツール呼び出しの直前に走り、通す / 訊く / 拒む を決めるスクリプト**。
-現在 3 本 —— [`claude-fanout-cwd-guard`](../chezmoi/dot_local/bin/executable_claude-fanout-cwd-guard)（別 worktree へのファンアウトを拒む）/
+現在 4 本 —— [`claude-fanout-cwd-guard`](../chezmoi/dot_local/bin/executable_claude-fanout-cwd-guard)（別 worktree へのファンアウトを拒む）/
 [`claude-vncdo-guard`](../chezmoi/dot_local/bin/executable_claude-vncdo-guard)（deadline の無い vncdo を拒む）/
-[`claude-board-shard-guard`](../chezmoi/dot_local/bin/executable_claude-board-shard-guard)（furrow の board shard 直編集を訊く）。
+[`claude-board-shard-guard`](../chezmoi/dot_local/bin/executable_claude-board-shard-guard)（furrow の board shard 直編集を訊く）/
+[`claude-bash-cwd-guard`](../chezmoi/dot_local/bin/executable_claude-bash-cwd-guard)（兄弟の呼び出しが shell を別の場所へ移した後で、harness が先頭の `cd` を剥がした Bash 呼び出しを拒む）。
 どれも **fail-open**（自身が壊れたら通す）で **narrow scope**（誤検知した guard は
 guard 全体を無視させる）。配線は `modify_settings.json`。
 - **Don't call it:** 事前フック, パーミッションフィルタ, ツールガード
+
+### `claude-agent-usage`
+**Claude Code の 1 セッションの各 agent が何を読んだかを出す CLI**: main loop を含む agent ごとの
+turn 数・読んだ token・最大 context・所要分を、そのセッションの transcript から出す。
+agent-fanout [[skill]] がこれを fan-out の最初のユニットの後の確認に据えている。実体 =
+[`chezmoi/dot_local/bin/executable_claude-agent-usage`](../chezmoi/dot_local/bin/executable_claude-agent-usage)。
+- **Don't call it:** token counter, usage report, `/usage`（それはアカウントの quota で、セッションの agent ではない）
 
 ### `claude-md-eval`
 **CLAUDE.md の散文変更を配る前に測るハーネス**。baseline（節なし）と candidate（節あり）の
