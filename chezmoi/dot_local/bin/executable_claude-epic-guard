@@ -88,7 +88,10 @@
 #     also when that target is the real board (`cd "$REPO" && furrow epic
 #     done`). A cd that does not run before the call — in another case arm,
 #     in a function body that is only defined, in a heredoc fed to a shell —
-#     is followed as if it did.
+#     is followed as if it did. And a cd whose target touches a backtick where
+#     the view still shows backticks — inside a `$( )` (`$(cd "`mktemp -d`"
+#     && …)`) and in the fallback — is not read as one that needs the shell
+#     but as a bare cd: its call is judged from HOME.
 #   - `export FURROW_DIR=…` on an earlier line is not followed, and a
 #     FURROW_DIR whose value needs the shell (`$tmp/.furrow`, `$(mktemp
 #     -d)/x`) is handed over unexpanded, so furrow resolves nothing and the
@@ -101,9 +104,13 @@
 #     (`bash &>log <<EOF`), behind a wrapper with arguments of its own
 #     (`timeout 60 bash <<EOF`), behind an assignment that goes on after a
 #     substitution or a quote (`X=$(mktemp -d)/x bash <<EOF`), and piped out
-#     of a group (`(cat <<EOF) | bash`). And the order of two heredocs on one
-#     line when the later one is announced inside a substitution: the shell
-#     reads that one first, the lexer the earlier one.
+#     of a group that goes on after the `<<` (`{ cat <<EOF; } | bash`, a
+#     subshell closed after the body); `(cat <<EOF) | bash` is read.
+#   - the order of two heredocs on one line when the later one is announced
+#     inside a substitution: the shell reads that one first, the lexer the
+#     earlier one. The plain shapes then end in the fallback and are asked
+#     about, a call that is only text in the outer body included; one built
+#     to bring the lexer back in step is missed.
 # And these make it ask about a harmless call: a command whose own arguments
 # spell one (`grep furrow epic done file`), and a heredoc of data announced
 # on the same line as one fed to a shell, after it (`bash <<A; cat >f <<B`)
@@ -481,10 +488,12 @@ def expand($vars; $at):
 # cd takes options in front of its target: an option of pushd or popd is read
 # as its target, so `pushd -n S` is not followed to S. A target runs on
 # through a `$(` the view shows (`cd "$(dirname "$0")"` inside a `$( )`), so
-# that it is read as one that needs the shell and not as a bare cd. It stops
-# at a backtick: in the inner view the text behind a closing backtick is
-# masked, not a delimiter, and a target running through it swallowed the cd
-# of the next substitution.
+# that it is read as one that needs the shell and not as a bare cd. A
+# backtick is not part of a target: in the inner view the text behind a
+# closing backtick is masked, not a delimiter, and a target running through it
+# swallowed the cd of the next substitution. The price is that a target
+# touching a backtick is not read at all (the lookahead refuses the backtick
+# too) and its cd counts as a bare one, HOME — the header lists it.
 def moves($text; $cp):
   [ $text
     | match("(?:^|[|;&`(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:(?<=cd)(?:[ \\t]+-[A-Za-z@]+)+)?(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&`)\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
