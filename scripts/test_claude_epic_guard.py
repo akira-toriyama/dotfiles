@@ -9,7 +9,9 @@ claude-board-shard-guard の初版が 2026-08-19 に踏んだ）。
 誤検知する guard は guard 全体を無視させるので、allow 側のケースを厚くしてある。
 
 ここで固定するのは:
-  1. 設定された board に向かう 3 コマンド → ask（コマンド位置にあるものだけ）
+  1. 設定された board に向かう 3 コマンド → ask（コマンド位置にあるものだけ）。
+     引用符・heredoc の本文・コメントの中の文字列はコマンドではない。ただし二重引用符の
+     中の `$( )` とバッククォートはコマンド位置
   2. subagent（agent_id あり）→ deny
   3. 3 コマンド以外の furrow、コマンドに触れているだけの文字列、--help → allow
   4. 設定外の board（scratch・fixture）や board が引けない場所 → allow
@@ -45,10 +47,12 @@ scopes      = ["/Volumes/workspace/github.com/akira-toriyama"]
 path        = "{OTHER_BOARD}"
 '''
 
-# `furrow board --json` の stub。呼ばれた場所・FURROW_BOARD・引数を STUB_LOG に残す。
+# `furrow board --json` の stub。STUB_LOG に、呼ばれた場所・FURROW_BOARD・引数・
+# FURROW_DIR を残す。
 STUB = """#!/bin/bash
 if [ -n "${STUB_LOG:-}" ]; then
-  printf '%s|%s|%s\\n' "$PWD" "${FURROW_BOARD:-}" "$*" >>"$STUB_LOG"
+  printf '%s|%s|%s|%s\\n' "$PWD" "${FURROW_BOARD:-}" "$*" "${FURROW_DIR:-}" \\
+    >>"$STUB_LOG"
 fi
 if [ "${STUB_EXIT:-0}" != 0 ]; then
   echo '{"error":{"kind":"validation"}}' >&2
@@ -255,6 +259,9 @@ class AllowsEverythingElse(unittest.TestCase):
             'git commit -m "the guard asks before furrow epic done runs"',
             'furrow note t-9cby "next: furrow epic activate e-1 once the human says"',
             "echo furrow epic done e-1",
+            "printf furrow epic done e-1",
+            "furrow note t-9cby furrow epic done e-1",
+            "furrow sync; echo furrow epic activate e-1",
             'rg -n "furrow epic (activate|deactivate|done)" .',
             "man furrow-epic-done",
         ):
@@ -345,10 +352,153 @@ class ScopeIsTheBoardFurrowReports(unittest.TestCase):
                 got = bash(f"FURROW_BOARD={spelled} furrow epic done e-1")
                 self.assertEqual(got.log[0].split("|")[1], "/x/.furrow")
 
+    def test_an_inline_furrow_dir_reaches_the_read(self) -> None:
+        """FURROW_DIR is first in furrow's discovery order: without it the guard
+        asked about a fixture and missed the real board named from elsewhere."""
+        for spelled in ("/x/.furrow", '"/x/.furrow"', "'/x/.furrow'"):
+            with self.subTest(spelled=spelled):
+                got = bash(f"FURROW_DIR={spelled} furrow epic done e-1")
+                self.assertEqual(got.log[0].split("|")[3], "/x/.furrow")
+                self.assertEqual(got.log[0].split("|")[1], "")
+
+    def test_a_leading_cd_ended_by_a_semicolon_or_a_newline_is_followed(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as where,
+            tempfile.TemporaryDirectory() as elsewhere,
+        ):
+            for sep in ("; ", "\n"):
+                with self.subTest(sep=sep):
+                    got = bash(f"cd {where}{sep}furrow epic done e-1", cwd=elsewhere)
+                    self.assertEqual(
+                        os.path.realpath(got.log[0].split("|")[0]),
+                        os.path.realpath(where),
+                    )
+
     def test_a_command_with_its_own_config_home_passes(self) -> None:
         got = bash("XDG_CONFIG_HOME=/private/tmp/rig furrow epic done e-1")
         self.assertIsNone(got.decision)
         self.assertEqual(got.log, [])
+
+
+class QuotedTextIsNotACommand(unittest.TestCase):
+    """初版は生の文字列で照合し、引用符の中の区切り文字（; & ` ( と行頭）を
+    コマンドの始まりと読んだ。レビューが実物の commit メッセージと task 本文で
+    再現した。"""
+
+    def assert_allowed_without_asking_furrow(self, command: str) -> None:
+        got = bash(command)
+        self.assertIsNone(got.decision, command)
+        self.assertEqual(got.proc.stdout, "")
+        self.assertEqual(got.log, [], f"furrow was consulted for: {command}")
+
+    def test_mentions_inside_quotes(self) -> None:
+        for command in (
+            "git commit -m 'asks before `furrow epic activate|deactivate|done` runs'",
+            'furrow note t-9cby "applied; furrow epic done e-1 awaits the human"',
+            'echo "(furrow epic done e-1 now)"',
+            'echo "a & furrow epic done e-1"',
+            'git commit -m "subject\n\nfurrow epic done e-1 now asks"',
+            "printf '%s\n' 'x' | grep -c ';furrow epic done e-1'",
+        ):
+            with self.subTest(command=command):
+                self.assert_allowed_without_asking_furrow(command)
+
+    def test_a_heredoc_body_is_data(self) -> None:
+        for command in (
+            "git commit -F - <<'EOF'\nsubject\n\nfurrow epic done e-1 is gated\nEOF",
+            "furrow note t-1 -F - <<EOF\nfurrow epic activate e-1\nEOF\nfurrow sync",
+            "cat > msg <<-MSG\n\tfurrow epic done e-1\n\tMSG\ngit commit -F msg",
+        ):
+            with self.subTest(command=command):
+                self.assert_allowed_without_asking_furrow(command)
+
+    def test_a_comment_is_data(self) -> None:
+        self.assert_allowed_without_asking_furrow(
+            "# later; furrow epic done e-1\nfurrow sync"
+        )
+        self.assert_allowed_without_asking_furrow(
+            "furrow sync # then: furrow epic done e-1"
+        )
+
+
+class CommandPositionsSurviveTheMasking(unittest.TestCase):
+    def assert_asks(self, command: str) -> None:
+        self.assertEqual(bash(command).decision, "ask", command)
+
+    def test_command_substitution_inside_double_quotes_runs(self) -> None:
+        self.assert_asks('out="$(furrow epic done e-1 --json)"')
+        self.assert_asks('echo "result: `furrow epic done e-1`"')
+        self.assert_asks('echo "$(echo "$(furrow epic done e-1)")"')
+
+    def test_backticks_at_the_top_level_run(self) -> None:
+        self.assert_asks("x=`furrow epic done e-1`")
+
+    def test_a_real_command_after_quoted_text(self) -> None:
+        self.assert_asks('furrow note t-1 "it\'s fine" && furrow epic done e-1')
+        self.assert_asks(
+            "furrow note t-1 -F - <<'EOF'\nit's done\nEOF\nfurrow epic done e-1"
+        )
+        self.assert_asks("# don't forget the box\nfurrow epic done e-1")
+        self.assert_asks("echo 'a) b' && (furrow epic done e-1)")
+
+    def test_a_scan_that_ends_inside_a_quote_falls_back_to_the_raw_text(self) -> None:
+        self.assert_asks('echo "never closed; furrow epic done e-1')
+
+    def test_a_heredoc_whose_delimiter_never_comes_masks_nothing(self) -> None:
+        self.assert_asks("cat <<EOF\nbody\nfurrow epic done e-1")
+
+    def test_a_here_string_is_not_a_heredoc(self) -> None:
+        self.assert_asks("cat <<< word\nfurrow epic done e-1")
+
+    def test_more_spellings(self) -> None:
+        for command in (
+            "furrow --json=true epic done e-1",
+            'MSG="a b" furrow epic done e-1',
+            "command furrow epic done e-1",
+            "exec furrow epic done e-1",
+            "time furrow epic done e-1",
+            "furrow \\\n  epic \\\n  done e-1",
+            "for e in e-1 e-2; do furrow epic done $e; done",
+            "if furrow epic done e-1; then echo ok; fi",
+            "furrow sync && ! furrow epic deactivate e-1",
+            "step furrow epic done e-1",
+            "xargs furrow epic done < ids.txt",
+            "sudo env furrow epic done e-1",
+        ):
+            with self.subTest(command=command):
+                self.assert_asks(command)
+
+
+class TheReasonNamesWhatRuns(unittest.TestCase):
+    def test_the_decision_comes_from_the_verb_not_from_an_argument(self) -> None:
+        got = bash('furrow epic activate e-2 --reason "after epic done of e-1"')
+        self.assertTrue(
+            got.reason.startswith(
+                "active epic の切り替えです: furrow epic activate e-2"
+            )
+        )
+        self.assertNotIn("close", got.reason.split("\n")[0].split(": ")[0])
+
+    def test_every_gated_command_of_the_call_is_listed(self) -> None:
+        got = bash("furrow epic done e-1 && furrow epic activate e-2 --reason next")
+        self.assertEqual(
+            got.reason.split("\n")[:2],
+            [
+                "epic の close です: furrow epic done e-1",
+                "active epic の切り替えです: furrow epic activate e-2 --reason next",
+            ],
+        )
+
+    def test_a_redirection_cut_off_by_its_ampersand_is_not_shown(self) -> None:
+        got = bash("furrow epic done e-1 2>&1 | tail -3")
+        self.assertEqual(
+            got.reason.split("\n")[0], "epic の close です: furrow epic done e-1"
+        )
+
+    def test_a_subagent_is_told_every_command_too(self) -> None:
+        got = bash("furrow epic done e-1; furrow epic done e-2", agent="a1")
+        self.assertEqual(got.decision, "deny")
+        self.assertIn("furrow epic done e-1 / furrow epic done e-2", got.reason)
 
 
 class FailsOpen(unittest.TestCase):
