@@ -1,6 +1,6 @@
 <!--
 この文書は claude-md-ledger.md（英語・正本）の和訳です。人間向け。
-最新とは限りません — 基準: 英語版 @ d388a3b。
+最新とは限りません — 基準: 英語版 @ d9dd028。
 同時更新はしない — 人間の指示があった時に、基準 commit からの差分を訳して基準を進める。
 -->
 
@@ -42,7 +42,7 @@
 | 進捗の正本は body 一本・中断時 1 行（Workflow 節） | body 更新・複製しない | — | なし | 📖 |
 | 指示なし時は `furrow brief` の先頭から着手／状況共有を GO と読まない／active epic の切り替えは申請制（Workflow 節） | 既定挙動として従う。勝手に `furrow epic activate` しない | 作業開始の GO・epic 切り替えの裁定 | furrow が next/brief を active epic に scope（epic-multi-active は lint error）。申請制そのものは散文 | 🟡 scope は機構・申請制は 📖 |
 | PR footer `SetStatus-task:`（Workflow 節） | footer を書く | — | [task-status.yml](../.github/workflows/task-status.yml) が lane 自動適用。書き忘れても落ちない | 🟡 |
-| 予約箱 epic（mandate / parking-lot / requests）— 別 repo への要望は requests へ（Workflow 節・正本 = projects docs/reserved-epics.md） | 要望を requests 箱へ起票 | triage の裁定 | projects lint（box 不変条件 = pre-push error block・warn は SessionStart hook [claude-projects-lint-note](../chezmoi/dot_local/bin/executable_claude-projects-lint-note) と日次 CI が表示）+ `reserved-epics.sh` が箱を常備 | 🟡 箱と表示は機構・起票先の選択は 📖 |
+| 予約箱 epic（mandate / parking-lot / requests / upstream）— 別 repo への要望は requests へ、fleet 外の PR / issue 待ちは upstream へ（Workflow 節・正本 = projects docs/reserved-epics.md） | 要望を requests 箱へ、外向きの待ちを upstream 箱へ起票 | triage の裁定 | projects lint（box 不変条件 = pre-push error block・warn は SessionStart hook [claude-projects-lint-note](../chezmoi/dot_local/bin/executable_claude-projects-lint-note) と日次 CI が表示）+ `reserved-epics.sh` が箱を常備 | 🟡 箱と表示は機構・起票先の選択は 📖 |
 | 品質>速度・一貫性・破壊的変更 OK（Development policy 節） | 判断規範として適用 | 好み・リスク受容の裁定 | — | 🙅 |
 | 人間開発者向けを作らない・コメントの読者は Claude Code（Development policy 節・元 mandate 2026-07-29 / 2026-08-02。2026-08-24 に go-dev / mac-app-dev skill の「開発前提」ブロックを統合し skill 側はポインタ化 — 内容は複製の一本化だが、**発火は skill 条件ロード → 常時ロードへ拡大**（全 repo・全言語。旧 skill も自己限定は「この repo 群」で、対象 repo の実質は同じ — 広がるのはロード頻度） | コメント・README・API doc を規律どおりに書く/削る | — | なし（配布前に claude-md-eval 2 腕で測定 — 検証状態節参照） | 📖 |
 | 「できた」は実測とセット（Development policy 節） | 実測／未確認を分けて報告 | — | なし | 📖 |
@@ -52,6 +52,7 @@
 | 調査 clone・VM 全操作・Packages 配布の許可（Development policy 節） | 許可を行使 | ホスト sudo の実行 | — | 🙅 |
 | 外部待ちの deadline 必須・vncdo は timeout+小文字 keysym（Tools 節・2026-08-11 新設） | timeout を付ける・停滞は kill → 即報告・状態質問には実測後に回答 | — | PreToolUse hook [claude-vncdo-guard](../chezmoi/dot_local/bin/executable_claude-vncdo-guard)（[modify_settings.json](../chezmoi/private_dot_claude/modify_settings.json) #9 配線）が vncdo の timeout 欠落と大文字 keysym を deny（unit 12 ケース = [scripts/test_claude_vncdo_guard.py](../scripts/test_claude_vncdo_guard.py)。**2026-08-19 訂正**: それまでここに「9 ケース実測」とあったがテストは実在しなかった — 同日に実体化し、`--help`/`--version` probe を deny していた誤爆も修正）。一般則（他コマンドの deadline・状態報告の正直さ）は散文 | 🟡 vncdo は 🔒・一般則は 📖 |
 | 道具を既定で使う（Tools 節） | pare/cifail/rundiff/revpost/wait4x/peekaboo に先に手を伸ばす | — | rundiff の test 自動 wrap・読み取り git allowlist は modify_settings.json が 🔒。**使う判断**は散文 | 🟡 |
+| fan-out の支出は変更に見合う: 前に agent-fanout skill、最初のユニットの後に `claude-agent-usage`（Tools 節・2026-11-15 新設・t-20vd — glyph e-b76m が 1 日で 413M token を読み、最初に気づいたのはユーザーだった） | 複数 agent や Workflow に委ねる前に skill をロードし、見積もりを書く。最初のユニットの後に測り、変更が支出を説明しなければ止める | 支出が変更に見合うかの判断 | [claude-agent-usage](../chezmoi/dot_local/bin/executable_claude-agent-usage) が求めに応じて agent ごとの表を出す（unit 6 ケース = [scripts/test_claude_agent_usage.py](../scripts/test_claude_agent_usage.py)）。発火させる機構は無い: skill のロードも CLI の実行も散文 | 📖 測定は道具・発火は散文 |
 | 自作 CLI/アプリは source・brew 禁止（Tools 節） | `brew install` しない | `brew install` しない | brew 版が無ければ shadow は構造的に起きない（実測: wrapper のみ） | 🟡 |
 | gitmoji 規約・push 前 `glyph lint`（Commits 節） | CONTRIBUTING.md を引く・push 前に lint | — | PR の commit-lint.yml（fleet 同期）。branch protection 必須は `ci-gate` のみで commit-lint 赤は merge を止めない（実測） | 🟡 push 前 lint は 📖 |
 | commit 英語のみ（Commits 節・2026-08-02 和訳廃止） | 英語のみで書く | — | なし（実測: glyph は日本語 subject も exit 0） | 📖 |
@@ -60,7 +61,7 @@
 | ultracode は毎セッション手動（Model operations 節） | — | セッション開始時に `/effort ultracode` | 機構化不能（Claude Code 仕様） | 🙅 |
 | 版番号を pin しない（Model operations 節） | 具体 ID を書かない | — | [scripts/claude_md_guard.py](../scripts/claude_md_guard.py)（lint ゲート claude-md-guard）が CLAUDE.md と modify_settings.json の実値行で版付き ID を fail | 🔒 |
 | Fable のファンアウト禁止（Model operations 節） | `fable-architect` 経由でのみ | — | [agents/fable-architect.md](../chezmoi/private_dot_claude/agents/fable-architect.md) の `tools:` に Agent 非搭載 → harness が拒否 | 🔒 Agent 経路のみ |
-| Fable%≥Weekly% 不変条件・約 4 日で 100%・尽きたら Opus（Model operations 節・正典に無い） | 開幕 quota 行を見て委譲判断 | 「これ Fable で」の発令・課金判断 | SessionStart hook [claude-quota-note](../chezmoi/dot_local/bin/executable_claude-quota-note) が Weekly% / Fable% と不変条件の充足/割れを毎セッション冒頭に提示（fail-open・fixture テストつき） | 🟡 数字は毎回出るが、委譲判断そのものは散文 |
+| Fable%≥Weekly% 不変条件・約 4 日で 100%・尽きたら Opus（Model operations 節・正典に無い） | 開幕 quota 行を見て委譲判断 | 「これ Fable で」の発令・課金判断 | SessionStart hook [claude-quota-note](../chezmoi/dot_local/bin/executable_claude-quota-note) が Weekly% / Fable% と不変条件の充足/割れを毎セッション冒頭に提示（fail-open・fixture テストつき）。2026-09-24 以降この行は鮮度で gate される: 数字は Claude Code が最後に usage を取得した時に書かれた cache なので、窓の `resets_at` を過ぎると数字の代わりに `quota: stale … run /usage` を出し、窓の内側では数字に `(fetched Nh ago)` が付く | 🟡 数字は毎回出るが、委譲判断そのものは散文。7 日前の cache を現在値として読んだことが 1 回ある（2026-09-24・t-kk92）— 鮮度 gate で塞いだ |
 | Opus 失敗の body 記録（Model operations 節） | 都度 task body に書く | — | なし | 📖 |
 | 分担・Fable セッションで既定継承させない・検証は Opus 側（Model operations 節） | サブエージェントの model/effort を明示 | `/model fable` への切替 | なし。指定漏れの継承は subagent_type 依存（Plan・general-purpose のみ — 2026-08-19 の 4081 transcript 実測。旧文言「全員 Fable」は誇張だった） | 📖 |
 | 他 repo は慣習に従う・自分の規約を持ち込まない（For repositories outside akira-toriyama 節） | repo の CLAUDE.md/CONTRIBUTING/履歴を先に読む | — | なし | 📖 |
@@ -100,7 +101,7 @@
 | 枠の読み方の jq 詳細（Model operations 節・2026-08-19） | 移設 | 実数は SessionStart hook が毎セッション出す — 読み方の正本は claude-quota-note script 自身 | hook が退役したら global へ戻す |
 | Mac アプリ節ごと（SwiftUI+Sill / AppKit は essential floor / 最新 macOS のみ）（2026-08-24） | skill 重複 | mac-app-dev skill に 3 事実とも既載（発火場面 = mac アプリ開発時 — ロード頻度と使用場面を一致させる。「分岐・workaround」の文言は同 PR で skill 側へ補完） | skill が発火せず旧 OS 分岐や AppKit 直行が混入したら global へ戻す |
 | board layout 直後の furrow source checkout `git pull`（schema-too-new）（2026-08-24） | 機構委譲 | furrow 自身が v5.0.0 以降 orient/listing read のたびに状態を開示: outdated board は両方の remedy を名指す READ-ONLY note・too-new board の read は大声で拒否（exit 3・"update furrow"）。dotfiles 側 SessionStart hook claude-furrow-board-note はその場しのぎで、リリース到達を受けて撤去（t-2kpc） | schema-too-new を board 障害と誤診する事故が再発したら |
-| Fable 枠の実数（枠 ≈ 全体 Weekly の 50%・重さ ≈ Opus の 2 倍）（2026-08-24） | 縮約 | 委譲判断は不変条件 `Fable% ≥ Weekly%` と 4 日目標で足りる。実数は claude-quota-note が毎セッション表示 | 枠の解釈違いによる委譲ミスが再発したら |
+| Fable 枠の実数（枠 ≈ 全体 Weekly の 50%・重さ ≈ Opus の 2 倍）（2026-08-24） | 縮約 | 委譲判断は不変条件 `Fable% ≥ Weekly%` と 4 日目標で足りる。実数は claude-quota-note が毎セッション表示 | 2026-09-24 に再発（7 日前の cache を現在値として読んだ・t-kk92）— ここに実数を戻すのではなく、hook 内の鮮度 gate で応えた |
 | furrow の挙動解説（brief の出力内容・next の絞り込み。「active が無ければ意図的に空」だけ英訳版に残存）（2026-08-24） | 正典重複/縮約 | furrow の挙動は projects 正典と runtime 出力が自己記述 | brief 誤読による誤着手が再発したら |
 
 ## ユーザーの手番（一覧）
@@ -124,6 +125,7 @@
 
 ## 検証状態
 
+- **2026-11-15（fan-out 行・t-20vd）**: 新設の agent-fanout skill と `claude-agent-usage` を指す Tools 行を 1 行。11,094 → 11,310 bytes（`wc -c`）。claude-md-eval 2 腕（旧版 vs 新版・model pin claude-opus-5・24 case × 2 試行 = 48 ペア・$6.78）: tally candidate 26 / baseline 20 / tie 2・gated は 40 中 21 / 17 / 2・削り勝ちは candidate 10 vs baseline 11 で release gate PASS。fire: 新設の `fanout-plan` case では candidate 応答 2/2 が `claude-agent-usage` を名指し、baseline は 0/2（3 試行の事前実行を含めると 5/5 vs 0/5）。誤発火の対照 `fanout-misfire`（1 ファイルの修正）は両腕とも 0/2 で、そこでの candidate 応答には fan-out の文言が一切無い。新設 2 case だけの 1 腕事前実行は cut 率で BLOCKED（6 ペア中 3・margin は全部 small・落ちた項目はルールと無関係）: その節だけが system text だとルールが過剰に目立ち、n=6 は gate の設計サイズに届かないので、2 腕の本実行を判定とする。未測定: 実セッションが skill をロードするか（harness は tools 無しで走る）と、支出が下がるか — 最初の実測は 2026-11-22 からの glyph t-60v9 の最初のユニット。
 - **2026-08-25（開発前提ブロックの統合・t-gjej）**: go-dev / mac-app-dev の「開発前提」を Development policy 節へ統合（skill 側はポインタ化）。claude-md-eval 2 腕（統合前 vs 統合後・model pin claude-opus-5・44 ペア・$5.73・応答生成は 2026-08-24）: 既定 gate（expect=improve・全 case）は tally 24:20 ながら削り勝ち超過 +14% で BLOCKED。内訳 = 会話フレーム 36 ペア 18:18・cut 超過 +2.8% ／ dev 8 ペア candidate 6:2・cut 超過 +62%（cut flag が勝者側にしか付かないバイアス — 該当 flag は全部「敗者に追加の 1 点」型・margin=small）。この実測を受けて harness に観測専用 case（`"gate": false`）と `--expect neutral` を実装（同一 PR の前 commit・unit 53）し、**既収 verdicts への再適用（`--from-verdicts` = 再ロールなし）で PASS**（gated 18:18・敗け幅 0 ≤ 10%・cut 超過 +2.8% ≤ 10%）。効能側の観測: dev-onboarding の fire（応答が開発者 = Claude Code を名指し）は candidate のみ 2/2・観測 tally candidate 6:2。**測定モード（neutral）は結果の一部としてここに記録**。統合の忠実性は Opus 独立エージェントの反証 1 周（BLOCKER 4 / MINOR 7 — 層契約の中身脱落・適用面拡大の未申告等を検出し反映）。
 - 2026-07-26 の初回実測（glyph 和訳非強制 / Stop hook fixture+変異 / brew shadow 不在 / `-l` ガード）と 2026-07-27 の追加実測（日本語 subject 素通り / `:fire:` footer 強制 / `furrow doctor` info 止まり）は旧版台帳の記録どおり（`git show 92e19cc:docs/claude-md-ledger.md` の「検証状態」節）。
 - **2026-08-24（段 3・全面英語化 + KISS 削減・t-gjej）**: 旧（日本語）11,254 bytes → 新（英語）9,910 bytes は `wc -c` 実測。claude-md-eval 2 腕（旧版 vs 新版・model pin claude-opus-5・36 ペア・$4.14）: tally candidate 20 / baseline 16・削り勝ち差 +3/36 = 8.3%（< 10%）で release gate PASS。候補応答 36 本の日本語比率を機械確認 — 英語化で応答言語が引きずられる回帰なし。訳の忠実性は Opus 独立エージェントの反証 1 周（BLOCKER 1 件 = go run 例外の受け皿欠落を検出・修正済み）。
