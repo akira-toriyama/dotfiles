@@ -25,6 +25,7 @@ Applies to: `executable_git-stale-check` / `executable_claude-quota-note` /
 `executable_claude-projects-lint-note` / `executable_claude-work-report-check` /
 `executable_zmk-log-capture.sh` / `executable_claude-fanout-cwd-guard` /
 `executable_claude-board-shard-guard` / `executable_claude-bash-cwd-guard` /
+`executable_claude-epic-guard` /
 `executable_imprint-battery-notify` / `modify_settings.json`.
 
 `modify_settings.json` is the extreme case of this category: on failure it **passes stdin through and exits 0**
@@ -60,10 +61,10 @@ diverge in behavior, so **treat the `set` line in the `.sh` as canonical** and a
 
 ## Places not guarded by machinery (as of 2026-10-14)
 
-All 27 shell scripts pass the `shellcheck` / `shfmt` gates in `scripts/lint`
+All 30 shell scripts (counted 2026-11-16) pass the `shellcheck` / `shfmt` gates in `scripts/lint`
 (the canonical target set is `shell_files()` in `scripts/lint`. No copy is kept here — a copy always drifts).
 
-**Only 10 have tests** (the 27th shell script is `scripts/claude-work-report-check-test.sh`, a test itself):
+**Only 11 have tests** (the 30th shell script is `scripts/claude-work-report-check-test.sh`, a test itself):
 
 | script | test |
 |---|---|
@@ -73,6 +74,7 @@ All 27 shell scripts pass the `shellcheck` / `shfmt` gates in `scripts/lint`
 | `executable_claude-board-shard-guard` | `scripts/test_claude_board_shard_guard.py` |
 | `executable_claude-vncdo-guard` | `scripts/test_claude_vncdo_guard.py` |
 | `executable_claude-bash-cwd-guard` | `scripts/test_claude_bash_cwd_guard.py` |
+| `executable_claude-epic-guard` | `scripts/test_claude_epic_guard.py` |
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
 | `executable_claude-projects-lint-note` | `scripts/test_claude_projects_lint_note.py` |
 | `modify_settings.json` | `scripts/test_modify_settings.py` |

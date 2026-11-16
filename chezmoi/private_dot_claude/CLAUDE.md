@@ -75,9 +75,10 @@ Canon for operating rules = projects/CLAUDE.md (canon map).
   asked for are exempt from this default.
 - Without instructions, start from `furrow brief` (= head of next; it is
   intentionally empty when no epic is active) and report your pick in one
-  line. **Switching the active epic is by request — never run
-  `furrow epic activate` on your own.** Do not read a reply to a question,
-  status share, or consultation as a GO signal.
+  line. **Switching the active epic and closing an epic are the human's
+  decisions — Claude applies (epic-ops skill); a hook asks the human before
+  `furrow epic activate|deactivate|done` runs.** Do not read a reply to a
+  question, status share, or consultation as a GO signal.
 - Reserved box epics exist in every repo: `mandate` = human orders /
   `parking-lot` = catch-all for anything outside the goal / `requests` =
   **wishes toward another repo go here** / `upstream` = **a wait on a

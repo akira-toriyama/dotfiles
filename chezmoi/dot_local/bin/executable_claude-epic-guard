@@ -1,0 +1,704 @@
+#!/usr/bin/env bash
+# claude-epic-guard — PreToolUse guard for the two epic decisions that are the
+# human's: switching the active epic and closing an epic.
+#
+# ASKS before a Bash call runs `furrow epic activate`, `furrow epic deactivate`
+# or `furrow epic done` against a board this machine is configured to use. The
+# rule it carries (user decision 2026-11-16, projects t-9cby): Claude may APPLY
+# for either operation, and it runs only on the human's instruction naming that
+# operation — a bare "GO" is not one. The dialog shows the exact command, so the
+# human's approval of it IS that instruction; the rule therefore lives here and
+# not as prose in a CLAUDE.md. Before this guard the activate half was written
+# in five places that disagreed with each other, and the close half nowhere.
+# When Claude may apply is a judgment and stays prose: the epic-ops skill.
+#
+# A subagent gets a DENY, not an ask. A non-interactive subagent has nobody to
+# answer a dialog and stops for good — measured on the first version of
+# claude-board-shard-guard (2026-08-19). The deny reason sends the request back
+# to the parent session, which is the one that can apply to the human.
+#
+# Measured on Claude Code 2.1.318 (2026-11-16, the guard passed with
+# --settings): under auto mode all three commands raised the dialog, with Yes /
+# No as the only choices; a decline ran nothing and ended the turn; and a
+# headless `claude -p` refused a command that --allowedTools had pre-allowed,
+# where the same run without the guard executed it.
+#
+# This is a tripwire against a misread instruction, not a security boundary:
+# it favours never asking about text over catching every spelling.
+#
+# What counts as running one of the three commands. A lexer first reduces the
+# command to its command positions, one codepoint for one, so a span found in
+# the reduced text is cut from the raw text for the dialog. Masked as data:
+# quoted text ('…', "…", $'…'), ${…} expansions, `#` comments and heredoc
+# bodies. Kept as command text: `$( … )` and backtick spans — also inside
+# double quotes and inside the body of an unquoted heredoc, where the shell
+# runs them — and the whole body of a heredoc whose pipeline runs a shell
+# (`bash <<EOF`, `cat <<EOF | sh`). Two earlier versions show why it is one
+# pass: matching the raw text asked about `git commit -m '… furrow epic done
+# …'` and about 15 commands of this machine's transcripts that only mention
+# one; masking heredocs and quotes in two separate passes then MISSED real
+# calls, because a `<<EOF` inside a quote or a comment hid the code after it.
+# The lexer writes two views. The outer one masks the substitutions too, so
+# `X="$(mktemp -d)/x" furrow …` keeps its assignment as one word; the inner
+# one shows only what is inside substitutions. A call is looked for in both.
+# In a view, a command is `furrow epic <verb>` at the start of a line or after
+# one of | ; & ` ( ) {, behind any run of words. Those words are what a session
+# really puts there: VAR=value assignments, a redirection, a shell keyword
+# (then, do, if), command / exec / time / `xargs -I{}` / `timeout 30`, `go
+# run` — `go run ./cmd/furrow epic done` from furrow's own checkout writes the
+# same board — and a wrapper function of its own (`step furrow epic done e-1`
+# closed a box on 2026-11-05). echo and printf are not wrappers, and neither
+# is furrow itself (`furrow note <id> furrow epic …`). An occurrence carrying
+# --help / -h is a read and passes.
+#
+# ONLY the configured boards are in scope, and the board is not guessed from the
+# path: the guard asks furrow itself (`furrow board --json`, a read) from the
+# place the call will run in, and compares the store it reports with the
+# [[board]] paths of furrow's user config. Scratch boards, fixtures and other
+# people's checkouts report another store, or none, and pass. That is what
+# keeps furrow's own development and the drills on throwaway boards out of the
+# dialog.
+#   - The place is the hook's cwd moved by the cd / pushd / popd in front of
+#     the call: absolute and relative targets, ~, and a variable the command
+#     itself assigned are followed; a move lasts until the group it ran in
+#     closes (a subshell, a `$( )`, a backtick span), so it reaches the calls
+#     inside that group and none after it; and a directory the same command
+#     creates (`mkdir x && cd x && furrow init`) is judged from its nearest
+#     existing ancestor.
+#   - A target that needs the shell (`cd "$tmp"`, `cd "$(mktemp -d)"`, `cd -`)
+#     leaves the place unknown, and the call PASSES. Judging it from the hook's
+#     cwd instead asked about drills: of the 113 calls in this machine's
+#     transcripts, all 27 behind such a cd ran on scratch boards.
+#   - A FURROW_DIR or FURROW_BOARD assigned in front of that very furrow call
+#     is handed to the read; one that sits on another command of the line, or
+#     inside a quote, is not this call's.
+#
+# Replayed over the 1859 distinct Bash commands that name furrow and epic in
+# this machine's transcripts (2026-11-17), with the real furrow and each
+# command's own recorded cwd: 61 are flagged, every one a call on the
+# configured board with a literal epic id, and no drill among them. The first
+# version, matching the raw text, flagged 80 of 1790 under a stub furrow.
+#
+# Blind spots — each makes the guard MISS a real call:
+#   - a command reaching furrow through a script file, an alias, a variable,
+#     `eval` or `bash -c '…'`, or a spelling that quotes or escapes one of the
+#     words furrow / epic / the verb. `projects repo retire` closes boxes
+#     through a script, by design of that command.
+#   - a call behind a cd whose target needs the shell passes, as said above,
+#     also when that target is the real board (`cd "$REPO" && furrow epic
+#     done`). A cd that does not run before the call — in another case arm,
+#     in a function body that is only defined, in a heredoc fed to a shell —
+#     is followed as if it did. And a cd whose target touches a backtick where
+#     the view still shows backticks — inside a `$( )` (`$(cd "`mktemp -d`"
+#     && …)`) and in the fallback — is not read as one that needs the shell
+#     but as a bare cd: its call is judged from HOME.
+#   - `export FURROW_DIR=…` on an earlier line is not followed, and a
+#     FURROW_DIR whose value needs the shell (`$tmp/.furrow`, `$(mktemp
+#     -d)/x`) is handed over unexpanded, so furrow resolves nothing and the
+#     call passes.
+#   - a call that assigns XDG_CONFIG_HOME in front of itself is a rig with its
+#     own furrow config, which this process cannot reproduce: it passes.
+#   - shell the lexer does not model: `case` patterns inside `$( )`, process
+#     substitution feeding a shell, a heredoc body ended inside a substitution
+#     it contains. A heredoc for a shell whose body stays data: behind `&>`
+#     (`bash &>log <<EOF`), behind a wrapper with arguments of its own
+#     (`timeout 60 bash <<EOF`), behind an assignment that goes on after a
+#     substitution or a quote (`X=$(mktemp -d)/x bash <<EOF`), and piped out
+#     of a group that goes on after the `<<` (`{ cat <<EOF; } | bash`, a
+#     subshell closed after the body); `(cat <<EOF) | bash` is read.
+#   - the order of two heredocs on one line when the later one is announced
+#     inside a substitution: the shell reads that one first, the lexer the
+#     earlier one. The plain shapes then end in the fallback and are asked
+#     about, a call that is only text in the outer body included; one built
+#     to bring the lexer back in step is missed.
+# And these make it ask about a harmless call: a command whose own arguments
+# spell one (`grep furrow epic done file`), and a heredoc of data announced
+# on the same line as one fed to a shell, after it (`bash <<A; cat >f <<B`)
+# or on the same command (`bash <<A <<B`), whose body is read as code.
+# When the lexer ends inside an open quote, substitution or heredoc, nests
+# deeper than 200 frames, or meets more than 16 heredocs announced on one
+# line, it has lost track; a command longer than 200000 codepoints is not
+# lexed at all. Both fall back to the raw text, where a call is accepted only
+# at a command position behind assignments, shell keywords and the common
+# wrappers: a narrower match that does not see through text but still asks
+# about the plain spellings. The groups that end a cd are read from the raw
+# text there too, so a quoted or escaped parenthesis or backtick counts as
+# one. Of the 1859 commands of the replay above, 2 take this path.
+#
+# Cost (measured 2026-11-17, jq 1.8.2): the lexer is linear in the length,
+# about 4 s for 190000 characters. What follows it is not: finding the calls,
+# the moves and the assignments is jq's global match, which walks the text
+# from its start for every hit. The commands of this machine's transcripts
+# that reach the lexer hold at most 27 cd's and 22563 characters, where that
+# does not show. A command built to show it runs past the hook's 30 s
+# timeout while still short enough to be lexed: 1900 cd's in 177000
+# characters take about 5 s, 39000 in 195000 take 47 s, and 40000
+# assignments in 160000 take 38 s.
+#
+# Fail-open by construction: no jq, unparseable stdin, another tool, no furrow
+# on PATH, a furrow that errors or reports no store, or no readable furrow
+# config → allow. FURROW_CONFIG overrides the config path for the tests, as it
+# does for claude-board-shard-guard; furrow itself does not read it.
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-epic-guard); wired from the
+# Claude PreToolUse hook in modify_settings.json (step 12).
+# Tests: scripts/test_claude_epic_guard.py (unittest, CI).
+set -u
+
+command -v jq >/dev/null 2>&1 || exit 0
+
+input=$(cat 2>/dev/null) || exit 0
+[ -n "$input" ] || exit 0
+printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
+
+tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
+[ "$tool" = "Bash" ] || exit 0
+
+cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty | strings' 2>/dev/null)
+
+# Two substrings first (cheap), so an ordinary Bash call never pays for the lexer.
+case $cmd in
+*furrow*epic*) ;;
+*) exit 0 ;;
+esac
+
+# The lexer. Codepoints, since the program sits in single quotes: 9 tab, 10
+# newline, 32 space, 34 ", 35 #, 36 $, 38 &, 39 the single quote, 40 ( 41 ),
+# 45 -, 47 /, 59 ;, 60 < 62 >, 92 backslash, 95 the mask (_), 96 backtick,
+# 123 { 125 }, 124 |.
+# Frames on .st — command text: N top level, P a $( ), B backticks (P and B
+# are the substitutions; .sub counts them). Data: S '…', A $'…', D "…",
+# V ${…} (q: opened inside double quotes, where a single quote is literal),
+# C a comment, H a heredoc body. A frame of command text counts its open
+# parentheses in d, so the ) that closes a $( is told from an inner one, notes
+# in ar the depth at which a (( began (inside it << is a shift), and in cs the
+# depths of its open `case` blocks: a ) at such a depth ends a pattern and is
+# emitted as the marker 1, which starts a command but closes no group.
+# It is a foreach, not a reduce: the state stays small — the stack is capped —
+# and every step emits one codepoint, so the run is linear in the length (a
+# reduce that grew the output inside its state took 21 s for 100000
+# characters).
+# shellcheck disable=SC2016  # a jq program: its $names are jq's, not the shell's
+lexer='
+def frame: .st[(.st | length) - 1];
+def is_sub($t): $t == "P" or $t == "B";
+def pop: (if is_sub(frame.t) then .sub -= 1 else . end) | .st |= .[:-1];
+def push($f):
+  if (.st | length) > 200 then .lost = true
+  else (if is_sub($f.t) then .sub += 1 else . end) | .st += [$f]
+  end;
+def emit($o): .o = $o;
+
+# A substitution is a command list of its own: its first word is a command
+# word whatever stands in front of it, and the pipeline around it has its
+# .shell and .first back once it closes.
+def push_sub($t): push({t: $t, d: 0, sh: .shell, fi: .first}) | .shell = false | .first = true;
+def pop_sub: frame as $f | pop | .shell = ($f.sh == true) | .first = ($f.fi != false);
+
+# .shell: the command word of this pipeline is a shell, so a heredoc announced
+# on the line is a script for it (`bash <<EOF`, `cat <<EOF | sh`). .first is
+# true until the command word has been read; assignments, wrappers and shell
+# keywords in front of it do not count as it. A shell name that is only an
+# argument (`echo sh`, `shellcheck -s bash`) does not make the body code. A
+# heredoc belongs to the pipeline of the frame that announced it (lvl), so a
+# shell inside a substitution on the same line does not claim it.
+def end_word:
+  (.word | implode) as $w
+  | ((.st | length) - 1) as $i
+  | (if ($w | length) == 0 or (.first | not) then .
+     elif .weq or ($w | IN("sudo", "env", "exec", "command", "time", "nohup", "nice", "builtin",
+                           "then", "do", "else", "elif", "if", "while", "until", "!", "{"))
+     then .
+     elif $w == "case" then .st[$i].cs = ((.st[$i].cs // []) + [.st[$i].d]) | .first = false
+     elif $w == "esac" then .st[$i].cs = ((.st[$i].cs // []) | .[:-1]) | .first = false
+     else
+       (if ($w | IN("bash", "sh", "zsh", "dash", "ksh"))
+        then .shell = true
+          | .pend |= map(if .sealed or .lvl != ($i + 1) then . else .code = true end)
+        else . end)
+       | .first = false
+     end)
+  | .word = [] | .weq = false;
+
+# The end of a pipeline ( ; && || & ): the shells read after it are not fed
+# the heredocs it announced.
+def end_pipeline:
+  (.st | length) as $n
+  | .shell = false | .first = true
+  | .pend |= map(if .lvl == $n then .sealed = true else . end);
+
+def open_heredoc: push({t: "H", pos: 0, ok: true, lead: true} + .pend[0]) | .pend |= .[1:];
+
+# The bodies announced on a line start at its newline, in the order they were
+# announced. A body for a shell is command text, and the lexer does not look
+# for its end: the bodies announced after it on the same line are read as
+# command text too. Not modelled: the shell reads a heredoc announced inside a
+# substitution at the newline inside that substitution, before an outer one
+# announced earlier on the line.
+def start_bodies:
+  if (.pend | length) == 0 then .
+  elif .pend[0].code then .pend = []
+  else open_heredoc end;
+
+def newline: start_bodies | .shell = false | .first = true | emit(10);
+
+def d_step($c):
+  if .esc then .esc = false | emit(95)
+  elif $c == 92 then .esc = true | emit(95)
+  elif $c == 34 then pop | emit(95)
+  elif $c == 40 and .dol then push_sub("P") | emit(40)
+  elif $c == 123 and .dol then push({t: "V", q: true}) | emit(95)
+  elif $c == 96 then push_sub("B") | emit(96)
+  else emit(95)
+  end;
+
+def v_step($c):
+  frame.q as $q
+  | if .esc then .esc = false | emit(95)
+    elif $c == 92 then .esc = true | emit(95)
+    elif $c == 125 then pop | emit(95)
+    elif $c == 34 then push({t: "D"}) | emit(95)
+    elif $c == 39 and ($q | not) then push({t: "S"}) | emit(95)
+    elif $c == 40 and .dol then push_sub("P") | emit(40)
+    elif $c == 123 and .dol then push({t: "V", q: $q}) | emit(95)
+    elif $c == 96 then push_sub("B") | emit(96)
+    else emit(95)
+    end;
+
+# The word after << : .hd collects the delimiter. .redo hands the character
+# that ended it on to cmd_step. A delimiter that starts with a digit is a
+# shift (1<<2), and <<< is a here-string. A quoted or escaped delimiter makes
+# the body literal.
+def hd_step($c):
+  .hd as $h
+  | if $h.q != 0 then
+      (if $c == $h.q then .hd.q = 0
+       elif ($h.delim | length) > 80 then .hd = null
+       else .hd.delim += [$c] end)
+      | emit(95)
+    elif $h.ph == 1 and $c == 60 then .hd = null | emit(60)
+    elif $h.ph == 1 and $c == 45 then .hd.strip = true | .hd.ph = 2 | emit(45)
+    elif $h.ph <= 2 and ($c == 32 or $c == 9) then .hd.ph = 2 | emit($c)
+    elif $c == 39 or $c == 34 then .hd.q = $c | .hd.ph = 3 | .hd.quoted = true | emit(95)
+    elif $c == 92 then .hd.ph = 3 | .hd.quoted = true | emit(95)
+    elif $c == 32 or $c == 9 or $c == 10 or $c == 59 or $c == 38 or $c == 124
+         or $c == 60 or $c == 62 or $c == 40 or $c == 41
+    then
+      (if ($h.delim | length) == 0 or ($h.delim[0] >= 48 and $h.delim[0] <= 57) then .
+       elif (.pend | length) >= 16 then .lost = true
+       else .pend += [{delim: $h.delim, strip: $h.strip, quoted: $h.quoted,
+                       code: .shell, sealed: false, lvl: (.st | length)}]
+       end)
+      | .hd = null | .redo = true
+    elif ($h.delim | length) > 80 then .hd = null | emit(95)
+    else .hd.delim += [$c] | .hd.ph = 3 | emit(95)
+    end;
+
+def cmd_step($c):
+  frame as $f
+  | ((.st | length) - 1) as $i
+  | ($f.ar != null) as $arith
+  | if .esc then .esc = false | .word = [0] | emit(if $c == 10 then 32 else 95 end)
+    elif $c == 92 then .esc = true | emit(32)
+    elif $c == 39 then end_word | push({t: (if .dol then "A" else "S" end)}) | emit(95)
+    elif $c == 34 then end_word | push({t: "D"}) | emit(95)
+    elif $c == 96 then end_word | (if $f.t == "B" then pop_sub else push_sub("B") end) | emit(96)
+    elif $c == 123 and .dol then push({t: "V", q: false}) | emit(95)
+    elif $c == 40 and (.dol or ((.pc == 60 or .pc == 62) and ($arith | not)))
+    then end_word | push_sub("P") | emit(40)
+    elif $c == 40 then
+      end_word | .shell = false | .first = true | .st[$i].d += 1
+      | (if .lparen and ($arith | not) then .st[$i].ar = $f.d + 1 else . end)
+      | emit(40)
+    elif $c == 41 then
+      # The frame is read again: the word just ended may be the esac that
+      # closed a case block (`esac)`).
+      end_word
+      | frame as $g
+      | (if $g.t == "P" and $g.d == 0 then pop_sub | .pclose = true | emit(41)
+         elif $g.d == (($g.cs // []) | last) or $g.d == 0
+         then .shell = false | .first = true | emit(1)
+         else .shell = false | .first = true
+           | .st[$i].d = $g.d - 1
+           | (if $arith and ($g.d - 1) < $g.ar then .st[$i].ar = null else . end)
+           | emit(41)
+         end)
+    elif $c == 35 and .tok_start then push({t: "C"}) | emit(95)
+    elif $c == 60 then
+      end_word | .lt += 1
+      | (if .lt == 2 and ($arith | not)
+         then .hd = {ph: 1, strip: false, delim: [], q: 0, quoted: false} else . end)
+      | emit(60)
+    elif $c == 10 then end_word | newline
+    elif $c == 59 then end_word | end_pipeline | emit($c)
+    # >& and <& are redirections and |& is a pipe; >| is a redirection too.
+    elif $c == 38 then
+      end_word
+      | (if .pc == 62 or .pc == 60 or .pc == 124 then . else end_pipeline end)
+      | emit($c)
+    elif $c == 124 then
+      end_word
+      | (if .pc == 62 then .
+         elif .pc == 124 then end_pipeline
+         else .shell = false | .first = true end)
+      | emit($c)
+    elif $c == 32 or $c == 9 then end_word | emit($c)
+    elif $c == 47 then .word = [] | emit($c)
+    else
+      (if (.word | length) < 8 then .word += [$c] else .word = [0] end)
+      | (if $c == 61 then .weq = true else . end)
+      | emit($c)
+    end;
+
+# One body character against the delimiter of the heredoc on top.
+def h_body($c):
+  frame as $f
+  | ((.st | length) - 1) as $i
+  | if $f.lead and $f.strip and $c == 9 then .
+    elif $f.ok and $f.pos < ($f.delim | length) and $f.delim[$f.pos] == $c
+    then .st[$i].pos += 1 | .st[$i].lead = false
+    else .st[$i].ok = false | .st[$i].lead = false
+    end;
+
+# `EOF)` ends a heredoc opened inside a $( ): bash warns and goes on.
+def h_step($c):
+  frame as $f
+  | ((.st | length) - 1) as $i
+  | ($f.ok and $f.pos == ($f.delim | length)) as $at_delim
+  | if $c == 10 then
+      (if $at_delim
+       then pop | start_bodies
+       else .st[$i].pos = 0 | .st[$i].ok = true | .st[$i].lead = true end)
+      | .esc = false | emit(10)
+    elif $c == 41 and $at_delim and $i >= 1 and .st[$i - 1].t == "P" then pop | cmd_step($c)
+    elif $f.quoted then h_body($c) | emit(95)
+    elif .esc then .esc = false | h_body($c) | emit(95)
+    elif $c == 92 then .esc = true | h_body($c) | emit(95)
+    elif $c == 40 and .dol then h_body($c) | push_sub("P") | emit(40)
+    elif $c == 96 then h_body($c) | push_sub("B") | emit(96)
+    else h_body($c) | emit(95)
+    end;
+
+def step($c):
+  .redo = false | .pclose = false
+  | .esc as $escaped
+  | frame.t as $t
+  | (if $t == "H" then h_step($c)
+     elif $t == "S" then (if $c == 39 then pop else . end) | emit(95)
+     elif $t == "A" then
+       (if .esc then .esc = false
+        elif $c == 92 then .esc = true
+        elif $c == 39 then pop
+        else . end)
+       | emit(95)
+     elif $t == "C" then (if $c == 10 then pop | newline else emit(95) end)
+     elif $t == "D" then d_step($c)
+     elif $t == "V" then v_step($c)
+     else
+       (if .hd != null then hd_step($c) else .redo = true end)
+       | (if .redo then cmd_step($c) else . end)
+     end)
+  | ($t == "N" or $t == "P" or $t == "B") as $code
+  | ($code or $t == "D" or $t == "V" or $t == "H") as $live
+  | .dol = ($c == 36 and ($escaped | not) and $live)
+  | .lparen = ($c == 40 and ($escaped | not) and $live)
+  | .tok_start = (($code and ($escaped | not)
+                   and ($c == 32 or $c == 9 or $c == 10 or $c == 59 or $c == 38
+                        or $c == 124 or $c == 40 or ($c == 41 and (.pclose | not))))
+                  or (($t == "C" or $t == "H") and $c == 10))
+  | .pc = (if $code and ($escaped | not) then $c else 0 end)
+  | (if $c != 60 or ($code | not) or $escaped then .lt = 0 else . end);
+
+# Lost track = the stack overflowed, or the text ended inside a quote, an
+# expansion, a substitution, or a heredoc whose delimiter never came. A
+# comment may run to the end, and so may a heredoc whose last line is its
+# delimiter.
+def clean:
+  (.st | length) as $n
+  | frame as $f
+  | (.lost | not)
+    and ($n == 1
+         or ($n == 2 and $f.t == "C")
+         or ($n == 2 and $f.t == "H" and $f.ok and $f.pos == ($f.delim | length)));
+
+# Each step yields [codepoint, inside a substitution?]. outer masks what is
+# inside substitutions, inner masks what is outside them. The input is the
+# command as codepoints.
+def lex:
+  [foreach (.[], -1) as $c (
+      {st: [{t: "N", d: 0}], sub: 0, lost: false, esc: false, dol: false, lparen: false,
+       tok_start: true, lt: 0, hd: null, pend: [], shell: false, first: true, weq: false,
+       word: [], redo: false, pclose: false, pc: 0, o: 0, vis: false};
+      if $c == -1 then .o = (if clean then -1 else -2 end) | .vis = false
+      else .sub as $before | step($c) | .vis = ($before > 0 or .sub > 0)
+      end;
+      [.o, .vis])]
+  | if .[length - 1][0] != -1 then null
+    else .[:-1]
+      | { outer: (map(if .[1] then 95 else .[0] end) | implode),
+          inner: (map(if .[1] then .[0] elif .[0] == 10 then 10 else 95 end) | implode) }
+    end;
+
+def env_value($name):
+  ([match("(?:^|[ \\t])" + $name + "=(?:\"([^\"]*)\"|\\x27([^\\x27]*)\\x27|(\\S*))")
+    | [.captures[].string] | map(select(. != null)) | first] | first) // "";
+
+# The command as written between two offsets of a view. $cp is the command as
+# codepoints: slicing the string itself walks it from its start every time.
+def cut($cp; $from; $length): $cp[$from : $from + $length] | implode;
+
+# Group 1 is the run of words in front of furrow, group 2 the verb.
+def calls($text; $cp; $words):
+  [ $text
+    | match("(?:^|[|;&`(){\\n\u0001])[ \\t]*(" + $words + ")(?:[^\\s|;&`()\u0001]*/)?furrow(?:[ \\t]+--?[A-Za-z][A-Za-z0-9-]*(?:=\\S*)?)*[ \\t]+epic[ \\t]+(activate|deactivate|done)(?=[\\s|;&)`}<>\u0001]|$)[^|;&)`\\n\u0001]*"; "g")
+    | . as $m
+    | $m.captures[0] as $w
+    | cut($cp; $w.offset; $w.length) as $front
+    | select($m.string | test("[ \\t](?:--help|-h)(?:[ \\t]|$)") | not)
+    | { at: $m.offset,
+        kind: (if $m.captures[1].string == "done" then "close" else "switch" end),
+        op: (cut($cp; $m.offset; $m.length)
+             | sub("^[|;&`(){\\n\u0001]?[ \\t]*"; "") | gsub("[ \\t\\n]+"; " ")
+             | sub("(?: [0-9]*[<>])? ?$"; "")),
+        own_config: ($front | test("(?:^|[ \\t])XDG_CONFIG_HOME=")),
+        furrow_dir: ($front | env_value("FURROW_DIR")),
+        furrow_board: ($front | env_value("FURROW_BOARD")) }
+  ];
+
+# NAME=value at a command position, with the value as written. A cd target
+# that names such a variable is read through it: `S=/tmp/x; cd "$S"`.
+def assigns($text; $cp):
+  [ $text
+    | match("(?:^|[|;&(){\\n\u0001])[ \\t]*(?:(?:export|local|readonly|declare)[ \\t]+)?([A-Za-z_][A-Za-z0-9_]*)=([^\\s|;&`()\u0001]*)"; "g")
+    | .captures as $c
+    | { at: .offset, name: $c[0].string,
+        value: (cut($cp; $c[1].offset; $c[1].length)
+                | sub("^[\"\\x27]"; "") | sub("[\"\\x27]$"; "")) }
+  ];
+
+def expand($vars; $at):
+  def once:
+    [match("\\$\\{?([A-Za-z_][A-Za-z0-9_]*)\\}?"; "g")] as $found
+    | reduce ($found | reverse[]) as $m (.;
+        ([$vars[] | select(.at < $at and .name == $m.captures[0].string) | .value] | last) as $v
+        | if $v == null then . else .[: $m.offset] + $v + .[$m.offset + $m.length :] end);
+  once | once | once;
+
+# cd / pushd / popd at a command position, with the target as written. Only
+# cd takes options in front of its target: an option of pushd or popd is read
+# as its target, so `pushd -n S` is not followed to S. A target runs on
+# through a `$(` the view shows (`cd "$(dirname "$0")"` inside a `$( )`), so
+# that it is read as one that needs the shell and not as a bare cd. A
+# backtick is not part of a target: in the inner view the text behind a
+# closing backtick is masked, not a delimiter, and a target running through it
+# swallowed the cd of the next substitution. The price is that a target
+# touching a backtick is not read at all (the lookahead refuses the backtick
+# too) and its cd counts as a bare one, HOME — the header lists it.
+def moves($text; $cp):
+  [ $text
+    | match("(?:^|[|;&`(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:(?<=cd)(?:[ \\t]+-[A-Za-z@]+)+)?(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&`)\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
+    | .captures[1] as $p
+    | { at: .captures[0].offset, how: .captures[0].string,
+        to: (if $p.string == null then ""
+             else cut($cp; $p.offset; $p.length) | gsub("[\"\\x27]"; "") end) }
+  ];
+
+# Each call with the moves in effect where it stands. The text is walked once,
+# pairing every ( with its ) and every backtick with the next one: a move
+# lasts until the group it ran in closes, so one made in a subshell or a
+# substitution reaches the calls inside that group and none after it. .cur is
+# the moves of the groups still open, .open what .cur held when each opened.
+# The group characters are picked from the codepoints, not with match: a
+# global match walks the text from its start for every hit.
+def in_effect($ops; $moves; $texts):
+  ( [ $texts[] | explode | . as $c | range(0; length)
+      | select($c[.] == 40 or $c[.] == 41 or $c[.] == 96)
+      | {at: ., o: 0, k: ([$c[.]] | implode)} ]
+    + [ $moves[] | {at, o: 1, k: "m", v: .} ]
+    + [ $ops[] | {at, o: 2, k: "c", v: .} ]
+    | sort_by([.at, .o]) ) as $events
+  | reduce $events[] as $e ({cur: [], open: [], ops: []};
+      (.open | last) as $top
+      | if $e.k == "m" then .cur += [$e.v]
+        elif $e.k == "c" then .ops += [{v: $e.v, moves: .cur[-64:]}]
+        elif $e.k == "(" or ($e.k == "`" and $top.k != "`")
+        then .open += [{k: $e.k, n: (.cur | length)}]
+        elif ($e.k == ")" and $top.k == "(") or ($e.k == "`" and $top.k == "`")
+        then .cur |= .[:$top.n] | .open |= .[:-1]
+        else .
+        end)
+  | .ops;
+
+"(?:(?!(?:echo|printf|furrow)[ \\t])[^\\s|;&`()\u0001]+[ \\t]+)*" as $free
+| "(?:(?:[A-Za-z_][A-Za-z0-9_]*=\\S*|then|do|else|elif|if|while|until|time|command|exec|env|sudo|nice|nohup|xargs|timeout|go[ \\t]+run|!|-[A-Za-z0-9{}%-]+|\\{\\}|[0-9]+)[ \\t]+)*" as $strict
+| (.tool_input.command // "" | if type == "string" then . else "" end | explode) as $cp
+# A marker already in the command must not act as one.
+| ($cp | map(if . == 1 then 32 else . end)) as $safe
+| (if ($safe | length) > 200000 then null else ($safe | lex) end) as $views
+| (if $views != null
+   then { ops: (calls($views.outer; $cp; $free) + calls($views.inner; $cp; $free)),
+          texts: [$views.outer, $views.inner] }
+   else ($safe | implode) as $text | { ops: calls($text; $cp; $strict), texts: [$text] }
+   end) as $found
+| ($found.ops | sort_by(.at) | unique_by(.at)) as $ops
+| if ($ops | length) == 0 then empty
+  else
+    [$found.texts[] | moves(.; $cp)[]] as $moves
+    | assigns($found.texts[0]; $cp) as $vars
+    | { ops: [ in_effect($ops; $moves; $found.texts)[]
+               | .v + { moves: (.moves
+                                | map(.how + "\u001d" + (.at as $from | .to | expand($vars; $from)))
+                                | join("\u001e")) } ] }
+  end
+'
+
+plan=$(printf '%s' "$input" | jq -c "$lexer" 2>/dev/null) || exit 0
+[ -n "$plan" ] || exit 0
+
+command -v furrow >/dev/null 2>&1 || exit 0
+
+cfg="${FURROW_CONFIG:-$HOME/.config/furrow/config.toml}"
+[ -r "$cfg" ] || exit 0
+boards=$(sed -n 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg")
+[ -n "$boards" ] || exit 0
+
+cwd=$(printf '%s' "$input" | jq -r '.cwd // empty | strings' 2>/dev/null)
+[ -n "$cwd" ] && [ -d "$cwd" ] || cwd=.
+
+# Where a call runs: the hook's cwd, moved by the cd / pushd / popd in front of
+# it. A target that needs the shell (`cd "$tmp"`, `cd "$(mktemp -d)"`, `cd -`)
+# leaves the place unknown, and the call passes: in this machine's transcripts
+# all 27 calls behind such a cd were drills on scratch boards. A directory that
+# does not exist yet (`mkdir x && cd x && furrow init`) is judged from its
+# nearest existing ancestor.
+place() {
+  dir=$cwd
+  local unknown=0 item how to depth=0
+  local -a items stack ustack
+  IFS=$'\x1e' read -r -a items <<EOF
+$1
+EOF
+  for item in ${items[@]+"${items[@]}"}; do
+    how=${item%%$'\x1d'*}
+    to=${item#*$'\x1d'}
+    if [ "$how" = popd ]; then
+      if [ "$depth" -gt 0 ]; then
+        depth=$((depth - 1))
+        dir=${stack[$depth]}
+        unknown=${ustack[$depth]}
+      else
+        unknown=1
+      fi
+      continue
+    fi
+    if [ "$how" = pushd ]; then
+      stack[depth]=$dir
+      ustack[depth]=$unknown
+      depth=$((depth + 1))
+    fi
+    # The targets are text as written: $HOME and ~ are matched as characters.
+    # shellcheck disable=SC2016,SC2088
+    case $to in
+    '$HOME' | '${HOME}') to='~' ;;
+    '$HOME/'* | '${HOME}/'*) to="~/${to#*/}" ;;
+    esac
+    # shellcheck disable=SC2016,SC2088
+    case $to in
+    '') if [ "$how" = cd ]; then dir=$HOME unknown=0; else unknown=1; fi ;;
+    - | *'$'* | *'`'*) unknown=1 ;;
+    /*) dir=$to unknown=0 ;;
+    '~') dir=$HOME unknown=0 ;;
+    '~/'*) dir=$HOME/${to#\~/} unknown=0 ;;
+    *) [ "$unknown" -eq 1 ] || dir=$dir/$to ;;
+    esac
+  done
+  [ "$unknown" -eq 0 ] || return 1
+  while [ ! -d "$dir" ] && [ "$dir" != / ] && [ "$dir" != . ]; do
+    dir=$(dirname "$dir")
+  done
+  [ -d "$dir" ]
+}
+
+# Each call is judged against the board IT would write: from its own place and
+# with its own FURROW_DIR / FURROW_BOARD. Fields are joined on \x1f, not a tab:
+# tab is IFS whitespace, so `read` would collapse an empty field and shift the
+# rest. The stores already read are remembered by place and environment.
+keep=
+seen=0
+seen_keys=()
+seen_stores=()
+while IFS=$'\x1f' read -r i own fd fb mv; do
+  [ -n "$i" ] || continue
+  [ "$own" = "false" ] || continue
+  place "$mv" || continue
+  key="$dir"$'\x1f'"$fd"$'\x1f'"$fb"
+  store=
+  hit=0
+  n=0
+  while [ "$n" -lt "$seen" ]; do
+    if [ "${seen_keys[$n]}" = "$key" ]; then
+      store=${seen_stores[$n]}
+      hit=1
+      break
+    fi
+    n=$((n + 1))
+  done
+  if [ "$hit" -eq 0 ]; then
+    store=$(
+      cd "$dir" 2>/dev/null || exit 0
+      [ -z "$fd" ] || export FURROW_DIR="$fd"
+      [ -z "$fb" ] || export FURROW_BOARD="$fb"
+      furrow board --json 2>/dev/null | jq -r '.store // empty | strings' 2>/dev/null
+    )
+    seen_keys[seen]=$key
+    seen_stores[seen]=$store
+    seen=$((seen + 1))
+  fi
+  [ -n "$store" ] || continue
+  while IFS= read -r board; do
+    if [ -n "$board" ] && [ "$store" = "$board" ]; then
+      keep="$keep${keep:+,}$i"
+      break
+    fi
+  done <<EOF
+$boards
+EOF
+done <<EOF
+$(printf '%s' "$plan" | jq -r '
+  .ops | to_entries[]
+  | [.key, .value.own_config, .value.furrow_dir, .value.furrow_board, .value.moves]
+  | map(tostring)
+  | if any(.[]; test("[\n\u001f]")) then empty else join("\u001f") end' 2>/dev/null)
+EOF
+[ -n "$keep" ] || exit 0
+
+agent=$(printf '%s' "$input" | jq -r '.agent_id // empty | strings' 2>/dev/null)
+
+# One line per command, each named as the one decision it is.
+printf '%s' "$plan" | jq --arg agent "$agent" --argjson keep "[$keep]" '
+  [.ops[$keep[]]] as $ops
+  | if $agent != "" then {
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: ("Refused in a subagent: " + ($ops | map(.op) | join(" / ")) + "\n"
+        + "Switching the active epic and closing an epic are the human\u0027s decisions. "
+        + "They run only after the human approves the exact command in a dialog, and a "
+        + "subagent cannot receive that dialog. Do not reach the same write another way "
+        + "(a script, an alias, another binary). Return the request to the parent "
+        + "session with the box id and the reason; the parent applies to the human "
+        + "(epic-ops skill). If this call does not run that command at all, the guard "
+        + "misread it: report that to the parent as well.")
+    }
+  } else {
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "ask",
+      permissionDecisionReason: (($ops
+          | map((if .kind == "close" then "epic の close です" else "active epic の切り替えです" end) + ": " + .op)
+          | join("\n")) + "\n"
+        + "これは人が決める操作で、Claude は申請までです。"
+        + "この操作をあなたが指示したのなら許可、指示していなければ拒否してください。")
+    }
+  } end' 2>/dev/null
+exit 0
