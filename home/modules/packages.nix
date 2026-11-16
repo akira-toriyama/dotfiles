@@ -154,6 +154,10 @@ in
     aria2
     # git-filter-repo: git history 書き換え（repo 移行・秘密の除去などで随時使用）
     git-filter-repo
+    # syft: SBOM generator. furrow's scripts/check.sh skips its local release
+    # dry-run (goreleaser --snapshot runs syft for the `sboms:` pipe) when syft
+    # is not on PATH, so dropping this silently thins that check.
+    syft
 
     # === Claude Code を快適にする CLI ===
     # Claude Code CLI 本体は mise の npm backend へ移設（home/modules/mise.nix）。npm 自己
