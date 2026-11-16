@@ -975,6 +975,106 @@ class AShellNameThatIsOnlyAnArgument(unittest.TestCase):
         self.assertEqual(got.decision, "ask")
 
 
+class RoundFive(unittest.TestCase):
+    """5 回目のレビュー（4 回目の直しだけを見せた）が見つけたもの。"""
+
+    BODY = "furrow epic done e-1"
+
+    def where_asked(self, got: Result) -> list[str]:
+        return [os.path.realpath(line.split("|")[0]) for line in got.log]
+
+    def test_a_shell_heredoc_stays_code_whatever_follows_on_the_line(self) -> None:
+        """`2>&1` の & や後ろの && ; で shell の印を消し、本文を隠していた。"""
+        for intro in (
+            "bash <<'EOF' 2>&1 | tail -20",
+            "bash <<'EOF' 2>&1 | pare",
+            "bash <<'EOF' && echo ok",
+            "bash <<'EOF'; echo ok",
+            "bash -s <<'EOF' > /tmp/out.txt 2>&1",
+            "bash <<EOF &>/dev/null",
+            "cat <<EOF | bash 2>&1 | tail",
+            "cat <<EOF | grep -v x | sh",
+        ):
+            with self.subTest(intro=intro):
+                self.assertEqual(bash(f"{intro}\n{self.BODY}\nEOF").decision, "ask")
+
+    def test_a_shell_after_the_pipeline_does_not_claim_the_heredoc(self) -> None:
+        for intro in (
+            "cat > n.md <<EOF; bash -n x.sh",
+            "cat > n.md <<EOF || sh -c :",
+            "cat > /tmp/x.md <<'EOF' && sh scripts/check.sh",
+            "cat > n.md <<EOF & bash x.sh",
+            "bash x.sh | cat > n.md <<EOF",
+        ):
+            with self.subTest(intro=intro):
+                got = bash(f"{intro}\n{self.BODY}\nEOF")
+                self.assertIsNone(got.decision)
+                self.assertEqual(got.log, [])
+
+    def test_a_drill_with_many_moves_still_passes(self) -> None:
+        hops = "; ".join(["cd a", "cd ..", "cd b", "cd .."] * 3)
+        got = bash(
+            f'S=$(mktemp -d); cd "$S"; mkdir a b; {hops}; furrow init && {self.BODY}'
+        )
+        self.assertIsNone(got.decision)
+        self.assertEqual(got.log, [])
+
+    def test_a_cd_inside_a_substitution_moves_the_calls_inside_it_only(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as where,
+        ):
+            inside = bash(f"x=$(cd {where} && {self.BODY})", cwd=hook)
+            self.assertEqual(self.where_asked(inside), [os.path.realpath(where)])
+            after = bash(f"x=$(cd {where} && pwd); {self.BODY}", cwd=hook)
+            self.assertEqual(self.where_asked(after), [os.path.realpath(hook)])
+            both = bash(f'cd {where}; x="$({self.BODY})"', cwd=hook)
+            self.assertEqual(self.where_asked(both), [os.path.realpath(where)])
+
+    def test_cd_targets_as_sessions_write_them(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as base,
+        ):
+            (Path(base) / "repo").mkdir()
+            real = os.path.realpath(base) + "/repo"
+            for move in (
+                f'cd "{base}"/repo',
+                f'R={base}; cd "$R"/repo',
+                f"cd -P {base}/repo",
+                f"cd -L -- {base}/repo",
+            ):
+                with self.subTest(move=move):
+                    got = bash(f"{move} && {self.BODY}", cwd=hook)
+                    self.assertEqual(self.where_asked(got), [real])
+
+    def test_a_case_arm_inside_a_group_does_not_end_the_cd(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as where,
+        ):
+            got = bash(
+                f"(cd {where}; case $x in a) echo;; (b) echo;; esac; {self.BODY})",
+                cwd=hook,
+            )
+            self.assertEqual(self.where_asked(got), [os.path.realpath(where)])
+
+    def test_a_hash_after_a_process_substitution_is_not_a_comment(self) -> None:
+        self.assertEqual(bash(f"cat <(echo a)#x; {self.BODY}").decision, "ask")
+        self.assertEqual(bash(f"diff <({self.BODY}) /dev/null").decision, "ask")
+
+    def test_popd_brings_back_an_unknown_place_as_unknown(self) -> None:
+        got = bash(f'cd "$tmp"; pushd sub; popd; {self.BODY}')
+        self.assertIsNone(got.decision)
+        self.assertEqual(got.log, [])
+
+    def test_a_marker_character_in_the_command_is_plain_text(self) -> None:
+        self.assertIsNone(bash(f"echo x\u0001{self.BODY}").decision)
+        with tempfile.TemporaryDirectory() as hook:
+            got = bash(f"echo x\u0001cd /private/tmp ; {self.BODY}", cwd=hook)
+            self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
+
+
 class FailsOpen(unittest.TestCase):
     def assert_silent(self, got: Result) -> None:
         self.assertEqual(got.proc.returncode, 0)

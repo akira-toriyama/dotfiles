@@ -59,10 +59,10 @@
 # keeps furrow's own development and the drills on throwaway boards out of the
 # dialog.
 #   - The place is the hook's cwd moved by the cd / pushd / popd in front of
-#     the call: absolute and relative targets and ~ are followed, a move that
-#     ended with its subshell is dropped, and a directory the same command
-#     creates (`mkdir x && cd x && furrow init`) is judged from its nearest
-#     existing ancestor.
+#     the call: absolute and relative targets, ~, and a variable the command
+#     itself assigned are followed; a move that ended with its subshell or its
+#     `$( )` is dropped; and a directory the same command creates (`mkdir x &&
+#     cd x && furrow init`) is judged from its nearest existing ancestor.
 #   - A target that needs the shell (`cd "$tmp"`, `cd "$(mktemp -d)"`, `cd -`)
 #     leaves the place unknown, and the call PASSES. Judging it from the hook's
 #     cwd instead asked about drills: of the 113 calls in this machine's
@@ -71,7 +71,7 @@
 #     is handed to the read; one that sits on another command of the line, or
 #     inside a quote, is not this call's.
 #
-# Replayed over the 1817 distinct Bash commands that name furrow and epic in
+# Replayed over the 1824 distinct Bash commands that name furrow and epic in
 # this machine's transcripts (2026-11-16), with the real furrow and each
 # command's own recorded cwd: 61 are flagged, every one a call on the
 # configured board with a literal epic id, and no drill among them. The first
@@ -84,8 +84,9 @@
 #     through a script, by design of that command.
 #   - a call behind a cd whose target needs the shell passes, as said above,
 #     also when that target is the real board (`cd "$REPO" && furrow epic
-#     done`). A cd inside a `$( )`, and one inside a function body that is
-#     only defined, are read as if they ran in the shell of the call.
+#     done`). A cd that does not run before the call — in another case arm,
+#     in a function body that is only defined, in a heredoc fed to a shell —
+#     is followed as if it did.
 #   - `export FURROW_DIR=…` on an earlier line is not followed, and a
 #     FURROW_DIR whose value needs the shell (`$tmp/.furrow`, `$(mktemp
 #     -d)/x`) is handed over unexpanded, so furrow resolves nothing and the
@@ -139,8 +140,10 @@ esac
 # are the substitutions; .sub counts them). Data: S '…', A $'…', D "…",
 # V ${…} (q: opened inside double quotes, where a single quote is literal),
 # C a comment, H a heredoc body. A frame of command text counts its open
-# parentheses in d, so the ) that closes a $( is told from an inner one, and
-# notes in ar the depth at which a (( began: inside it << is a shift.
+# parentheses in d, so the ) that closes a $( is told from an inner one, notes
+# in ar the depth at which a (( began (inside it << is a shift), and in cs the
+# depths of its open `case` blocks: a ) at such a depth ends a pattern and is
+# emitted as the marker 1, which starts a command but closes no group.
 # It is a foreach, not a reduce: the state stays small — the stack is capped —
 # and every step emits one codepoint, so the run is linear in the length (a
 # reduce that grew the output inside its state took 21 s for 100000
@@ -163,21 +166,31 @@ def emit($o): .o = $o;
 # argument (`echo sh`, `shellcheck -s bash`) does not make the body code.
 def end_word:
   (.word | implode) as $w
+  | ((.st | length) - 1) as $i
   | (if ($w | length) == 0 or (.first | not) then .
      elif .weq or ($w | IN("sudo", "env", "exec", "command", "time", "nohup", "nice", "builtin",
                            "then", "do", "else", "elif", "if", "while", "until", "!", "{"))
      then .
-     else (if ($w | IN("bash", "sh", "zsh", "dash", "ksh")) then .shell = true else . end)
+     elif $w == "case" then .st[$i].cs = ((.st[$i].cs // []) + [.st[$i].d]) | .first = false
+     elif $w == "esac" then .st[$i].cs = ((.st[$i].cs // []) | .[:-1]) | .first = false
+     else
+       (if ($w | IN("bash", "sh", "zsh", "dash", "ksh"))
+        then .shell = true | .pend |= map(if .sealed then . else .code = true end)
+        else . end)
        | .first = false
      end)
   | .word = [] | .weq = false;
+
+# The end of a pipeline ( ; && || & ): the shells read after it are not fed
+# the heredocs announced before it.
+def end_pipeline: .shell = false | .first = true | .pend |= map(.sealed = true);
 
 def open_heredoc: push({t: "H", pos: 0, ok: true, lead: true} + .pend[0]) | .pend |= .[1:];
 
 # A newline in command text starts the bodies announced on that line.
 def newline:
   (if (.pend | length) == 0 then .
-   elif .shell then .pend = []
+   elif any(.pend[]; .code) then .pend = []
    else open_heredoc end)
   | .shell = false | .first = true
   | emit(10);
@@ -225,7 +238,8 @@ def hd_step($c):
          or $c == 60 or $c == 62 or $c == 40 or $c == 41
     then
       (if ($h.delim | length) > 0 and (($h.delim[0] >= 48 and $h.delim[0] <= 57) | not)
-       then .pend += [{delim: $h.delim, strip: $h.strip, quoted: $h.quoted}]
+       then .pend += [{delim: $h.delim, strip: $h.strip, quoted: $h.quoted,
+                       code: .shell, sealed: false}]
        else . end)
       | .hd = null | .redo = true
     elif ($h.delim | length) > 80 then .hd = null | emit(95)
@@ -242,7 +256,8 @@ def cmd_step($c):
     elif $c == 34 then end_word | push({t: "D"}) | emit(95)
     elif $c == 96 then end_word | (if $f.t == "B" then pop else push({t: "B", d: 0}) end) | emit(96)
     elif $c == 123 and .dol then push({t: "V", q: false}) | emit(95)
-    elif $c == 40 and .dol then end_word | push({t: "P", d: 0}) | emit(40)
+    elif $c == 40 and (.dol or ((.pc == 60 or .pc == 62) and ($arith | not)))
+    then end_word | push({t: "P", d: 0}) | emit(40)
     elif $c == 40 then
       end_word | .shell = false | .first = true | .st[$i].d += 1
       | (if .lparen and ($arith | not) then .st[$i].ar = $f.d + 1 else . end)
@@ -250,7 +265,8 @@ def cmd_step($c):
     elif $c == 41 then
       end_word
       | (if $f.t == "P" and $f.d == 0 then pop | .pclose = true | emit(41)
-         elif $f.d == 0 then .shell = false | .first = true | emit(1)
+         elif $f.d == (($f.cs // []) | last) or $f.d == 0
+         then .shell = false | .first = true | emit(1)
          else .shell = false | .first = true
            | .st[$i].d = $f.d - 1
            | (if $arith and ($f.d - 1) < $f.ar then .st[$i].ar = null else . end)
@@ -263,8 +279,10 @@ def cmd_step($c):
          then .hd = {ph: 1, strip: false, delim: [], q: 0, quoted: false} else . end)
       | emit(60)
     elif $c == 10 then end_word | newline
-    elif $c == 59 or $c == 38 then end_word | .shell = false | .first = true | emit($c)
-    elif $c == 124 then end_word | .first = true | emit($c)
+    elif $c == 59 then end_word | end_pipeline | emit($c)
+    elif $c == 38 then end_word | (if .pc == 62 or .pc == 60 then . else end_pipeline end) | emit($c)
+    elif $c == 124 then
+      end_word | (if .pc == 124 then end_pipeline else .shell = false | .first = true end) | emit($c)
     elif $c == 32 or $c == 9 then end_word | emit($c)
     elif $c == 47 then .word = [] | emit($c)
     else
@@ -329,6 +347,7 @@ def step($c):
                    and ($c == 32 or $c == 9 or $c == 10 or $c == 59 or $c == 38
                         or $c == 124 or $c == 40 or ($c == 41 and (.pclose | not))))
                   or (($t == "C" or $t == "H") and $c == 10))
+  | .pc = (if $code and ($escaped | not) then $c else 0 end)
   | (if $c != 60 or ($code | not) or $escaped then .lt = 0 else . end);
 
 # Lost track = the stack overflowed, or the text ended inside a quote, an
@@ -349,7 +368,7 @@ def lex:
   [foreach (explode[], -1) as $c (
       {st: [{t: "N", d: 0}], sub: 0, lost: false, esc: false, dol: false, lparen: false,
        tok_start: true, lt: 0, hd: null, pend: [], shell: false, first: true, weq: false,
-       word: [], redo: false, pclose: false, o: 0, vis: false};
+       word: [], redo: false, pclose: false, pc: 0, o: 0, vis: false};
       if $c == -1 then .o = (if clean then -1 else -2 end) | .vis = false
       else .sub as $before | step($c) | .vis = ($before > 0 or .sub > 0)
       end;
@@ -404,38 +423,47 @@ def expand($vars; $at):
 # cd / pushd / popd at a command position, with the target as written.
 def moves($text; $raw):
   [ $text
-    | match("(?:^|[|;&(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&`()\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
+    | match("(?:^|[|;&(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:[ \\t]+-[A-Za-z@]+)*(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&`()\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
     | .captures[1] as $p
     | { at: .captures[0].offset, how: .captures[0].string,
         to: (if $p.string == null then ""
-             else $raw[$p.offset : $p.offset + $p.length]
-               | sub("^[\"\\x27]"; "") | sub("[\"\\x27]$"; "") end) }
+             else $raw[$p.offset : $p.offset + $p.length] | gsub("[\"\\x27]"; "") end) }
   ];
 
+def offsets($text; $re): [$text | match($re; "g") | .offset];
+
+# How many of the sorted offsets lie before $p.
+def before($sorted; $p): ($sorted | bsearch($p)) as $n | if $n >= 0 then $n else -1 - $n end;
+
 # The moves still in effect at $at: one whose group closed in between — more
-# ) than ( on the way — ended with its subshell. The last 8 are enough.
-def moves_before($moves; $vars; $text; $at):
+# ) than ( on the way — ended with its subshell or its substitution.
+def moves_before($moves; $vars; $opens; $closes; $at):
   [ $moves[]
     | select(.at < $at)
-    | select($text[.at : $at] as $way
-             | ([$way | match("\\)"; "g")] | length) <= ([$way | match("\\("; "g")] | length))
+    | select((before($closes; $at) - before($closes; .at))
+             <= (before($opens; $at) - before($opens; .at)))
     | .how + "\u001d" + (.at as $from | .to | expand($vars; $from))
-  ] | .[-8:] | join("\u001e");
+  ] | .[-64:] | join("\u001e");
 
 "(?:(?!(?:echo|printf|furrow)[ \\t])[^\\s|;&`()\u0001]+[ \\t]+)*" as $free
 | "(?:(?:[A-Za-z_][A-Za-z0-9_]*=\\S*|then|do|else|elif|if|while|until|time|command|exec|env|sudo|nice|nohup|xargs|timeout|go[ \\t]+run|!|-[A-Za-z0-9{}%-]+|\\{\\}|[0-9]+)[ \\t]+)*" as $strict
 | (.tool_input.command // "" | if type == "string" then . else "" end) as $raw
-| (if ($raw | length) > 200000 then null else ($raw | lex) end) as $views
+# A marker already in the command must not act as one.
+| ($raw | gsub("\u0001"; " ")) as $safe
+| (if ($safe | length) > 200000 then null else ($safe | lex) end) as $views
 | (if $views != null
    then { ops: (calls($views.outer; $raw; $free) + calls($views.inner; $raw; $free)),
-          text: $views.outer }
-   else { ops: calls($raw; $raw; $strict), text: $raw }
+          texts: [$views.outer, $views.inner] }
+   else { ops: calls($safe; $raw; $strict), texts: [$safe] }
    end) as $found
-| moves($found.text; $raw) as $moves
-| assigns($found.text; $raw) as $vars
 | ($found.ops | sort_by(.at) | unique_by(.at)) as $ops
 | if ($ops | length) == 0 then empty
-  else { ops: [ $ops[] | . + { moves: moves_before($moves; $vars; $found.text; .at) } ] }
+  else
+    ([$found.texts[] | moves(.; $raw)[]] | sort_by(.at)) as $moves
+    | assigns($found.texts[0]; $raw) as $vars
+    | ([$found.texts[] | offsets(.; "\\(")[]] | sort) as $opens
+    | ([$found.texts[] | offsets(.; "\\)")[]] | sort) as $closes
+    | { ops: [ $ops[] | . + { moves: moves_before($moves; $vars; $opens; $closes; .at) } ] }
   end
 '
 
@@ -461,7 +489,7 @@ cwd=$(printf '%s' "$input" | jq -r '.cwd // empty | strings' 2>/dev/null)
 place() {
   dir=$cwd
   local unknown=0 item how to depth=0
-  local -a items stack
+  local -a items stack ustack
   IFS=$'\x1e' read -r -a items <<EOF
 $1
 EOF
@@ -472,7 +500,7 @@ EOF
       if [ "$depth" -gt 0 ]; then
         depth=$((depth - 1))
         dir=${stack[$depth]}
-        unknown=0
+        unknown=${ustack[$depth]}
       else
         unknown=1
       fi
@@ -480,6 +508,7 @@ EOF
     fi
     if [ "$how" = pushd ]; then
       stack[depth]=$dir
+      ustack[depth]=$unknown
       depth=$((depth + 1))
     fi
     # The targets are text as written: $HOME and ~ are matched as characters.
