@@ -60,9 +60,11 @@
 # dialog.
 #   - The place is the hook's cwd moved by the cd / pushd / popd in front of
 #     the call: absolute and relative targets, ~, and a variable the command
-#     itself assigned are followed; a move that ended with its subshell or its
-#     `$( )` is dropped; and a directory the same command creates (`mkdir x &&
-#     cd x && furrow init`) is judged from its nearest existing ancestor.
+#     itself assigned are followed; a move lasts until the group it ran in
+#     closes (a subshell, a `$( )`, a backtick span), so it reaches the calls
+#     inside that group and none after it; and a directory the same command
+#     creates (`mkdir x && cd x && furrow init`) is judged from its nearest
+#     existing ancestor.
 #   - A target that needs the shell (`cd "$tmp"`, `cd "$(mktemp -d)"`, `cd -`)
 #     leaves the place unknown, and the call PASSES. Judging it from the hook's
 #     cwd instead asked about drills: of the 113 calls in this machine's
@@ -71,7 +73,7 @@
 #     is handed to the read; one that sits on another command of the line, or
 #     inside a quote, is not this call's.
 #
-# Replayed over the 1824 distinct Bash commands that name furrow and epic in
+# Replayed over the 1846 distinct Bash commands that name furrow and epic in
 # this machine's transcripts (2026-11-16), with the real furrow and each
 # command's own recorded cwd: 61 are flagged, every one a call on the
 # configured board with a literal epic id, and no drill among them. The first
@@ -95,15 +97,28 @@
 #     own furrow config, which this process cannot reproduce: it passes.
 #   - shell the lexer does not model: `case` patterns inside `$( )`, process
 #     substitution feeding a shell, a heredoc body ended inside a substitution
-#     it contains.
-# And one that makes it ask about a harmless call: a command whose own
-# arguments spell one (`grep furrow epic done file`).
-# When the lexer ends inside an open quote, substitution or heredoc, or nests
-# deeper than 200 frames, it has lost track; a command longer than 200000
-# codepoints is not lexed at all. Both fall back to the raw text, where a call
-# is accepted only at a command position behind assignments, shell keywords
-# and the common wrappers: a narrower match that does not see through text
-# but still asks about the plain spellings.
+#     it contains, and a heredoc for a shell that stands behind `&>` or behind
+#     a wrapper with arguments of its own (`bash &>log <<EOF`, `timeout 60
+#     bash <<EOF`): its body stays data.
+# And two that make it ask about a harmless call: a command whose own
+# arguments spell one (`grep furrow epic done file`), and a heredoc of data
+# announced on the same line after one fed to a shell (`bash <<A; cat >f
+# <<B`), whose body is read as code with the first.
+# When the lexer ends inside an open quote, substitution or heredoc, nests
+# deeper than 200 frames, or meets more than 16 heredocs announced on one
+# line, it has lost track; a command longer than 200000 codepoints is not
+# lexed at all. Both fall back to the raw text, where a call is accepted only
+# at a command position behind assignments, shell keywords and the common
+# wrappers: a narrower match that does not see through text but still asks
+# about the plain spellings.
+#
+# Cost (measured 2026-11-16, jq 1.8.2): the lexer is linear in the length,
+# 190000 characters in under 4 s. Finding the calls and the moves is jq's
+# global match, which walks the text from its start for every hit, so a
+# command with thousands of cd's is slower than its length says — 1900 of
+# them in 177000 characters take about 5 s, 20000 in 220000 about 25 s. The
+# hook's timeout is 30 s; the commands of this machine's transcripts that
+# reach the lexer hold at most 27 cd's and 22563 characters.
 #
 # Fail-open by construction: no jq, unparseable stdin, another tool, no furrow
 # on PATH, a furrow that errors or reports no store, or no readable furrow
@@ -159,11 +174,19 @@ def push($f):
   end;
 def emit($o): .o = $o;
 
+# A substitution is a command list of its own: its first word is a command
+# word whatever stands in front of it, and the pipeline around it has its
+# .shell and .first back once it closes.
+def push_sub($t): push({t: $t, d: 0, sh: .shell, fi: .first}) | .shell = false | .first = true;
+def pop_sub: frame as $f | pop | .shell = ($f.sh == true) | .first = ($f.fi != false);
+
 # .shell: the command word of this pipeline is a shell, so a heredoc announced
 # on the line is a script for it (`bash <<EOF`, `cat <<EOF | sh`). .first is
 # true until the command word has been read; assignments, wrappers and shell
 # keywords in front of it do not count as it. A shell name that is only an
-# argument (`echo sh`, `shellcheck -s bash`) does not make the body code.
+# argument (`echo sh`, `shellcheck -s bash`) does not make the body code. A
+# heredoc belongs to the pipeline of the frame that announced it (lvl), so a
+# shell inside a substitution on the same line does not claim it.
 def end_word:
   (.word | implode) as $w
   | ((.st | length) - 1) as $i
@@ -175,33 +198,39 @@ def end_word:
      elif $w == "esac" then .st[$i].cs = ((.st[$i].cs // []) | .[:-1]) | .first = false
      else
        (if ($w | IN("bash", "sh", "zsh", "dash", "ksh"))
-        then .shell = true | .pend |= map(if .sealed then . else .code = true end)
+        then .shell = true
+          | .pend |= map(if .sealed or .lvl != ($i + 1) then . else .code = true end)
         else . end)
        | .first = false
      end)
   | .word = [] | .weq = false;
 
 # The end of a pipeline ( ; && || & ): the shells read after it are not fed
-# the heredocs announced before it.
-def end_pipeline: .shell = false | .first = true | .pend |= map(.sealed = true);
+# the heredocs it announced.
+def end_pipeline:
+  (.st | length) as $n
+  | .shell = false | .first = true
+  | .pend |= map(if .lvl == $n then .sealed = true else . end);
 
 def open_heredoc: push({t: "H", pos: 0, ok: true, lead: true} + .pend[0]) | .pend |= .[1:];
 
-# A newline in command text starts the bodies announced on that line.
-def newline:
-  (if (.pend | length) == 0 then .
-   elif any(.pend[]; .code) then .pend = []
-   else open_heredoc end)
-  | .shell = false | .first = true
-  | emit(10);
+# The bodies announced on a line start at its newline, one after the other. A
+# body for a shell is command text, and the lexer does not look for its end:
+# the bodies announced after it on the same line are read as command text too.
+def start_bodies:
+  if (.pend | length) == 0 then .
+  elif .pend[0].code then .pend = []
+  else open_heredoc end;
+
+def newline: start_bodies | .shell = false | .first = true | emit(10);
 
 def d_step($c):
   if .esc then .esc = false | emit(95)
   elif $c == 92 then .esc = true | emit(95)
   elif $c == 34 then pop | emit(95)
-  elif $c == 40 and .dol then push({t: "P", d: 0}) | emit(40)
+  elif $c == 40 and .dol then push_sub("P") | emit(40)
   elif $c == 123 and .dol then push({t: "V", q: true}) | emit(95)
-  elif $c == 96 then push({t: "B", d: 0}) | emit(96)
+  elif $c == 96 then push_sub("B") | emit(96)
   else emit(95)
   end;
 
@@ -212,9 +241,9 @@ def v_step($c):
     elif $c == 125 then pop | emit(95)
     elif $c == 34 then push({t: "D"}) | emit(95)
     elif $c == 39 and ($q | not) then push({t: "S"}) | emit(95)
-    elif $c == 40 and .dol then push({t: "P", d: 0}) | emit(40)
+    elif $c == 40 and .dol then push_sub("P") | emit(40)
     elif $c == 123 and .dol then push({t: "V", q: $q}) | emit(95)
-    elif $c == 96 then push({t: "B", d: 0}) | emit(96)
+    elif $c == 96 then push_sub("B") | emit(96)
     else emit(95)
     end;
 
@@ -237,10 +266,11 @@ def hd_step($c):
     elif $c == 32 or $c == 9 or $c == 10 or $c == 59 or $c == 38 or $c == 124
          or $c == 60 or $c == 62 or $c == 40 or $c == 41
     then
-      (if ($h.delim | length) > 0 and (($h.delim[0] >= 48 and $h.delim[0] <= 57) | not)
-       then .pend += [{delim: $h.delim, strip: $h.strip, quoted: $h.quoted,
-                       code: .shell, sealed: false}]
-       else . end)
+      (if ($h.delim | length) == 0 or ($h.delim[0] >= 48 and $h.delim[0] <= 57) then .
+       elif (.pend | length) >= 16 then .lost = true
+       else .pend += [{delim: $h.delim, strip: $h.strip, quoted: $h.quoted,
+                       code: .shell, sealed: false, lvl: (.st | length)}]
+       end)
       | .hd = null | .redo = true
     elif ($h.delim | length) > 80 then .hd = null | emit(95)
     else .hd.delim += [$c] | .hd.ph = 3 | emit(95)
@@ -254,22 +284,25 @@ def cmd_step($c):
     elif $c == 92 then .esc = true | emit(32)
     elif $c == 39 then end_word | push({t: (if .dol then "A" else "S" end)}) | emit(95)
     elif $c == 34 then end_word | push({t: "D"}) | emit(95)
-    elif $c == 96 then end_word | (if $f.t == "B" then pop else push({t: "B", d: 0}) end) | emit(96)
+    elif $c == 96 then end_word | (if $f.t == "B" then pop_sub else push_sub("B") end) | emit(96)
     elif $c == 123 and .dol then push({t: "V", q: false}) | emit(95)
     elif $c == 40 and (.dol or ((.pc == 60 or .pc == 62) and ($arith | not)))
-    then end_word | push({t: "P", d: 0}) | emit(40)
+    then end_word | push_sub("P") | emit(40)
     elif $c == 40 then
       end_word | .shell = false | .first = true | .st[$i].d += 1
       | (if .lparen and ($arith | not) then .st[$i].ar = $f.d + 1 else . end)
       | emit(40)
     elif $c == 41 then
+      # The frame is read again: the word just ended may be the esac that
+      # closed a case block (`esac)`).
       end_word
-      | (if $f.t == "P" and $f.d == 0 then pop | .pclose = true | emit(41)
-         elif $f.d == (($f.cs // []) | last) or $f.d == 0
+      | frame as $g
+      | (if $g.t == "P" and $g.d == 0 then pop_sub | .pclose = true | emit(41)
+         elif $g.d == (($g.cs // []) | last) or $g.d == 0
          then .shell = false | .first = true | emit(1)
          else .shell = false | .first = true
-           | .st[$i].d = $f.d - 1
-           | (if $arith and ($f.d - 1) < $f.ar then .st[$i].ar = null else . end)
+           | .st[$i].d = $g.d - 1
+           | (if $arith and ($g.d - 1) < $g.ar then .st[$i].ar = null else . end)
            | emit(41)
          end)
     elif $c == 35 and .tok_start then push({t: "C"}) | emit(95)
@@ -280,9 +313,17 @@ def cmd_step($c):
       | emit(60)
     elif $c == 10 then end_word | newline
     elif $c == 59 then end_word | end_pipeline | emit($c)
-    elif $c == 38 then end_word | (if .pc == 62 or .pc == 60 then . else end_pipeline end) | emit($c)
+    # >& and <& are redirections and |& is a pipe; >| is a redirection too.
+    elif $c == 38 then
+      end_word
+      | (if .pc == 62 or .pc == 60 or .pc == 124 then . else end_pipeline end)
+      | emit($c)
     elif $c == 124 then
-      end_word | (if .pc == 124 then end_pipeline else .shell = false | .first = true end) | emit($c)
+      end_word
+      | (if .pc == 62 then .
+         elif .pc == 124 then end_pipeline
+         else .shell = false | .first = true end)
+      | emit($c)
     elif $c == 32 or $c == 9 then end_word | emit($c)
     elif $c == 47 then .word = [] | emit($c)
     else
@@ -308,15 +349,15 @@ def h_step($c):
   | ($f.ok and $f.pos == ($f.delim | length)) as $at_delim
   | if $c == 10 then
       (if $at_delim
-       then pop | (if (.pend | length) > 0 then open_heredoc else . end)
+       then pop | start_bodies
        else .st[$i].pos = 0 | .st[$i].ok = true | .st[$i].lead = true end)
       | .esc = false | emit(10)
     elif $c == 41 and $at_delim and $i >= 1 and .st[$i - 1].t == "P" then pop | cmd_step($c)
     elif $f.quoted then h_body($c) | emit(95)
     elif .esc then .esc = false | h_body($c) | emit(95)
     elif $c == 92 then .esc = true | h_body($c) | emit(95)
-    elif $c == 40 and .dol then h_body($c) | push({t: "P", d: 0}) | emit(40)
-    elif $c == 96 then h_body($c) | push({t: "B", d: 0}) | emit(96)
+    elif $c == 40 and .dol then h_body($c) | push_sub("P") | emit(40)
+    elif $c == 96 then h_body($c) | push_sub("B") | emit(96)
     else h_body($c) | emit(95)
     end;
 
@@ -363,9 +404,10 @@ def clean:
          or ($n == 2 and $f.t == "H" and $f.ok and $f.pos == ($f.delim | length)));
 
 # Each step yields [codepoint, inside a substitution?]. outer masks what is
-# inside substitutions, inner masks what is outside them.
+# inside substitutions, inner masks what is outside them. The input is the
+# command as codepoints.
 def lex:
-  [foreach (explode[], -1) as $c (
+  [foreach (.[], -1) as $c (
       {st: [{t: "N", d: 0}], sub: 0, lost: false, esc: false, dol: false, lparen: false,
        tok_start: true, lt: 0, hd: null, pend: [], shell: false, first: true, weq: false,
        word: [], redo: false, pclose: false, pc: 0, o: 0, vis: false};
@@ -383,17 +425,21 @@ def env_value($name):
   ([match("(?:^|[ \\t])" + $name + "=(?:\"([^\"]*)\"|\\x27([^\\x27]*)\\x27|(\\S*))")
     | [.captures[].string] | map(select(. != null)) | first] | first) // "";
 
+# The command as written between two offsets of a view. $cp is the command as
+# codepoints: slicing the string itself walks it from its start every time.
+def cut($cp; $from; $length): $cp[$from : $from + $length] | implode;
+
 # Group 1 is the run of words in front of furrow, group 2 the verb.
-def calls($text; $raw; $words):
+def calls($text; $cp; $words):
   [ $text
     | match("(?:^|[|;&`(){\\n\u0001])[ \\t]*(" + $words + ")(?:[^\\s|;&`()\u0001]*/)?furrow(?:[ \\t]+--?[A-Za-z][A-Za-z0-9-]*(?:=\\S*)?)*[ \\t]+epic[ \\t]+(activate|deactivate|done)(?=[\\s|;&)`}<>\u0001]|$)[^|;&)`\\n\u0001]*"; "g")
     | . as $m
     | $m.captures[0] as $w
-    | $raw[$w.offset : $w.offset + $w.length] as $front
+    | cut($cp; $w.offset; $w.length) as $front
     | select($m.string | test("[ \\t](?:--help|-h)(?:[ \\t]|$)") | not)
     | { at: $m.offset,
         kind: (if $m.captures[1].string == "done" then "close" else "switch" end),
-        op: ($raw[$m.offset : $m.offset + $m.length]
+        op: (cut($cp; $m.offset; $m.length)
              | sub("^[|;&`(){\\n\u0001]?[ \\t]*"; "") | gsub("[ \\t\\n]+"; " ")
              | sub("(?: [0-9]*[<>])? ?$"; "")),
         own_config: ($front | test("(?:^|[ \\t])XDG_CONFIG_HOME=")),
@@ -403,12 +449,12 @@ def calls($text; $raw; $words):
 
 # NAME=value at a command position, with the value as written. A cd target
 # that names such a variable is read through it: `S=/tmp/x; cd "$S"`.
-def assigns($text; $raw):
+def assigns($text; $cp):
   [ $text
     | match("(?:^|[|;&(){\\n\u0001])[ \\t]*(?:(?:export|local|readonly|declare)[ \\t]+)?([A-Za-z_][A-Za-z0-9_]*)=([^\\s|;&`()\u0001]*)"; "g")
     | .captures as $c
     | { at: .offset, name: $c[0].string,
-        value: ($raw[$c[1].offset : $c[1].offset + $c[1].length]
+        value: (cut($cp; $c[1].offset; $c[1].length)
                 | sub("^[\"\\x27]"; "") | sub("[\"\\x27]$"; "")) }
   ];
 
@@ -420,50 +466,66 @@ def expand($vars; $at):
         | if $v == null then . else .[: $m.offset] + $v + .[$m.offset + $m.length :] end);
   once | once | once;
 
-# cd / pushd / popd at a command position, with the target as written.
-def moves($text; $raw):
+# cd / pushd / popd at a command position, with the target as written. Only
+# cd takes options in front of its target (`pushd -n` moves nowhere). A target
+# runs on through a substitution the view shows (`cd "$(dirname "$0")"` inside
+# a `$( )`), so that it is read as one that needs the shell and not as a bare
+# cd.
+def moves($text; $cp):
   [ $text
-    | match("(?:^|[|;&(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:[ \\t]+-[A-Za-z@]+)*(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&`()\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
+    | match("(?:^|[|;&`(){\\n\u0001])[ \\t]*(?:(?:if|then|do|else|elif|while|until|!|builtin|command)[ \\t]+)*(cd|pushd|popd)(?:(?<=cd)(?:[ \\t]+-[A-Za-z@]+)+)?(?:[ \\t]+(?:--[ \\t]+)?([^\\s|;&)\u0001]+))?(?=[\\s|;&)\u0001]|$)"; "g")
     | .captures[1] as $p
     | { at: .captures[0].offset, how: .captures[0].string,
         to: (if $p.string == null then ""
-             else $raw[$p.offset : $p.offset + $p.length] | gsub("[\"\\x27]"; "") end) }
+             else cut($cp; $p.offset; $p.length) | gsub("[\"\\x27]"; "") end) }
   ];
 
-def offsets($text; $re): [$text | match($re; "g") | .offset];
-
-# How many of the sorted offsets lie before $p.
-def before($sorted; $p): ($sorted | bsearch($p)) as $n | if $n >= 0 then $n else -1 - $n end;
-
-# The moves still in effect at $at: one whose group closed in between — more
-# ) than ( on the way — ended with its subshell or its substitution.
-def moves_before($moves; $vars; $opens; $closes; $at):
-  [ $moves[]
-    | select(.at < $at)
-    | select((before($closes; $at) - before($closes; .at))
-             <= (before($opens; $at) - before($opens; .at)))
-    | .how + "\u001d" + (.at as $from | .to | expand($vars; $from))
-  ] | .[-64:] | join("\u001e");
+# Each call with the moves in effect where it stands. The text is walked once,
+# pairing every ( with its ) and every backtick with the next one: a move
+# lasts until the group it ran in closes, so one made in a subshell or a
+# substitution reaches the calls inside that group and none after it. .cur is
+# the moves of the groups still open, .open what .cur held when each opened.
+# The group characters are picked from the codepoints, not with match: a
+# global match walks the text from its start for every hit.
+def in_effect($ops; $moves; $texts):
+  ( [ $texts[] | explode | . as $c | range(0; length)
+      | select($c[.] == 40 or $c[.] == 41 or $c[.] == 96)
+      | {at: ., o: 0, k: ([$c[.]] | implode)} ]
+    + [ $moves[] | {at, o: 1, k: "m", v: .} ]
+    + [ $ops[] | {at, o: 2, k: "c", v: .} ]
+    | sort_by([.at, .o]) ) as $events
+  | reduce $events[] as $e ({cur: [], open: [], ops: []};
+      (.open | last) as $top
+      | if $e.k == "m" then .cur += [$e.v]
+        elif $e.k == "c" then .ops += [{v: $e.v, moves: .cur[-64:]}]
+        elif $e.k == "(" or ($e.k == "`" and $top.k != "`")
+        then .open += [{k: $e.k, n: (.cur | length)}]
+        elif ($e.k == ")" and $top.k == "(") or ($e.k == "`" and $top.k == "`")
+        then .cur |= .[:$top.n] | .open |= .[:-1]
+        else .
+        end)
+  | .ops;
 
 "(?:(?!(?:echo|printf|furrow)[ \\t])[^\\s|;&`()\u0001]+[ \\t]+)*" as $free
 | "(?:(?:[A-Za-z_][A-Za-z0-9_]*=\\S*|then|do|else|elif|if|while|until|time|command|exec|env|sudo|nice|nohup|xargs|timeout|go[ \\t]+run|!|-[A-Za-z0-9{}%-]+|\\{\\}|[0-9]+)[ \\t]+)*" as $strict
-| (.tool_input.command // "" | if type == "string" then . else "" end) as $raw
+| (.tool_input.command // "" | if type == "string" then . else "" end | explode) as $cp
 # A marker already in the command must not act as one.
-| ($raw | gsub("\u0001"; " ")) as $safe
+| ($cp | map(if . == 1 then 32 else . end)) as $safe
 | (if ($safe | length) > 200000 then null else ($safe | lex) end) as $views
 | (if $views != null
-   then { ops: (calls($views.outer; $raw; $free) + calls($views.inner; $raw; $free)),
+   then { ops: (calls($views.outer; $cp; $free) + calls($views.inner; $cp; $free)),
           texts: [$views.outer, $views.inner] }
-   else { ops: calls($safe; $raw; $strict), texts: [$safe] }
+   else ($safe | implode) as $text | { ops: calls($text; $cp; $strict), texts: [$text] }
    end) as $found
 | ($found.ops | sort_by(.at) | unique_by(.at)) as $ops
 | if ($ops | length) == 0 then empty
   else
-    ([$found.texts[] | moves(.; $raw)[]] | sort_by(.at)) as $moves
-    | assigns($found.texts[0]; $raw) as $vars
-    | ([$found.texts[] | offsets(.; "\\(")[]] | sort) as $opens
-    | ([$found.texts[] | offsets(.; "\\)")[]] | sort) as $closes
-    | { ops: [ $ops[] | . + { moves: moves_before($moves; $vars; $opens; $closes; .at) } ] }
+    [$found.texts[] | moves(.; $cp)[]] as $moves
+    | assigns($found.texts[0]; $cp) as $vars
+    | { ops: [ in_effect($ops; $moves; $found.texts)[]
+               | .v + { moves: (.moves
+                                | map(.how + "\u001d" + (.at as $from | .to | expand($vars; $from)))
+                                | join("\u001e")) } ] }
   end
 '
 

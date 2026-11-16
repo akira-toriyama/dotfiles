@@ -1075,6 +1075,141 @@ class RoundFive(unittest.TestCase):
             self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
 
 
+class RoundSix(unittest.TestCase):
+    """6 回目のレビュー（5 回目の直しだけを見せた）が見つけた、その直し自身の後退。
+    括弧は数えるのではなく対応づける。置換（`$( )`、`<( )`、バッククォート）は
+    それ自身のコマンド列で、外の pipeline の shell の印を引き継がない。"""
+
+    BODY = "furrow epic done e-1"
+
+    def where_asked(self, got: Result) -> list[str]:
+        return [os.path.realpath(line.split("|")[0]) for line in got.log]
+
+    def test_a_group_closed_right_after_esac_ends_its_cd(self) -> None:
+        """`esac)` の `)` を case の pattern の終わりと読み、subshell を
+        閉じなかった。"""
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as away,
+        ):
+            group = f"(cd {away}; case $x in a) :;; esac)"
+            for command in (
+                f"{group}; {self.BODY}",
+                f"{group} && {self.BODY}",
+                f"{group}\n{self.BODY}",
+                f"for i in 1; do {group}; done; {self.BODY}",
+            ):
+                with self.subTest(command=command):
+                    got = bash(command, cwd=hook)
+                    self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
+
+    def test_a_cd_in_a_closed_substitution_does_not_reach_a_later_group(self) -> None:
+        """閉じた括弧と開いた括弧の数を比べるだけだと、後ろの group の `(` が前の
+        `$( )` の `)` を打ち消し、終わった cd を後ろの呼び出しに効かせた。"""
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as away,
+        ):
+            for command in (
+                f"x=$(cd {away}; pwd); (echo; {self.BODY})",
+                f"x=$(cd {away}; pwd); y=$(echo; {self.BODY})",
+                f"V=$(cd {away} && git describe 2>/dev/null)\n"
+                f'if [ -n "$V" ]; then (set -x; {self.BODY}); fi',
+                f'ROOT=$(cd "$S" && pwd); if [ -d x ]; then (echo; {self.BODY}); fi',
+                f"x=`echo; cd {away}; pwd`; {self.BODY}",
+            ):
+                with self.subTest(command=command):
+                    got = bash(command, cwd=hook)
+                    self.assertEqual(got.decision, "ask")
+                    self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
+
+    def test_a_cd_still_reaches_the_groups_opened_after_it(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as where,
+        ):
+            for command in (
+                f"(cd {where}; (echo; ({self.BODY})))",
+                f"cd {where}; x=$(echo; {self.BODY})",
+                f"x=`cd {where} && {self.BODY}`",
+            ):
+                with self.subTest(command=command):
+                    got = bash(command, cwd=hook)
+                    self.assertEqual(self.where_asked(got), [os.path.realpath(where)])
+
+    def test_a_cd_target_holding_a_substitution_needs_the_shell(self) -> None:
+        """置換の中の `cd "$(dirname "$0")"` を、target の無い cd（= HOME）と
+        読んでいた。"""
+        idiom = 'ROOT=$(cd "$(dirname "$0")" && pwd)'
+        with tempfile.TemporaryDirectory() as hook:
+            for command in (
+                f"{idiom}\nout=$(set -x; {self.BODY} 2>&1)",
+                f"bash <<'EOF'\n{idiom}\n(\n  {self.BODY}\n)\nEOF",
+            ):
+                with self.subTest(command=command):
+                    got = bash(command, cwd=hook)
+                    self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
+            inside = bash(f'x=$(cd "$(mktemp -d)" && {self.BODY})', cwd=hook)
+            self.assertIsNone(inside.decision)
+            self.assertEqual(inside.log, [])
+
+    def test_a_substitution_is_a_command_list_of_its_own(self) -> None:
+        heredoc = f"<<'EOF'\n{self.BODY}\nEOF\n"
+        for command in (
+            f"diff <(bash {heredoc}) expected.txt",
+            f'while read -r l; do echo "$l"; done < <(bash {heredoc})',
+            f"cat <(sh {heredoc})",
+            f"echo $(bash {heredoc})",
+            f'X="$(mktemp -d)/x" bash {heredoc}',
+            f"cat <<'EOF' | sed \"s/@/$(id -u; true)/\" | bash\n{self.BODY}\nEOF",
+        ):
+            with self.subTest(command=command):
+                self.assertEqual(bash(command).decision, "ask")
+        for command in (
+            f"bash x.sh <(cat {heredoc})",
+            f"sh check.sh <(cat {heredoc}) | tail",
+            f'bash scripts/x.sh "$(cat {heredoc})"',
+            f"cat <<'EOF' > \"$(bash ./where.sh)/n.md\"\n{self.BODY}\nEOF",
+        ):
+            with self.subTest(command=command):
+                got = bash(command)
+                self.assertIsNone(got.decision)
+                self.assertEqual(got.log, [])
+
+    def test_a_pipe_or_a_redirection_spelled_with_two_characters(self) -> None:
+        """`|&` は pipe、`>|` は redirection。どちらも pipeline を終わらせない。"""
+        for intro in ("cat <<'EOF' |& bash", "bash >| /tmp/log <<'EOF'"):
+            with self.subTest(intro=intro):
+                self.assertEqual(bash(f"{intro}\n{self.BODY}\nEOF").decision, "ask")
+
+    def test_two_heredocs_on_a_line_are_read_in_their_order(self) -> None:
+        intro = "cat > n.md <<'B'; bash <<'A'"
+        data_first = bash(f"{intro}\n{self.BODY}\nB\necho hi\nA")
+        self.assertIsNone(data_first.decision)
+        self.assertEqual(data_first.log, [])
+        self.assertEqual(bash(f"{intro}\ntext\nB\n{self.BODY}\nA").decision, "ask")
+
+    def test_an_option_of_pushd_is_not_a_place(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as away,
+        ):
+            got = bash(f"pushd -n {away} >/dev/null; {self.BODY}", cwd=hook)
+            self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
+
+    def test_marker_characters_and_heredoc_runs_stay_inside_the_timeout(self) -> None:
+        """U+0001 を gsub で置き換えた版は 56000 字に 14 秒。1 行に並んだ heredoc を
+        shell の語ごとに全部なめた版は、数の 2 乗の時間がかかった。"""
+        for command in (
+            "\u0001" * 80_000 + f"; {self.BODY}",
+            "sh <<E | " * 8_000 + f"true\n{self.BODY}",
+        ):
+            with self.subTest(length=len(command)):
+                started = time.monotonic()
+                self.assertEqual(bash(command).decision, "ask")
+                self.assertLess(time.monotonic() - started, 12)
+
+
 class FailsOpen(unittest.TestCase):
     def assert_silent(self, got: Result) -> None:
         self.assertEqual(got.proc.returncode, 0)
