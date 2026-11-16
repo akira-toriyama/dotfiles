@@ -346,11 +346,9 @@ class ScopeIsTheBoardFurrowReports(unittest.TestCase):
                         os.path.realpath(where),
                     )
 
-    def test_a_leading_cd_to_a_missing_directory_falls_back_to_the_hook_cwd(
-        self,
-    ) -> None:
+    def test_a_cd_to_a_missing_directory_is_judged_from_its_ancestor(self) -> None:
         with tempfile.TemporaryDirectory() as where:
-            got = bash("cd /nonexistent/zzz && furrow epic done e-1", cwd=where)
+            got = bash(f"cd {where}/not/made/yet && furrow epic done e-1", cwd="/")
             self.assertEqual(
                 os.path.realpath(got.log[0].split("|")[0]), os.path.realpath(where)
             )
@@ -795,6 +793,186 @@ class RoundThree(unittest.TestCase):
         calls = "; ".join(f"furrow epic done e-{n}" for n in range(40))
         got = self.assert_allowed(calls, furrow_exit=2)
         self.assertEqual(len(got.log), 1)
+
+
+class WhereACallRuns(unittest.TestCase):
+    """4 回目のレビューと transcript の再生から。シェルに聞かないと分からない場所への
+    cd（`cd "$tmp"`、`cd "$(mktemp -d)"`）の後ろの呼び出しを hook の cwd で判定すると、
+    scratch board でのドリルに確認が出る。この機械の transcript では、そういう cd の
+    後ろの 27 回は全部ドリルだった。"""
+
+    def where_asked(self, got: Result) -> list[str]:
+        return [os.path.realpath(line.split("|")[0]) for line in got.log]
+
+    def test_a_cd_that_needs_the_shell_leaves_the_place_unknown(self) -> None:
+        for command in (
+            'cd "$(mktemp -d)" && furrow init && furrow epic activate e-1',
+            'tmp=$(mktemp -d); cd "$tmp" && furrow epic activate e-1',
+            "cd $E/a && furrow epic done $EID >/dev/null",
+            'cd "$S/work"\nfurrow epic deactivate "$C"',
+            "cd - && furrow epic done e-1",
+            "pushd && furrow epic done e-1",
+            "popd; furrow epic done e-1",
+        ):
+            with self.subTest(command=command):
+                got = bash(command)
+                self.assertIsNone(got.decision)
+                self.assertEqual(got.log, [])
+
+    def test_an_absolute_cd_after_an_unknown_one_is_known_again(self) -> None:
+        with tempfile.TemporaryDirectory() as where:
+            got = bash(
+                f'cd "$T" && furrow epic done e-1; cd {where} && furrow epic done e-2'
+            )
+            self.assertEqual(got.decision, "ask")
+            self.assertNotIn("e-1", got.reason)
+            self.assertEqual(self.where_asked(got), [os.path.realpath(where)])
+
+    def test_a_directory_made_by_the_same_command_is_judged_from_its_parent(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as base:
+            new = f"{base}/drill/board"
+            got = bash(
+                f"mkdir -p {new} && cd {new} && furrow init && furrow epic activate e-1"
+            )
+            self.assertEqual(self.where_asked(got), [os.path.realpath(base)])
+
+    def test_relative_moves_are_joined(self) -> None:
+        with tempfile.TemporaryDirectory() as base:
+            (Path(base) / "a" / "b").mkdir(parents=True)
+            real = os.path.realpath(base)
+            for moves, want in (
+                (f"cd {base} && cd a", f"{real}/a"),
+                (f"cd {base}/a; cd b; cd ..", f"{real}/a"),
+                (f"cd {base}/a/b && cd ../..", real),
+            ):
+                with self.subTest(moves=moves):
+                    got = bash(f"{moves} && furrow epic done e-1")
+                    self.assertEqual(self.where_asked(got), [want])
+
+    def test_a_cd_target_is_read_through_a_variable_the_command_assigns(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as where,
+        ):
+            real = os.path.realpath(where)
+            for command in (
+                f'S={where}; cd "$S" || exit 1; furrow epic done e-1',
+                f'B={where}; S="$B/not-made"; cd "${{S}}" && furrow epic done e-1',
+                f"export REPO='{where}'\ncd $REPO && furrow epic done e-1",
+            ):
+                with self.subTest(command=command):
+                    got = bash(command, cwd=hook)
+                    self.assertEqual(got.decision, "ask")
+                    self.assertEqual(self.where_asked(got), [real])
+
+    def test_a_case_arm_does_not_end_the_cd_in_front_of_it(self) -> None:
+        """drill の定型。case の `)` を group の閉じと数えると cd を捨て、hook の cwd で
+        判定して scratch board に確認を出した（transcript の再生で 6 回）。"""
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as where,
+        ):
+            got = bash(
+                f'S={where}; cd "$S" || exit 1\n'
+                'case "$Q" in "$S"/*|/private"$S"/*) ;; *) echo ABORT; exit 1;; esac\n'
+                'furrow epic activate "$A" >/dev/null 2>&1',
+                cwd=hook,
+            )
+            self.assertEqual(self.where_asked(got), [os.path.realpath(where)])
+
+    def test_a_call_in_a_case_arm_is_a_call(self) -> None:
+        got = bash(
+            "case $v in close) furrow epic done e-1 ;; *) furrow epic ls ;; esac"
+        )
+        self.assertEqual(got.decision, "ask")
+        self.assertEqual(
+            got.reason.split("\n")[0], "epic の close です: furrow epic done e-1"
+        )
+
+    def test_home_is_a_known_place(self) -> None:
+        got = bash(
+            "cd && furrow epic done e-1; cd ~ && furrow epic done e-2;"
+            ' cd "$HOME" && furrow epic done e-3'
+        )
+        self.assertEqual(len(set(self.where_asked(got))), 1)
+        self.assertIn("e-3", got.reason)
+        self.assertEqual(got.decision, "ask")
+
+    def test_a_cd_that_ended_with_its_subshell_is_not_followed(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as away,
+        ):
+            for command in (
+                f"(cd {away} && ls) && furrow epic done e-1",
+                f"( cd {away} && true ); furrow epic activate e-1",
+                f"pushd {away} && popd && furrow epic done e-1",
+                f"pushd {away} >/dev/null; ls; popd >/dev/null; furrow epic done e-1",
+            ):
+                with self.subTest(command=command):
+                    got = bash(command, cwd=hook)
+                    self.assertEqual(got.decision, "ask")
+                    self.assertEqual(self.where_asked(got), [os.path.realpath(hook)])
+
+    def test_a_cd_behind_a_keyword_is_followed(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as hook,
+            tempfile.TemporaryDirectory() as where,
+        ):
+            got = bash(f"if cd {where}; then furrow epic done e-1; fi", cwd=hook)
+            self.assertEqual(self.where_asked(got), [os.path.realpath(where)])
+
+    def test_places_already_read_are_not_read_again(self) -> None:
+        with tempfile.TemporaryDirectory() as one, tempfile.TemporaryDirectory() as two:
+            calls = "; ".join(
+                f"cd {one if n % 2 else two} && furrow epic done e-{n}"
+                for n in range(40)
+            )
+            got = bash(calls)
+            self.assertEqual(got.decision, "ask")
+            self.assertEqual(len(got.log), 2)
+
+
+class AShellNameThatIsOnlyAnArgument(unittest.TestCase):
+    """heredoc の本文をコードと読むのは、その行の pipeline のコマンド語が shell の
+    ときだけ。行のどこかに shell の名前があるだけで本文を読んだ版は、file へ書く
+    heredoc に確認を出した。"""
+
+    BODY = "furrow epic done e-1"
+
+    def test_the_body_stays_data(self) -> None:
+        for intro in (
+            "echo sh; cat > notes.md <<EOF",
+            "which bash && cat > notes.md <<'EOF'",
+            "ls /bin/zsh; cat > notes.md <<'EOF'",
+            "shellcheck -s bash - <<'EOF'",
+            "grep -n sh <<'EOF'",
+            "cat > /tmp/zsh <<'EOF'",
+            "cat > run.sh <<EOF",
+        ):
+            with self.subTest(intro=intro):
+                got = bash(f"{intro}\n{self.BODY}\nEOF")
+                self.assertIsNone(got.decision)
+                self.assertEqual(got.log, [])
+
+    def test_the_body_is_a_script(self) -> None:
+        for intro in (
+            "bash <<EOF",
+            "sudo /bin/bash <<'EOF'",
+            "FOO=1 env sh -s <<EOF",
+            "cat <<EOF | sh",
+            "cat <<'EOF' | sudo bash -s",
+            "if true; then bash <<EOF",
+            "true && zsh <<EOF",
+        ):
+            with self.subTest(intro=intro):
+                self.assertEqual(bash(f"{intro}\n{self.BODY}\nEOF").decision, "ask")
+
+    def test_a_comment_after_a_subshell(self) -> None:
+        got = bash("(make)# don't\nfurrow epic done e-1 # can't")
+        self.assertEqual(got.decision, "ask")
 
 
 class FailsOpen(unittest.TestCase):
