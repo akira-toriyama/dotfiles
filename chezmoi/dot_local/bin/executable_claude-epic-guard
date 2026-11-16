@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# claude-epic-guard — PreToolUse guard for the two epic decisions that are the
+# human's: switching the active epic and closing an epic.
+#
+# ASKS before a Bash call runs `furrow epic activate`, `furrow epic deactivate`
+# or `furrow epic done` against a board this machine is configured to use. The
+# rule it carries (user decision 2026-11-16, projects t-9cby): Claude may APPLY
+# for either operation, and it runs only on the human's instruction naming that
+# operation — a bare "GO" is not one. The dialog shows the exact command, so the
+# human's approval of it IS that instruction; the rule therefore lives here and
+# not as prose in a CLAUDE.md. Before this guard the activate half was written
+# in five places that disagreed with each other, and the close half nowhere.
+# When Claude may apply is a judgment and stays prose: the epic-ops skill.
+#
+# A subagent gets a DENY, not an ask. A non-interactive subagent has nobody to
+# answer a dialog and stops for good — measured on the first version of
+# claude-board-shard-guard (2026-08-19). The deny reason sends the request back
+# to the parent session, which is the one that can apply to the human.
+#
+# The three commands are matched at a command position only: at the start of a
+# line or after one of | ; & ` ( {, behind optional VAR=value assignments, an
+# optional `go run`, and an optional path (so `go run ./cmd/furrow epic done`
+# from furrow's own checkout is covered: it writes the same board). Text that
+# merely mentions a command — a grep pattern, a commit message, a `furrow note`
+# body — is not at a command position. An occurrence carrying --help / -h is a
+# read and passes.
+#
+# ONLY the configured boards are in scope, and the board is not guessed from the
+# path: the guard asks furrow itself (`furrow board --json`, a read) from the
+# directory the command will run in — the hook's cwd, or the command's own
+# leading `cd /abs &&` — and compares the store it reports with the [[board]]
+# paths of furrow's user config. Scratch boards, fixtures and other people's
+# checkouts report another store, or none, and pass. That is what keeps furrow's
+# own development and the drills on throwaway boards out of the dialog.
+#
+# Blind spots — each makes the guard MISS a call or ask about a harmless one;
+# none of them can stop a session:
+#   - a command reaching furrow through a script, an alias, xargs, env, a shell
+#     keyword (`then furrow …`) or a variable is not seen. `projects repo
+#     retire` closes boxes this way, by design of that command.
+#   - a `cd` later than the leading one, or an unquotable leading one (a path
+#     with spaces), is not followed: the board is resolved from the hook's cwd.
+#   - a command that sets XDG_CONFIG_HOME for itself is a rig with its own
+#     furrow config, which this process cannot reproduce: it passes.
+#   - a heredoc line that begins with one of the three commands is at a command
+#     position as far as a line-based match can tell: it is asked about.
+#
+# Fail-open by construction: no jq, unparseable stdin, another tool, no furrow
+# on PATH, a furrow that errors or reports no store, or no readable furrow
+# config → allow. FURROW_CONFIG overrides the config path for the tests, as it
+# does for claude-board-shard-guard; furrow itself does not read it.
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-epic-guard); wired from the
+# Claude PreToolUse hook in modify_settings.json (step 12).
+# Tests: scripts/test_claude_epic_guard.py (unittest, CI).
+set -u
+
+command -v jq >/dev/null 2>&1 || exit 0
+
+input=$(cat 2>/dev/null) || exit 0
+[ -n "$input" ] || exit 0
+printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
+
+tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
+[ "$tool" = "Bash" ] || exit 0
+
+cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty | strings' 2>/dev/null)
+[ -n "$cmd" ] || exit 0
+
+# Shape first (cheap), so an ordinary Bash call never pays for the furrow read.
+# The verb must end its word (a space, a separator or the end of the line):
+# `epic done-ish` is not the command.
+re='(^|[|;&`({])[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*(go[[:space:]]+run[[:space:]]+)?([^[:space:]]*/)?furrow([[:space:]]+--?[A-Za-z][A-Za-z0-9-]*)*[[:space:]]+epic[[:space:]]+(activate|deactivate|done)([[:space:]][^|;&)]*|[|;&)]|$)'
+hits=$(printf '%s\n' "$cmd" | grep -Eo "$re" 2>/dev/null) || exit 0
+
+op=
+while IFS= read -r seg; do
+  [ -n "$seg" ] || continue
+  printf '%s\n' "$seg" | grep -Eq '[[:space:]](--help|-h)([[:space:]]|$)' && continue
+  op=$(printf '%s\n' "$seg" | sed -E 's/^[|;&`({]?[[:space:]]*//; s/[|;&)]$//; s/[[:space:]]+$//')
+  break
+done <<EOF
+$hits
+EOF
+[ -n "$op" ] || exit 0
+
+case $cmd in
+*XDG_CONFIG_HOME=*) exit 0 ;;
+esac
+
+command -v furrow >/dev/null 2>&1 || exit 0
+
+cfg="${FURROW_CONFIG:-$HOME/.config/furrow/config.toml}"
+[ -r "$cfg" ] || exit 0
+
+dir=$(printf '%s' "$input" | jq -r '.cwd // empty | strings' 2>/dev/null)
+lead=$(printf '%s\n' "$cmd" | sed -n -E "1s/^[[:space:]]*cd[[:space:]]+(--[[:space:]]+)?[\"']?(\/[^\"'[:space:];&|]*)[\"']?[[:space:]]*&&.*/\2/p")
+[ -n "$lead" ] && [ -d "$lead" ] && dir=$lead
+[ -n "$dir" ] && [ -d "$dir" ] || dir=.
+
+# An inline FURROW_BOARD names the board outright; hand it to the read.
+fb=$(printf '%s\n' "$cmd" | grep -Eo 'FURROW_BOARD=[^[:space:];&|]+' 2>/dev/null | head -n 1 |
+  sed -e 's/^FURROW_BOARD=//' -e "s/^[\"']//" -e "s/[\"']\$//")
+
+store=$(
+  cd "$dir" 2>/dev/null || exit 0
+  if [ -n "$fb" ]; then
+    FURROW_BOARD=$fb furrow board --json 2>/dev/null
+  else
+    furrow board --json 2>/dev/null
+  fi | jq -r '.store // empty | strings' 2>/dev/null
+)
+[ -n "$store" ] || exit 0
+
+in_scope=0
+while IFS= read -r board; do
+  [ -n "$board" ] || continue
+  [ "$store" = "$board" ] && in_scope=1
+done <<EOF
+$(sed -n 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg")
+EOF
+[ "$in_scope" -eq 1 ] || exit 0
+
+agent=$(printf '%s' "$input" | jq -r '.agent_id // empty | strings' 2>/dev/null)
+
+if [ -n "$agent" ]; then
+  jq -n --arg op "$op" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: ("Refused in a subagent: \($op)\n"
+        + "Switching the active epic and closing an epic are the human'"'"'s decisions. "
+        + "They run only after the human approves the exact command in a dialog, and a "
+        + "subagent cannot receive that dialog. Do not retry and do not route around "
+        + "this (a script, an alias, another binary). Return the request to the parent "
+        + "session with the box id and the reason; the parent applies to the human "
+        + "(epic-ops skill).")
+    }
+  }'
+  exit 0
+fi
+
+# Name the one decision this command is, not both.
+kind='active epic の切り替えです'
+printf '%s\n' "$op" | grep -Eq 'epic[[:space:]]+done([[:space:]]|$)' && kind='epic の close です'
+
+jq -n --arg op "$op" --arg kind "$kind" '{
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    permissionDecision: "ask",
+    permissionDecisionReason: ("\($kind): \($op)\n"
+      + "これは人が決める操作で、Claude は申請までです。"
+      + "この操作をあなたが指示したのなら許可、指示していなければ拒否してください。")
+  }
+}'
+exit 0

@@ -82,7 +82,7 @@
 #      7-commits-behind checkout, costing ~2M tokens and 21 discarded board
 #      tasks. It denies rather than warns because that session had already
 #      detected the staleness and built the worktree as a work-around — a
-#      warning was not what was missing (#9 and #11 deny too; #10 asks).
+#      warning was not what was missing (#9 and #11 deny too; #10 and #12 ask).
 #      Fail-open, and CLAUDE_ALLOW_CROSS_TREE_FANOUT=1 is the deliberate-run
 #      escape; see its header for why the scope is same-repo-only.
 #   9. a PreToolUse hook that runs claude-vncdo-guard on Bash calls — DENIES a
@@ -114,6 +114,18 @@
 #      own absolute cd, is allowed without reading. Fail-open and no escape
 #      marker — re-issuing with a quoted cd (`cd 'X' && …`, never stripped)
 #      is the way out; see its header for the blind spots.
+#  12. a PreToolUse hook that runs claude-epic-guard on Bash calls — ASKS
+#      before `furrow epic activate`, `furrow epic deactivate` or `furrow epic
+#      done` runs against a board this machine is configured to use, and
+#      DENIES the same call in a subagent (nobody answers a dialog there).
+#      Switching the active epic and closing an epic are the human's
+#      decisions (user decision 2026-11-16, projects t-9cby); the dialog shows
+#      the exact command, so approving it is the instruction the rule asks
+#      for, and the rule needs no prose. The board is read from furrow itself
+#      (`furrow board --json`), so scratch boards pass; that read is why the
+#      timeout is 30 s — furrow runs through the nix source-build wrapper,
+#      whose first call after a source change rebuilds (same reasoning as the
+#      rundiff hook below). Fail-open; see its header for the blind spots.
 #
 # NOT seeded: plugins. A step seeding extraKnownMarketplaces + enabledPlugins
 # for JetBrains' modern-go-guidelines (then numbered #11; the number now
@@ -150,6 +162,8 @@ cmd_vnc='$HOME/.local/bin/claude-vncdo-guard'
 cmd_shard='$HOME/.local/bin/claude-board-shard-guard'
 # shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
 cmd_bashcwd='$HOME/.local/bin/claude-bash-cwd-guard'
+# shellcheck disable=SC2016  # same: literal $HOME, expanded at hook run
+cmd_epic='$HOME/.local/bin/claude-epic-guard'
 
 input=$(cat)
 [ -n "$input" ] || input='{}'
@@ -159,7 +173,7 @@ if ! command -v jq >/dev/null 2>&1 || ! printf '%s' "$input" | jq -e . >/dev/nul
   exit 0
 fi
 
-out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" --arg shard "$cmd_shard" --arg bashcwd "$cmd_bashcwd" '
+out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg quota "$cmd_quota" --arg pjlint "$cmd_pjlint" --arg fanout "$cmd_fanout" --arg vnc "$cmd_vnc" --arg shard "$cmd_shard" --arg bashcwd "$cmd_bashcwd" --arg epic "$cmd_epic" '
   def hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $cmd);
   def stop_hook_present: [ (.hooks.Stop // [])[]?.hooks[]?.command ] | any(. == $stop);
   def quota_hook_present: [ (.hooks.SessionStart // [])[]?.hooks[]?.command ] | any(. == $quota);
@@ -168,6 +182,7 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
   def vnc_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $vnc);
   def shard_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $shard);
   def bashcwd_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $bashcwd);
+  def epic_hook_present: [ (.hooks.PreToolUse // [])[]?.hooks[]?.command ] | any(. == $epic);
 
   ( if hook_present then .
     else
@@ -216,6 +231,12 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
           (.hooks //= {})
         | (.hooks.PreToolUse //= [])
         | (.hooks.PreToolUse += [ { matcher: "Bash", hooks: [ { type: "command", command: $bashcwd, timeout: 10 } ] } ])
+      end )
+  | ( if epic_hook_present then .
+      else
+          (.hooks //= {})
+        | (.hooks.PreToolUse //= [])
+        | (.hooks.PreToolUse += [ { matcher: "Bash", hooks: [ { type: "command", command: $epic, timeout: 30 } ] } ])
       end )
   | (.permissions //= {})
   | (.permissions.allow //= [])
