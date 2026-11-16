@@ -641,6 +641,162 @@ class TheDialogShowsTheCommandAsWritten(unittest.TestCase):
         )
 
 
+class RoundThree(unittest.TestCase):
+    """3 回目のレビューが見つけたもの。字句解析の骨組みは保ち、読めていなかった形を
+    足した。"""
+
+    def assert_asks(self, command: str, **kw: object) -> Result:
+        got = bash(command, **kw)  # type: ignore[arg-type]
+        self.assertEqual(got.decision, "ask", command)
+        return got
+
+    def assert_allowed(self, command: str, **kw: object) -> Result:
+        got = bash(command, **kw)  # type: ignore[arg-type]
+        self.assertIsNone(got.decision, command)
+        return got
+
+    def test_xargs_with_a_placeholder(self) -> None:
+        self.assert_asks(
+            "furrow epic ls --json | jq -r '.[].id' | xargs -I{} furrow epic done {}"
+        )
+        self.assert_asks("echo e-1 | xargs -I {} furrow epic done {}")
+
+    def test_a_redirection_in_front_of_the_command(self) -> None:
+        self.assert_asks(">/dev/null furrow epic done e-1")
+        self.assert_asks("2>&1 furrow epic done e-1")
+
+    def test_a_heredoc_piped_to_a_shell_is_code(self) -> None:
+        self.assert_asks("cat <<EOF | bash\nfurrow epic done e-1\nEOF")
+        self.assert_asks("cat <<'EOF' | sh -s\nfurrow epic done e-1\nEOF")
+
+    def test_a_substitution_in_an_unquoted_heredoc_body_runs(self) -> None:
+        body = "closed: $(furrow epic done e-1 --json | jq -r .id)"
+        got = self.assert_asks(f"furrow note t-1 -F - <<EOF\n{body}\nEOF")
+        self.assertEqual(
+            got.reason.split("\n")[0], "epic の close です: furrow epic done e-1 --json"
+        )
+        self.assert_asks("cat <<EOF\nnow `furrow epic done e-1`\nEOF")
+
+    def test_a_quoted_heredoc_body_stays_literal(self) -> None:
+        body = "closed: $(furrow epic done e-1 --json | jq -r .id)"
+        for intro in ("<<'EOF'", '<<"EOF"', "<<\\EOF"):
+            with self.subTest(intro=intro):
+                self.assert_allowed(f"furrow note t-1 -F - {intro}\n{body}\nEOF")
+        self.assert_allowed("cat <<EOF\nescaped \\$(furrow epic done e-1)\nEOF")
+
+    def test_a_heredoc_inside_a_substitution_closed_on_its_delimiter_line(self) -> None:
+        self.assert_asks("x=$(cat <<EOF\nhi\nEOF)\nfurrow epic done e-1")
+        self.assert_asks(
+            "git commit -m \"$(cat <<'EOF'\nit's done\nEOF\n)\" && furrow epic done e-1"
+        )
+
+    def test_a_shift_inside_arithmetic_is_not_a_heredoc(self) -> None:
+        loop = "for e in e-1; do furrow epic done $e; done"
+        self.assert_asks(f"mask=$((1 << bit))\n{loop}")
+        self.assert_asks(f"(( flags << shift ))\n{loop}")
+        self.assert_asks(f'echo "$((1 << bit))"\n{loop}')
+
+    def test_a_hash_after_a_substitution_is_not_a_comment(self) -> None:
+        self.assert_asks("echo $(date)#x; furrow epic done e-1")
+
+    def test_the_fallback_still_sees_keywords_and_wrappers(self) -> None:
+        pad = "x" * 200_001
+        for tail in (
+            "for e in e-1; do furrow epic done $e; done",
+            "go run ./cmd/furrow epic done e-1",
+            "if true; then furrow epic done e-1; fi",
+            "timeout 30 furrow epic done e-1",
+            "xargs -I{} furrow epic done {}",
+        ):
+            with self.subTest(tail=tail):
+                self.assert_asks(f"echo {pad}\n{tail}")
+
+    def test_the_fallback_does_not_read_prose_as_a_call(self) -> None:
+        pad = "x" * 200_001
+        self.assert_allowed(
+            f"echo {pad}\necho the hook asks before furrow epic done runs"
+        )
+
+    def test_a_stack_deeper_than_the_cap_falls_back(self) -> None:
+        nest = '"$(echo ' * 300
+        started = time.monotonic()
+        self.assert_asks(f"echo {nest}\nfurrow epic done e-1")
+        self.assertLess(time.monotonic() - started, 10)
+
+    def test_an_assignment_holding_a_substitution_stays_one_word(self) -> None:
+        """`)` で照合をやり直し、前に置いた FURROW_DIR を落としていた。"""
+        for value in (
+            '"$(mktemp -d)/.furrow"',
+            "$(mktemp -d)/.furrow",
+            "`mktemp -d`/x",
+        ):
+            with self.subTest(value=value):
+                got = self.assert_allowed(
+                    f"FURROW_DIR={value} furrow epic done e-1", dir_store=SCRATCH
+                )
+                self.assertEqual(len(got.log), 1)
+                self.assertNotEqual(got.log[0].split("|")[3], "")
+
+    def test_an_assignment_from_a_substitution_does_not_hide_the_call(self) -> None:
+        got = self.assert_asks('NOTE="$(cat note.md)" furrow epic done e-1')
+        self.assertEqual(
+            got.reason.split("\n")[0],
+            'epic の close です: NOTE="$(cat note.md)" furrow epic done e-1',
+        )
+
+    def test_a_call_inside_and_a_call_outside_a_substitution(self) -> None:
+        got = self.assert_asks('X="$(furrow epic done e-1)" furrow epic activate e-2')
+        self.assertEqual(
+            [line.split(": ")[0] for line in got.reason.split("\n")[:2]],
+            ["active epic の切り替えです", "epic の close です"],
+        )
+
+    def test_a_cd_that_is_not_the_first_word_is_followed(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as where,
+            tempfile.TemporaryDirectory() as hook,
+        ):
+            real = os.path.realpath(where)
+            for command in (
+                f"cd {where} || exit 1\nfurrow epic done e-1",
+                f"cd {where} 2>/dev/null && furrow epic done e-1",
+                f"set -e; cd {where}; furrow epic done e-1",
+                f"(cd {where} && furrow epic done e-1)",
+                f"pushd {where} >/dev/null; furrow epic done e-1",
+                f"builtin cd -- {where} && furrow epic done e-1",
+            ):
+                with self.subTest(command=command):
+                    got = self.assert_asks(command, cwd=hook)
+                    self.assertEqual(os.path.realpath(got.log[0].split("|")[0]), real)
+
+    def test_a_quoted_cd_path_with_a_space_is_followed(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as base,
+            tempfile.TemporaryDirectory() as hook,
+        ):
+            where = Path(base) / "a b"
+            where.mkdir()
+            got = self.assert_asks(f'cd "{where}" && furrow epic done e-1', cwd=hook)
+            self.assertEqual(
+                os.path.realpath(got.log[0].split("|")[0]), os.path.realpath(where)
+            )
+
+    def test_each_call_reads_the_cd_in_front_of_it(self) -> None:
+        with tempfile.TemporaryDirectory() as one, tempfile.TemporaryDirectory() as two:
+            got = self.assert_asks(
+                f"cd {one} && furrow epic done e-1; cd {two} && furrow epic done e-2"
+            )
+            self.assertEqual(
+                [os.path.realpath(line.split("|")[0]) for line in got.log],
+                [os.path.realpath(one), os.path.realpath(two)],
+            )
+
+    def test_a_board_that_resolves_nowhere_is_asked_once_not_per_call(self) -> None:
+        calls = "; ".join(f"furrow epic done e-{n}" for n in range(40))
+        got = self.assert_allowed(calls, furrow_exit=2)
+        self.assertEqual(len(got.log), 1)
+
+
 class FailsOpen(unittest.TestCase):
     def assert_silent(self, got: Result) -> None:
         self.assertEqual(got.proc.returncode, 0)
