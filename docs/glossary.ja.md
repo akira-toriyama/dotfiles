@@ -246,9 +246,10 @@ nix store 外のファイルへ symlink を張る [[home-manager]] イディオ�
 **対になる private repo** [akira-toriyama/dotfiles-private](https://github.com/akira-toriyama/dotfiles-private)。
 分け方（機械的なので境界がずれない）: **環境構築 = private / それ以外 = public**。
 その [docs/bootstrap.md](https://github.com/akira-toriyama/dotfiles-private/blob/main/docs/bootstrap.md) が新 Mac
-再現手順の正本で — install.sh のヘッダでの略称は「**bootstrap doc**」—、root の README は
-ポインタ 1 本だけのページに保つ。初日にスマホのブラウザからゼロクリックで手順に届くように
-するため。中間の機密度の層も担う（secret → 1Password / 中間 → dotfiles-private / 公開 → dotfiles）。
+再現手順の正本で — install.sh のヘッダでの略称は「**bootstrap doc**」—、dotfiles-private の
+root README はポインタ 1 本だけのページに保つ。初日にスマホのブラウザからゼロクリックで手順に
+届くようにするため。dotfiles-private は中間の機密度の層も担う（secret → 1Password / 中間 →
+dotfiles-private / 公開 → dotfiles）。
 - **Don't call it:** private notes, machine-docs, セットアップ手順書
 
 ### `--phase2`

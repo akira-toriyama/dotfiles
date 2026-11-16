@@ -235,7 +235,7 @@ sudo -v && sh -c "$(curl -fsLS https://raw.githubusercontent.com/akira-toriyama/
 ```
 
 先頭の `sudo -v` は飾りではない: install.sh はすべての sudo を `-n` 付きで走らせる
-（-n が無いと、macOS の `PASSWORD_TIMEOUT 0` のもとではプロンプトで永久に待ち続ける）ので、
+（`-n` が無いと、macOS の `PASSWORD_TIMEOUT 0` のもとではプロンプトで永久に待ち続ける）ので、
 有効な ticket が無いと `P1-sudo` で即座に失敗する。変更はまず Tart VM でリハーサルする（§5.15）。
 
 これだけで:
