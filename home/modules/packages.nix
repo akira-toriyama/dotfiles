@@ -104,6 +104,27 @@ let
       exec "$bin" "$@"
     '';
   };
+
+  # worktrunk (`wt`), on trial: projects e-qpsa records it, t-8zhd removes it.
+  # The upstream release binary, hash-pinned, and not either alternative:
+  # nixpkgs carries 0.66.0 (the 0.x line breaks CLI and JSON shapes between
+  # releases), and the upstream flake compiles Rust for 641 s cold on this
+  # machine — the darwin CI jobs run uncached on purpose and would pay that on
+  # every run. aarch64-darwin only, which is every system this flake configures.
+  # dontFixup: the Mach-O is ad-hoc signed and stripping would void the signature.
+  worktrunkBin = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
+    pname = "worktrunk-bin";
+    version = "0.82.0";
+    src = pkgs.fetchurl {
+      url = "https://github.com/max-sixty/worktrunk/releases/download/v${finalAttrs.version}/worktrunk-aarch64-apple-darwin.tar.xz";
+      hash = "sha256-aUW8guBRPQuXTJn7HTDeJORIaX/VM+1rP0QsZqGzYgw=";
+    };
+    dontFixup = true;
+    installPhase = ''
+      install -Dm755 wt "$out/bin/wt"
+    '';
+    meta.mainProgram = "wt";
+  });
 in
 {
   # home-manager 管理のユーザーパッケージ（**非ランタイムの CLI**）。
@@ -157,6 +178,7 @@ in
     # until+sleep の手書きループ撲滅（projects t-v1t1）。使い方の正典は
     # ~/.claude/skills/condition-wait/SKILL.md（exec の footgun 3 点もそこに記載）。
     wait4x
+    worktrunkBin
 
     # === lint 基盤（scripts/lint が呼ぶツール群）===
     # scripts/lint の各ゲートが起動する実体。CI は devShells.lint（flake.lock 固定）から
