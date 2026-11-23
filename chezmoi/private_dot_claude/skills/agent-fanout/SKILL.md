@@ -60,7 +60,51 @@ to the user in one line each. If the change does not explain the spend, stop
 the fan-out there and redesign the cut. Do not launch the remaining units to
 "see whether it averages out".
 
-## Not known yet
+## What the redesign measured
 
-Which cut removes the most cost has not been measured. glyph t-60v9 redesigns
-e-b76m on this data from 2026-11-22; its result updates this file.
+glyph t-60v9 redesigned e-b76m on the data above and ran four units (four
+pull requests) through it on 2026-11-23. The cut:
+
+- The unit of delegation is one finding or one work order, not one round of
+  a unit. A work order names the files and lines, the ruling, the tests to
+  add and the commands to run. The worker edits, runs that package's tests
+  and the mutation rows it touched, pushes, and returns ten lines. Budget:
+  20 to 40 turns.
+- A check is scoped to one fix diff and the findings it answers, reuses the
+  reporter's scripts, and returns its report as its final message. Budget:
+  40 turns. A re-check resumes the same checker for 3 to 12 turns.
+- Full gates run in CI only. No agent waits on a command longer than two
+  minutes; the main loop reads CI once per push through a background wait.
+- The main loop rules on every finding itself (fix, reject with the reason,
+  or file a task) and launches the next step. Nothing relaunches by itself.
+
+| what | old process | redesign |
+|---|---|---|
+| one unit, one fix + verify round | 38M read, 2 agents | 5M (the pilot) |
+| four units, check → fixes → re-checks, to PASS | not reached in a day | 37M, 10 agents, 325 turns |
+| an agent | 158k context × 101 turns | 55k to 227k × 3 to 55 turns |
+| the main loop | 48M over 208 turns | 28M over 119 turns, context up to 359k |
+
+What it did not fix, and what the numbers say to do next:
+
+- The main loop is now the most expensive row. It ran one session from the
+  first check to the last landing, on the most expensive model, and every
+  agent report and CI digest stayed in its context. Split the main loop at
+  stage boundaries (checks done, then landing), keep the state in the task
+  body, and script multi-step rituals (land, merge main, wait for CI) so
+  that one turn does what five did.
+- Resuming an agent is cheap in turns and expensive per turn. A checker
+  resumed four times read 7.2M over 49 turns at 227k of context, more than
+  any fresh agent. After two resumes, start a fresh agent with a narrow
+  brief.
+- A follow-up fix costs a whole round: worker, re-check and CI. Three things
+  caused avoidable rounds here: a worker that added a guard beyond its order
+  (two rounds), a main-loop ruling that claimed completeness without a
+  measurement (one round), and a formatter the worker did not run (one CI
+  cycle). Tell the worker to do the order and nothing beside it, have the
+  checker try to refute a ruling's premise in the round that verifies the
+  fix, and put the formatter in the worker's pre-push list.
+- Pull requests that all append to one shared file (here a mutation ledger)
+  cannot land in parallel: each landing forced a merge of main and a CI
+  cycle on the rest. Land them in sequence and expect one CI cycle per pull
+  request.
