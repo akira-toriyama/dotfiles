@@ -35,6 +35,12 @@ an activation; its canon is the `mandate` section of projects
 A closed box is not a judgment Claude makes from the goal: on a large box the
 human may still want a final confirming task.
 
+The one close that needs no application: `projects repo retire <owner/repo>`
+closes the boxes that are only an archived repo's (projects lint
+`repo-archived`). Archiving was the human's decision and the retire carries it
+out (user decision 2026-11-23). Its `--force`, for a repo without the archived
+mark, stays the human's call.
+
 ## The application
 
 One message, then stop — the command does not run in the turn that applies.
