@@ -6,6 +6,7 @@
 #
 # 拡張リスト:
 # - anthropic.claude-code
+# - esbenp.prettier-vscode
 # - myriad-dreamin.tinymist
 set -e
 
@@ -27,6 +28,7 @@ fi
 # —— VSCode 未導入時に exit 0 で skip しているのと同じ扱い。
 for ext in \
   anthropic.claude-code \
+  esbenp.prettier-vscode \
   myriad-dreamin.tinymist; do
   "$CODE_BIN" --install-extension "$ext" --force >/dev/null &
   ext_pid=$!
