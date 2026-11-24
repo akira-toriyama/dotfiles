@@ -9,7 +9,6 @@
     ./defaults.nix
     ./power.nix
     ./launchd-drift.nix
-    ./claude-maint.nix
     ./zmk-log.nix
     ./sprite-sender.nix
     ./canon-firmware-check.nix

@@ -476,9 +476,8 @@ those under `chezmoi/private_dot_claude/` (`CLAUDE.md` / `agents/` / `skills/` /
   `bodies/assets/` via `furrow attach`). Real example: on 2026-07-27 the 4 files in `plans/` were sorted out;
   the 2 still alive were moved to t-8qqz / t-j8ek with `furrow attach`, and the 2 finished ones were deleted.
 - **Every memory slug must be linked from the index in `MEMORY.md`.** A memory that is not on the index
-  is not read in the next session, and the fact you wrote quietly disappears. `claude-maint`'s
-  monthly lane does not look at memory (skills / commands / agents only), so for now this
-  rests **on prose alone**.
+  is not read in the next session, and the fact you wrote quietly disappears. Nothing checks
+  this mechanically, so for now this rests **on prose alone**.
 
 ### 5.15 Tart VM verification (the rehearsal loop, and what counts as a pass)
 

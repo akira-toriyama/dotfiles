@@ -7,8 +7,7 @@
 # ・cask(upgrade=false) / nix store(immutable) / mise npm(自己更新しない) は、いずれも
 #   構造的に版が遅れる。なので「版まで宣言して pin」せず、"存在" だけここで保証し、更新は
 #   ツール本体に委ねる（= reproducibility と currency を両立させる唯一の形）。
-# ・claude-maint.nix の月次 launchd ジョブは ~/.local/bin/claude を PATH 経由で引く
-#   (home/modules/default.nix の home.sessionPath にも ~/.local/bin を追加済み)。
+# ・導入先 ~/.local/bin は home/modules/default.nix の home.sessionPath で PATH に入る。
 #
 # 冪等: 既に ~/.local/bin/claude があれば何もしない（installer 自体も再実行安全）。
 # 実行契機: このスクリプト本文の hash が変わると chezmoi が再実行する（run_onchange）。

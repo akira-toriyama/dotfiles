@@ -2,3 +2,4 @@
 # this repo used to distribute. A modify_ script never deletes and dropping a
 # source file alone leaves the live copy behind on every machine.
 .local/bin/claude-furrow-board-note
+.claude/.maint-ignore
