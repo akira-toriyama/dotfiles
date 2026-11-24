@@ -185,9 +185,9 @@ in
     worktrunkBin
 
     # === document typesetting ===
-    # typst: compiles the job-application documents in the private repo
-    # akira-toriyama/resume (履歴書 / 職務経歴書 / スキルシート) to PDF. That repo
-    # carries no flake of its own, so this is its only source of the compiler.
+    # typst: compiles documents kept as text (markup plus data files) to PDF.
+    # The repos that hold such documents carry no flake of their own, so this
+    # is their only source of the compiler.
     typst
 
     # === lint 基盤（scripts/lint が呼ぶツール群）===
