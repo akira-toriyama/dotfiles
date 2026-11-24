@@ -22,8 +22,8 @@ is switching pressure on the human.
 
 | Apply to | State of the board | Signal |
 |---|---|---|
-| switch | the active epic has 0 open members | revisit `epic_all_done` |
-| switch | open members exist and Claude can advance none of them (each is the human's turn or an external wait) | revisit `epic_stuck` |
+| switch | every member of the active epic is in the done lane | revisit `epic_all_done` |
+| switch | the active epic has unfinished members and Claude can advance none of them: each open one is the human's turn or an external wait, or none is open and the rest are parked outside the done lane | revisit `epic_stuck` |
 | switch | 3 or more tasks done in the active epic, and switching is clearly more efficient | none — attach the efficiency reason in one line |
 | switch back | the box switched to temporarily is finished | none — name the box that was active before it in the same repo; if history does not resolve to exactly one, say so |
 | close | every member is in the done lane | revisit `epic_all_done` |
