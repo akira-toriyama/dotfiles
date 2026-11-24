@@ -184,6 +184,12 @@ in
     wait4x
     worktrunkBin
 
+    # === document typesetting ===
+    # typst: compiles the job-application documents in the private repo
+    # akira-toriyama/resume (履歴書 / 職務経歴書 / スキルシート) to PDF. That repo
+    # carries no flake of its own, so this is its only source of the compiler.
+    typst
+
     # === lint 基盤（scripts/lint が呼ぶツール群）===
     # scripts/lint の各ゲートが起動する実体。CI は devShells.lint（flake.lock 固定）から
     # 供給するので、ここは **開発機で素の `scripts/lint` を叩ける** ための供給源。
