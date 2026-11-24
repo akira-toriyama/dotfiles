@@ -6,6 +6,7 @@
 #
 # 拡張リスト:
 # - anthropic.claude-code
+# - myriad-dreamin.tinymist
 set -e
 
 # cask の VSCode が提供する code バイナリ
@@ -24,10 +25,9 @@ fi
 # macOS に timeout(1) は無いため background + sleep watchdog（install.sh の SSH gate
 # と同じ機構）。拡張は環境の必須要素ではないので、失敗しても warn して続行する
 # —— VSCode 未導入時に exit 0 で skip しているのと同じ扱い。
-# shellcheck disable=SC2043  # 1 要素なのは今だけ — 拡張を足す時に行を増やす拡張点として
-#                             ループの形を保つ（潰すと足す側が構造ごと書き直すことになる）
 for ext in \
-  anthropic.claude-code; do
+  anthropic.claude-code \
+  myriad-dreamin.tinymist; do
   "$CODE_BIN" --install-extension "$ext" --force >/dev/null &
   ext_pid=$!
   (
