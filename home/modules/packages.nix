@@ -184,6 +184,12 @@ in
     wait4x
     worktrunkBin
 
+    # === document typesetting ===
+    # typst: compiles documents kept as text (markup plus data files) to PDF.
+    # The repos that hold such documents carry no flake of their own, so this
+    # is their only source of the compiler.
+    typst
+
     # === lint 基盤（scripts/lint が呼ぶツール群）===
     # scripts/lint の各ゲートが起動する実体。CI は devShells.lint（flake.lock 固定）から
     # 供給するので、ここは **開発機で素の `scripts/lint` を叩ける** ための供給源。
