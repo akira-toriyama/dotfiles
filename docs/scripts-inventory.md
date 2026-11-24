@@ -94,7 +94,7 @@ No tests: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /
 `run_onchange_after_enable-git-hooks.sh` / `run_onchange_after_install-claude-code.sh` /
 `run_onchange_after_install-xcode.sh` / `run_onchange_after_provision-op-sa-token.sh` /
 `run_onchange_after_register-claude-mcp.sh` / `run_onchange_install-vscode-extensions.sh` /
-`install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh` / `claude-maint.sh`.
+`install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh`.
 
 Only `install.sh` is indirectly guarded — CI's `darwin-rebuild switch smoke` effectively serves as its
 integration test.

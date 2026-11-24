@@ -44,7 +44,7 @@ dotfiles/                       # flake and chezmoi source live in one repo
 ├── system/                     # nix-darwin
 │   ├── hosts/generic.nix       #   per-machine entry
 │   └── modules/                #   homebrew.nix / defaults.nix / power.nix /
-│                               #   launchd-drift.nix / claude-maint.nix / zmk-log.nix
+│                               #   launchd-drift.nix / zmk-log.nix
 ├── home/                       # home-manager
 │   └── modules/                #   zsh.nix / git.nix / packages.nix / mise.nix /
 │                               #   chezmoi.nix / furrow.nix
