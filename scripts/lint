@@ -26,6 +26,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SELF = "scripts/lint"
+# Python that the ruff / mypy discovery misses for the same reason as SELF —
+# no .py suffix: chezmoi names a script after its command in $HOME.
+EXTENSIONLESS_PY = ("chezmoi/dot_local/bin/executable_furrow-epic-table",)
 
 # ゲート名 → グループ。ここが「何を走らせるべきか」の宣言（正本）で、
 # 実行後に ran 済みかを突き合わせる。scripts/test_lint.py がこの整合を守る。
@@ -269,7 +272,9 @@ def main(argv: list[str] | None = None) -> int:
     r = Runner(ci=args.ci, groups=groups)
     # このランナー自身は拡張子が無いので ruff/mypy の自動探索に載らない。
     # 「検査する側が未検査」を避けるため明示的に足す（test_lint.py が固定している）。
-    py = [*tracked("*.py"), SELF]
+    # EXTENSIONLESS_PY is added the same way, in the same three gates.
+    unsuffixed = [SELF, *EXTENSIONLESS_PY]
+    py = [*tracked("*.py"), *unsuffixed]
     sh = shell_files()
 
     # --- python ---
@@ -280,14 +285,19 @@ def main(argv: list[str] | None = None) -> int:
             "check",
             *(["--output-format", "github"] if args.ci else []),
             ".",
-            SELF,
+            *unsuffixed,
         ],
     )
-    r.run("ruff-format", ["ruff", "format", "--check", ".", SELF])
+    r.run("ruff-format", ["ruff", "format", "--check", ".", *unsuffixed])
     # 3.13 を明示する。system python (3.9) で走らせるスクリプトを置く日が来ても
     # mypy 側は追随できない —— --python-version 3.9 を拒否する（"must be 3.10 or
     # higher"）ので、その下限を見張るのは ruff.toml の per-file-target-version。
-    r.run("mypy", ["mypy", "--strict", "--python-version", "3.13", *py])
+    # --scripts-are-modules: mypy names every file without a .py suffix
+    # `__main__`, so two of them stop the run as duplicate modules.
+    r.run(
+        "mypy",
+        ["mypy", "--strict", "--python-version", "3.13", "--scripts-are-modules", *py],
+    )
 
     # --- shell ---
     r.run("shellcheck", ["shellcheck", "-x", *(["-f", "gcc"] if args.ci else []), *sh])

@@ -55,7 +55,10 @@ NOTE = (
     "this table (`furrow epic show <id>`)."
 )
 FIRED = {
-    "hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": NOTE}
+    "hookSpecificOutput": {
+        "hookEventName": "UserPromptSubmit",
+        "additionalContext": NOTE,
+    }
 }
 
 
@@ -158,8 +161,10 @@ class Silent(Hook):
 
     def test_a_prompt_the_user_did_not_type_stays_silent(self) -> None:
         for prompt in (
-            "<task-notification>\n<task-id>a1</task-id>\n<status>completed</status>\n"
-            "<summary>the epic task list agent finished</summary>\n</task-notification>",
+            "<task-notification>\n<task-id>a1</task-id>\n"
+            "<status>completed</status>\n"
+            "<summary>the epic task list agent finished</summary>\n"
+            "</task-notification>",
             "This session is being continued from a previous conversation that ran "
             "out of context. The user asked for the epic 一覧 and the task list.",
         ):
@@ -171,7 +176,9 @@ class Silent(Hook):
         with self.subTest("no board in scope"):
             self.assertSilent(self.run_hook(self.payload(prompt, cwd=self.outside)))
         with self.subTest("a board the config does not name"):
-            p = self.run_hook(self.payload(prompt), store="/private/tmp/scratch/.furrow")
+            p = self.run_hook(
+                self.payload(prompt), store="/private/tmp/scratch/.furrow"
+            )
             self.assertSilent(p)
 
 
