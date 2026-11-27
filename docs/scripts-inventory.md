@@ -14,7 +14,7 @@ Whether to add `set -e` is not a matter of taste — it is decided by **who is h
 
 ### ① hook / resident — `set -u` only, always `exit 0`
 
-`zsh`'s `chpwd`, Claude's `SessionStart` / `Stop` / `PreToolUse`, launchd residents.
+`zsh`'s `chpwd`, Claude's `SessionStart` / `UserPromptSubmit` / `Stop` / `PreToolUse`, launchd residents.
 
 The caller looks at the script's exit code and changes its behavior accordingly. With `errexit` in place,
 **a non-zero from normal control flow** (a `grep` miss, a transient `ioreg` failure, a device that has not
