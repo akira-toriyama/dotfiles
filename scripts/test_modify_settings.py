@@ -84,6 +84,29 @@ class FailSafe(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertEqual(p.stdout, broken, "a broken file must not be rewritten")
 
+    def test_a_shape_the_transform_cannot_take_leaves_the_document_untouched(
+        self,
+    ) -> None:
+        """jq cannot append to a hook event that is not an array, nor index a
+        hooks or permissions that is not an object. The transform used to fail
+        with nothing on stdout, and apply would have written that empty output
+        over settings.json, allowlist and all (measured 2026-11-27)."""
+        shapes: list[dict[str, Any]] = [
+            {"hooks": {"UserPromptSubmit": {"hooks": []}}},
+            {"hooks": {"SessionStart": "x"}},
+            {"hooks": {"Stop": {}}},
+            {"hooks": {"PreToolUse": 7}},
+            {"hooks": []},
+            {"permissions": {"allow": "Bash(rg:*)"}},
+            {"permissions": []},
+        ]
+        for shape in shapes:
+            with self.subTest(shape=shape):
+                given = json.dumps({"statusLine": {"type": "command"}, **shape})
+                p = run(given)
+                self.assertEqual(p.returncode, 0, p.stderr)
+                self.assertEqual(p.stdout, given)
+
     def test_empty_input_becomes_a_valid_object(self) -> None:
         p = run("")
         self.assertEqual(p.returncode, 0, p.stderr)

@@ -150,9 +150,11 @@
 # survive. The SessionStart hook command is stored literally as `$HOME/...` and
 # shell-expands when the hook runs, so it stays correct per machine.
 #
-# Fail-safe: with no jq, or on unparseable input, we pass stdin through verbatim
-# rather than risk corrupting a security-relevant file. Likewise, if rundiff is
-# absent or prints something that is not JSON, we simply skip step 3.
+# Fail-safe: with no jq, on unparseable input, or on input the transform cannot
+# handle (a hooks.<Event> that is not an array, and the like), we pass stdin
+# through verbatim rather than risk corrupting a security-relevant file.
+# Likewise, if rundiff is absent or prints something that is not JSON, we
+# simply skip step 3.
 set -u
 
 # shellcheck disable=SC2016  # $HOME must stay literal — Claude expands it at hook run
@@ -265,6 +267,16 @@ out=$(printf '%s\n' "$input" | jq --arg cmd "$cmd" --arg stop "$cmd_stop" --arg 
   | (.model //= "opus[1m]")
   | (.effortLevel //= "xhigh")
 ')
+
+# jq fails with nothing on stdout when a value has a shape the transform
+# cannot take — a hooks.<Event> that is not an array cannot be appended to,
+# and a hooks or permissions that is not an object cannot be indexed — and
+# that empty output would become settings.json (measured 2026-11-27: one empty
+# line, for hooks.SessionStart and hooks.UserPromptSubmit alike).
+if ! printf '%s' "$out" | jq -e 'type == "object"' >/dev/null 2>&1; then
+  printf '%s' "$input"
+  exit 0
+fi
 
 # 3. rundiff PreToolUse hook. `rundiff hook print --json` emits the mergeable
 # object { hooks: { PreToolUse: [...] }, permissions: { allow: [...] } }; we
