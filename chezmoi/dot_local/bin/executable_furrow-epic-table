@@ -9,13 +9,17 @@ column. claude-list-table-note points a prompt asking for an epic or task
 list here, so the answer has one shape.
 
 Usage: furrow-epic-table [-r <owner/repo>]
-  -r goes to both furrow reads verbatim (a short name works, '' is the whole
-  board); without it furrow applies its own scope, as on any bare read.
+  -r picks the boxes: it goes to `furrow epic ls` verbatim (a short name
+  works, '' is the whole board); without it furrow applies its own scope, as
+  on any bare read. The icebox read is always `-r ''`, because 進捗 counts a
+  box's members over the whole board: scoped like the boxes, it lost the
+  members filed under another repo (e-hn53 read 5/6 with icebox 0 under
+  -r akira-toriyama/glyph while its sixth member sat in icebox).
 
 Output: a GitHub markdown table, one row per box in `furrow epic ls` order:
 ▶ (the active box), id, 進捗 (done/total), icebox (the box's members in the
-icebox lane, within the same -r scope), タイトル (+（常設） on a standing
-box). A `|` in a title is escaped so the row keeps its columns.
+icebox lane), タイトル (+（常設） on a standing box). A `|` in a title is
+escaped so the row keeps its columns.
 
 Exit: 0 with the table; 1 when furrow is missing, fails, or prints JSON of
 another shape. furrow's stderr is never captured: its scope notes and its
@@ -73,7 +77,9 @@ def row(cells: list[str]) -> str:
 
 
 def table(epics: list[Any], icebox: list[Any]) -> str:
-    parked = Counter(t["epic"] for t in icebox if t.get("epic") is not None)
+    # furrow omits `epic` on an unfiled task; it lands under None, which no
+    # row reads.
+    parked = Counter(t.get("epic") for t in icebox)
     lines = [row(["", "id", "進捗", "icebox", "タイトル"]), "|---|---|---|---|---|"]
     for e in epics:
         progress = f"{e['progress']['done']}/{e['progress']['total']}"
@@ -94,13 +100,13 @@ def main(argv: list[str] | None = None) -> int:
         dest="repos",
         action="append",
         metavar="<owner/repo>",
-        help="passed to furrow verbatim ('' = the whole board)",
+        help="passed to `furrow epic ls` verbatim ('' = the whole board)",
     )
     args = ap.parse_args(argv)
     scope = [a for r in args.repos or [] for a in ("-r", r)]
     try:
         epics = furrow_rows(["epic", "ls", "--json", *scope])
-        icebox = furrow_rows(["ls", "-s", "icebox", "--json", *scope])
+        icebox = furrow_rows(["ls", "-s", "icebox", "--json", "-r", ""])
         out = table(epics, icebox)
     except FurrowFailed as err:
         print(f"{PROG}: {err}", file=sys.stderr)

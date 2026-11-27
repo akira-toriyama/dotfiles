@@ -508,7 +508,7 @@ The agent-fanout [[skill]] makes it the check after a fan-out's first unit. The 
 ### `furrow-epic-table`
 **The CLI that prints the furrow boxes as one markdown table**: ▶ on the active box, id, 進捗
 (done/total), the members parked in icebox, and the title, from `furrow epic ls` plus one
-`furrow ls -s icebox`; `-r` goes to both reads verbatim. The real thing =
+board-wide `furrow ls -s icebox`; `-r` picks the boxes and goes to `epic ls` verbatim. The real thing =
 [`chezmoi/dot_local/bin/executable_furrow-epic-table`](../chezmoi/dot_local/bin/executable_furrow-epic-table).
 - **Don't call it:** `furrow epic ls` (furrow's own read, without the icebox column), epic 一覧, board view
 

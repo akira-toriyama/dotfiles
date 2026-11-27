@@ -3,8 +3,11 @@
 What is pinned:
   1. the table: header, one row per box in furrow's order, ▶ on the active
      box, done/total, the icebox members counted per box (an unfiled icebox
-     task counts nowhere), （常設） on a standing box, `|` in a title escaped
-  2. -r reaches both furrow reads verbatim, '' included; no -r, no scope
+     task — furrow omits its `epic` key — counts nowhere), （常設） on a
+     standing box, `|` in a title escaped
+  2. -r reaches `furrow epic ls` verbatim, '' included, and no -r means no
+     scope; the icebox read is the whole board (`-r ''`) whatever -r says,
+     because 進捗 counts a box's members there
   3. a failing furrow read → exit 1, no table, furrow's stderr passed on;
      furrow missing → exit 1 with a message, not a traceback
 
@@ -65,7 +68,7 @@ EPICS = [
 ICEBOX = [
     {"id": "t-0001", "epic": "e-zz01", "status": "icebox"},
     {"id": "t-0002", "epic": "e-mm03", "status": "icebox"},
-    {"id": "t-0003", "epic": None, "status": "icebox"},
+    {"id": "t-0003", "status": "icebox"},
     {"id": "t-0004", "epic": "e-zz01", "status": "icebox"},
 ]
 TABLE = """\
@@ -120,17 +123,15 @@ class Table(StubbedFurrow):
 
 
 class Scope(StubbedFurrow):
-    def test_r_reaches_both_reads_verbatim(self) -> None:
+    def test_r_picks_the_boxes_and_the_icebox_read_is_board_wide(self) -> None:
+        board_wide_icebox = "[ls][-s][icebox][--json][-r][]"
         cases = {
-            (): ["[epic][ls][--json]", "[ls][-s][icebox][--json]"],
+            (): ["[epic][ls][--json]", board_wide_icebox],
             ("-r", "akira-toriyama/dotfiles"): [
                 "[epic][ls][--json][-r][akira-toriyama/dotfiles]",
-                "[ls][-s][icebox][--json][-r][akira-toriyama/dotfiles]",
+                board_wide_icebox,
             ],
-            ("-r", ""): [
-                "[epic][ls][--json][-r][]",
-                "[ls][-s][icebox][--json][-r][]",
-            ],
+            ("-r", ""): ["[epic][ls][--json][-r][]", board_wide_icebox],
         }
         for args, want in cases.items():
             with self.subTest(args=args):
