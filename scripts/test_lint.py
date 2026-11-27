@@ -114,6 +114,18 @@ class TestTheRunnerChecksItself(unittest.TestCase):
         # 拡張子があるなら明示指定は不要になり、この仕掛け自体が要らなくなる。
         self.assertFalse(lint.SELF.endswith(".py"))
 
+    def test_extensionless_python_is_declared(self) -> None:
+        # furrow-epic-table went unlinted until it was named here (t-7fw4).
+        self.assertIn(
+            "chezmoi/dot_local/bin/executable_furrow-epic-table",
+            lint.EXTENSIONLESS_PY,
+        )
+        for rel in lint.EXTENSIONLESS_PY:
+            with self.subTest(rel=rel):
+                self.assertFalse(rel.endswith(".py"))
+                head = (ROOT / rel).read_text(encoding="utf-8").partition("\n")[0]
+                self.assertEqual(head, "#!/usr/bin/env python3")
+
 
 class TestShellFileDiscovery(unittest.TestCase):
     def test_discovery_is_shebang_based_not_extension_based(self) -> None:

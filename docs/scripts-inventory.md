@@ -14,7 +14,7 @@ Whether to add `set -e` is not a matter of taste — it is decided by **who is h
 
 ### ① hook / resident — `set -u` only, always `exit 0`
 
-`zsh`'s `chpwd`, Claude's `SessionStart` / `Stop` / `PreToolUse`, launchd residents.
+`zsh`'s `chpwd`, Claude's `SessionStart` / `UserPromptSubmit` / `Stop` / `PreToolUse`, launchd residents.
 
 The caller looks at the script's exit code and changes its behavior accordingly. With `errexit` in place,
 **a non-zero from normal control flow** (a `grep` miss, a transient `ioreg` failure, a device that has not
@@ -25,7 +25,7 @@ Applies to: `executable_git-stale-check` / `executable_claude-quota-note` /
 `executable_claude-projects-lint-note` / `executable_claude-work-report-check` /
 `executable_zmk-log-capture.sh` / `executable_claude-fanout-cwd-guard` /
 `executable_claude-board-shard-guard` / `executable_claude-bash-cwd-guard` /
-`executable_claude-epic-guard` /
+`executable_claude-epic-guard` / `executable_claude-list-table-note` /
 `executable_imprint-battery-notify` / `modify_settings.json`.
 
 `modify_settings.json` is the extreme case of this category: on failure it **passes stdin through and exits 0**
@@ -59,12 +59,12 @@ Do not write a hand-written `set` line. If you need to drop one, state it explic
 and the `home.packages` wrapper. Injection that only takes effect on the wrapper side makes the two paths
 diverge in behavior, so **treat the `set` line in the `.sh` as canonical** and align to it.
 
-## Places not guarded by machinery (as of 2026-10-14)
+## Places not guarded by machinery (as of 2026-11-27)
 
-All 30 shell scripts (counted 2026-11-16) pass the `shellcheck` / `shfmt` gates in `scripts/lint`
+All 30 shell scripts (counted 2026-11-27) pass the `shellcheck` / `shfmt` gates in `scripts/lint`
 (the canonical target set is `shell_files()` in `scripts/lint`. No copy is kept here — a copy always drifts).
 
-**Only 11 have tests** (the 30th shell script is `scripts/claude-work-report-check-test.sh`, a test itself):
+**Only 13 have tests** (one of the 30, `scripts/claude-work-report-check-test.sh`, is a test itself):
 
 | script | test |
 |---|---|
@@ -77,11 +77,13 @@ All 30 shell scripts (counted 2026-11-16) pass the `shellcheck` / `shfmt` gates 
 | `executable_claude-epic-guard` | `scripts/test_claude_epic_guard.py` |
 | `executable_claude-quota-note` | `scripts/test_claude_quota_note.py` |
 | `executable_claude-projects-lint-note` | `scripts/test_claude_projects_lint_note.py` |
+| `executable_claude-list-table-note` | `scripts/test_claude_list_table_note.py` |
+| `executable_claude-agent-usage` | `scripts/test_claude_agent_usage.py` |
 | `modify_settings.json` | `scripts/test_modify_settings.py` |
 | `brew-bundle-nonfatal.sh` | `scripts/test_brew_bundle_nonfatal.py` |
 | `scripts/lint` itself | `scripts/test_lint.py` |
 
-`scripts/lint`, the last row, is Python and is listed for completeness; it is not one of the 27.
+`scripts/lint`, the last row, is Python and is listed for completeness; it is not one of the 30.
 
 The remaining 16 have no tests. This is not a defect list but **a list for setting priorities**; the actual
 criterion for adding one follows CLAUDE.md's "mechanization only to prevent recurrence of an already-hit
@@ -94,7 +96,7 @@ No tests: `.githooks/pre-push` / `executable_op-sa` / `executable_zmk-log` /
 `run_onchange_after_enable-git-hooks.sh` / `run_onchange_after_install-claude-code.sh` /
 `run_onchange_after_install-xcode.sh` / `run_onchange_after_provision-op-sa-token.sh` /
 `run_onchange_after_register-claude-mcp.sh` / `run_onchange_install-vscode-extensions.sh` /
-`install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh`.
+`install.sh` / `add-homebrew.sh` / `check-dotfiles-drift.sh` / `sprite-daily.sh`.
 
 Only `install.sh` is indirectly guarded — CI's `darwin-rebuild switch smoke` effectively serves as its
 integration test.

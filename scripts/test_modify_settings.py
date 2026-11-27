@@ -36,6 +36,7 @@ PJLINT_NOTE = "$HOME/.local/bin/claude-projects-lint-note"
 FANOUT_GUARD = "$HOME/.local/bin/claude-fanout-cwd-guard"
 BASH_CWD_GUARD = "$HOME/.local/bin/claude-bash-cwd-guard"
 EPIC_GUARD = "$HOME/.local/bin/claude-epic-guard"
+LIST_TABLE_NOTE = "$HOME/.local/bin/claude-list-table-note"
 
 
 def jq_only_path() -> str:
@@ -82,6 +83,29 @@ class FailSafe(unittest.TestCase):
         p = run(broken)
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertEqual(p.stdout, broken, "a broken file must not be rewritten")
+
+    def test_a_shape_the_transform_cannot_take_leaves_the_document_untouched(
+        self,
+    ) -> None:
+        """jq cannot append to a hook event that is not an array, nor index a
+        hooks or permissions that is not an object. The transform used to fail
+        with nothing on stdout, and apply would have written that empty output
+        over settings.json, allowlist and all (measured 2026-11-27)."""
+        shapes: list[dict[str, Any]] = [
+            {"hooks": {"UserPromptSubmit": {"hooks": []}}},
+            {"hooks": {"SessionStart": "x"}},
+            {"hooks": {"Stop": {}}},
+            {"hooks": {"PreToolUse": 7}},
+            {"hooks": []},
+            {"permissions": {"allow": "Bash(rg:*)"}},
+            {"permissions": []},
+        ]
+        for shape in shapes:
+            with self.subTest(shape=shape):
+                given = json.dumps({"statusLine": {"type": "command"}, **shape})
+                p = run(given)
+                self.assertEqual(p.returncode, 0, p.stderr)
+                self.assertEqual(p.stdout, given)
 
     def test_empty_input_becomes_a_valid_object(self) -> None:
         p = run("")
@@ -179,6 +203,19 @@ class Seeds(unittest.TestCase):
             ],
         )
 
+    def test_it_adds_the_list_table_note_as_a_user_prompt_submit_hook(self) -> None:
+        """The first hook on UserPromptSubmit: registered under any other event
+        it would never see a prompt, and nothing else would show it."""
+        got = json.loads(run("{}").stdout)
+        entries = [
+            entry
+            for entry in got["hooks"]["UserPromptSubmit"]
+            if any(h.get("command") == LIST_TABLE_NOTE for h in entry.get("hooks", []))
+        ]
+        self.assertEqual(
+            entries, [{"hooks": [{"type": "command", "command": LIST_TABLE_NOTE}]}]
+        )
+
     def test_home_stays_literal(self) -> None:
         """hook の command は Claude が実行時に展開する。生成時に展開すると
         別マシンへ配ったときに他人の $HOME が焼き込まれる。"""
@@ -220,6 +257,7 @@ class Idempotent(unittest.TestCase):
         self.assertEqual(commands(got, "PreToolUse").count(FANOUT_GUARD), 1)
         self.assertEqual(commands(got, "PreToolUse").count(BASH_CWD_GUARD), 1)
         self.assertEqual(commands(got, "PreToolUse").count(EPIC_GUARD), 1)
+        self.assertEqual(commands(got, "UserPromptSubmit").count(LIST_TABLE_NOTE), 1)
 
     def test_allow_entries_are_not_duplicated(self) -> None:
         allow = json.loads(run(run("{}").stdout).stdout)["permissions"]["allow"]

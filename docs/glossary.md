@@ -505,6 +505,23 @@ The agent-fanout [[skill]] makes it the check after a fan-out's first unit. The 
 [`chezmoi/dot_local/bin/executable_claude-agent-usage`](../chezmoi/dot_local/bin/executable_claude-agent-usage).
 - **Don't call it:** token counter, usage report, `/usage` (that is the account's quota, not a session's agents)
 
+### `furrow-epic-table`
+**The CLI that prints the furrow boxes as one markdown table**: ▶ on the active box, id, 進捗
+(done/total), the members parked in icebox, and the title, from `furrow epic ls` plus one
+board-wide `furrow ls -s icebox`; `-r` picks the boxes and goes to `epic ls` verbatim. The real thing =
+[`chezmoi/dot_local/bin/executable_furrow-epic-table`](../chezmoi/dot_local/bin/executable_furrow-epic-table).
+- **Don't call it:** `furrow epic ls` (furrow's own read, without the icebox column), epic 一覧, board view
+
+### `claude-list-table-note`
+**The UserPromptSubmit hook that points a prompt asking for an epic or task list at
+`furrow-epic-table`**: for a prompt the user typed in a checkout on a configured furrow board, it
+adds one conditional note to the context, and it prints nothing for any other prompt (fail-open).
+A hook rather than a [[skill]], because its trigger is pinned by fixture tests.
+The real thing =
+[`chezmoi/dot_local/bin/executable_claude-list-table-note`](../chezmoi/dot_local/bin/executable_claude-list-table-note),
+wired by `modify_settings.json`.
+- **Don't call it:** list skill, 一覧 skill, PreToolUse guard (it decides nothing; it only adds context)
+
 ### `claude-md-eval`
 **The harness that measures a prose change to CLAUDE.md before it is distributed**. It produces
 responses for a baseline (without the section) and a candidate (with the section), judges them
