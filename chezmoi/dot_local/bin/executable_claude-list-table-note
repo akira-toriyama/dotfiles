@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# claude-list-table-note — Claude Code UserPromptSubmit hook: point a prompt
+# that asks for an epic or task list at furrow-epic-table.
+#
+# WHY: asked for the epic list, Claude printed done/total per box, and
+# e-8qyd's 42/43 left open whether the last member was work to pick up or
+# parked in icebox (projects t-7fw4). furrow-epic-table prints the table that
+# answers it. The cue is a hook, not a skill: whether a skill's description
+# fires cannot be measured by the harness (scripts/claude-md-eval/README.md),
+# while a hook runs on every prompt and its trigger is pinned by fixtures.
+#
+# Trigger: the prompt contains 一覧 or the word `list`, AND one of epic /
+# エピック / task / タスク / 箱 / board / ボード, case-insensitive. The word
+# bound on `list` is ASCII word characters only, so `checklist` stays silent
+# while `task listを見せて` fires — a regex \b counts kana as word
+# characters and would hide the word behind the particle.
+#
+# Output: {"hookSpecificOutput":{"hookEventName":"UserPromptSubmit",
+# "additionalContext":<note>}} on a match, nothing otherwise.
+#
+# Fail-open: no jq / empty or unparseable stdin / no string prompt → print
+# nothing, exit 0 (this hook stands in front of every prompt; breaking one is
+# never worth a table reminder — same asymmetry as modify_settings.json).
+#
+# Owned by dotfiles (chezmoi → ~/.local/bin/claude-list-table-note). Wired
+# from ~/.claude/settings.json hooks.UserPromptSubmit by modify_settings.json
+# (step 13). Tests: scripts/test_claude_list_table_note.py (unittest, CI).
+set -u
+
+command -v jq >/dev/null 2>&1 || exit 0
+
+note="furrow list request: run \`furrow-epic-table\` (add \`-r <owner/repo>\` for another repo, \`-r ''\` for the whole board) and show its markdown table as is — ▶ active, 進捗 = done/total, icebox = members parked in icebox."
+
+jq -c --arg note "$note" '
+  .prompt
+  | select(type == "string")
+  | select(test("一覧|(?<![A-Za-z0-9_])list(?![A-Za-z0-9_])"; "i"))
+  | select(test("epic|エピック|task|タスク|箱|board|ボード"; "i"))
+  | { hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: $note } }
+' 2>/dev/null
+exit 0
