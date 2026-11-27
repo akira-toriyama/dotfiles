@@ -18,7 +18,9 @@
 # subtasks and listener stay silent, while `task listを` fires — a regex \b
 # counts kana as word characters and would hide the word behind the
 # particle. board / ボード are not subjects: キーボード, ダッシュボード and
-# onboarding contain them.
+# onboarding contain them. The Japanese words are unbounded, so チェックリスト,
+# リストア, ごみ箱 (hiragana) and タスク compounds such as サブタスク still
+# fire — none occurred in 60 days of transcripts, and the note is conditional.
 #
 # Silent on a prompt the user did not type — a background report
 # (<task-notification>…) or a continuation summary ("This session is being
@@ -61,7 +63,7 @@ hit=$(printf '%s' "$input" | jq -r '
 cwd=${hit#+}
 [ -n "$cwd" ] && [ -d "$cwd" ] || cwd=.
 command -v furrow >/dev/null 2>&1 || exit 0
-cfg="${FURROW_CONFIG:-$HOME/.config/furrow/config.toml}"
+cfg="${FURROW_CONFIG:-${HOME:-}/.config/furrow/config.toml}"
 [ -r "$cfg" ] || exit 0
 boards=$(sed -n 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg")
 [ -n "$boards" ] || exit 0
