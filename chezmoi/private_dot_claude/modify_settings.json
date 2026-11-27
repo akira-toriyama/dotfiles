@@ -126,14 +126,15 @@
 #      timeout is 30 s — furrow runs through the nix source-build wrapper,
 #      whose first call after a source change rebuilds (same reasoning as the
 #      rundiff hook below). Fail-open; see its header for the blind spots.
-#  13. a UserPromptSubmit hook that runs claude-list-table-note — when the
-#      prompt asks for an epic or task list (一覧 or the word list, plus
-#      epic / task / 箱 / board in either language), adds a note telling
-#      Claude to run furrow-epic-table and show its table: id, done/total,
-#      the members parked in icebox, title. done/total alone had left
-#      e-8qyd's 42/43 unreadable — was the last member work or icebox?
-#      (projects t-7fw4). A hook rather than a skill, because its trigger is
-#      pinned by fixture tests. Fail-open; see its header.
+#  13. a UserPromptSubmit hook that runs claude-list-table-note — when a
+#      prompt typed in a checkout on a configured furrow board asks for an
+#      epic or task list (一覧 / リスト / list, plus epic / task / エピック /
+#      タスク / 箱), adds a note telling Claude to run furrow-epic-table if the
+#      user wants the epic list, and to show its table: id, done/total, the
+#      members parked in icebox, title. done/total alone had left e-8qyd's
+#      42/43 unreadable — was the last member work or icebox? (projects
+#      t-7fw4). A hook rather than a skill, because its trigger is pinned by
+#      fixture tests. Fail-open; see its header for the exact trigger.
 #
 # NOT seeded: plugins. A step seeding extraKnownMarketplaces + enabledPlugins
 # for JetBrains' modern-go-guidelines (then numbered #11; the number now

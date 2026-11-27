@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # claude-list-table-note — Claude Code UserPromptSubmit hook: point a prompt
-# that asks for an epic or task list at furrow-epic-table.
+# that asks for the furrow epic list at furrow-epic-table.
 #
 # WHY: asked for the epic list, Claude printed done/total per box, and
 # e-8qyd's 42/43 left open whether the last member was work to pick up or
@@ -9,18 +9,33 @@
 # fires cannot be measured by the harness (scripts/claude-md-eval/README.md),
 # while a hook runs on every prompt and its trigger is pinned by fixtures.
 #
-# Trigger: the prompt contains 一覧 or the word `list`, AND one of epic /
-# エピック / task / タスク / 箱 / board / ボード, case-insensitive. The word
-# bound on `list` is ASCII word characters only, so `checklist` stays silent
-# while `task listを見せて` fires — a regex \b counts kana as word
-# characters and would hide the word behind the particle.
+# Trigger, case-insensitive — both of:
+#   - a list word: 一覧, リスト, `list(s)`
+#   - a subject word: `epic(s)`, `task(s)`, エピック, タスク, or 箱 when no
+#     katakana or kanji precedes it and no kanji but 一覧 follows it (ゴミ箱,
+#     宝箱 and 箱根 stay silent; 箱の一覧 and 箱一覧 fire)
+# An English word is bounded by ASCII word characters only: checklist,
+# subtasks and listener stay silent, while `task listを` fires — a regex \b
+# counts kana as word characters and would hide the word behind the
+# particle. board / ボード are not subjects: キーボード, ダッシュボード and
+# onboarding contain them.
+#
+# Silent on a prompt the user did not type — a background report
+# (<task-notification>…) or a continuation summary ("This session is being
+# continued from a previous conversation…"), which routinely say task and
+# list. Silent outside the fleet: the hook input's cwd must resolve to a
+# board furrow's user config names, the test claude-epic-guard uses
+# (`furrow board --json` from that cwd, its store against the [[board]]
+# paths). That read runs only after the text has matched.
 #
 # Output: {"hookSpecificOutput":{"hookEventName":"UserPromptSubmit",
-# "additionalContext":<note>}} on a match, nothing otherwise.
+# "additionalContext":<note>}} on a match, nothing otherwise. The note is
+# conditional because a keyword match is not a read of the intent.
 #
-# Fail-open: no jq / empty or unparseable stdin / no string prompt → print
-# nothing, exit 0 (this hook stands in front of every prompt; breaking one is
-# never worth a table reminder — same asymmetry as modify_settings.json).
+# Fail-open: no jq / no furrow / no config / empty or unparseable stdin / no
+# string prompt → print nothing, exit 0 (this hook stands in front of every
+# prompt; breaking one is never worth a table reminder — same asymmetry as
+# modify_settings.json). FURROW_CONFIG overrides the config path (tests).
 #
 # Owned by dotfiles (chezmoi → ~/.local/bin/claude-list-table-note). Wired
 # from ~/.claude/settings.json hooks.UserPromptSubmit by modify_settings.json
@@ -29,13 +44,31 @@ set -u
 
 command -v jq >/dev/null 2>&1 || exit 0
 
-note="furrow list request: run \`furrow-epic-table\` (add \`-r <owner/repo>\` for another repo, \`-r ''\` for the whole board) and show its markdown table as is — ▶ active, 進捗 = done/total, icebox = members parked in icebox."
+input=$(cat 2>/dev/null) || exit 0
 
-jq -c --arg note "$note" '
-  .prompt
-  | select(type == "string")
-  | select(test("一覧|(?<![A-Za-z0-9_])list(?![A-Za-z0-9_])"; "i"))
-  | select(test("epic|エピック|task|タスク|箱|board|ボード"; "i"))
-  | { hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: $note } }
-' 2>/dev/null
+# Prints "+<cwd>" when the prompt text matches (the + keeps an absent cwd
+# apart from no match), nothing otherwise.
+hit=$(printf '%s' "$input" | jq -r '
+  def word(re): "(?<![A-Za-z0-9_])(" + re + ")(?![A-Za-z0-9_])";
+  (.prompt | strings) as $p
+  | select($p | test("\\A\\s*(<task-notification>|This session is being continued from a previous conversation)") | not)
+  | select($p | test("一覧|リスト|" + word("lists?"); "i"))
+  | select($p | test(word("epics?|tasks?") + "|エピック|タスク|(?<![\\p{Katakana}\\p{Han}])箱(?!(?!一覧)\\p{Han})"; "i"))
+  | "+" + ((.cwd | strings) // "")
+' 2>/dev/null) || exit 0
+[ -n "$hit" ] || exit 0
+
+cwd=${hit#+}
+[ -n "$cwd" ] && [ -d "$cwd" ] || cwd=.
+command -v furrow >/dev/null 2>&1 || exit 0
+cfg="${FURROW_CONFIG:-$HOME/.config/furrow/config.toml}"
+[ -r "$cfg" ] || exit 0
+boards=$(sed -n 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$cfg")
+[ -n "$boards" ] || exit 0
+store=$(cd "$cwd" 2>/dev/null && furrow board --json 2>/dev/null | jq -r '.store // empty | strings' 2>/dev/null)
+[ -n "$store" ] || exit 0
+printf '%s\n' "$boards" | grep -qxF -- "$store" || exit 0
+
+note="If the user is asking for the list of furrow epics (boxes): run \`furrow-epic-table\` (add \`-r <owner/repo>\` for another repo, \`-r ''\` for the whole board) and show its markdown table as is — ▶ active, 進捗 = done/total, icebox = members parked in icebox. A box's own tasks are not this table (\`furrow epic show <id>\`)."
+jq -cn --arg note "$note" '{hookSpecificOutput: {hookEventName: "UserPromptSubmit", additionalContext: $note}}'
 exit 0

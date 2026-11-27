@@ -514,8 +514,9 @@ board-wide `furrow ls -s icebox`; `-r` picks the boxes and goes to `epic ls` ver
 
 ### `claude-list-table-note`
 **The UserPromptSubmit hook that points a prompt asking for an epic or task list at
-`furrow-epic-table`**: it adds one note to that prompt's context and prints nothing for any other
-prompt (fail-open). A hook rather than a [[skill]], because its trigger is pinned by fixture tests.
+`furrow-epic-table`**: for a prompt the user typed in a checkout on a configured furrow board, it
+adds one conditional note to the context, and it prints nothing for any other prompt (fail-open).
+A hook rather than a [[skill]], because its trigger is pinned by fixture tests.
 The real thing =
 [`chezmoi/dot_local/bin/executable_claude-list-table-note`](../chezmoi/dot_local/bin/executable_claude-list-table-note),
 wired by `modify_settings.json`.
